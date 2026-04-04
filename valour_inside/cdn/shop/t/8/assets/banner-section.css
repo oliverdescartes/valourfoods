@@ -1,0 +1,151 @@
+.banner-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh
+}
+
+.banner-section {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none
+}
+
+.banner-section::-webkit-scrollbar {
+    display: none
+}
+
+.banner-slide {
+    width: 100vw;
+    height: 100vh;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat
+}
+
+.banner-slideshow-section {
+    will-change: opacity, transform;
+    transform-style: preserve-3d
+}
+
+.banner-slide img {
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+    object-position: center;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    pointer-events: none
+}
+
+
+
+
+.banner-button {
+    display: inline-block;
+    padding: 12px 30px;
+    background-color: #000;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all .3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px
+}
+
+.banner-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px #0000004d
+}
+
+.banner-dots {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 3
+}
+
+.banner-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffffff80;
+    cursor: pointer;
+    transition: background .3s ease
+}
+
+.banner-dot.active {
+    background: #fff
+}
+
+.banner-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff3;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background .3s ease;
+    z-index: 3
+}
+
+.banner-nav:hover {
+    background: #fff6
+}
+
+.banner-nav.prev {
+    left: 30px
+}
+
+.banner-nav.next {
+    right: 30px
+}
+
+@media(max-width:768px) {
+
+    .banner-slide,
+    .banner-section,
+    .banner-wrapper {
+        height: auto
+    }
+
+
+    .banner-slide img {
+        height: auto
+    }
+
+
+
+    .banner-nav {
+        font-size: 1.5rem;
+        padding: 10px 15px
+    }
+
+    .banner-nav.prev {
+        left: 15px
+    }
+
+    .banner-nav.next {
+        right: 15px
+    }
+}
+
+/*# sourceMappingURL=/cdn/shop/t/8/assets/banner-section.css.map?v=147718292925816370001755858244 */

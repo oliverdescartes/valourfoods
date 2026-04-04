@@ -1,0 +1,3525 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link href="valour_inside/cdn/shop/t/8/assets/critical.css?v=114666991800665193241754497166" rel="stylesheet"
+    type="text/css" media="all" />
+
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta property="og:site_name" content="Cheffin">
+  <meta property="og:url" content="valour_inside/">
+  <meta property="og:title" content="Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic">
+  <meta property="og:type" content="website">
+
+  <meta property="og:image:width" content="1440">
+  <meta property="og:image:height" content="800">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic">
+  <meta name="twitter:description"
+    content="Restaurant-style taste with your home-style goodness. Cheffin&#39;s ready-to-cook kits give you authentic flavors and complete control in just 10 minutes. Outside food, made inside.">
+
+  <title>
+    Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic
+  </title>
+
+  <link rel="canonical" href="valour_inside/">
+
+
+  <meta name="description"
+    content="Restaurant-style taste with your home-style goodness. Cheffin&#39;s ready-to-cook kits give you authentic flavors and complete control in just 10 minutes. Outside food, made inside.">
+
+
+
+
+
+
+
+  <link rel="stylesheet" media="screen" href="valour_inside/cdn/shop/t/8/assets/navbar.css">
+
+
+
+
+
+  <link rel="stylesheet" media="screen"
+    href="valour_inside/cdn/shop/t/8/compiled_assets/styles.css?v=40476637893564635371756093775">
+  <script async src="valour_inside/cdn/shop/t/8/assets/gsap.js?v=60015290854020132231754290580" defer="defer"></script>
+  <script src="valour_inside/cdn/shop/t/8/assets/scrollTrigger.js?v=4549089651008514231754290580"
+    defer="defer"></script>
+  <script async src="cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer="defer"></script>
+
+  </script>
+
+</head>
+<style>
+
+/* OVERLAY */
+.cf-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* CONTENT */
+.cf-popup-content {
+  position: relative;
+  width: 90%;
+  max-width: 400px;
+}
+
+/* VIDEO */
+.cf-popup-content video {
+  width: 100%;
+  border-radius: 16px;
+}
+
+/* CLOSE BUTTON */
+.cf-popup-close {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: white;
+  border: none;
+  font-size: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+
+
+
+
+
+
+
+/* WRAPPER */
+.cf-wrapper {
+  position: relative;
+  width: 59vw;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+.cf-wrapper-main {
+    display: flex;
+    justify-content: center;
+    padding-top: 200px;
+}
+/* CAROUSEL */
+.cf-carousel {
+  position: relative;
+  width: 300px;
+  height: 450px;
+}
+
+/* CARD */
+.cf-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.6s ease;
+
+  filter: blur(4px);
+  opacity: 0.5;
+  transform: scale(0.85);
+}
+
+.cf-card {
+  filter: blur(4px);
+  opacity: 0.5;
+  transform: scale(0.85);
+  z-index: 1;
+  transition: all 0.6s ease;
+}
+.cf-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+
+/* ACTIVE (center card) */
+.cf-card.cf-active {
+  filter: blur(0);
+  opacity: 1;
+  transform: scale(1.05);
+  z-index: 5;
+}
+
+/* NAV */
+.cf-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  padding: 10px;
+  width: 59px;
+  cursor: pointer;
+  z-index: 10;
+  border-radius: 50%;
+}
+
+.cf-prev { left: 20px; }
+.cf-next { right: 20px; }
+
+
+@media (max-width: 900px) {
+
+.cf-wrapper {
+    width: 70vw;
+   }
+}
+@media (max-width: 760px) {
+.cf-wrapper {
+    width: 82vw;
+   }
+}
+@media (max-width: 500px) {
+.cf-prev {
+    left: 4px;
+}
+.cf-next {
+    right: 5px;
+}
+    .cf-wrapper {
+        width: 92vw;
+    }
+  }
+/* 📱 MOBILE */
+
+@media (max-width: 480px) {
+  .cf-carousel {
+    width: 220px;
+    height: 380px;
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*first slider css*/
+
+
+/* ===== FONT IMPORT (recommended) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap');
+
+.banner-content {
+  position: absolute;
+  top: 18%;
+  left: 10%;
+
+  font-family: 'Anton', sans-serif;
+  color: #2b0d0d;
+}
+.banner-slide {
+  position: relative;
+}
+
+
+/* ===== MAIN TITLE ===== */
+.hero-title {
+    font-family: 'Anton', sans-serif;
+    font-size: 7rem;
+    line-height: 1;
+    letter-spacing: 1px;
+    margin: 0;
+    color: #3b0a0a;
+    text-align: justify;
+}
+/* ===== SUBTITLE ===== */
+.hero-subtitle {
+    font-size: 4.4rem;
+    font-weight: 700;
+    margin-top: 16px;
+    margin-bottom: 28px;
+    font-family: 'Inter', sans-serif;
+    color: #7a3e2f;
+    font-family: 'Anton', sans-serif;
+}
+/* ===== HIGHLIGHT TEXT ===== */
+.hero-highlight {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: none;
+    color: #2b0d0d;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ===== DESCRIPTION ===== */
+.hero-description {
+    font-size: 2.4rem;
+    font-weight: 400;
+    line-height: 1.5;
+    width: 100%;
+    color: #5a3a2e;
+    font-family: 'Inter', sans-serif;
+}
+
+/*end*/
+
+
+/* ===== CTA POSITIONING ===== */
+.banner-slide {
+  position: relative;
+}
+
+/* ===== CTA POSITIONING (FIXED) ===== */
+.cta-container {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    margin-top: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.banner-slide.active .cta-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* show only on active */
+
+/* show only on active slide */
+.banner-slide.active .cta-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== BUTTON BASE ===== */
+.btn {
+  text-decoration: none;
+  font-family: sans-serif;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+/* ===== PRIMARY BUTTON ===== */
+.btn.primary {
+  background: #000;
+  color: #fff;
+  padding: 16px 28px;
+  border-radius: 40px;
+  box-shadow: -4px 9px 11px rgba(0,0,0,0.07);
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* hover */
+.btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: -4px 14px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* click */
+.btn.primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* shine */
+.btn.primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: skewX(-20deg);
+}
+
+.btn.primary:hover::after {
+  animation: shine 0.8s ease;
+}
+
+@keyframes shine {
+  100% {
+    left: 125%;
+  }
+}
+
+@media (max-width: 768px) {
+    .banner-content {
+        top: 20%;
+        left: 10%;
+        max-width: 90%;
+    }
+
+  .cta-container {
+    gap: 16px;
+  }
+  .banner-slide picture{
+margin-top: 64px;
+
+  }
+.hero-title {
+    font-size: 4rem;}
+
+.hero-subtitle {
+    font-size: 2.6rem;}
+
+.hero-description {
+    font-size: 1.8rem;}
+
+.hero-highlight {
+    font-size: 1.7rem;}
+
+
+}
+@media (max-width: 500px) {
+    .hero-title {
+        font-size: 2.6rem;
+    }
+    .banner-content {
+        top: 23%;}
+        .hero-subtitle {
+        font-size: 1.8rem;margin-bottom: 14px;
+    margin-top: 5px;
+    }
+        .hero-highlight {
+        font-size: 1.4rem;    margin-bottom: 0;
+    }
+        .hero-description{
+        font-size: 1.2rem;
+    }
+}
+
+
+
+@media (max-width: 400px) {
+    .cta-container{display:block}
+
+  .cta-container .btn{
+    display:block;
+    margin-bottom:10px;
+width: 120px;
+        text-align: center;
+  }
+}
+
+
+@media (max-width: 350px) {
+.hero-subtitle {
+        font-size: 1.4rem;
+    }
+        .hero-highlight {
+        font-size: 1.12rem;
+        margin-bottom: 0;
+    }
+    .hero-title {
+        font-size: 2.2rem;
+    }
+        .hero-description {
+        font-size: 1rem;
+    }
+
+    .banner-content .btn.link,
+    .banner-content .btn.primary{
+ font-size: 12px;
+    }
+    .cta-container .btn {
+        width: 90px;       
+    }
+}
+
+
+
+/* ===== LINK BUTTON ===== */
+.btn.link {
+  color: #111;
+  position: relative;
+}
+
+.btn.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0%;
+  height: 2px;
+  background: #111;
+  transition: width 0.3s ease;
+}
+
+.btn.link:hover::after {
+  width: 100%;
+}
+
+.btn.link:hover {
+  transform: translateY(-1px);
+  opacity: 0.8;
+}
+
+.btn.link:active {
+  transform: translateY(1px);
+}
+
+/* ===== ENTRY ANIMATION ===== */
+.cta-container .btn {
+  opacity: 0;
+  transform: translateX(-40px) scale(0.95);
+  filter: blur(6px);
+}
+
+/* animate when active */
+.banner-slide.active .cta-container.animate .btn {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  filter: blur(0);
+
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* stagger */
+.banner-slide.active .cta-container.animate .btn:nth-child(1) {
+  transition-delay: 0.2s;
+}
+
+.banner-slide.active .cta-container.animate .btn:nth-child(2) {
+  transition-delay: 0.4s;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .cta-container {
+        left: 13%;
+        top: 48%;
+        transform: none;
+        flex-direction: row;
+        gap: 16px;
+        align-items: center;
+    }
+  .btn.primary {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .btn.link {
+    font-size: 14px;
+  }
+}
+
+
+  /*testimonials*/
+
+
+
+  .testimonial-sectionxyz {
+    max-width: 2000px;
+    margin: auto;
+    padding: 350px 20px;
+  }
+
+  /* HEADER */
+  .testimonial-sectionxyz .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* WRAPPER */
+  .testimonial-sectionxyz .carousel-wrapper {
+    overflow: hidden;
+    margin-top: 40px;
+  }
+
+  .cont_nav_crousel {
+    display: flex;
+    margin-top: 60px;
+    justify-content: center;
+  }
+
+  /* TRACK */
+  .testimonial-sectionxyz .carousel-track {
+    display: flex;
+    gap: 20px;
+    transition: transform 0.5s ease;
+  }
+
+  /* ITEM */
+  .testimonial-sectionxyz .carousel-item {
+    min-width: calc(50% - 10px);
+    display: flex;
+    gap: 20px;
+    background: #ffffffe3;
+    padding: 20px;
+    border-radius: 11px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  }
+
+  /* IMAGE GRID */
+  .testimonial-sectionxyz .image-grid {
+    width: 50%;
+  }
+
+  .testimonial-sectionxyz .main-img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 20px;
+  }
+
+
+
+  .testimonial-sectionxyz .small-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .testimonial-sectionxyz .small-grid img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* makes them perfect squares */
+    object-fit: cover;
+    border-radius: 12px;
+  }
+
+
+
+  .testimonial-sectionxyz .header h2 {
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: 64px;
+    color: white;
+  }
+
+  .testimonial-sectionxyz .header h2 span {
+    color: #e7e79e
+  }
+
+  /* CARD */
+  .testimonial-sectionxyz .review-card {
+    width: 50%;
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .testimonial-sectionxyz .review-card h4,
+  .testimonial-sectionxyz .review-card span,
+  .testimonial-sectionxyz .review-card p {
+    font-family: Inter;
+  }
+
+  .testimonial-sectionxyz .review-card h4 {
+    font-size: 20px;
+  }
+
+  .testimonial-sectionxyz .review-card span {
+    font-size: 16px;
+    margin-top: 7px;
+    display: block;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #afafaf;
+  }
+
+  .stars_review {
+    color: #d58a00;
+    font-size: 32px;
+    margin-top: 10px;
+  }
+
+  .review_rev {
+    margin-top: 40px;
+    font-size: 23px;
+  }
+
+  /* NAV */
+  .testimonial-sectionxyz .nav button {
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+  }
+
+
+  .testimonial-sectionxyz .carousel-wrapper {
+    overflow: hidden;
+  }
+
+  .testimonial-sectionxyz .carousel-track {
+    display: flex;
+    gap: 20px;
+    transition: transform 0.5s ease;
+  }
+
+  .testimonial-sectionxyz .carousel-item {
+    min-width: calc(50% - 10px);
+    /* 2 items visible */
+    display: flex;
+    gap: 20px;
+  }
+
+  /* layout fix */
+  .testimonial-sectionxyz .image-grid,
+  .testimonial-sectionxyz .review-card {
+    width: 50%;
+  }
+
+  @media (max-width: 900px) {
+    .testimonial-sectionxyz .carousel-item {
+      min-width: 100%;
+      flex-direction: column;
+    }
+
+    .testimonial-sectionxyz .image-grid,
+    .testimonial-sectionxyz .review-card {
+      width: 100%;
+    }
+
+    .testimonial-sectionxyz .header h2 {
+      font-size: 36px;
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  /* LAYOUT */
+  .product_slide {
+    display: flex;
+    gap: 40px;
+    width: 100%;
+    background: #ffffff1c;
+    padding: 45px;
+    border-radius: 20px;
+    margin: auto;
+    margin-top: 49px;
+    box-shadow: -4px 9px 20px 0 rgba(0, 0, 0, 0.19);
+
+
+
+  }
+
+  .slider-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 25px;
+  }
+
+  /* DOT BUTTON */
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #777;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  /* HOVER EFFECT */
+  .dot:hover {
+    background: #fff;
+    transform: scale(1.2);
+  }
+
+  /* ACTIVE DOT */
+  .dot.active {
+    width: 24px;
+    /* elongated for premium feel */
+    border-radius: 20px;
+    background: #fff;
+  }
+
+  /* LEFT SIDE */
+  .product_slide .left {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .thumbnails {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .thumbnails img {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 1px solid #ddd;
+  }
+
+  .thumbnails img.active {
+    opacity: 1;
+    border: 2px solid #000;
+    transform: scale(1.05);
+  }
+
+  /* Main image */
+  .main-image img {
+    width: 500px;
+    height: auto;
+    object-fit: cover;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Fade effect */
+  .main-image img.fade {
+    opacity: 0;
+  }
+
+  .main-image {
+    flex: 1;
+    background: #ffffff00;
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .thumbnails img.active {
+    opacity: 1;
+    border: 2px solid #000;
+    transform: scale(1.05);
+  }
+
+  /* Main image */
+  .main-image img {
+    width: 300px;
+    height: auto;
+    object-fit: cover;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Fade effect */
+  .main-image img.fade {
+    opacity: 0;
+  }
+
+  /* RIGHT SIDE */
+  .right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .brand {
+    font-size: 14px;
+    color: #777;
+  }
+
+  /* TITLE + PRICE */
+  .title-price {
+    display: block;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title-price h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffffd4;
+  }
+
+  .price {
+    display: block;
+    margin-top: 8px;
+    font-size: 22px;
+    font-weight: 600;
+    color: white;
+  }
+
+  .product_slide .right p {
+    color: white;
+  }
+
+  /* RATING */
+  .rating {
+    font-size: 14px;
+    color: #555;
+  }
+
+  /* DESCRIPTION */
+  .desc {
+    font-size: 15px;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  /* COLORS */
+  .color-options p {
+    font-size: 14px;
+    margin: auto;
+  }
+
+  .color-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+
+  }
+
+  .color-options .elem_ins {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    display: flex;
+  }
+
+  .color-options .active {
+    border: 2px solid black;
+  }
+
+  /* BUTTON */
+  .product_slide .cta {
+    margin-top: 20px;
+    padding: 11px;
+    padding-top: 24px;
+    border: none;
+    background: black;
+    color: white;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    transition: 0.3s;
+    justify-content: center;
+
+  }
+
+  .product_slide .cta img {
+    width: 40px;
+    margin-left: 10px;
+    margin-top: -9px;
+  }
+
+  .product_slide .cta:hover {
+    background: #222;
+    transform: translateY(-2px);
+  }
+
+  /* INFO */
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .product_slide {
+      flex-direction: column;
+    }
+
+    .left {
+      flex-direction: column;
+    }
+
+    .thumbnails {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+
+
+  body {
+    background: #f5f5f5;
+  }
+
+  /* NAVBAR */
+  .navbar {
+    width: 100%;
+    position: absolute;
+    z-index: 99999;
+  }
+
+  /* CONTAINER */
+  .nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+
+  /* LEFT LINKS */
+
+
+  /* CENTER LOGO */
+  .nav-logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .nav-logo img {
+    height: 100px;
+    object-fit: contain;
+  }
+
+  /* RIGHT ICONS */
+  .nav-right {
+    display: flex;
+    gap: 20px;
+  }
+
+  .prod_section_ind {
+    background: #831a1a;
+    padding-top: 223px;
+    padding-bottom: 230px;
+  }
+
+  .icon {
+    font-size: 18px;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+  }
+
+  .icon:hover {
+    opacity: 0.6;
+  }
+
+  .mobile-tabs-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: visible;
+    gap: 30px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    transition: transform .3s ease-in-out;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .mobile-tabs-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .packets-tab-item {
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 20px;
+    font-family: Parkinsans-Medium;
+    color: #fada79;
+  }
+
+  .packets-tab-item:last-child {
+    padding-right: 40px;
+  }
+
+  .packets-tab-item.active {
+    color: #fff;
+  }
+
+  /* Container */
+  .container_expand_ingre {
+    width: 98%;
+  }
+
+  /* Accordion Box */
+  .accordion {
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  /* Header */
+  .accordion-header {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    border-bottom: 1px solid #ffffff80;
+  }
+
+  .accordion-header .icon {
+    width: 10px
+  }
+
+  .accordion-header span {
+    color: #ffffff80
+  }
+
+  .container_slider {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+    padding-bottom: 200px;
+  }
+
+  .slider {
+    position: relative;
+    width: 64%;
+  }
+
+  /* STACK SLIDES ON TOP */
+  .slides {
+    position: relative;
+  }
+
+  /* EACH SLIDE */
+  .product_slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease;
+  }
+
+  /* ACTIVE SLIDE */
+  .product_slide.active {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+  }
+
+  /* INITIAL STATE */
+  .product_slide .left,
+  .product_slide .right {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s ease;
+  }
+
+  /* WHEN ACTIVE */
+  .product_slide.active .left {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+  }
+
+  .product_slide.active .right {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.4s;
+  }
+
+  /* Icon */
+  .icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+  }
+
+  /* Content */
+  .accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+    padding: 0 20px;
+  }
+
+  /* Text */
+  .accordion-content p {
+    margin: 0;
+    padding: 10px 0 16px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* Active State */
+  .accordion.active .accordion-content {
+    max-height: 150px;
+  }
+
+  .accordion.active .icon {
+    transform: rotate(45deg);
+  }
+
+  .valour-banner__title_sec2 {
+    margin-bottom: 140px;
+  }
+
+
+  .valour-banner {
+    --text: #8b1e1e;
+    --line: #c79a45;
+    --texture-opacity: 0.06;
+
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .valour-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--texture-opacity);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.045) 0.6px, transparent 0.8px),
+      radial-gradient(circle at 70% 60%, rgba(0, 0, 0, 0.035) 0.6px, transparent 0.8px),
+      linear-gradient(115deg, rgba(0, 0, 0, 0.04) 0.5px, transparent 0.5px);
+    background-size: 22px 22px, 28px 28px, 12px 12px;
+    mix-blend-mode: multiply;
+  }
+
+  .valour-banner__inner {
+    position: relative;
+    max-width: 1600px;
+    min-height: 72vh;
+    margin: 0 auto;
+    padding: clamp(56px, 8vw, 120px) clamp(28px, 6vw, 96px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+  }
+
+  .valour-banner__inner22 {
+    position: relative;
+    min-height: 72vh;
+    margin: 0 auto;
+    padding: clamp(56px, 8vw, 120px) clamp(28px, 6vw, 96px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    width: auto
+  }
+
+  .valour-banner__content22 {
+    width: 100%;
+
+
+  }
+
+  .text-container-heading {
+    width: 100%;
+  }
+
+  .valour-banner__content {
+    width: 77%;
+    margin-left: 40px;
+  }
+
+  .valour-banner__title {
+    margin: 0;
+    color: white;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(52px, 6vw, 104px);
+    line-height: 0.94;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .valour-banner__eyebrow {
+    margin: clamp(24px, 2.4vw, 36px) 0 0;
+    color: white;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(12px, 1.1vw, 18px);
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .valour-banner__accent {
+    flex: 0 0 auto;
+    width: 2px;
+    position: absolute;
+    height: min(52vh, 520px);
+    margin-right: clamp(8px, 2vw, 24px);
+    background: linear-gradient(to bottom, transparent 0%, rgba(199, 154, 69, 0.2) 8%, rgb(255 236 0 / 95%) 50%, rgba(199, 154, 69, 0.2) 92%, transparent 100%);
+  }
+
+  @media (max-width: 900px) {
+    .valour-banner__inner {
+      min-height: auto;
+      padding-top: 88px;
+      padding-bottom: 88px;
+      align-items: flex-start;
+    }
+
+    .valour-banner__content {
+      width: min(78%, 620px);
+    }
+
+    .valour-banner__accent {
+      height: 220px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .valour-banner__inner {
+      padding: 212px 24px;
+    }
+
+
+
+    .valour-banner__title {
+      font-size: clamp(42px, 14vw, 42px);
+      line-height: 1.2;
+    }
+
+    .valour-banner__eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.24em;
+    }
+  }
+
+
+  .timeline {
+    position: relative;
+    max-width: 1100px;
+    margin: auto;
+    padding: 100px 0;
+  }
+
+  /* CENTER LINE */
+  .line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #d8d6d2;
+    transform: translateX(-50%);
+  }
+
+  /* ITEM */
+  .timeline-item {
+    position: relative;
+    width: 50%;
+    padding: 60px;
+    box-sizing: border-box;
+  }
+
+  .timeline-item.left {
+    left: 0;
+    text-align: right;
+  }
+
+  .timeline-item.left .card {
+    margin-left: 102px;
+  }
+
+  .timeline-item.right {
+    left: 50%;
+  }
+
+  /* CARD */
+  .cardxyz {
+    position: relative;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 20px;
+    width: 320px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    display: inline-block;
+    text-align: left;
+    overflow: visible;
+  }
+
+  .cardxyz img {
+    width: 100%;
+    border-radius: 14px;
+    margin-bottom: 15px;
+  }
+
+  .cardxyz h3 {
+    font-size: 22px;
+    margin: 10px 0;
+    text-align: center;
+    font-family: Inter;
+  }
+
+  .cardxyz p {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    font-family: Inter;
+  }
+
+  /* 🔥 CONNECTOR NOTCH */
+
+  /* LEFT → pointing right */
+  /* SECTION */
+  .timeline-section {
+    padding: clamp(60px, 10vw, 140px) 0;
+  }
+
+  /* HEADING */
+  .valour-banner__title_sec2 {
+    text-align: center;
+    margin-bottom: clamp(40px, 8vw, 100px);
+  }
+
+
+
+  .valour-banner__title_sec2 h2 {
+    text-align: center;
+    margin: 0;
+    color: #0c0c0c;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(32px, 6vw, 64px);
+
+    line-height: 0.94;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-top: 180px;
+    /* margin-bottom: 140px; */
+    text-wrap: balance;
+  }
+
+  .valour-banner__title_sec2 p {
+    text-align: center;
+    /* margin: 0; */
+    color: #939393;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(16px, 3vw, 28px);
+    margin-top: 20px;
+  }
+
+  /* TIMELINE BASE */
+  .timeline {
+    position: relative;
+    max-width: 1100px;
+    margin: auto;
+  }
+
+  /* CENTER LINE */
+  .line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #d8d6d2;
+    transform: translateX(-50%);
+  }
+
+  /* ITEM */
+  .timeline-item {
+    position: relative;
+    width: 50%;
+    padding: clamp(30px, 5vw, 60px);
+  }
+
+  /* LEFT */
+  .timeline-item.left {
+    left: 0;
+    text-align: right;
+  }
+
+  /* RIGHT */
+  .timeline-item.right {
+    left: 50%;
+  }
+
+  /* CARD */
+  .cardxyz {
+    background: #fff;
+    padding: clamp(16px, 3vw, 24px);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    margin-inline: auto;
+  }
+
+  .cardxyz img {
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  .cardxyz h3 {
+    font-size: clamp(18px, 2vw, 22px);
+    margin: 10px 0;
+  }
+
+  .cardxyz p {
+    font-size: clamp(13px, 1.5vw, 14px);
+  }
+
+  /* CONNECTOR */
+  .timeline-item.left .cardxyz::before,
+  .timeline-item.right .cardxyz::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  /* LEFT CONNECTOR */
+  .timeline-item.left .cardxyz::before {
+    right: -8px;
+  }
+
+  /* RIGHT CONNECTOR */
+  .timeline-item.right .cardxyz::before {
+    left: -8px;
+  }
+
+  /* DOT */
+  .dot-timeline {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    background: #c94c4c;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  /* RIGHT DOT */
+  .timeline-item.right .dot-timeline {
+    left: 0;
+  }
+
+  /* ================= */
+  /* 📱 MOBILE VERSION */
+  /* ================= */
+
+  @media (max-width: 768px) {
+
+    .timeline {
+      padding: 0 10px;
+    }
+
+    .line {
+      left: 50%;
+    }
+
+    .timeline-item {
+      width: 100%;
+      padding: 40px 0;
+      position: relative;
+    }
+
+    /* KEEP ZIG-ZAG */
+    .timeline-item.left {
+      left: 0;
+      text-align: right;
+      padding-right: 55%;
+    }
+
+    .timeline-item.right {
+      left: 0;
+      text-align: left;
+      padding-left: 55%;
+    }
+
+    /* CARD SIZE CONTROL */
+    .cardxyz {
+      max-width: 260px;
+      width: 100%;
+    }
+
+    /* DOT CENTER FIX */
+    .dot-timeline {
+      left: 50% !important;
+      transform: translate(-50%, -50%);
+    }
+
+    /* CONNECTOR ADJUST */
+    .timeline-item.left .cardxyz::before {
+      right: -8px;
+    }
+
+    .timeline-item.right .cardxyz::before {
+      left: -8px;
+    }
+  }
+
+  /*footer*/
+
+
+
+  .footer {
+    background: #f4f4f4;
+    padding: 90px 20px 200px 30px;
+    font-family: "Inter", sans-serif;
+    color: #333;
+  }
+
+  /* TOP */
+  .footer-top {
+    max-width: 1200px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 60px;
+  }
+
+  /* LEFT */
+  .footer-left {
+    max-width: 350px;
+  }
+
+  .footer-logo {
+    width: 140px;
+    margin-bottom: 15px;
+  }
+
+  .footer-desc {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  .footer-social {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .footer-social .material-symbols-outlined {
+    font-size: 20px;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .footer-social .material-symbols-outlined:hover {
+    color: #000;
+    transform: translateY(-2px);
+  }
+
+  /* SELECTS */
+
+
+
+  /* LINKS */
+  .footer-links {
+    display: flex;
+    gap: 60px;
+  }
+
+  .footer-col h4 {
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  .footer-col a {
+    display: block;
+    text-decoration: none;
+    color: #555;
+    font-size: 14px;
+    margin-bottom: 8px;
+    transition: 0.3s;
+  }
+
+  .footer-col a:hover {
+    color: #000;
+  }
+
+  .footer-note {
+    font-size: 14px;
+    color: #666;
+    max-width: 220px;
+  }
+
+  /* BOTTOM */
+  .footer-bottom {
+    border-top: 1px solid #ddd;
+    margin-top: 40px;
+    padding-top: 20px;
+
+    max-width: 1200px;
+    margin-inline: auto;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-policy {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-policy a {
+    text-decoration: none;
+    font-size: 13px;
+    color: #555;
+  }
+
+  /* ================= */
+  /* 📱 RESPONSIVE */
+  /* ================= */
+
+  @media (max-width: 900px) {
+    .footer-top {
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .footer-links {
+      flex-wrap: wrap;
+      gap: 30px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .footer-links {
+      flex-direction: column;
+    }
+
+    .footer-bottom {
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .footer-selects {
+      flex-direction: column;
+    }
+  }
+
+
+
+
+
+  /*responsive*/
+  @media (max-width: 1300px) {
+    .slider {
+      position: relative;
+      width: 83%;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .title-price h1 {
+      font-size: 24px;
+    }
+
+    .product_slide .right p {
+      color: #ffffffd9;
+      font-size: 12px;
+      font-family: 'Inter';
+
+    }
+
+    .product_slide .cta {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 900px) {
+
+
+    .container_slider {
+
+      margin-top: 284px;
+    }
+  }
+
+  @media (max-width: 600px) {
+
+    .title-price h1 {
+      font-size: 20px;
+    }
+
+    .product_slide .right p {
+      color: #ffffffd9;
+      font-size: 10px;
+    }
+
+    .price {
+      margin-top: 15px;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .product_slide {
+      padding: 27px;
+      padding-bottom: 87px;
+      padding-top: 50px;
+    }
+
+    .thumbnails img {
+      width: 80px;
+      height: 80px;
+    }
+
+    .testimonial-sectionxyz .main-img {
+      height: 170px;
+    }
+
+    .review_rev {
+      margin-top: 26px;
+      font-size: 18px;
+    }
+
+    .testimonial-sectionxyz .review-card h4 {
+      font-size: 18px;
+    }
+
+    .testimonial-sectionxyz .review-card span {
+      font-size: 12px;
+      margin-top: 7px;
+    }
+
+    .valour-banner__inner22 {
+      position: relative;
+      min-height: 40vh;
+    }
+
+    .valour-banner__inner {
+      padding: 122px 24px;
+    }
+
+    .testimonial-sectionxyz .header {
+      justify-content: center;
+    }
+
+
+    .product_slide .cta img {
+      width: 33px;
+      margin-top: -9px;
+    }
+
+    .testimonial-sectionxyz .header h2 {
+      font-size: 35px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .cardxyz h3 {
+      font-size: clamp(15px, 2vw, 22px);
+    }
+
+    .valour-banner__title {
+      font-size: clamp(32px, 14vw, 32px);
+      line-height: 1.2;
+    }
+
+
+    .product_slide .cta img {
+      width: 25px;
+      margin-top: -5px;
+    }
+
+    .title-price h1 {
+      font-size: 18px;
+    }
+
+    .thumbnails img {
+      width: 45px;
+      height: 45px;
+    }
+
+    .product_slide {
+      padding-left: 17px;
+      padding-right: 17px;
+    }
+
+    .product_slide .cta {
+      font-size: 12px;
+      padding: 14px;
+      padding-top: 21px;
+      padding-top: 21px;
+    }
+
+    .price {
+
+      font-size: 18px;
+    }
+  }
+
+
+  @media (max-width: 350px) {
+
+    .product_slide .cta {
+      font-size: 11px;
+      padding: 14px;
+      padding-top: 21px;
+      padding-top: 21px;
+    }
+  }
+</style>
+
+<body>
+
+
+
+
+
+  <link href="valour_inside/cdn/shop/t/8/assets/login-logo.css?v=36613430775416838161755792980" rel="stylesheet"
+    type="text/css" media="all" />
+  <!-- Loading Phase -->
+  <div id="loading-phase" class="loading-phase-container">
+
+    <div>
+      <div class="loading-video-container">
+        <img class="loading-video" src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Logo-v3.gif?v=1754633017"
+          alt="Loading animation image" aria-label="Loading animation image" loading="eager" fetchpriority="high">
+      </div>
+      <div class="loading-bar-container">
+        <div class="loading-bar"></div>
+      </div>
+      <div class="loading-percentage"></div>
+    </div>
+
+  </div>
+
+
+  <!-- Main Content (Hidden initially) -->
+  <main id="main-content" class="main-content-container" style="display: none; background: #831a1a;">
+
+    <!-- ===== ANNOUNCEMENT BAR ===== -->
+    <div class="announcement-bar">
+      <div class="announcement-track" id="track-xf">
+        <div class="announcement-text">🚚 Free shipping on all orders over $45</div>
+        <div class="announcement-text">🏷 Save 15% on your first 5 subscription shipments with code 15OFF5</div>
+        <div class="announcement-text">🚚 Free shipping on all orders over $45</div>
+        <div class="announcement-text">🏷 Save 15% on your first 5 subscription shipments with code 15OFF5</div>
+      </div>
+
+
+    </div>
+
+    <!-- ===== NAVBAR ===== -->
+    <div class="navbar">
+      <div class="container nav-container">
+
+        <!-- LEFT -->
+
+        <div class="menu-toggle">
+          <span class="material-symbols-outlined">menu</span>
+        </div>
+
+        <div class="nav-left">
+          <a href="#">Shop</a>
+          <a href="#">Subscribe</a>
+          <a href="#">Locations</a>
+          <a href="#">Learn</a>
+        </div>
+
+        <!-- LOGO -->
+        <div class="nav-logo">VALOUR</div>
+
+        <!-- RIGHT -->
+        <div class="nav-right">
+          <span class="material-symbols-outlined">shopping_bag</span>
+        </div>
+
+        <!-- HAMBURGER -->
+
+      </div>
+
+      <!-- MOBILE MENU -->
+      <div class="mobile-menu">
+        <a href="#">Shop</a>
+        <a href="#">Subscribe</a>
+        <a href="#">Locations</a>
+        <a href="#">Learn</a>
+      </div>
+    </div>
+    <section id="shopify-section-template--19781511708886__banner_section_maqcGT"
+      class="shopify-section banner-slideshow-section">
+      <link href="valour_inside/cdn/shop/t/8/assets/banner-section.css?v=147718292925816370001755858244"
+        rel="stylesheet" type="text/css" media="all" />
+      <script src="valour_inside/cdn/shop/t/8/assets/banner-slideshow.js?v=25143192274016277671756093772"
+        defer></script>
+
+
+
+
+      <!-- Banner Wrapper -->
+      <div class="banner-wrapper" id="banner-section-template--19781511708886__banner_section_maqcGT"
+        data-autoplay="true" data-autoplay-duration="5000">
+
+        <!-- Banner Section (Scrolling Container) -->
+        <div class="banner-section">
+          <!-- Banner Slides -->
+
+<div class="banner-slide active">
+  <picture>
+
+                  <source media="(min-width: 768px)"
+                srcset="valour_inside/cdn/shop/files/hero_banner_vlrmn_x.png?v=1755870223&width=1800">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800">
+
+
+              <img src="valour_inside/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800" alt="" loading="eager"
+                fetchpriority="high" width="800" height="auto">
+  </picture>
+
+<div class="banner-content">
+  <h1 class="hero-title">
+    Coconut <br>
+    Mustard Fish.
+  </h1>
+
+  <h2 class="hero-subtitle">
+    Without The Old Process.
+  </h2>
+
+  <p class="hero-highlight">
+    This is liquid spice.
+  </p>
+
+  <p class="hero-description">
+    Built for Bengali Coconut <br>
+    Mustard Fish.
+  </p>
+
+    <div class="cta-container">
+      <a href="#shop-section" class="btn primary">Shop Now</a>
+      <a href="#how-it-works" class="btn link">How it works</a>
+    </div>
+  </div>
+</div>
+
+
+          <!-- <div class="banner-slide active" data-slide="0">
+            <picture>
+
+              <source media="(min-width: 768px)"
+                srcset="valour_inside/cdn/shop/files/hero_banner_vlrmn.png?v=1755870223&width=1800">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800">
+
+
+              <img src="valour_inside/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800" alt="" loading="eager"
+                fetchpriority="high" width="800" height="auto">
+            </picture>
+            <div class="cta-container">
+              <a href="#shop-section" class="btn primary">Shop Now</a>
+              <a href="#how-it-works" class="btn link">See How it works</a>
+            </div>
+          </div> -->
+
+
+
+
+          <div class="banner-slide " data-slide="1">
+            <picture>
+
+              <source media="(min-width: 768px)" srcset="valour_inside/cdn/shop/files/hero_banner2nd.png">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800">
+
+
+              <img src="valour_inside/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+                fetchpriority="low" width="800" height="auto">
+            </picture>
+          </div>
+
+
+
+
+          <div class="banner-slide " data-slide="2">
+            <picture>
+
+              <source media="(min-width: 768px)"
+                srcset="valour_inside/cdn/shop/files/hero_banner3nd.png">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800">
+
+
+              <img src="valour_inside/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+                fetchpriority="low" width="800" height="auto">
+            </picture>
+          </div> 
+
+
+
+
+          <!-- <div class="banner-slide " data-slide="3">
+            <picture>
+
+              <source media="(min-width: 768px)"
+                srcset="valour_inside/cdn/shop/files/Desktop_banner_1_TB_1.png?v=1755870282&width=1800">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_1_TB_aca382d4-7abb-407e-9479-475ee21f3102.jpg?v=1755668895&width=800">
+
+
+              <img
+                src="valour_inside/cdn/shop/files/Mob_banner_1_TB_aca382d4-7abb-407e-9479-475ee21f3102.jpg?v=1755668895&width=800"
+                alt="" loading="lazy" fetchpriority="low" width="800" height="auto">
+            </picture>
+          </div>
+
+
+
+
+          <div class="banner-slide " data-slide="4">
+            <picture>
+
+              <source media="(min-width: 768px)"
+                srcset="valour_inside/cdn/shop/files/Desktop_banner_5_TB_87b44e14-d542-4adc-ac4b-687f6b3774ea.jpg?v=1754545484&width=1800">
+
+
+
+              <source media="(max-width: 767px)"
+                srcset="valour_inside/cdn/shop/files/Mob_banner_5_TB.jpg?v=1754497978&width=800">
+
+
+              <img src="valour_inside/cdn/shop/files/Mob_banner_5_TB.jpg?v=1754497978&width=800" alt="" loading="lazy"
+                fetchpriority="low" width="800" height="auto">
+            </picture>
+          </div>
+
+        </div> -->
+
+        <!-- Banner Dots Navigation (Outside scrolling container) -->
+
+        <div class="banner-dots">
+
+          <div class="banner-dot active" data-slide="0" role="button" tabindex="0" aria-label="Go to slide 1"></div>
+
+          <div class="banner-dot " data-slide="1" role="button" tabindex="0" aria-label="Go to slide 2"></div>
+
+          <div class="banner-dot " data-slide="2" role="button" tabindex="0" aria-label="Go to slide 3"></div>
+
+          <!-- <div class="banner-dot " data-slide="3" role="button" tabindex="0" aria-label="Go to slide 4"></div>
+
+          <div class="banner-dot " data-slide="4" role="button" tabindex="0" aria-label="Go to slide 5"></div> -->
+
+        </div>
+
+
+      </div>
+
+
+    </section>
+    <link href="valour_inside/cdn/shop/t/8/assets/text-scrolling-stylesheet.css?v=31481641065632360961756093773"
+      rel="stylesheet" type="text/css" media="all" />
+
+    </section>
+    <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
+      class=" shopify-section text-scrolling-parent">
+      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.css?v=31481641065632360961756093773"
+        rel="stylesheet" type="text/css" media="all">
+
+      <div class="prod_section_ind">
+
+
+        <div class="taste-content" id="textRevealContainer">
+
+          <div class="valour-banner" id="textContent">
+            <div class="valour-banner__inner">
+              <div class="valour-banner__content">
+                <h2 class="valour-banner__title line-1">Spices, simplified.</h2>
+                <p class="valour-banner__eyebrow line-2">LIQUID SPICE BY VALOUR</p>
+              </div>
+
+              <div class="valour-banner__accent" aria-hidden="true"></div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="container_slider">
+          <div class="slider">
+
+            <div class="slides" id="slides">
+
+              <!-- SLIDE 1 -->
+              <div class="product_slide active">
+
+                <!-- LEFT SECTION -->
+                <div class="left">
+
+                  <div class="thumbnails">
+                    <img src="image_3_prod.png">
+                    <img src="image_2_prod.png">
+                    <img src="velvey_buttermain.png">
+                  </div>
+
+                  <div class="main-image">
+                    <img src="velvey_buttermain.png" alt="product">
+                  </div>
+
+                </div>
+
+                <!-- RIGHT SECTION -->
+                <div class="right">
+
+                  <p class="brand">LIQUID SPICE</p>
+
+                  <div class="title-price">
+                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty</h1>
+                    <span class="price">₹499.00</span>
+                  </div>
+
+                  <!-- <div class="rating">
+            ⭐⭐⭐⭐⭐ <span>5.0 | 2 reviews</span>
+          </div> -->
+
+
+                  <!-- <p class="desc">
+            Experience a harmonious blend of premium sound quality and ergonomic design that allows for all-day
+            comfortable listening.
+          </p> -->
+
+                  <!-- COLOR OPTIONS -->
+                  <!-- <div class="colors">
+            <p>weight: <strong>600g</strong></p>
+            <div class="color-options">
+              <div class="elem_ins active">
+                <p>600g</p>
+              </div>
+              <div class="elem_ins">
+                <p>400g</p>
+              </div>
+
+            </div>
+          </div> -->
+
+                  <!-- CTA -->
+                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                      alt="whatsapp"></button>
+                  <div class="container_expand_ingre">
+                    <div class="accordion">
+                      <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="header_name">Ingredients</span>
+                        <span class="icon">+</span>
+                      </div>
+
+                      <div class="accordion-content" id="content">
+                        <p>
+                          Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices.
+                          No artificial preservatives or colors added.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- INFO BOX -->
+
+                </div>
+              </div>
+
+              <!-- SLIDE 2 -->
+              <div class="product_slide">
+
+                <!-- LEFT SECTION -->
+                <div class="left">
+
+                  <div class="thumbnails">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                  </div>
+
+                  <div class="main-image">
+                    <img src="velvey_buttermain.png" alt="product">
+                  </div>
+
+                </div>
+
+                <!-- RIGHT SECTION -->
+                <div class="right">
+
+                  <p class="brand">LIQUID SPICE</p>
+
+                  <div class="title-price">
+                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty</h1>
+                    <span class="price">₹499.00</span>
+                  </div>
+
+                  <!-- <div class="rating">
+            ⭐⭐⭐⭐⭐ <span>5.0 | 2 reviews</span>
+          </div> -->
+
+
+                  <!-- <p class="desc">
+            Experience a harmonious blend of premium sound quality and ergonomic design that allows for all-day
+            comfortable listening.
+          </p> -->
+
+                  <!-- COLOR OPTIONS -->
+                  <!-- <div class="colors">
+            <p>weight: <strong>600g</strong></p>
+            <div class="color-options">
+              <div class="elem_ins active">
+                <p>600g</p>
+              </div>
+              <div class="elem_ins">
+                <p>400g</p>
+              </div>
+
+            </div>
+          </div> -->
+
+                  <!-- CTA -->
+                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                      alt="whatsapp"></button>
+                  <div class="container_expand_ingre">
+                    <div class="accordion">
+                      <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="header_name">Ingredients</span>
+                        <span class="icon">+</span>
+                      </div>
+
+                      <div class="accordion-content" id="content">
+                        <p>
+                          Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices.
+                          No artificial preservatives or colors added.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- INFO BOX -->
+
+
+                </div>
+              </div>
+              <!-- SLIDE 3 -->
+              <div class="product_slide">
+
+                <!-- LEFT SECTION -->
+                <div class="left">
+
+                  <div class="thumbnails">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                    <img src="https://via.placeholder.com/60">
+                  </div>
+
+                  <div class="main-image">
+                    <img src="velvey_buttermain.png" alt="product">
+                  </div>
+
+                </div>
+
+                <!-- RIGHT SECTION -->
+                <div class="right">
+
+                  <p class="brand">LIQUID SPICE</p>
+
+                  <div class="title-price">
+                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty
+                    </h1>
+                    <span class="price">₹499.00</span>
+                  </div>
+
+                  <!-- <div class="rating">
+            ⭐⭐⭐⭐⭐ <span>5.0 | 2 reviews</span>
+          </div> -->
+
+
+                  <!-- <p class="desc">
+            Experience a harmonious blend of premium sound quality and ergonomic design that allows for all-day
+            comfortable listening.
+          </p> -->
+
+                  <!-- COLOR OPTIONS -->
+                  <!-- <div class="colors">
+            <p>weight: <strong>600g</strong></p>
+            <div class="color-options">
+              <div class="elem_ins active">
+                <p>600g</p>
+              </div>
+              <div class="elem_ins">
+                <p>400g</p>
+              </div>
+
+            </div>
+          </div> -->
+
+                  <!-- CTA -->
+                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                      alt="whatsapp"></button>
+                  <div class="container_expand_ingre">
+                    <div class="accordion">
+                      <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="header_name">Ingredients</span>
+                        <span class="icon">+</span>
+                      </div>
+
+                      <div class="accordion-content" id="content">
+                        <p>
+                          Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices.
+                          No artificial preservatives or colors added.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- INFO BOX -->
+
+                </div>
+              </div>
+            </div>
+
+
+            <!-- BOTTOM BUTTONS -->
+            <div class="slider-nav">
+              <button class="dot active" onclick="goToSlide(0)"></button>
+              <button class="dot" onclick="goToSlide(1)"></button>
+              <button class="dot" onclick="goToSlide(2)"></button>
+            </div>
+
+          </div>
+        </div>
+
+
+      </div>
+
+
+      </section>
+
+
+      <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
+        class="shopify-section text-scrolling-parent">
+
+        <div class="text-scrolling-bottom-design">
+          <img src="valour_inside/cdn/shop/files/Union_1.png" alt="" loading="lazy" fetchpriority="low">
+        </div>
+
+        <script src="valour_inside/cdn/shop/t/8/assets/text-scrolling-javascript.js?v=178428518347066335071755164809"
+          defer></script>
+        <script src="valour_inside/cdn/shop/t/8/assets/packets-dishes-data.js?v=31334100664662409271755792980"
+          defer></script>
+
+
+      </div>
+      <div id="shopify-section-template--19781511708886__sachet_video_gjfm3w"
+        class="shopify-section sachet-video-parent">
+        <link rel="stylesheet"
+          href="valour_inside/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
+          media="print" onload="this.media='all'">
+          <div class="cf-wrapper-main">
+
+<div class="cf-wrapper">
+
+  <button class="cf-nav cf-prev">&#10094;</button>
+
+  <div class="cf-carousel">
+
+    <div class="cf-card "><video src="vid1.mp4" muted loop></video></div>
+    <div class="cf-card"><video src="vid2.mp4" muted loop></video></div>
+    <div class="cf-card  cf-active"><video src="vid2.mp4" muted loop></video></div>
+    <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
+    <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
+
+  </div>
+
+  <button class="cf-nav cf-next">&#10095;</button>
+
+</div>
+</div>
+
+        <div class="timeline-section container">
+
+          <div class="valour-banner__title_sec2">
+            <h2>One process. No confusion</h2>
+            <p>Built for consistency, every time.</p>
+          </div>
+
+          <div class="timeline">
+
+            <div class="line"></div>
+
+            <div class="timeline-item left">
+              <div class="cardxyz">
+                <img src="valour_inside/cdn/shop/files/img_1_timeline.png">
+                <h3>Fry fish</h3>
+                <p>Until light golden.</p>
+              </div>
+              <div class="dot-timeline">1</div>
+            </div>
+
+            <div class="timeline-item right">
+              <div class="cardxyz">
+                <img src="valour_inside/cdn/shop/files/img_2_timeline.png">
+                <h3>Pour Liquid spice</h3>
+                <p>3-4 Tablespoons</p>
+              </div>
+              <div class="dot-timeline">2</div>
+            </div>
+
+            <div class="timeline-item left">
+              <div class="cardxyz">
+                <img src="valour_inside/cdn/shop/files/img_3_timeline.png">
+                <h3>Simmer</h3>
+                <p>5-7 minutes</p>
+              </div>
+              <div class="dot-timeline">3</div>
+            </div>
+
+          </div>
+        </div>
+
+
+
+
+      </div>
+      <div id="shopify-section-template--19781511708886__why_you_cheffin_KRe4nc"
+        class="shopify-section why-you-cheffin-parent">
+        <link rel="stylesheet"
+          href="valour_inside/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
+          media="print" onload="this.media='all'">
+        <div class="satchet-vidoe-bottom-design">
+          <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
+            fetchpriority="low">
+        </div>
+
+        <div class="scroll-container">
+          <section class="section why-you-cheffin">
+            <div class="smoke-content-parent">
+
+
+
+              <div class="" id="textRevealContainer">
+
+                <div class="text-container-heading" id="textContent">
+                  <div class="valour-banner__inner22">
+                    <div class="valour-banner__content22">
+                      <h2 class="valour-banner__title line-1">Why You Win,</h2>
+                      <h2 class="valour-banner__title line-2">With Liquid spice.</h2>
+                    </div>
+
+                  </div>
+                </div>
+                <!-- <h1 class="taste-heading" id="textContent">
+         
+          <span class="line-1"> We own liquid spice</span>
+          <span class="line-2">We simplify spices</span>
+          <span class="line-3">into one clean bottle</span>
+
+
+        </h1>
+        <div class="blush-container"> No Noise. No Mess..</div> -->
+              </div>
+
+            </div>
+
+            <div class="scrollable-cards">
+              <div class="card card-1">
+                <div class="image">
+                  <img style="object-fit: cover; background: #fff;"
+                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/e817da17c99a76b794e3b1aa261e0f135a951f07.jpg?v=1754121319"
+                    height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
+                </div>
+                <div class="text-container">
+                  <p>3-Step Cheffin Experience</p>
+                </div>
+              </div>
+
+              <div class="card card-2">
+                <div class="image">
+                  <img style="object-fit: cover; background: #fff;"
+                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/281d8b0ef83dac01348ae5162c898c1dc8220506.jpg?v=1754121320"
+                    height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
+                </div>
+                <div class="text-container">
+                  <p >Easy Customisation for Home-Style Goodness</p>
+                </div>
+              </div>
+              <div class="card card-3">
+                <div class="image">
+                  <img style="object-fit: cover; background: #fff;"
+                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/e7b6bfb50c774c945fa0eeef7e73c7389e5aeaf5.jpg?v=1754121320"
+                    height="456" width="100%" alt="Masala tikka">
+                </div>
+                <div class="text-container">
+                  <p >Restaurant-Style Taste in Just 10 Minutes</p>
+                </div>
+              </div>
+              <div class="card card-4">
+                <div class="image">
+                  <img style="object-fit: cover; background: #fff;"
+                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/878b53741202cd070d839a4ca21facfb7e739c5c.jpg?v=1754121320"
+                    height="456" width="100%" alt="Chef cooking" loading="lazy" fetchpriority="low">
+                </div>
+                <div class="text-container">
+                  <p >All-Natural Ingredients</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section why-your-kit">
+            <div class="smoke-content-parent">
+              <div class="text-container-heading">
+                <div class="why-you-cheffin-heading">
+                  <div class="first-heading">
+                    <span class="first-word">Why LiquidSpice</span>
+                    <span class="second-word">Delivers Way More</span>
+                    <span class="second-word">You’d Expect?</span>
+
+                  </div>
+                  <!-- <div class="content-box content-box-green"></div>
+                  <div class="second-heading">
+                    <span class="first-word">Than</span>
+                  </div>
+                  <div class="content-box content-box-second">You’d Expect?</div> -->
+                </div>
+              </div>
+            </div>
+
+            <div class="scrollable-cards">
+              <div class="card card-1">
+                <div class="image image-content">
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.webp"
+                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                <div class="text-container" >
+                  <p style="color: #FADA79;">Portion Magic</p>
+                </div>
+                  <div class="text-container-card">
+                    <h2>More to share with your loved ones:</h2>
+                    <p>A generous meal of 400 g – 450 g that satisfies 2-3 people</p>
+                  </div>
+                </div>
+
+              </div>
+              <div class="card card-1">
+                <div class="image image-content">
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.webp"
+                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                <div class="text-container" >
+                  <p style="color: #FADA79;">Portion Magic</p>
+                </div>
+                  <div class="text-container-card">
+                    <h2>More to share with your loved ones:</h2>
+                    <p>A generous meal of 400 g – 450 g that satisfies 2-3 people</p>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="card card-2">
+                <div class="image image-content">
+                  <div class="text-container-card">
+                    <h2>Real satisfaction of cooking something amazing</h2>
+                    <p>Fresh ingredients, your control, your timing.</p>
+                  </div>
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect_1.webp"
+                    height="228" width="100%" alt="Intersect (1)" loading="lazy" fetchpriority="low">
+                </div>
+
+              </div>
+
+              <div class="card card-3">
+                <div class="image image-content">
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect_3.webp"
+                    height="228" height="228" width="100%" alt="Intersect (2)" loading="lazy" fetchpriority="low">
+                  <div class="text-container-card">
+                    <h2>High protein, trans fat-free goodness</h2>
+                    <p>Quality nutrition that tastes like pure indulgence.</p>
+                  </div>
+                </div>
+                <div class="text-container">
+                  <p style="color: #FADA79;">Nutrition Win</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <script src="valour_inside/cdn/shop/t/8/assets/why-you-cheffin-javascript.js?v=69935404545724201661756093773"
+          defer></script>
+
+
+      </div>
+      <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
+        class="shopify-section testimonial-sectionxyz-parent">
+        <link rel="stylesheet"
+          href="valour_inside/cdn/shop/t/8/assets/testimonial-sectionxyz-stylesheet.css?v=91204637565225421031755792981"
+          media="print" onload="this.media='all'">
+
+
+
+        <div class="testimonial-sectionxyz">
+
+          <div class="header">
+            <h2>Customers <span>love us.</span></h2>
+
+
+          </div>
+
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="track">
+
+              <!-- ITEM -->
+              <div class="carousel-item">
+                <div class="image-grid">
+                  <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                  </div>
+                </div>
+
+                <div class="review-card">
+                  <h4>Rachel Nguyen</h4>
+                  <span>Verfied customer</span>
+                  <p class="stars_review">★★★★★</p>
+                  <p class="review_rev">Amazing experience with the product...</p>
+                </div>
+              </div>
+
+              <!-- ITEM -->
+              <div class="carousel-item">
+                <div class="image-grid">
+                  <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                  </div>
+                </div>
+
+                <div class="review-card">
+                  <h4>Rachel Nguyen</h4>
+                  <span>Verfied customer</span>
+                  <p class="stars_review">★★★★★</p>
+                  <p class="review_rev">Amazing experience with the product...</p>
+                </div>
+              </div>
+
+              <!-- ITEM -->
+              <div class="carousel-item">
+                <div class="image-grid">
+                  <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                  </div>
+                </div>
+
+                <div class="review-card">
+                  <h4>Another User</h4>
+                  <span>Verfied customer</span>
+                  <p class="stars_review">★★★★★</p>
+                  <p class="review_rev">Amazing experience with the product...</p>
+                </div>
+              </div>
+
+            </div>
+            <div class="cont_nav_crousel">
+              <div class="nav">
+                <button id="prev"><span class="material-symbols-outlined">
+                    arrow_back
+                  </span></button>
+                <button id="next"><span class="material-symbols-outlined">
+                    arrow_forward
+                  </span></button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="testimonial-top-design">
+          <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
+            fetchpriority="low">
+        </div>
+
+
+        <div id="shopify-section-template--19781511708886__faq_section_tnj3kT"
+          class="shopify-section faq-section-parent">
+          <link rel="stylesheet"
+            href="valour_inside/cdn/shop/t/8/assets/faq-section-stylesheet.css?v=172775708833283730791755164806"
+            media="print" onload="this.media='all'">
+          <script src="valour_inside/cdn/shop/t/8/assets/faq-section-animation.js?v=53513994526984560201754340011"
+            defer></script>
+
+          <div class="faq-section">
+            <div class="faq-heading-container">
+              <span class="faq-heading">Curious About Cheffin’?</span>
+              <span class="faq-subheading">Join the Club.</span>
+              <span class="faq-description">Nobody expects perfectly seasoned questions. </span>
+            </div>
+            <div class="faq-container">
+
+
+              <div class="faq-item" data-faq-index="1">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">How quickly can I prepare a delicious meal?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>A healthy, clean and customised meal can be ready in just 10minutes. Step-by-step instructions
+                      included with every ready to cook food kit.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="2">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">How is this different from regular heat-and-eat meals?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>You actually cook this. You control the spice, add your fresh ingredients, and own the final
+                      result.
+                      It's the joy of cooking without the complexity.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="3">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">Do I really get restaurant-style taste at home?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>You get recipes from chefs who've powered top restaurant chains for 20+ years. Same techniques,
+                      same
+                      authentic flavours - just made by you.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="4">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">Is this ready to cook kit just for dinner?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>You get convenience for any moment – weekend brunches, late-night cravings, surprise guests, or
+                      when
+                      you just want to treat yourself.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="5">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">Are these actually preservative-free?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>You get long shelf life through retort sterilization (smart science, no chemicals). No
+                      preservatives,
+                      no artificial flavours or colours.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="6">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">How much control do I actually have?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>You decide the spice level, add your own fresh ingredients like cream and vegetables, and make it
+                      exactly how you want it. You're the chef, Cheffin' is your sous-chef.</p>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="faq-item" data-faq-index="7">
+                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                  <span class="faq-icon">●</span>
+                  <span class="faq-question-text">How many people does each kit serve?</span>
+                  <span class="faq-toggle">
+                    <span class="faq-plus">
+                      <!-- Plus SVG will go here -->
+                      +
+                    </span>
+                    <span class="faq-minus">
+                      <!-- Minus SVG will go here -->
+                      −
+                    </span>
+                  </span>
+                </div>
+                <div class="faq-answer">
+                  <div class="faq-answer-content">
+                    <p>Each ready-to-cook Cheffin' kit is designed to feed 2-3 hungry souls (approximately 400-450g,
+                      making
+                      it perfect for dinners, small family gatherings, or strategically planned leftovers that'll make
+                      tomorrow's lunch the highlight of your day.</p>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+
+
+        </div>
+        <!-- BEGIN sections: footer-group -->
+        <div id="shopify-section-sections--19781511348438__footer"
+          class="shopify-section shopify-section-group-footer-group">
+
+
+          <footer class="footer">
+            <div class="footer-top">
+
+              <!-- LEFT -->
+              <div class="footer-left">
+                <img src="your-logo.png" alt="Logo" class="footer-logo">
+
+                <p class="footer-desc">
+                  This is a demo store by Clean Canvas. All images and video content
+                  courtesy of Shutterstock and Pexels, and are not for re-use on other stores.
+                </p>
+
+                <!-- SOCIAL -->
+                <div class="footer-social">
+                  <span class="material-symbols-outlined">facebook</span>
+                  <span class="material-symbols-outlined">smart_display</span> <!-- YouTube -->
+                  <span class="material-symbols-outlined">photo_camera</span> <!-- Instagram -->
+                  <span class="material-symbols-outlined">close</span>
+                </div>
+
+                <!-- DROPDOWNS -->
+
+              </div>
+
+              <!-- RIGHT -->
+              <div class="footer-links">
+
+                <div class="footer-col">
+                  <h4>All Departments</h4>
+                  <a href="#">Fruit & Vegetables</a>
+                  <a href="#">Meat & Fish</a>
+                  <a href="#">Cheese & Dairy</a>
+                  <a href="#">Store Cupboard</a>
+                  <a href="#">The Bakery</a>
+                </div>
+
+                <div class="footer-col">
+                  <h4>Help & Support</h4>
+                  <a href="#">Customer Service</a>
+                  <a href="#">Contact Us</a>
+                  <a href="#">About us</a>
+                  <a href="#">Returns Info</a>
+                </div>
+
+
+
+              </div>
+
+            </div>
+
+            <!-- BOTTOM -->
+            <div class="footer-bottom">
+              <p>© 2026 Canopy Theme Canopy. Powered by Shopify</p>
+
+              <div class="footer-policy">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Shipping & Returns</a>
+              </div>
+            </div>
+          </footer>
+
+
+
+
+        </div>
+        <!-- END sections: footer-group -->
+  </main>
+<div class="cf-popup-overlay" id="cfPopupOverlay">
+  <div class="cf-popup-content">
+
+    <video id="cfPopupVideo" controls autoplay></video>
+
+    <button class="cf-popup-close" id="cfPopupClose">&times;</button>
+
+  </div>
+</div>
+  <script>
+
+const cfPopupOverlay = document.getElementById('cfPopupOverlay');
+const cfPopupVideo = document.getElementById('cfPopupVideo');
+const cfPopupClose = document.getElementById('cfPopupClose');
+
+/* 🎬 OPEN POPUP */
+document.querySelectorAll('.cf-card video').forEach((video) => {
+
+  video.parentElement.addEventListener('click', () => {
+
+    const source = video.querySelector('source')?.src || video.src;
+
+    cfPopupVideo.src = source;
+    cfPopupOverlay.style.display = 'flex';
+
+    cfPopupVideo.play();
+  });
+
+});
+
+/* ❌ CLOSE POPUP */
+function closePopup() {
+  cfPopupOverlay.style.display = 'none';
+  cfPopupVideo.pause();
+  cfPopupVideo.src = "";
+}
+
+cfPopupClose.onclick = closePopup;
+
+cfPopupOverlay.onclick = (e) => {
+  if (e.target === cfPopupOverlay) {
+    closePopup();
+  }
+};
+
+/* ⌨️ ESC KEY CLOSE */
+document.addEventListener('keydown', (e) => {
+  if (e.key === "Escape") {
+    closePopup();
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// for reel slider
+const cf3d_cards = document.querySelectorAll('.cf-card');
+let cf3d_currentIndex = Math.floor(cf3d_cards.length / 2);
+
+let cf3d_autoSlideTimer;
+let cf3d_isAnimating = false; // 🔥 lock to prevent overlap
+
+const cf3d_SLIDE_INTERVAL = 4000;
+const cf3d_ANIMATION_TIME = 600; // match CSS transition
+
+/* 🎯 UPDATE FUNCTION */
+function cf3d_updateCarousel() {
+
+  cf3d_isAnimating = true;
+
+  const cf3d_offsetX = window.innerWidth <= 480 ? 120 : 180;
+  const cf3d_rotateY = window.innerWidth <= 480 ? 20 : 35;
+
+  cf3d_cards.forEach((cf3d_card, cf3d_i) => {
+
+    const cf3d_diff = cf3d_i - cf3d_currentIndex;
+    const cf3d_video = cf3d_card.querySelector('video');
+
+    cf3d_card.classList.remove('cf-active');
+
+    if (cf3d_diff === 0) {
+      cf3d_card.style.transform = `
+        translateX(0px)
+        scale(1.05)
+        rotateY(0deg)
+      `;
+      cf3d_card.classList.add('cf-active');
+
+      // play safely
+      cf3d_video.play().catch(() => {});
+
+    } else {
+      cf3d_card.style.transform = `
+        translateX(${cf3d_diff * cf3d_offsetX}px)
+        scale(0.85)
+        rotateY(${cf3d_diff > 0 ? -cf3d_rotateY : cf3d_rotateY}deg)
+      `;
+      cf3d_video.pause();
+      cf3d_video.currentTime = 0;
+    }
+
+  });
+
+  // 🔓 unlock after animation completes
+  setTimeout(() => {
+    cf3d_isAnimating = false;
+  }, cf3d_ANIMATION_TIME);
+}
+
+/* ▶️ AUTO SLIDE */
+function cf3d_startAutoSlide() {
+  cf3d_clearAutoSlide(); // 🔥 prevent stacking
+
+  cf3d_autoSlideTimer = setInterval(() => {
+
+    if (cf3d_isAnimating) return; // 🔥 prevent conflict
+
+    cf3d_goNext();
+
+  }, cf3d_SLIDE_INTERVAL);
+}
+
+/* 🛑 CLEAR TIMER */
+function cf3d_clearAutoSlide() {
+  if (cf3d_autoSlideTimer) {
+    clearInterval(cf3d_autoSlideTimer);
+    cf3d_autoSlideTimer = null;
+  }
+}
+
+/* 🔁 SAFE NAV FUNCTIONS */
+function cf3d_goNext() {
+  if (cf3d_isAnimating) return;
+
+  cf3d_currentIndex =
+    cf3d_currentIndex < cf3d_cards.length - 1
+      ? cf3d_currentIndex + 1
+      : 0;
+
+  cf3d_updateCarousel();
+}
+
+function cf3d_goPrev() {
+  if (cf3d_isAnimating) return;
+
+  cf3d_currentIndex =
+    cf3d_currentIndex > 0
+      ? cf3d_currentIndex - 1
+      : cf3d_cards.length - 1;
+
+  cf3d_updateCarousel();
+}
+
+/* ⏹ RESET TIMER (debounced) */
+function cf3d_resetAutoSlide() {
+  cf3d_clearAutoSlide();
+
+  // 🔥 delay restart slightly to avoid clash
+  setTimeout(() => {
+    cf3d_startAutoSlide();
+  }, 1000);
+}
+
+/* 👉 BUTTONS */
+document.querySelector('.cf-next').onclick = () => {
+  cf3d_goNext();
+  cf3d_resetAutoSlide();
+};
+
+document.querySelector('.cf-prev').onclick = () => {
+  cf3d_goPrev();
+  cf3d_resetAutoSlide();
+};
+
+/* ⏸ HOVER PAUSE */
+const cf3d_wrapper = document.querySelector('.cf-wrapper');
+
+cf3d_wrapper.addEventListener('mouseenter', () => {
+  cf3d_clearAutoSlide();
+});
+
+cf3d_wrapper.addEventListener('mouseleave', () => {
+  cf3d_startAutoSlide();
+});
+
+/* 🚀 INIT */
+cf3d_updateCarousel();
+cf3d_startAutoSlide();
+
+// end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    document.querySelectorAll('.product_slide .left').forEach((gallery) => {
+      const thumbnails = gallery.querySelectorAll('.thumbnails img');
+      console.log(thumbnails)
+      const mainImage = gallery.querySelector('.main-image img');
+
+      // Set default active (optional but recommended)
+      thumbnails[0].classList.add('active');
+
+      thumbnails.forEach((thumb) => {
+        thumb.addEventListener('click', () => {
+          // Remove active from all thumbnails in THIS gallery only
+          thumbnails.forEach((t) => t.classList.remove('active'));
+
+          // Add active to clicked one
+          thumb.classList.add('active');
+
+          // Fade out
+          mainImage.classList.add('fade');
+
+          // Change image after slight delay
+          setTimeout(() => {
+            mainImage.src = thumb.src;
+
+            // Fade back in
+            mainImage.classList.remove('fade');
+          }, 200);
+        });
+      });
+    });
+
+
+
+
+
+
+
+
+
+
+    // for timeline dot
+
+    const items = document.querySelectorAll(".timeline-item");
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    items.forEach(item => observer.observe(item));
+
+
+
+    // end 
+
+    const track = document.getElementById("track");
+    const next = document.getElementById("next");
+    const prev = document.getElementById("prev");
+
+    let index = 0;
+
+    function getVisibleItems() {
+      return window.innerWidth <= 900 ? 1 : 2;
+    }
+
+    function updateSlide() {
+      const item = document.querySelector(".carousel-item");
+      console.log(document.querySelector(".carousel-item"))
+      if (!item) return;
+
+      const trackStyles = window.getComputedStyle(track);
+      const gap = parseFloat(trackStyles.gap) || 0;
+
+      const itemWidth = item.offsetWidth + gap;
+      console.log(track)
+
+      track.style.transform = `translateX(-${index * itemWidth}px)`;
+    }
+
+    /* NEXT */
+    next.addEventListener("click", () => {
+      const visibleItems = getVisibleItems();
+      const totalItems = track.children.length;
+      console.log(visibleItems, totalItems)
+      if (index < totalItems - visibleItems) {
+        index++;
+        updateSlide();
+      }
+    });
+
+    /* PREV */
+    prev.addEventListener("click", () => {
+      if (index > 0) {
+        index--;
+        updateSlide();
+      }
+    });
+
+    /* AUTO FIX ON RESIZE */
+    window.addEventListener("resize", () => {
+      const visibleItems = getVisibleItems();
+      const totalItems = track.children.length; 4
+
+      if (index > totalItems - visibleItems) {
+        index = totalItems - visibleItems;
+      }
+
+      updateSlide();
+    });
+
+    /* INITIAL LOAD */
+    window.addEventListener("load", updateSlide);
+
+
+
+    function toggleAccordion(element) {
+      const accordion = element.closest(".accordion");
+      const icon = element.querySelector(".icon");
+
+      accordion.classList.toggle("active");
+
+    }
+
+
+    // slidier beign
+    let currentSlide = 0;
+    const slides = document.querySelectorAll(".product_slide");
+    const dots = document.querySelectorAll(".dot");
+    const slider = document.querySelector(".slider");
+
+    let autoSlideInterval = null;
+    const intervalTime = 4000;
+
+    /* CHANGE SLIDE (CORE FUNCTION) */
+    function changeSlide(index) {
+      slides[currentSlide].classList.remove("active");
+      dots[currentSlide].classList.remove("active");
+
+      currentSlide = index;
+
+      slides[currentSlide].classList.add("active");
+      dots[currentSlide].classList.add("active");
+    }
+
+    /* MANUAL CLICK */
+    function goToSlide(index) {
+      changeSlide(index);
+      restartAutoSlide(); // only here
+    }
+
+    /* AUTO SLIDE */
+    function startAutoSlide() {
+      stopAutoSlide(); // ensure no duplicate
+
+      autoSlideInterval = setInterval(() => {
+        let next = (currentSlide + 1) % slides.length;
+        changeSlide(next)
+      }, intervalTime);
+    }
+
+    /* STOP */
+    function stopAutoSlide() {
+      if (autoSlideInterval) {
+        clearInterval(autoSlideInterval);
+        autoSlideInterval = null;
+      }
+    }
+
+    /* RESTART */
+    function restartAutoSlide() {
+      stopAutoSlide();
+      startAutoSlide();
+    }
+
+    /* INIT */
+    window.addEventListener('load', function () {
+      startAutoSlide();
+    });
+
+    // ============================
+    // HOLD TO PAUSE (STABLE)
+    // ============================
+
+    let isHolding = false;
+
+    /* HOLD */
+    function handleHoldStart() {
+      isHolding = true;
+      stopAutoSlide();
+    }
+
+    /* RELEASE */
+    function handleHoldEnd() {
+      if (isHolding) {
+        isHolding = false;
+        startAutoSlide();
+      }
+    }
+
+    /* EVENTS */
+    slider.addEventListener("mousedown", handleHoldStart);
+    slider.addEventListener("touchstart", handleHoldStart);
+
+    slider.addEventListener("mouseup", handleHoldEnd);
+    slider.addEventListener("mouseleave", handleHoldEnd);
+    slider.addEventListener("touchend", handleHoldEnd);
+
+
+
+    // slidier end
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const loadingPhase = document.getElementById('loading-phase');
+      const mainContent = document.getElementById('main-content');
+      const loadingImage = document.querySelector('.loading-video'); // Now it's an image/GIF
+
+      // No need to play anything since it's a GIF that auto-plays
+      console.log('Loading phase initialized with 2-second GIF');
+
+      // Show main content and hide loading after 2 seconds (matching GIF duration)
+      setTimeout(function () {
+        // Fade out loading phase
+        loadingPhase.style.transition = 'opacity 0.5s ease-out';
+        loadingPhase.style.opacity = '0';
+
+        setTimeout(function () {
+          // Hide loading phase completely and show main content
+          loadingPhase.style.display = 'none';
+          mainContent.style.display = 'block';
+
+          // Fade in main content
+          mainContent.style.opacity = '0';
+          mainContent.style.transition = 'opacity 0.5s ease-in';
+          setTimeout(function () {
+            mainContent.style.opacity = '1';
+          }, 50);
+        }, 500); // Wait for fade out to complete
+      }, 2000); // Wait for GIF to complete (2 seconds)
+    });
+  </script>
+</body>
+
+</html>
