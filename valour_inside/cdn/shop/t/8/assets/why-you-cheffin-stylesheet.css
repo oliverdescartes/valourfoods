@@ -191,7 +191,11 @@
 
 @media(max-width:768px) {
     .why-you-cheffin .scrollable-cards .card .text-container {
-        font-size: 18px
+        font-size: 18px;width:100%
+    }
+    .text-container p{
+        font-size: 18px;
+
     }
 }
 
@@ -283,9 +287,7 @@
     transform: translate(-10vw)
 }
 
-.why-you-cheffin .card-3 {
-    transform: rotate(7deg) translate(10vw)
-}
+
 
 .why-you-cheffin .card-4 {
     transform: translate(30vw)
@@ -304,15 +306,14 @@
     top: 20%
 }
 
-.why-your-kit .scrollable-cards .card .image-content {
+.why-your-kit .scrollable-cards .card{
     border-radius: 35px;
-    border: 1px solid white;
     background-color: #fff;
-    font-family: Parkinsans-Bold
+    font-family: Parkinsans-Bold;
 }
 
 .why-your-kit .scrollable-cards .card .image-content img {
-    height: 50%
+    height: 240px
 }
 
 .why-your-kit .scrollable-cards .card-1 .text-container,
@@ -320,18 +321,10 @@
     position: relative;
     height: fit-content;
     border-radius: 0;
-    background-repeat: repeat;
-    box-shadow: -5px 7px #00000026;
+    background-repeat: repeat;padding-top: 53px;
 }
 
-.why-your-kit .scrollable-cards .card-2 .text-container {
-    bottom: 16px;
-    height: fit-content;
 
-    border-radius: 0;
-    background-repeat: repeat;
-    box-shadow: -5px 7px #00000026
-}
 
 .why-your-kit .scrollable-cards .text-container {
     font-size: 35px;
@@ -342,29 +335,25 @@
     min-width: 75%
 }
 
-.why-your-kit .scrollable-cards .card-1 .text-container-card {
-    color: #b23b35
-}
 
-.why-your-kit .scrollable-cards .card-2 .text-container-card {
-    color: #1eaf3d
-}
-
-.why-your-kit .scrollable-cards .card-3 .text-container-card {
-    color: #7c3699
-}
 
 .why-your-kit .scrollable-cards .text-container-card {
     padding: 32px;
-    text-align: center
+    text-align: center;
+     padding: 24px;
+        padding-bottom: 46px;
+        text-align: justify;
 }
 
 .why-your-kit .scrollable-cards .text-container-card h2 {
-    font-size: 22px
+    font-size: 22px;       
+        font-family: 'Inter';
+        font-weight: 500;
+    
 }
 
 .why-your-kit .scrollable-cards .text-container-card p {
-    font-size: 18px
+    font-size: 18px;
 }
 
 .why-your-kit .scrollable-cards {
@@ -466,8 +455,8 @@
 @media(max-width:750px) {
     .why-your-kit .scrollable-cards .card .text-container {
         padding: 9px 20px;
-        height: 44px !important;
-        max-width: 216px
+        padding-top: 53px;
+        height: 44px !important;width:100%
     }
 
     .why-you-cheffin .second-heading {
@@ -479,7 +468,9 @@
     }
 
     .why-your-kit .scrollable-cards .text-container-card h2 {
-        font-size: 20px
+                font-size: 15px;
+        font-family: 'Inter';
+        font-weight: 500;
     }
 
     .why-your-kit .scrollable-cards .text-container-card p {
@@ -603,17 +594,7 @@
         border-radius: 0;
         z-index: 10;
         position: relative;
-        -webkit-user-drag: none;
-        -khtml-user-drag: none;
-        -moz-user-drag: none;
-        -o-user-drag: none
-    }
-
-    .why-your-kit .scrollable-cards .card-2 .text-container {
-        height: fit-content;
-        border-radius: 0;
-        z-index: 10;
-        position: relative;
+        padding-top: 53px;
         -webkit-user-drag: none;
         -khtml-user-drag: none;
         -moz-user-drag: none;
@@ -666,7 +647,7 @@
     }
 
     .why-your-kit .scrollable-cards .text-container-card {
-        padding: 24px
+        padding: 24px;      padding-bottom: 46px;
     }
 
     .why-your-kit .scrollable-cards::-webkit-scrollbar {
@@ -750,7 +731,7 @@
 }
 
 .why-your-kit .scrollable-cards .card .image-content p {
-    font-family: Parkinsans-Medium
+    font-family: 'Inter';border-bottom: 1px solid #000000;
 }
 
 .why-you-cheffin .text-container-heading .why-you-cheffin-heading .first-heading span,

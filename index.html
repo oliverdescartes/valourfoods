@@ -65,162 +65,179 @@
 </head>
 <style>
 
-/* OVERLAY */
-.cf-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.8);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
+
+html {
+  scroll-behavior: smooth;
 }
+  /* OVERLAY */
+  .cf-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
 
-/* CONTENT */
-.cf-popup-content {
-  position: relative;
-  width: 90%;
-  max-width: 400px;
-}
+  /* CONTENT */
+  .cf-popup-content {
+    position: relative;
+    width: 90%;
+    max-width: 400px;
+  }
 
-/* VIDEO */
-.cf-popup-content video {
-  width: 100%;
-  border-radius: 16px;
-}
+  /* VIDEO */
+  .cf-popup-content video {
+    width: 100%;
+    border-radius: 16px;
+  }
 
-/* CLOSE BUTTON */
-.cf-popup-close {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: white;
-  border: none;
-  font-size: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 5px 10px;
-}
-
-
+  /* CLOSE BUTTON */
+  .cf-popup-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: white;
+    border: none;
+    font-size: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 5px 10px;
+  }
 
 
 
 
 
 
-/* WRAPPER */
-.cf-wrapper {
-  position: relative;
-  width: 59vw;
-  height: 500px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-.cf-wrapper-main {
+
+
+  /* WRAPPER */
+  .cf-wrapper {
+    position: relative;
+    width: 59vw;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .cf-wrapper-main {
     display: flex;
     justify-content: center;
     padding-top: 200px;
-}
-/* CAROUSEL */
-.cf-carousel {
-  position: relative;
-  width: 300px;
-  height: 450px;
-}
+  }
 
-/* CARD */
-.cf-card {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: all 0.6s ease;
+  /* CAROUSEL */
+  .cf-carousel {
+    position: relative;
+    width: 300px;
+    height: 450px;
+  }
 
-  filter: blur(4px);
-  opacity: 0.5;
-  transform: scale(0.85);
-}
+  /* CARD */
+  .cf-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.6s ease;
 
-.cf-card {
-  filter: blur(4px);
-  opacity: 0.5;
-  transform: scale(0.85);
-  z-index: 1;
-  transition: all 0.6s ease;
-}
-.cf-card video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-}
+    filter: blur(4px);
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
 
+  .cf-card {
+    filter: blur(4px);
+    opacity: 0.5;
+    transform: scale(0.85);
+    z-index: 1;
+    transition: all 0.6s ease;
+  }
 
-/* ACTIVE (center card) */
-.cf-card.cf-active {
-  filter: blur(0);
-  opacity: 1;
-  transform: scale(1.05);
-  z-index: 5;
-}
-
-/* NAV */
-.cf-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 28px;
-  background: rgba(255,255,255,0.2);
-  border: none;
-  padding: 10px;
-  width: 59px;
-  cursor: pointer;
-  z-index: 10;
-  border-radius: 50%;
-}
-
-.cf-prev { left: 20px; }
-.cf-next { right: 20px; }
+  .cf-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
 
 
-@media (max-width: 900px) {
+  /* ACTIVE (center card) */
+  .cf-card.cf-active {
+    filter: blur(0);
+    opacity: 1;
+    transform: scale(1.05);
+    z-index: 5;
+  }
 
-.cf-wrapper {
-    width: 70vw;
-   }
-}
-@media (max-width: 760px) {
-.cf-wrapper {
-    width: 82vw;
-   }
-}
-@media (max-width: 500px) {
-.cf-prev {
-    left: 4px;
-}
-.cf-next {
-    right: 5px;
-}
+  /* NAV */
+  .cf-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    padding: 10px;
+    width: 59px;
+    cursor: pointer;
+    z-index: 10;
+    border-radius: 50%;
+  }
+
+  .cf-prev {
+    left: 20px;
+  }
+
+  .cf-next {
+    right: 20px;
+  }
+
+
+  @media (max-width: 900px) {
+
     .cf-wrapper {
-        width: 92vw;
+      width: 70vw;
     }
   }
-/* 📱 MOBILE */
 
-@media (max-width: 480px) {
-  .cf-carousel {
-    width: 220px;
-    height: 380px;
+  @media (max-width: 760px) {
+    .cf-wrapper {
+      width: 82vw;
+    }
   }
 
-}
+  @media (max-width: 500px) {
+    .cf-prev {
+      left: 4px;
+    }
+
+    .cf-next {
+      right: 5px;
+    }
+
+    .cf-wrapper {
+      width: 92vw;
+    }
+  }
+
+  /* 📱 MOBILE */
+
+  @media (max-width: 480px) {
+    .cf-carousel {
+      width: 220px;
+      height: 380px;
+    }
+
+  }
 
 
 
@@ -235,27 +252,28 @@
 
 
 
-/*first slider css*/
+  /*first slider css*/
 
 
-/* ===== FONT IMPORT (recommended) ===== */
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap');
+  /* ===== FONT IMPORT (recommended) ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap');
 
-.banner-content {
-  position: absolute;
-  top: 18%;
-  left: 10%;
+  .banner-content {
+    position: absolute;
+    top: 18%;
+    left: 10%;
 
-  font-family: 'Anton', sans-serif;
-  color: #2b0d0d;
-}
-.banner-slide {
-  position: relative;
-}
+    font-family: 'Anton', sans-serif;
+    color: #2b0d0d;
+  }
+
+  .banner-slide {
+    position: relative;
+  }
 
 
-/* ===== MAIN TITLE ===== */
-.hero-title {
+  /* ===== MAIN TITLE ===== */
+  .hero-title {
     font-family: 'Anton', sans-serif;
     font-size: 7rem;
     line-height: 1;
@@ -263,9 +281,10 @@
     margin: 0;
     color: #3b0a0a;
     text-align: justify;
-}
-/* ===== SUBTITLE ===== */
-.hero-subtitle {
+  }
+
+  /* ===== SUBTITLE ===== */
+  .hero-subtitle {
     font-size: 4.4rem;
     font-weight: 700;
     margin-top: 16px;
@@ -273,37 +292,38 @@
     font-family: 'Inter', sans-serif;
     color: #7a3e2f;
     font-family: 'Anton', sans-serif;
-}
-/* ===== HIGHLIGHT TEXT ===== */
-.hero-highlight {
+  }
+
+  /* ===== HIGHLIGHT TEXT ===== */
+  .hero-highlight {
     font-size: 3rem;
     font-weight: 700;
     margin-bottom: 10px;
     text-shadow: none;
     color: #2b0d0d;
     font-family: 'Inter', sans-serif;
-}
+  }
 
-/* ===== DESCRIPTION ===== */
-.hero-description {
+  /* ===== DESCRIPTION ===== */
+  .hero-description {
     font-size: 2.4rem;
     font-weight: 400;
     line-height: 1.5;
     width: 100%;
     color: #5a3a2e;
     font-family: 'Inter', sans-serif;
-}
+  }
 
-/*end*/
+  /*end*/
 
 
-/* ===== CTA POSITIONING ===== */
-.banner-slide {
-  position: relative;
-}
+  /* ===== CTA POSITIONING ===== */
+  .banner-slide {
+    position: relative;
+  }
 
-/* ===== CTA POSITIONING (FIXED) ===== */
-.cta-container {
+  /* ===== CTA POSITIONING (FIXED) ===== */
+  .cta-container {
     display: flex;
     gap: 32px;
     align-items: center;
@@ -311,233 +331,250 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.4s ease;
-}
-
-.banner-slide.active .cta-container {
-  opacity: 1;
-  pointer-events: auto;
-}
-/* show only on active */
-
-/* show only on active slide */
-.banner-slide.active .cta-container {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ===== BUTTON BASE ===== */
-.btn {
-  text-decoration: none;
-  font-family: sans-serif;
-  font-size: 18px;
-  transition: all 0.3s ease;
-}
-
-/* ===== PRIMARY BUTTON ===== */
-.btn.primary {
-  background: #000;
-  color: #fff;
-  padding: 16px 28px;
-  border-radius: 40px;
-  box-shadow: -4px 9px 11px rgba(0,0,0,0.07);
-
-  position: relative;
-  overflow: hidden;
-}
-
-/* hover */
-.btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: -4px 14px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* click */
-.btn.primary:active {
-  transform: translateY(1px) scale(0.98);
-}
-
-/* shine */
-.btn.primary::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -75%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
-  transform: skewX(-20deg);
-}
-
-.btn.primary:hover::after {
-  animation: shine 0.8s ease;
-}
-
-@keyframes shine {
-  100% {
-    left: 125%;
   }
-}
 
-@media (max-width: 768px) {
+  .banner-slide.active .cta-container {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* show only on active */
+
+  /* show only on active slide */
+  .banner-slide.active .cta-container {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ===== BUTTON BASE ===== */
+  .btn {
+    text-decoration: none;
+    font-family: sans-serif;
+    font-size: 18px;
+    transition: all 0.3s ease;
+  }
+
+  /* ===== PRIMARY BUTTON ===== */
+  .btn.primary {
+    background: #000;
+    color: #fff;
+    padding: 16px 28px;
+    border-radius: 40px;
+    box-shadow: -4px 9px 11px rgba(0, 0, 0, 0.07);
+
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* hover */
+  .btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: -4px 14px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* click */
+  .btn.primary:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* shine */
+  .btn.primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: skewX(-20deg);
+  }
+
+  .btn.primary:hover::after {
+    animation: shine 0.8s ease;
+  }
+
+  @keyframes shine {
+    100% {
+      left: 125%;
+    }
+  }
+
+  @media (max-width: 768px) {
     .banner-content {
-        top: 20%;
-        left: 10%;
-        max-width: 90%;
+      top: 20%;
+      left: 10%;
+      max-width: 90%;
     }
 
-  .cta-container {
-    gap: 16px;
-  }
-  .banner-slide picture{
-margin-top: 64px;
+    .cta-container {
+      gap: 16px;
+    }
 
-  }
-.hero-title {
-    font-size: 4rem;}
-
-.hero-subtitle {
-    font-size: 2.6rem;}
-
-.hero-description {
-    font-size: 1.8rem;}
-
-.hero-highlight {
-    font-size: 1.7rem;}
-
-
-}
-@media (max-width: 500px) {
     .hero-title {
-        font-size: 2.6rem;
+      font-size: 4rem;
     }
+
+    .hero-subtitle {
+      font-size: 2.6rem;
+    }
+
+    .hero-description {
+      font-size: 1.8rem;
+    }
+
+    .hero-highlight {
+      font-size: 1.7rem;
+    }
+
+
+  }
+
+  @media (max-width: 500px) {
+    .hero-title {
+      font-size: 2.6rem;
+    }
+
     .banner-content {
-        top: 23%;}
-        .hero-subtitle {
-        font-size: 1.8rem;margin-bottom: 14px;
-    margin-top: 5px;
+      top: 23%;
     }
-        .hero-highlight {
-        font-size: 1.4rem;    margin-bottom: 0;
+
+    .hero-subtitle {
+      font-size: 1.8rem;
+      margin-bottom: 14px;
+      margin-top: 5px;
     }
-        .hero-description{
-        font-size: 1.2rem;
+
+    .hero-highlight {
+      font-size: 1.4rem;
+      margin-bottom: 0;
     }
-}
 
-
-
-@media (max-width: 400px) {
-    .cta-container{display:block}
-
-  .cta-container .btn{
-    display:block;
-    margin-bottom:10px;
-width: 120px;
-        text-align: center;
+    .hero-description {
+      font-size: 1.2rem;
+    }
   }
-}
 
 
-@media (max-width: 350px) {
-.hero-subtitle {
-        font-size: 1.4rem;
+
+  @media (max-width: 400px) {
+    .cta-container {
+      display: block
     }
-        .hero-highlight {
-        font-size: 1.12rem;
-        margin-bottom: 0;
+
+    .cta-container .btn {
+      display: block;
+      margin-bottom: 10px;
+      width: 120px;
+      text-align: center;
     }
+  }
+
+
+  @media (max-width: 390px) {
+    .hero-subtitle {
+      font-size: 1.4rem;
+    }
+
+    .hero-highlight {
+      font-size: 1.12rem;
+      margin-bottom: 0;
+    }
+
     .hero-title {
-        font-size: 2.2rem;
+      font-size: 2.2rem;
     }
-        .hero-description {
-        font-size: 1rem;
+
+    .hero-description {
+      font-size: 1rem;
     }
 
     .banner-content .btn.link,
-    .banner-content .btn.primary{
- font-size: 12px;
+    .banner-content .btn.primary {
+      font-size: 12px;
     }
+
     .cta-container .btn {
-        width: 90px;       
+      width: 90px;
     }
-}
-
-
-
-/* ===== LINK BUTTON ===== */
-.btn.link {
-  color: #111;
-  position: relative;
-}
-
-.btn.link::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 0%;
-  height: 2px;
-  background: #111;
-  transition: width 0.3s ease;
-}
-
-.btn.link:hover::after {
-  width: 100%;
-}
-
-.btn.link:hover {
-  transform: translateY(-1px);
-  opacity: 0.8;
-}
-
-.btn.link:active {
-  transform: translateY(1px);
-}
-
-/* ===== ENTRY ANIMATION ===== */
-.cta-container .btn {
-  opacity: 0;
-  transform: translateX(-40px) scale(0.95);
-  filter: blur(6px);
-}
-
-/* animate when active */
-.banner-slide.active .cta-container.animate .btn {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-  filter: blur(0);
-
-  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* stagger */
-.banner-slide.active .cta-container.animate .btn:nth-child(1) {
-  transition-delay: 0.2s;
-}
-
-.banner-slide.active .cta-container.animate .btn:nth-child(2) {
-  transition-delay: 0.4s;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .cta-container {
-        left: 13%;
-        top: 48%;
-        transform: none;
-        flex-direction: row;
-        gap: 16px;
-        align-items: center;
-    }
-  .btn.primary {
-    padding: 10px 16px;
-    font-size: 14px;
   }
 
+
+
+  /* ===== LINK BUTTON ===== */
   .btn.link {
-    font-size: 14px;
+    color: #111;
+    position: relative;
   }
-}
+
+  .btn.link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0%;
+    height: 2px;
+    background: #111;
+    transition: width 0.3s ease;
+  }
+
+  .btn.link:hover::after {
+    width: 100%;
+  }
+
+  .btn.link:hover {
+    transform: translateY(-1px);
+    opacity: 0.8;
+  }
+
+  .btn.link:active {
+    transform: translateY(1px);
+  }
+
+  /* ===== ENTRY ANIMATION ===== */
+  .cta-container .btn {
+    opacity: 0;
+    transform: translateX(-40px) scale(0.95);
+    filter: blur(6px);
+  }
+
+  /* animate when active */
+  .banner-slide.active .cta-container.animate .btn {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* stagger */
+  .banner-slide.active .cta-container.animate .btn:nth-child(1) {
+    transition-delay: 0.2s;
+  }
+
+  .banner-slide.active .cta-container.animate .btn:nth-child(2) {
+    transition-delay: 0.4s;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .cta-container {
+      left: 13%;
+      top: 48%;
+      transform: none;
+      flex-direction: row;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn.primary {
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+
+    .btn.link {
+      font-size: 14px;
+    }
+  }
 
 
   /*testimonials*/
@@ -937,6 +974,7 @@ width: 120px;
     display: flex;
     transition: 0.3s;
     justify-content: center;
+  text-decoration: none;
 
   }
 
@@ -1989,10 +2027,10 @@ width: 120px;
         <div class="banner-section">
           <!-- Banner Slides -->
 
-<div class="banner-slide active">
-  <picture>
+          <div class="banner-slide active">
+            <picture>
 
-                  <source media="(min-width: 768px)"
+              <source media="(min-width: 768px)"
                 srcset="valour_inside/cdn/shop/files/hero_banner_vlrmn_x.png?v=1755870223&width=1800">
 
 
@@ -2003,33 +2041,34 @@ width: 120px;
 
               <img src="valour_inside/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800" alt="" loading="eager"
                 fetchpriority="high" width="800" height="auto">
-  </picture>
+            </picture>
 
-<div class="banner-content">
-  <h1 class="hero-title">
-    Coconut <br>
-    Mustard Fish.
-  </h1>
+            <div class="banner-content">
+              <h1 class="hero-title">
+                Coconut <br>
+                Mustard Fish.
+              </h1>
 
-  <h2 class="hero-subtitle">
-    Without The Old Process.
-  </h2>
+              <h2 class="hero-subtitle">
+                Without The Old Process.
+              </h2>
 
-  <p class="hero-highlight">
-    This is liquid spice.
-  </p>
+              <p class="hero-highlight">
+                This is liquid spice.
+              </p>
 
-  <p class="hero-description">
-    Built for Bengali Coconut <br>
-    Mustard Fish.
-  </p>
+              <p class="hero-description">
+                Built for Bengali Coconut <br>
+                Mustard Fish.
+              </p>
 
-    <div class="cta-container">
-      <a href="#shop-section" class="btn primary">Shop Now</a>
-      <a href="#how-it-works" class="btn link">How it works</a>
-    </div>
-  </div>
-</div>
+              <div class="cta-container">
+                <a href="#slides_Xyz" class="btn primary" >Shop Now</a>
+ 
+                <a href="#how-it-works" class="btn link">How it works</a>
+              </div>
+            </div>
+          </div>
 
 
           <!-- <div class="banner-slide active" data-slide="0">
@@ -2078,8 +2117,7 @@ width: 120px;
           <div class="banner-slide " data-slide="2">
             <picture>
 
-              <source media="(min-width: 768px)"
-                srcset="valour_inside/cdn/shop/files/hero_banner3nd.png">
+              <source media="(min-width: 768px)" srcset="valour_inside/cdn/shop/files/hero_banner3nd.png">
 
 
 
@@ -2090,7 +2128,7 @@ width: 120px;
               <img src="valour_inside/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800" alt="" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
-          </div> 
+          </div>
 
 
 
@@ -2135,24 +2173,24 @@ width: 120px;
 
         </div> -->
 
-        <!-- Banner Dots Navigation (Outside scrolling container) -->
+          <!-- Banner Dots Navigation (Outside scrolling container) -->
 
-        <div class="banner-dots">
+          <div class="banner-dots">
 
-          <div class="banner-dot active" data-slide="0" role="button" tabindex="0" aria-label="Go to slide 1"></div>
+            <div class="banner-dot active" data-slide="0" role="button" tabindex="0" aria-label="Go to slide 1"></div>
 
-          <div class="banner-dot " data-slide="1" role="button" tabindex="0" aria-label="Go to slide 2"></div>
+            <div class="banner-dot " data-slide="1" role="button" tabindex="0" aria-label="Go to slide 2"></div>
 
-          <div class="banner-dot " data-slide="2" role="button" tabindex="0" aria-label="Go to slide 3"></div>
+            <div class="banner-dot " data-slide="2" role="button" tabindex="0" aria-label="Go to slide 3"></div>
 
-          <!-- <div class="banner-dot " data-slide="3" role="button" tabindex="0" aria-label="Go to slide 4"></div>
+            <!-- <div class="banner-dot " data-slide="3" role="button" tabindex="0" aria-label="Go to slide 4"></div>
 
           <div class="banner-dot " data-slide="4" role="button" tabindex="0" aria-label="Go to slide 5"></div> -->
 
+          </div>
+
+
         </div>
-
-
-      </div>
 
 
     </section>
@@ -2187,7 +2225,7 @@ width: 120px;
         <div class="container_slider">
           <div class="slider">
 
-            <div class="slides" id="slides">
+            <div class="slides" id="slides_Xyz" >
 
               <!-- SLIDE 1 -->
               <div class="product_slide active">
@@ -2196,9 +2234,11 @@ width: 120px;
                 <div class="left">
 
                   <div class="thumbnails">
-                    <img src="image_3_prod.png">
-                    <img src="image_2_prod.png">
+
                     <img src="velvey_buttermain.png">
+                    <img src="image_2_prod.png">
+
+                    <img src="image_3_prod.png">
                   </div>
 
                   <div class="main-image">
@@ -2242,8 +2282,8 @@ width: 120px;
           </div> -->
 
                   <!-- CTA -->
-                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
-                      alt="whatsapp"></button>
+                  <a href="#" class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                      alt="whatsapp"></a>
                   <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -2395,8 +2435,8 @@ width: 120px;
           </div> -->
 
                   <!-- CTA -->
-                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
-                      alt="whatsapp"></button>
+                  <link href='#' class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                      alt="whatsapp"></link>
                   <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -2455,26 +2495,26 @@ width: 120px;
         <link rel="stylesheet"
           href="valour_inside/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
           media="print" onload="this.media='all'">
-          <div class="cf-wrapper-main">
+        <div class="cf-wrapper-main">
 
-<div class="cf-wrapper">
+          <div class="cf-wrapper">
 
-  <button class="cf-nav cf-prev">&#10094;</button>
+            <button class="cf-nav cf-prev">&#10094;</button>
 
-  <div class="cf-carousel">
+            <div class="cf-carousel">
 
-    <div class="cf-card "><video src="vid1.mp4" muted loop></video></div>
-    <div class="cf-card"><video src="vid2.mp4" muted loop></video></div>
-    <div class="cf-card  cf-active"><video src="vid2.mp4" muted loop></video></div>
-    <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
-    <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
+              <div class="cf-card "><video src="vid1.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="vid2.mp4" muted loop></video></div>
+              <div class="cf-card  cf-active"><video src="vid2.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
 
-  </div>
+            </div>
 
-  <button class="cf-nav cf-next">&#10095;</button>
+            <button class="cf-nav cf-next">&#10095;</button>
 
-</div>
-</div>
+          </div>
+        </div>
 
         <div class="timeline-section container">
 
@@ -2565,7 +2605,7 @@ width: 120px;
               <div class="card card-1">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/e817da17c99a76b794e3b1aa261e0f135a951f07.jpg?v=1754121319"
+                    src="valour_inside/cdn/shop/files/why_liquid_img1.png"
                     height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
                 </div>
                 <div class="text-container">
@@ -2576,33 +2616,24 @@ width: 120px;
               <div class="card card-2">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/281d8b0ef83dac01348ae5162c898c1dc8220506.jpg?v=1754121320"
+                    src="valour_inside/cdn/shop/files/why_liquid_img2.png"
                     height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
                 </div>
                 <div class="text-container">
-                  <p >Easy Customisation for Home-Style Goodness</p>
-                </div>
-              </div>
-              <div class="card card-3">
-                <div class="image">
-                  <img style="object-fit: cover; background: #fff;"
-                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/e7b6bfb50c774c945fa0eeef7e73c7389e5aeaf5.jpg?v=1754121320"
-                    height="456" width="100%" alt="Masala tikka">
-                </div>
-                <div class="text-container">
-                  <p >Restaurant-Style Taste in Just 10 Minutes</p>
+                  <p>Easy Customisation for Home-Style Goodness</p>
                 </div>
               </div>
               <div class="card card-4">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="https://cdn.shopify.com/s/files/1/0769/9601/8390/files/878b53741202cd070d839a4ca21facfb7e739c5c.jpg?v=1754121320"
-                    height="456" width="100%" alt="Chef cooking" loading="lazy" fetchpriority="low">
+                    src="valour_inside/cdn/shop/files/why_liquid_img3.png"
+                    height="456" width="100%" alt="Masala tikka">
                 </div>
                 <div class="text-container">
-                  <p >All-Natural Ingredients</p>
+                  <p>Restaurant-Style Taste in Just 10 Minutes</p>
                 </div>
               </div>
+
             </div>
           </section>
 
@@ -2628,58 +2659,50 @@ width: 120px;
             <div class="scrollable-cards">
               <div class="card card-1">
                 <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.webp"
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.png"
                     height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
-                <div class="text-container" >
-                  <p style="color: #FADA79;">Portion Magic</p>
-                </div>
+                  <div class="text-container">
+                    <p style="color: #290e06;">Portion Magic</p>
+                  </div>
                   <div class="text-container-card">
-                    <h2>More to share with your loved ones:</h2>
-                    <p>A generous meal of 400 g – 450 g that satisfies 2-3 people</p>
+                    <h2>More to share with your loved ones: A generous meal of 400 g – 450 g that satisfies 2-3 people
+                    </h2>
                   </div>
                 </div>
 
               </div>
-              <div class="card card-1">
-                <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.webp"
-                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
-                <div class="text-container" >
-                  <p style="color: #FADA79;">Portion Magic</p>
-                </div>
-                  <div class="text-container-card">
-                    <h2>More to share with your loved ones:</h2>
-                    <p>A generous meal of 400 g – 450 g that satisfies 2-3 people</p>
-                  </div>
-                </div>
-
-              </div>
-
               <div class="card card-2">
                 <div class="image image-content">
-                  <div class="text-container-card">
-                    <h2>Real satisfaction of cooking something amazing</h2>
-                    <p>Fresh ingredients, your control, your timing.</p>
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect2.png"
+                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                  <div class="text-container">
+                    <p style="color: #290e06;">Cooking Pride </p>
                   </div>
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect_1.webp"
-                    height="228" width="100%" alt="Intersect (1)" loading="lazy" fetchpriority="low">
+                  <div class="text-container-card">
+                    <h2>Real satisfaction of cooking something amazing. Fresh ingredients, your control, your timing.
+                    </h2>
+                  </div>
                 </div>
 
               </div>
-
               <div class="card card-3">
                 <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect_3.webp"
-                    height="228" height="228" width="100%" alt="Intersect (2)" loading="lazy" fetchpriority="low">
+                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect3.png"
+                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                  <div class="text-container">
+                    <p style="color: #290e06;">Nutrition Win</p>
+                  </div>
                   <div class="text-container-card">
-                    <h2>High protein, trans fat-free goodness</h2>
-                    <p>Quality nutrition that tastes like pure indulgence.</p>
+                    <h2>High in nutritions, trans fat-free goodness. Quality nutrition that tastes like pure indulgence
+                    </h2>
                   </div>
                 </div>
-                <div class="text-container">
-                  <p style="color: #FADA79;">Nutrition Win</p>
-                </div>
+
               </div>
+
+
+
+
             </div>
           </section>
         </div>
@@ -2796,9 +2819,9 @@ width: 120px;
 
           <div class="faq-section">
             <div class="faq-heading-container">
-              <span class="faq-heading">Curious About Cheffin’?</span>
-              <span class="faq-subheading">Join the Club.</span>
-              <span class="faq-description">Nobody expects perfectly seasoned questions. </span>
+              <span class="faq-heading">The Truth About</span>
+              <span class="faq-subheading">Liquid Spice.</span>
+              <span class="faq-description">You’re not using a masala. You’re finishing a dish. </span>
             </div>
             <div class="faq-container">
 
@@ -2806,7 +2829,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="1">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How quickly can I prepare a delicious meal?</span>
+                  <span class="faq-question-text">What exactly is this?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2820,8 +2843,13 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>A healthy, clean and customised meal can be ready in just 10minutes. Step-by-step instructions
-                      included with every ready to cook food kit.</p>
+                    <p>This is not a spice mix.
+                      <br> This is the dish — already built. <br> We’ve taken the full recipe — fat, spice, base,
+                      balance — and reduced it into a single pour. <br>
+
+                      You add the protein.
+                      We’ve done the rest.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2831,7 +2859,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="2">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How is this different from regular heat-and-eat meals?</span>
+                  <span class="faq-question-text">How is this different from regular masalas?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2845,9 +2873,8 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>You actually cook this. You control the spice, add your fresh ingredients, and own the final
-                      result.
-                      It's the joy of cooking without the complexity.</p>
+                    <p>Masala helps you cook.
+This is the base of the dish.</p>
                   </div>
                 </div>
               </div>
@@ -2857,7 +2884,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="3">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Do I really get restaurant-style taste at home?</span>
+                  <span class="faq-question-text">How long does it take?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2871,9 +2898,13 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>You get recipes from chefs who've powered top restaurant chains for 20+ years. Same techniques,
-                      same
-                      authentic flavours - just made by you.</p>
+                    <p>10–15 minutes.
+
+                      No prep. No layering. No corrections.
+
+                      Pour. Add fish. Cook.
+
+                      That’s it.</p>
                   </div>
                 </div>
               </div>
@@ -2883,7 +2914,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="4">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Is this ready to cook kit just for dinner?</span>
+                  <span class="faq-question-text">Will it actually taste like restaurant food?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2897,9 +2928,7 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>You get convenience for any moment – weekend brunches, late-night cravings, surprise guests, or
-                      when
-                      you just want to treat yourself.</p>
+                    <p>Yes. The base is already balanced.</p>
                   </div>
                 </div>
               </div>
@@ -2909,7 +2938,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="5">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Are these actually preservative-free?</span>
+                  <span class="faq-question-text">Do I still have control while cooking?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2923,9 +2952,8 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>You get long shelf life through retort sterilization (smart science, no chemicals). No
-                      preservatives,
-                      no artificial flavours or colours.</p>
+                    <p>Yes. Just without the complexity.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2935,7 +2963,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="6">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How much control do I actually have?</span>
+                  <span class="faq-question-text">Is this a ready-to-eat product?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2949,8 +2977,14 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>You decide the spice level, add your own fresh ingredients like cream and vegetables, and make it
-                      exactly how you want it. You're the chef, Cheffin' is your sous-chef.</p>
+                    <p>No.
+
+                      Ready-to-eat is passive.
+
+                      Valour is active — you cook, but without complexity.
+
+                      You still feel like you made it.
+                      Just without the mistakes.</p>
                   </div>
                 </div>
               </div>
@@ -2960,7 +2994,7 @@ width: 120px;
               <div class="faq-item" data-faq-index="7">
                 <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
                   <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How many people does each kit serve?</span>
+                  <span class="faq-question-text">How much does one jar serve?</span>
                   <span class="faq-toggle">
                     <span class="faq-plus">
                       <!-- Plus SVG will go here -->
@@ -2974,10 +3008,14 @@ width: 120px;
                 </div>
                 <div class="faq-answer">
                   <div class="faq-answer-content">
-                    <p>Each ready-to-cook Cheffin' kit is designed to feed 2-3 hungry souls (approximately 400-450g,
-                      making
-                      it perfect for dinners, small family gatherings, or strategically planned leftovers that'll make
-                      tomorrow's lunch the highlight of your day.</p>
+                    <p>Depends on how you use it.
+                      <br>
+                      But typically:
+                      <br>
+                      250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
+                      5525 ml → cooks about 3–5 people (up to 1 kg)<br>
+
+                    </p>
                   </div>
                 </div>
               </div>
@@ -3060,59 +3098,57 @@ width: 120px;
         </div>
         <!-- END sections: footer-group -->
   </main>
-<div class="cf-popup-overlay" id="cfPopupOverlay">
-  <div class="cf-popup-content">
+  <div class="cf-popup-overlay" id="cfPopupOverlay">
+    <div class="cf-popup-content">
 
-    <video id="cfPopupVideo" controls autoplay></video>
+      <video id="cfPopupVideo" controls autoplay></video>
 
-    <button class="cf-popup-close" id="cfPopupClose">&times;</button>
+      <button class="cf-popup-close" id="cfPopupClose">&times;</button>
 
+    </div>
   </div>
-</div>
   <script>
 
-const cfPopupOverlay = document.getElementById('cfPopupOverlay');
-const cfPopupVideo = document.getElementById('cfPopupVideo');
-const cfPopupClose = document.getElementById('cfPopupClose');
+    const cfPopupOverlay = document.getElementById('cfPopupOverlay');
+    const cfPopupVideo = document.getElementById('cfPopupVideo');
+    const cfPopupClose = document.getElementById('cfPopupClose');
 
-/* 🎬 OPEN POPUP */
-document.querySelectorAll('.cf-card video').forEach((video) => {
+    /* 🎬 OPEN POPUP */
+    document.querySelectorAll('.cf-card video').forEach((video) => {
 
-  video.parentElement.addEventListener('click', () => {
+      video.parentElement.addEventListener('click', () => {
 
-    const source = video.querySelector('source')?.src || video.src;
+        const source = video.querySelector('source')?.src || video.src;
 
-    cfPopupVideo.src = source;
-    cfPopupOverlay.style.display = 'flex';
+        cfPopupVideo.src = source;
+        cfPopupOverlay.style.display = 'flex';
 
-    cfPopupVideo.play();
-  });
+        cfPopupVideo.play();
+      });
 
-});
+    });
 
-/* ❌ CLOSE POPUP */
-function closePopup() {
-  cfPopupOverlay.style.display = 'none';
-  cfPopupVideo.pause();
-  cfPopupVideo.src = "";
-}
+    /* ❌ CLOSE POPUP */
+    function closePopup() {
+      cfPopupOverlay.style.display = 'none';
+      cfPopupVideo.pause();
+      cfPopupVideo.src = "";
+    }
 
-cfPopupClose.onclick = closePopup;
+    cfPopupClose.onclick = closePopup;
 
-cfPopupOverlay.onclick = (e) => {
-  if (e.target === cfPopupOverlay) {
-    closePopup();
-  }
-};
+    cfPopupOverlay.onclick = (e) => {
+      if (e.target === cfPopupOverlay) {
+        closePopup();
+      }
+    };
 
-/* ⌨️ ESC KEY CLOSE */
-document.addEventListener('keydown', (e) => {
-  if (e.key === "Escape") {
-    closePopup();
-  }
-});
-
-
+    /* ⌨️ ESC KEY CLOSE */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === "Escape") {
+        closePopup();
+      }
+    });
 
 
 
@@ -3126,141 +3162,143 @@ document.addEventListener('keydown', (e) => {
 
 
 
-// for reel slider
-const cf3d_cards = document.querySelectorAll('.cf-card');
-let cf3d_currentIndex = Math.floor(cf3d_cards.length / 2);
 
-let cf3d_autoSlideTimer;
-let cf3d_isAnimating = false; // 🔥 lock to prevent overlap
 
-const cf3d_SLIDE_INTERVAL = 4000;
-const cf3d_ANIMATION_TIME = 600; // match CSS transition
+    // for reel slider
+    const cf3d_cards = document.querySelectorAll('.cf-card');
+    let cf3d_currentIndex = Math.floor(cf3d_cards.length / 2);
 
-/* 🎯 UPDATE FUNCTION */
-function cf3d_updateCarousel() {
+    let cf3d_autoSlideTimer;
+    let cf3d_isAnimating = false; // 🔥 lock to prevent overlap
 
-  cf3d_isAnimating = true;
+    const cf3d_SLIDE_INTERVAL = 4000;
+    const cf3d_ANIMATION_TIME = 600; // match CSS transition
 
-  const cf3d_offsetX = window.innerWidth <= 480 ? 120 : 180;
-  const cf3d_rotateY = window.innerWidth <= 480 ? 20 : 35;
+    /* 🎯 UPDATE FUNCTION */
+    function cf3d_updateCarousel() {
 
-  cf3d_cards.forEach((cf3d_card, cf3d_i) => {
+      cf3d_isAnimating = true;
 
-    const cf3d_diff = cf3d_i - cf3d_currentIndex;
-    const cf3d_video = cf3d_card.querySelector('video');
+      const cf3d_offsetX = window.innerWidth <= 480 ? 120 : 180;
+      const cf3d_rotateY = window.innerWidth <= 480 ? 20 : 35;
 
-    cf3d_card.classList.remove('cf-active');
+      cf3d_cards.forEach((cf3d_card, cf3d_i) => {
 
-    if (cf3d_diff === 0) {
-      cf3d_card.style.transform = `
+        const cf3d_diff = cf3d_i - cf3d_currentIndex;
+        const cf3d_video = cf3d_card.querySelector('video');
+
+        cf3d_card.classList.remove('cf-active');
+
+        if (cf3d_diff === 0) {
+          cf3d_card.style.transform = `
         translateX(0px)
         scale(1.05)
         rotateY(0deg)
       `;
-      cf3d_card.classList.add('cf-active');
+          cf3d_card.classList.add('cf-active');
 
-      // play safely
-      cf3d_video.play().catch(() => {});
+          // play safely
+          cf3d_video.play().catch(() => { });
 
-    } else {
-      cf3d_card.style.transform = `
+        } else {
+          cf3d_card.style.transform = `
         translateX(${cf3d_diff * cf3d_offsetX}px)
         scale(0.85)
         rotateY(${cf3d_diff > 0 ? -cf3d_rotateY : cf3d_rotateY}deg)
       `;
-      cf3d_video.pause();
-      cf3d_video.currentTime = 0;
+          cf3d_video.pause();
+          cf3d_video.currentTime = 0;
+        }
+
+      });
+
+      // 🔓 unlock after animation completes
+      setTimeout(() => {
+        cf3d_isAnimating = false;
+      }, cf3d_ANIMATION_TIME);
     }
 
-  });
+    /* ▶️ AUTO SLIDE */
+    function cf3d_startAutoSlide() {
+      cf3d_clearAutoSlide(); // 🔥 prevent stacking
 
-  // 🔓 unlock after animation completes
-  setTimeout(() => {
-    cf3d_isAnimating = false;
-  }, cf3d_ANIMATION_TIME);
-}
+      cf3d_autoSlideTimer = setInterval(() => {
 
-/* ▶️ AUTO SLIDE */
-function cf3d_startAutoSlide() {
-  cf3d_clearAutoSlide(); // 🔥 prevent stacking
+        if (cf3d_isAnimating) return; // 🔥 prevent conflict
 
-  cf3d_autoSlideTimer = setInterval(() => {
+        cf3d_goNext();
 
-    if (cf3d_isAnimating) return; // 🔥 prevent conflict
+      }, cf3d_SLIDE_INTERVAL);
+    }
 
-    cf3d_goNext();
+    /* 🛑 CLEAR TIMER */
+    function cf3d_clearAutoSlide() {
+      if (cf3d_autoSlideTimer) {
+        clearInterval(cf3d_autoSlideTimer);
+        cf3d_autoSlideTimer = null;
+      }
+    }
 
-  }, cf3d_SLIDE_INTERVAL);
-}
+    /* 🔁 SAFE NAV FUNCTIONS */
+    function cf3d_goNext() {
+      if (cf3d_isAnimating) return;
 
-/* 🛑 CLEAR TIMER */
-function cf3d_clearAutoSlide() {
-  if (cf3d_autoSlideTimer) {
-    clearInterval(cf3d_autoSlideTimer);
-    cf3d_autoSlideTimer = null;
-  }
-}
+      cf3d_currentIndex =
+        cf3d_currentIndex < cf3d_cards.length - 1
+          ? cf3d_currentIndex + 1
+          : 0;
 
-/* 🔁 SAFE NAV FUNCTIONS */
-function cf3d_goNext() {
-  if (cf3d_isAnimating) return;
+      cf3d_updateCarousel();
+    }
 
-  cf3d_currentIndex =
-    cf3d_currentIndex < cf3d_cards.length - 1
-      ? cf3d_currentIndex + 1
-      : 0;
+    function cf3d_goPrev() {
+      if (cf3d_isAnimating) return;
 
-  cf3d_updateCarousel();
-}
+      cf3d_currentIndex =
+        cf3d_currentIndex > 0
+          ? cf3d_currentIndex - 1
+          : cf3d_cards.length - 1;
 
-function cf3d_goPrev() {
-  if (cf3d_isAnimating) return;
+      cf3d_updateCarousel();
+    }
 
-  cf3d_currentIndex =
-    cf3d_currentIndex > 0
-      ? cf3d_currentIndex - 1
-      : cf3d_cards.length - 1;
+    /* ⏹ RESET TIMER (debounced) */
+    function cf3d_resetAutoSlide() {
+      cf3d_clearAutoSlide();
 
-  cf3d_updateCarousel();
-}
+      // 🔥 delay restart slightly to avoid clash
+      setTimeout(() => {
+        cf3d_startAutoSlide();
+      }, 1000);
+    }
 
-/* ⏹ RESET TIMER (debounced) */
-function cf3d_resetAutoSlide() {
-  cf3d_clearAutoSlide();
+    /* 👉 BUTTONS */
+    document.querySelector('.cf-next').onclick = () => {
+      cf3d_goNext();
+      cf3d_resetAutoSlide();
+    };
 
-  // 🔥 delay restart slightly to avoid clash
-  setTimeout(() => {
+    document.querySelector('.cf-prev').onclick = () => {
+      cf3d_goPrev();
+      cf3d_resetAutoSlide();
+    };
+
+    /* ⏸ HOVER PAUSE */
+    const cf3d_wrapper = document.querySelector('.cf-wrapper');
+
+    cf3d_wrapper.addEventListener('mouseenter', () => {
+      cf3d_clearAutoSlide();
+    });
+
+    cf3d_wrapper.addEventListener('mouseleave', () => {
+      cf3d_startAutoSlide();
+    });
+
+    /* 🚀 INIT */
+    cf3d_updateCarousel();
     cf3d_startAutoSlide();
-  }, 1000);
-}
 
-/* 👉 BUTTONS */
-document.querySelector('.cf-next').onclick = () => {
-  cf3d_goNext();
-  cf3d_resetAutoSlide();
-};
-
-document.querySelector('.cf-prev').onclick = () => {
-  cf3d_goPrev();
-  cf3d_resetAutoSlide();
-};
-
-/* ⏸ HOVER PAUSE */
-const cf3d_wrapper = document.querySelector('.cf-wrapper');
-
-cf3d_wrapper.addEventListener('mouseenter', () => {
-  cf3d_clearAutoSlide();
-});
-
-cf3d_wrapper.addEventListener('mouseleave', () => {
-  cf3d_startAutoSlide();
-});
-
-/* 🚀 INIT */
-cf3d_updateCarousel();
-cf3d_startAutoSlide();
-
-// end
+    // end
 
 
 
