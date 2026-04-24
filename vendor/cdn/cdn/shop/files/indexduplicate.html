@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+
+<style>
+
+.slider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.slider-track {
+  display: flex;
+  transition: transform 0.5s ease;
+  will-change: transform;
+}
+
+.slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 80vh;
+}
+
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Responsive heights */
+@media (max-width: 1024px) {
+  .slide {
+    height: 60vh;
+  }
+}
+
+@media (max-width: 767px) {
+  .slide {
+    height: 50vh;
+  }
+}
+
+/* Dots */
+.slider-dots {
+  position: absolute;
+  bottom: 15px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.slider-dots button {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  border: none;
+  cursor: pointer;
+}
+
+.slider-dots button.active {
+  background: #000;
+  transform: scale(1.2);
+}
+</style>
+<body>
+  <div class="slider" id="slider" data-autoplay="true" data-delay="5000">
+  
+  <div class="slider-track">
+    
+    <div class="slide">
+      <img src="valour_inside/cdn/shop/files/hero_banner_vlrmn.png" alt="">
+    </div>
+
+    <div class="slide">
+      <img src="valour_inside/cdn/shop/files/hero_banner2nd.png" alt="">
+    </div>
+
+    <div class="slide">
+      <img src="valour_inside/cdn/shop/files/Desktop_banner_2_TB.jpg" alt="">
+    </div>
+
+    <div class="slide">
+      <img src="valour_inside/cdn/shop/files/Desktop_banner_1_TB_1.png" alt="">
+    </div>
+
+    <div class="slide">
+      <img src="valour_inside/cdn/shop/files/Desktop_banner_5_TB.jpg" alt="">
+    </div>
+
+  </div>
+
+  <!-- Dots -->
+  <div class="slider-dots"></div>
+
+</div>
+</body>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  const slider = document.getElementById("slider");
+  const track = slider.querySelector(".slider-track");
+  const slides = slider.querySelectorAll(".slide");
+  const dotsContainer = slider.querySelector(".slider-dots");
+
+  let index = 0;
+  const total = slides.length;
+  const autoplay = slider.dataset.autoplay === "true";
+  const delay = parseInt(slider.dataset.delay) || 5000;
+
+  let interval;
+
+  // Create dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement("button");
+    if (i === 0) dot.classList.add("active");
+
+    dot.addEventListener("click", () => {
+      goToSlide(i);
+      resetAutoplay();
+    });
+
+    dotsContainer.appendChild(dot);
+  });
+
+  const dots = dotsContainer.querySelectorAll("button");
+
+  function goToSlide(i) {
+    const width = slider.clientWidth;
+    track.style.transform = `translateX(-${i * width}px)`;
+
+    dots.forEach(d => d.classList.remove("active"));
+    dots[i].classList.add("active");
+
+    index = i;
+  }
+
+  function nextSlide() {
+    index = (index + 1) % total;
+    goToSlide(index);
+  }
+
+  function startAutoplay() {
+    if (!autoplay) return;
+    interval = setInterval(nextSlide, delay);
+  }
+
+  function resetAutoplay() {
+    clearInterval(interval);
+    startAutoplay();
+  }
+
+  // Swipe support
+  let startX = 0;
+
+  track.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    clearInterval(interval);
+  });
+
+  track.addEventListener("touchend", e => {
+    let diff = startX - e.changedTouches[0].clientX;
+
+    if (diff > 50) nextSlide();
+    else if (diff < -50) {
+      index = (index - 1 + total) % total;
+      goToSlide(index);
+    }
+
+    startAutoplay();
+  });
+
+  // Resize fix (IMPORTANT)
+  window.addEventListener("resize", () => {
+    goToSlide(index);
+  });
+
+  // Pause on hover
+  slider.addEventListener("mouseenter", () => clearInterval(interval));
+  slider.addEventListener("mouseleave", startAutoplay);
+
+  // Init
+  goToSlide(0);
+  startAutoplay();
+});
+</script>
+</html>

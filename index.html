@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
     rel="stylesheet">
-  <link href="valour_inside/cdn/shop/t/8/assets/critical.css?v=114666991800665193241754497166" rel="stylesheet"
+  <link href="vendor/cdn/cdn/shop/t/8/assets/critical.css" rel="stylesheet"
     type="text/css" media="all" />
 
 
@@ -20,7 +20,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
   <meta property="og:site_name" content="Cheffin">
-  <meta property="og:url" content="valour_inside/">
+  <meta property="og:url" content="vendor/cdn/">
   <meta property="og:title" content="Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic">
   <meta property="og:type" content="website">
 
@@ -35,7 +35,7 @@
     Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic
   </title>
 
-  <link rel="canonical" href="valour_inside/">
+  <link rel="canonical" href="vendor/cdn/">
 
 
   <meta name="description"
@@ -47,20 +47,15 @@
 
 
 
-  <link rel="stylesheet" media="screen" href="valour_inside/cdn/shop/t/8/assets/navbar.css">
-
+  <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
 
 
 
   <link rel="stylesheet" media="screen"
-    href="valour_inside/cdn/shop/t/8/compiled_assets/styles.css?v=40476637893564635371756093775">
-  <script async src="valour_inside/cdn/shop/t/8/assets/gsap.js?v=60015290854020132231754290580" defer="defer"></script>
-  <script src="valour_inside/cdn/shop/t/8/assets/scrollTrigger.js?v=4549089651008514231754290580"
-    defer="defer"></script>
-  <script async src="cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js" defer="defer"></script>
+    href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
+<script async src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js"  defer="defer"></script>
 
-  </script>
 
 </head>
 <style>
@@ -68,6 +63,70 @@
 
 html {
   scroll-behavior: smooth;
+}
+a{
+      text-decoration: none; /* Removes underline */
+    color: inherit;         /* Inherits color from parent text */
+}
+.loader_logo_vlr {
+  display: flex;
+  gap: 1px;
+  font-size: 52px;
+  letter-spacing: 6px;
+  font-weight: 500;
+  color: #f1de9e; 
+  font-family: 'Times New Roman', serif;
+}
+
+/* Letters */
+.loader_logo_vlr span {
+  display: inline-block; /* needed for transform */
+  opacity: 0;
+  transform: translateY(12px);
+  animation: reveal 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+
+/* Sequential delay */
+.loader_logo_vlr span:nth-child(1) { animation-delay: 0.1s; }
+.loader_logo_vlr span:nth-child(2) {  opacity: 1;                 /* already visible */
+  transform: rotate(180deg) translateY(12px);
+    margin-left: -12px;
+    margin-right: 9px;
+ }
+
+.loader_logo_vlr span:nth-child(3) { animation-delay: 0.3s; }
+.loader_logo_vlr span:nth-child(4) { animation-delay: 0.4s; }
+.loader_logo_vlr span:nth-child(5) { animation-delay: 0.5s; }
+.loader_logo_vlr span:nth-child(6) { animation-delay: 0.6s; }
+
+/* Animation */
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+ .loader_logo_vlr span:nth-child(2) {
+   animation: revealA 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards
+ }
+ @keyframes revealA {
+  from {
+    opacity: 0;
+    transform: rotate(180deg) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(180deg) translateY(0);
+  }
+}
+
+
+@media (max-width: 550px) {
+  .loader_logo_vlr {
+
+  font-size: 36px;}
 }
   /* OVERLAY */
   .cf-popup-overlay {
@@ -627,6 +686,11 @@ html {
   /* IMAGE GRID */
   .testimonial-sectionxyz .image-grid {
     width: 50%;
+    /* remove this when image is displayed (removed from comments in html) */
+    background:grey;
+    display: block;
+    height: 369px;
+    /* ------ */
   }
 
   .testimonial-sectionxyz .main-img {
@@ -1031,27 +1095,42 @@ html {
 
 
   /* CENTER LOGO */
-  .nav-logo {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-  }
 
-  .nav-logo img {
-    height: 100px;
-    object-fit: contain;
-  }
+.nav-logo {
+  display: flex;
+  gap: 1px;
+  font-size: 20px;
+  letter-spacing: 6px;
+  font-weight: 600;
+  color: #ececeb; 
+  font-family: 'Times New Roman', serif;
+}
+
+/* Letters */
+.nav-logo span {
+  display: inline-block; /* needed for transform */
+  opacity: 1;
+}
+
+
+/* Sequential delay */
+.nav-logo span:nth-child(2) {
+    transform: rotate(180deg);
+    margin-left: -7px;
+    margin-right: 6px;
+}
 
   /* RIGHT ICONS */
   .nav-right {
     display: flex;
     gap: 20px;
+    position:absolute;
+    right: 10px;
   }
 
   .prod_section_ind {
     background: #831a1a;
     padding-top: 223px;
-    padding-bottom: 230px;
   }
 
   .icon {
@@ -1341,10 +1420,12 @@ html {
 
 
     .valour-banner__title {
-      font-size: clamp(42px, 14vw, 42px);
+      font-size: clamp(42px, 14vw, 55px);
       line-height: 1.2;
     }
-
+.valour-banner__content{
+  margin-left: 7px;width: min(90%, 620px);
+}
     .valour-banner__eyebrow {
       font-size: 12px;
       letter-spacing: 0.24em;
@@ -1938,16 +2019,25 @@ html {
 
 
 
-  <link href="valour_inside/cdn/shop/t/8/assets/login-logo.css?v=36613430775416838161755792980" rel="stylesheet"
+  <link href="vendor/cdn/cdn/shop/t/8/assets/login-logo.css?v=36613430775416838161755792980" rel="stylesheet"
     type="text/css" media="all" />
   <!-- Loading Phase -->
   <div id="loading-phase" class="loading-phase-container">
 
     <div>
-      <div class="loading-video-container">
+
+        <div class="loader_logo_vlr">
+    <span>V</span>
+    <span  class="letter_a">V</span>
+    <span>L</span>
+    <span>O</span>
+    <span>U</span>
+    <span>R</span>
+  </div>
+      <!-- <div class="loading-video-container">
         <img class="loading-video" src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Logo-v3.gif?v=1754633017"
           alt="Loading animation image" aria-label="Loading animation image" loading="eager" fetchpriority="high">
-      </div>
+      </div> -->
       <div class="loading-bar-container">
         <div class="loading-bar"></div>
       </div>
@@ -1963,10 +2053,10 @@ html {
     <!-- ===== ANNOUNCEMENT BAR ===== -->
     <div class="announcement-bar">
       <div class="announcement-track" id="track-xf">
-        <div class="announcement-text">🚚 Free shipping on all orders over $45</div>
-        <div class="announcement-text">🏷 Save 15% on your first 5 subscription shipments with code 15OFF5</div>
-        <div class="announcement-text">🚚 Free shipping on all orders over $45</div>
-        <div class="announcement-text">🏷 Save 15% on your first 5 subscription shipments with code 15OFF5</div>
+        <div class="announcement-text">🚚 Free shipping on all orders over ₹ 500</div>
+        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
+        <div class="announcement-text">🚚 Free shipping on all orders over ₹ 500</div>
+        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
       </div>
 
 
@@ -1978,23 +2068,26 @@ html {
 
         <!-- LEFT -->
 
-        <div class="menu-toggle">
-          <span class="material-symbols-outlined">menu</span>
-        </div>
 
-        <div class="nav-left">
+        <!-- <div class="nav-left">
           <a href="#">Shop</a>
           <a href="#">Subscribe</a>
           <a href="#">Locations</a>
           <a href="#">Learn</a>
-        </div>
+        </div> -->
 
         <!-- LOGO -->
-        <div class="nav-logo">VALOUR</div>
-
+    <div class="nav-logo">
+    <span>V</span>
+    <span  class="letter_a">V</span>
+    <span>L</span>
+    <span>O</span>
+    <span>U</span>
+    <span>R</span>
+  </div>
         <!-- RIGHT -->
         <div class="nav-right">
-          <span class="material-symbols-outlined">shopping_bag</span>
+          <a href="/checkout" > <span class="material-symbols-outlined">shopping_bag </span></a>
         </div>
 
         <!-- HAMBURGER -->
@@ -2002,18 +2095,13 @@ html {
       </div>
 
       <!-- MOBILE MENU -->
-      <div class="mobile-menu">
-        <a href="#">Shop</a>
-        <a href="#">Subscribe</a>
-        <a href="#">Locations</a>
-        <a href="#">Learn</a>
-      </div>
+
     </div>
     <section id="shopify-section-template--19781511708886__banner_section_maqcGT"
       class="shopify-section banner-slideshow-section">
-      <link href="valour_inside/cdn/shop/t/8/assets/banner-section.css?v=147718292925816370001755858244"
+      <link href="vendor/cdn/cdn/shop/t/8/assets/banner-section.css"
         rel="stylesheet" type="text/css" media="all" />
-      <script src="valour_inside/cdn/shop/t/8/assets/banner-slideshow.js?v=25143192274016277671756093772"
+      <script src="vendor/cdn/cdn/shop/t/8/assets/banner-slideshow.js"
         defer></script>
 
 
@@ -2031,15 +2119,15 @@ html {
             <picture>
 
               <source media="(min-width: 768px)"
-                srcset="valour_inside/cdn/shop/files/hero_banner_vlrmn_x.png?v=1755870223&width=1800">
+                srcset="vendor/cdn/cdn/shop/files/hero_banner_vlrmn_x.png?v=1755870223&width=1800">
 
 
 
               <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800">
 
 
-              <img src="valour_inside/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800" alt="" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
 
@@ -2075,15 +2163,15 @@ html {
             <picture>
 
               <source media="(min-width: 768px)"
-                srcset="valour_inside/cdn/shop/files/hero_banner_vlrmn.png?v=1755870223&width=1800">
+                srcset="vendor/cdn/cdn/shop/files/hero_banner_vlrmn.png?v=1755870223&width=1800">
 
 
 
               <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800">
 
 
-              <img src="valour_inside/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800" alt="" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
             <div class="cta-container">
@@ -2098,80 +2186,38 @@ html {
           <div class="banner-slide " data-slide="1">
             <picture>
 
-              <source media="(min-width: 768px)" srcset="valour_inside/cdn/shop/files/hero_banner2nd.png">
+              <source media="(min-width: 768px)" srcset="vendor/cdn/cdn/shop/files/hero_banner3nd.png">
 
 
 
               <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800">
 
 
-              <img src="valour_inside/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800" alt="" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
           </div>
-
-
-
 
           <div class="banner-slide " data-slide="2">
             <picture>
 
-              <source media="(min-width: 768px)" srcset="valour_inside/cdn/shop/files/hero_banner3nd.png">
+              <source media="(min-width: 768px)" srcset="vendor/cdn/cdn/shop/files/hero_banner2nd.png">
 
 
 
               <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800">
 
 
-              <img src="valour_inside/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
           </div>
 
 
 
-
-          <!-- <div class="banner-slide " data-slide="3">
-            <picture>
-
-              <source media="(min-width: 768px)"
-                srcset="valour_inside/cdn/shop/files/Desktop_banner_1_TB_1.png?v=1755870282&width=1800">
-
-
-
-              <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_1_TB_aca382d4-7abb-407e-9479-475ee21f3102.jpg?v=1755668895&width=800">
-
-
-              <img
-                src="valour_inside/cdn/shop/files/Mob_banner_1_TB_aca382d4-7abb-407e-9479-475ee21f3102.jpg?v=1755668895&width=800"
-                alt="" loading="lazy" fetchpriority="low" width="800" height="auto">
-            </picture>
-          </div>
-
-
-
-
-          <div class="banner-slide " data-slide="4">
-            <picture>
-
-              <source media="(min-width: 768px)"
-                srcset="valour_inside/cdn/shop/files/Desktop_banner_5_TB_87b44e14-d542-4adc-ac4b-687f6b3774ea.jpg?v=1754545484&width=1800">
-
-
-
-              <source media="(max-width: 767px)"
-                srcset="valour_inside/cdn/shop/files/Mob_banner_5_TB.jpg?v=1754497978&width=800">
-
-
-              <img src="valour_inside/cdn/shop/files/Mob_banner_5_TB.jpg?v=1754497978&width=800" alt="" loading="lazy"
-                fetchpriority="low" width="800" height="auto">
-            </picture>
-          </div>
-
-        </div> -->
+         
 
           <!-- Banner Dots Navigation (Outside scrolling container) -->
 
@@ -2194,13 +2240,13 @@ html {
 
 
     </section>
-    <link href="valour_inside/cdn/shop/t/8/assets/text-scrolling-stylesheet.css?v=31481641065632360961756093773"
+    <link href="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-stylesheet.css"
       rel="stylesheet" type="text/css" media="all" />
 
     </section>
     <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
       class=" shopify-section text-scrolling-parent">
-      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.css?v=31481641065632360961756093773"
+      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.CSS"
         rel="stylesheet" type="text/css" media="all">
 
       <div class="prod_section_ind">
@@ -2235,14 +2281,14 @@ html {
 
                   <div class="thumbnails">
 
-                    <img src="velvey_buttermain.png">
-                    <img src="image_2_prod.png">
+                    <img src="assets/images/velvey_buttermain.png">
+                    <img src="assets/images/image_2_prod.png">
 
-                    <img src="image_3_prod.png">
+                    <img src="assets/images/image_3_prod.png">
                   </div>
 
                   <div class="main-image">
-                    <img src="velvey_buttermain.png" alt="product">
+                    <img src="assets/images/velvey_buttermain.png" alt="product">
                   </div>
 
                 </div>
@@ -2254,7 +2300,7 @@ html {
 
                   <div class="title-price">
                     <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty</h1>
-                    <span class="price">₹499.00</span>
+                    <span class="price">₹350.00</span>
                   </div>
 
                   <!-- <div class="rating">
@@ -2282,7 +2328,7 @@ html {
           </div> -->
 
                   <!-- CTA -->
-                  <a href="#" class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
+                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish" class="cta">Order now through whatsapp <img src="assets/images/whtsap.png"
                       alt="whatsapp"></a>
                   <div class="container_expand_ingre">
                     <div class="accordion">
@@ -2304,166 +2350,17 @@ html {
                 </div>
               </div>
 
-              <!-- SLIDE 2 -->
-              <div class="product_slide">
-
-                <!-- LEFT SECTION -->
-                <div class="left">
-
-                  <div class="thumbnails">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                  </div>
-
-                  <div class="main-image">
-                    <img src="velvey_buttermain.png" alt="product">
-                  </div>
-
-                </div>
-
-                <!-- RIGHT SECTION -->
-                <div class="right">
-
-                  <p class="brand">LIQUID SPICE</p>
-
-                  <div class="title-price">
-                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty</h1>
-                    <span class="price">₹499.00</span>
-                  </div>
-
-                  <!-- <div class="rating">
-            ⭐⭐⭐⭐⭐ <span>5.0 | 2 reviews</span>
-          </div> -->
-
-
-                  <!-- <p class="desc">
-            Experience a harmonious blend of premium sound quality and ergonomic design that allows for all-day
-            comfortable listening.
-          </p> -->
-
-                  <!-- COLOR OPTIONS -->
-                  <!-- <div class="colors">
-            <p>weight: <strong>600g</strong></p>
-            <div class="color-options">
-              <div class="elem_ins active">
-                <p>600g</p>
-              </div>
-              <div class="elem_ins">
-                <p>400g</p>
-              </div>
-
-            </div>
-          </div> -->
-
-                  <!-- CTA -->
-                  <button class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
-                      alt="whatsapp"></button>
-                  <div class="container_expand_ingre">
-                    <div class="accordion">
-                      <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span class="header_name">Ingredients</span>
-                        <span class="icon">+</span>
-                      </div>
-
-                      <div class="accordion-content" id="content">
-                        <p>
-                          Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices.
-                          No artificial preservatives or colors added.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- INFO BOX -->
-
-
-                </div>
-              </div>
-              <!-- SLIDE 3 -->
-              <div class="product_slide">
-
-                <!-- LEFT SECTION -->
-                <div class="left">
-
-                  <div class="thumbnails">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                    <img src="https://via.placeholder.com/60">
-                  </div>
-
-                  <div class="main-image">
-                    <img src="velvey_buttermain.png" alt="product">
-                  </div>
-
-                </div>
-
-                <!-- RIGHT SECTION -->
-                <div class="right">
-
-                  <p class="brand">LIQUID SPICE</p>
-
-                  <div class="title-price">
-                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty
-                    </h1>
-                    <span class="price">₹499.00</span>
-                  </div>
-
-                  <!-- <div class="rating">
-            ⭐⭐⭐⭐⭐ <span>5.0 | 2 reviews</span>
-          </div> -->
-
-
-                  <!-- <p class="desc">
-            Experience a harmonious blend of premium sound quality and ergonomic design that allows for all-day
-            comfortable listening.
-          </p> -->
-
-                  <!-- COLOR OPTIONS -->
-                  <!-- <div class="colors">
-            <p>weight: <strong>600g</strong></p>
-            <div class="color-options">
-              <div class="elem_ins active">
-                <p>600g</p>
-              </div>
-              <div class="elem_ins">
-                <p>400g</p>
-              </div>
-
-            </div>
-          </div> -->
-
-                  <!-- CTA -->
-                  <link href='#' class="cta">Order now through whatsapp <img src="valour_inside/cdn/shop/files/whtsap.png"
-                      alt="whatsapp"></link>
-                  <div class="container_expand_ingre">
-                    <div class="accordion">
-                      <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span class="header_name">Ingredients</span>
-                        <span class="icon">+</span>
-                      </div>
-
-                      <div class="accordion-content" id="content">
-                        <p>
-                          Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices.
-                          No artificial preservatives or colors added.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- INFO BOX -->
-
-                </div>
-              </div>
-            </div>
+              
 
 
             <!-- BOTTOM BUTTONS -->
             <div class="slider-nav">
               <button class="dot active" onclick="goToSlide(0)"></button>
-              <button class="dot" onclick="goToSlide(1)"></button>
-              <button class="dot" onclick="goToSlide(2)"></button>
+
+              <!-- slides buttons -->
+              <!-- <button class="dot" onclick="goToSlide(1)"></button> -->
+              <!-- <button class="dot" onclick="goToSlide(2)"></button> -->
+
             </div>
 
           </div>
@@ -2480,12 +2377,12 @@ html {
         class="shopify-section text-scrolling-parent">
 
         <div class="text-scrolling-bottom-design">
-          <img src="valour_inside/cdn/shop/files/Union_1.png" alt="" loading="lazy" fetchpriority="low">
+          <img src="assets/images/Union_1.png" alt="" loading="lazy" fetchpriority="low">
         </div>
 
-        <script src="valour_inside/cdn/shop/t/8/assets/text-scrolling-javascript.js?v=178428518347066335071755164809"
+        <script src="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-javascript.js"
           defer></script>
-        <script src="valour_inside/cdn/shop/t/8/assets/packets-dishes-data.js?v=31334100664662409271755792980"
+        <script src="vendor/cdn/cdn/shop/t/8/assets/packets-dishes-data.js"
           defer></script>
 
 
@@ -2493,7 +2390,7 @@ html {
       <div id="shopify-section-template--19781511708886__sachet_video_gjfm3w"
         class="shopify-section sachet-video-parent">
         <link rel="stylesheet"
-          href="valour_inside/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
+          href="vendor/cdn/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
           media="print" onload="this.media='all'">
         <div class="cf-wrapper-main">
 
@@ -2503,11 +2400,11 @@ html {
 
             <div class="cf-carousel">
 
-              <div class="cf-card "><video src="vid1.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="vid2.mp4" muted loop></video></div>
-              <div class="cf-card  cf-active"><video src="vid2.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="vid1.mp4" muted loop></video></div>
+              <div class="cf-card "><video src="assets/videos/vid1.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="assets/videos/vid2.mp4" muted loop></video></div>
+              <div class="cf-card  cf-active"><video src="assets/videos/vid2.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
+              <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
 
             </div>
 
@@ -2516,7 +2413,7 @@ html {
           </div>
         </div>
 
-        <div class="timeline-section container">
+        <div class="timeline-section container" id="how-it-works">
 
           <div class="valour-banner__title_sec2">
             <h2>One process. No confusion</h2>
@@ -2529,7 +2426,7 @@ html {
 
             <div class="timeline-item left">
               <div class="cardxyz">
-                <img src="valour_inside/cdn/shop/files/img_1_timeline.png">
+                <img src="assets/images/img_1_timeline.png">
                 <h3>Fry fish</h3>
                 <p>Until light golden.</p>
               </div>
@@ -2538,7 +2435,7 @@ html {
 
             <div class="timeline-item right">
               <div class="cardxyz">
-                <img src="valour_inside/cdn/shop/files/img_2_timeline.png">
+                <img src="assets/images/img_2_timeline.png">
                 <h3>Pour Liquid spice</h3>
                 <p>3-4 Tablespoons</p>
               </div>
@@ -2547,7 +2444,7 @@ html {
 
             <div class="timeline-item left">
               <div class="cardxyz">
-                <img src="valour_inside/cdn/shop/files/img_3_timeline.png">
+                <img src="assets/images/img_3_timeline.png">
                 <h3>Simmer</h3>
                 <p>5-7 minutes</p>
               </div>
@@ -2564,7 +2461,7 @@ html {
       <div id="shopify-section-template--19781511708886__why_you_cheffin_KRe4nc"
         class="shopify-section why-you-cheffin-parent">
         <link rel="stylesheet"
-          href="valour_inside/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
+          href="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
           media="print" onload="this.media='all'">
         <div class="satchet-vidoe-bottom-design">
           <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
@@ -2605,18 +2502,18 @@ html {
               <div class="card card-1">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="valour_inside/cdn/shop/files/why_liquid_img1.png"
+                    src="assets/images/why_liquid_img1.png"
                     height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
                 </div>
                 <div class="text-container">
-                  <p>3-Step Cheffin Experience</p>
+                  <p>3-Step Liquidspice Experience</p>
                 </div>
               </div>
 
               <div class="card card-2">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="valour_inside/cdn/shop/files/why_liquid_img2.png"
+                    src="assets/images/why_liquid_img2.png"
                     height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
                 </div>
                 <div class="text-container">
@@ -2626,7 +2523,7 @@ html {
               <div class="card card-4">
                 <div class="image">
                   <img style="object-fit: cover; background: #fff;"
-                    src="valour_inside/cdn/shop/files/why_liquid_img3.png"
+                    src="assets/images/why_liquid_img3.png"
                     height="456" width="100%" alt="Masala tikka">
                 </div>
                 <div class="text-container">
@@ -2647,11 +2544,7 @@ html {
                     <span class="second-word">You’d Expect?</span>
 
                   </div>
-                  <!-- <div class="content-box content-box-green"></div>
-                  <div class="second-heading">
-                    <span class="first-word">Than</span>
-                  </div>
-                  <div class="content-box content-box-second">You’d Expect?</div> -->
+              
                 </div>
               </div>
             </div>
@@ -2659,7 +2552,7 @@ html {
             <div class="scrollable-cards">
               <div class="card card-1">
                 <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect.png"
+                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect.png"
                     height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
                   <div class="text-container">
                     <p style="color: #290e06;">Portion Magic</p>
@@ -2673,7 +2566,7 @@ html {
               </div>
               <div class="card card-2">
                 <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect2.png"
+                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect2.png"
                     height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
                   <div class="text-container">
                     <p style="color: #290e06;">Cooking Pride </p>
@@ -2687,7 +2580,7 @@ html {
               </div>
               <div class="card card-3">
                 <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="valour_inside/cdn/shop/files/Intersect3.png"
+                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect3.png"
                     height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
                   <div class="text-container">
                     <p style="color: #290e06;">Nutrition Win</p>
@@ -2707,7 +2600,7 @@ html {
           </section>
         </div>
 
-        <script src="valour_inside/cdn/shop/t/8/assets/why-you-cheffin-javascript.js?v=69935404545724201661756093773"
+        <script src="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-javascript.js"
           defer></script>
 
 
@@ -2715,7 +2608,7 @@ html {
       <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
         class="shopify-section testimonial-sectionxyz-parent">
         <link rel="stylesheet"
-          href="valour_inside/cdn/shop/t/8/assets/testimonial-sectionxyz-stylesheet.css?v=91204637565225421031755792981"
+          href="vendor/cdn/cdn/shop/t/8/assets/testimonial-sectionxyz-stylesheet.css?v=91204637565225421031755792981"
           media="print" onload="this.media='all'">
 
 
@@ -2734,15 +2627,15 @@ html {
               <!-- ITEM -->
               <div class="carousel-item">
                 <div class="image-grid">
-                  <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
                   <div class="small-grid">
                     <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
                     <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="review-card">
-                  <h4>Rachel Nguyen</h4>
+                  <h4>USER 1</h4>
                   <span>Verfied customer</span>
                   <p class="stars_review">★★★★★</p>
                   <p class="review_rev">Amazing experience with the product...</p>
@@ -2752,15 +2645,15 @@ html {
               <!-- ITEM -->
               <div class="carousel-item">
                 <div class="image-grid">
-                  <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
                   <div class="small-grid">
                     <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
                     <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="review-card">
-                  <h4>Rachel Nguyen</h4>
+                  <h4>USER 2</h4>
                   <span>Verfied customer</span>
                   <p class="stars_review">★★★★★</p>
                   <p class="review_rev">Amazing experience with the product...</p>
@@ -2770,11 +2663,11 @@ html {
               <!-- ITEM -->
               <div class="carousel-item">
                 <div class="image-grid">
-                  <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
                   <div class="small-grid">
                     <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
                     <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="review-card">
@@ -2812,9 +2705,9 @@ html {
         <div id="shopify-section-template--19781511708886__faq_section_tnj3kT"
           class="shopify-section faq-section-parent">
           <link rel="stylesheet"
-            href="valour_inside/cdn/shop/t/8/assets/faq-section-stylesheet.css?v=172775708833283730791755164806"
+            href="vendor/cdn/cdn/shop/t/8/assets/faq-section-stylesheet.css"
             media="print" onload="this.media='all'">
-          <script src="valour_inside/cdn/shop/t/8/assets/faq-section-animation.js?v=53513994526984560201754340011"
+          <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js"
             defer></script>
 
           <div class="faq-section">
@@ -3036,7 +2929,14 @@ This is the base of the dish.</p>
 
               <!-- LEFT -->
               <div class="footer-left">
-                <img src="your-logo.png" alt="Logo" class="footer-logo">
+                    <div class="nav-logo">
+    <span>V</span>
+    <span  class="letter_a">V</span>
+    <span>L</span>
+    <span>O</span>
+    <span>U</span>
+    <span>R</span>
+  </div>
 
                 <p class="footer-desc">
                   This is a demo store by Clean Canvas. All images and video content
@@ -3056,7 +2956,7 @@ This is the base of the dish.</p>
               </div>
 
               <!-- RIGHT -->
-              <div class="footer-links">
+              <!-- <div class="footer-links">
 
                 <div class="footer-col">
                   <h4>All Departments</h4>
@@ -3079,10 +2979,10 @@ This is the base of the dish.</p>
 
               </div>
 
-            </div>
+            </div> -->
 
             <!-- BOTTOM -->
-            <div class="footer-bottom">
+            <!-- <div class="footer-bottom">
               <p>© 2026 Canopy Theme Canopy. Powered by Shopify</p>
 
               <div class="footer-policy">
@@ -3090,7 +2990,7 @@ This is the base of the dish.</p>
                 <a href="#">Shipping & Returns</a>
               </div>
             </div>
-          </footer>
+          </footer> -->
 
 
 
@@ -3558,6 +3458,10 @@ This is the base of the dish.</p>
       }, 2000); // Wait for GIF to complete (2 seconds)
     });
   </script>
+
+  <script  src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js
+"  defer="defer"></script>
+
 </body>
 
 </html>
