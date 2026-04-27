@@ -1,147 +1,67 @@
-.banner-wrapper {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-}
-
+/* ===== FIX: Disable manual scrolling ===== */
 .banner-section {
   width: 100%;
   height: 100%;
   display: flex;
-  overflow-x: scroll;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+
+  overflow-x: hidden; /* no horizontal scroll */
+  overflow-y: hidden; /* no vertical scroll */
+
   scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  touch-action: none; /* disables swipe on mobile */
 }
 
-.banner-section::-webkit-scrollbar {
-  display: none;
-}
-
+/* ===== KEEP SLIDES FULL WIDTH ===== */
 .banner-slide {
   width: 100vw;
   height: 100vh;
   flex-shrink: 0;
-  scroll-snap-align: start;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
-.banner-slideshow-section {
-  will-change: opacity, transform;
-  transform-style: preserve-3d;
-}
-
-.banner-slide img {
-  width: 100%;
-  height: 100vh;
-  object-fit: cover;
-  object-position: center;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-  pointer-events: none;
-}
-
-.banner-button {
-  display: inline-block;
-  padding: 12px 30px;
-  background-color: #000;
-  color: #fff;
-  text-decoration: none;
-  border-radius: 5px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.banner-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px #0000004d;
-}
-
-.banner-dots {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translate(-50%);
-  display: flex;
-  gap: 10px;
-  z-index: 3;
-}
-
-.banner-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ffffff80;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.banner-dot.active {
-  background: #fff;
-}
-
+/* ===== NAV BUTTONS ===== */
 .banner-nav {
   position: absolute;
-  top: 50%;
+  top: 40%;
   transform: translateY(-50%);
-  background: #fff3;
+  background: rgb(255 255 255 / 40%);
   border: none;
-  color: #fff;
+  color: #000000;
   font-size: 2rem;
-  padding: 15px 20px;
+  padding: 15px 26px;
   cursor: pointer;
-  transition: background 0.3s ease;
-  z-index: 3;
+  z-index: 10;
+  border-radius: 40px;
+  transition: 0.3s;
 }
 
 .banner-nav:hover {
-  background: #fff6;
+  background: rgba(246, 189, 189, 0.7);
 }
 
 .banner-nav.prev {
-  left: 30px;
+  left: -5px;
 }
 
 .banner-nav.next {
-  right: 30px;
+  right: -14px;
 }
 
-@media (max-width: 768px) {
-  .banner-slide,
-  .banner-section,
-  .banner-wrapper {
-    height: auto;
-  }
+/* ===== FIX: Disable manual scrolling ===== */
+.banner-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
 
-  .banner-wrapper {
-    margin-top: 40px;
-  }
-  .banner-slide img {
-    height: auto;
-  }
+  overflow-x: hidden; /* no horizontal scroll */
+  overflow-y: hidden; /* no vertical scroll */
 
-  .banner-nav {
-    font-size: 1.5rem;
-    padding: 10px 15px;
-  }
-
-  .banner-nav.prev {
-    left: 15px;
-  }
-
-  .banner-nav.next {
-    right: 15px;
-  }
+  scroll-behavior: smooth;
+  touch-action: none; /* disables swipe on mobile */
 }
 
-/*# sourceMappingURL=/cdn/shop/t/8/assets/banner-section.css.map?v=147718292925816370001755858244 */
+/* ===== KEEP SLIDES FULL WIDTH ===== */
+.banner-slide {
+  width: 100vw;
+  height: 100vh;
+  flex-shrink: 0;
+}

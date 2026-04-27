@@ -21,36 +21,22 @@
 
   <meta property="og:site_name" content="Cheffin">
   <meta property="og:url" content="vendor/cdn/">
-  <meta property="og:title" content="Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic">
+  <meta property="og:title" content="Valour | Liquid Spice &amp; Authentic">
   <meta property="og:type" content="website">
 
   <meta property="og:image:width" content="1440">
   <meta property="og:image:height" content="800">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic">
   <meta name="twitter:description"
-    content="Restaurant-style taste with your home-style goodness. Cheffin&#39;s ready-to-cook kits give you authentic flavors and complete control in just 10 minutes. Outside food, made inside.">
+    content="Valour | Liquid Spice">
 
   <title>
-    Cheffin – Authentic Ready to Cook Meal Kit | Fresh &amp; Authentic
+    Valour | Liquid Spice
   </title>
 
   <link rel="canonical" href="vendor/cdn/">
 
-
-  <meta name="description"
-    content="Restaurant-style taste with your home-style goodness. Cheffin&#39;s ready-to-cook kits give you authentic flavors and complete control in just 10 minutes. Outside food, made inside.">
-
-
-
-
-
-
-
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
-
-
-
 
   <link rel="stylesheet" media="screen"
     href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
@@ -85,7 +71,8 @@ a{
   transform: translateY(12px);
   animation: reveal 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
-
+.faq-heading {
+    font-family: Parkinsans-Bold;}
 
 /* Sequential delay */
 .loader_logo_vlr span:nth-child(1) { animation-delay: 0.1s; }
@@ -127,6 +114,13 @@ a{
   .loader_logo_vlr {
 
   font-size: 36px;}
+}
+.nav-right {
+    display: block;
+    background: #ffffff;
+    padding: 6px;
+    border-radius: 40px;
+    border: 1px solid #9f9f9f;
 }
   /* OVERLAY */
   .cf-popup-overlay {
@@ -299,6 +293,7 @@ a{
   }
 
 
+  
 
 
 
@@ -338,7 +333,7 @@ a{
     line-height: 1;
     letter-spacing: 1px;
     margin: 0;
-    color: #3b0a0a;
+    color: #af1f1f;font-weight: 800;
     text-align: justify;
   }
 
@@ -494,7 +489,7 @@ a{
     }
 
     .banner-content {
-      top: 23%;
+      top: 11%;
     }
 
     .hero-subtitle {
@@ -1102,7 +1097,7 @@ a{
   font-size: 20px;
   letter-spacing: 6px;
   font-weight: 600;
-  color: #ececeb; 
+  color: #000000; 
   font-family: 'Times New Roman', serif;
 }
 
@@ -2237,7 +2232,8 @@ a{
 
 
         </div>
-
+<button class="banner-nav prev">&#10094;</button>
+<button class="banner-nav next">&#10095;</button>
 
     </section>
     <link href="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-stylesheet.css"
@@ -3457,6 +3453,46 @@ This is the base of the dish.</p>
         }, 500); // Wait for fade out to complete
       }, 2000); // Wait for GIF to complete (2 seconds)
     });
+
+
+
+
+
+
+
+    const slider_x = document.querySelector('.banner-section');
+
+/* ✅ Ignore cloned slide */
+const slides_x = document.querySelectorAll('.banner-slide:not([data-cloned])');
+
+const nextBtn = document.querySelector('.banner-nav.next');
+const prevBtn = document.querySelector('.banner-nav.prev');
+
+let currentIndex = 0;
+
+/* ===== MOVE SLIDER ===== */
+function updateSlider() {
+  slider_x.scrollTo({
+    left: slides_x[currentIndex].offsetLeft,
+    behavior: 'smooth'
+  });
+
+  slides_x.forEach((slide, i) => {
+    slide.classList.toggle('active', i === currentIndex);
+  });
+}
+
+/* ===== NEXT BUTTON ===== */
+nextBtn.addEventListener('click', () => {
+  currentIndex = (currentIndex + 1) % slides_x.length;
+  updateSlider();
+});
+
+/* ===== PREV BUTTON ===== */
+prevBtn.addEventListener('click', () => {
+  currentIndex = (currentIndex - 1 + slides_x.length) % slides_x.length;
+  updateSlider();
+});
   </script>
 
   <script  src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js

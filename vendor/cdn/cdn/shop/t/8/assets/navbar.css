@@ -50,7 +50,7 @@
 
 /* NAVBAR */
 .navbar {
-  background: linear-gradient(to right, #330000, #310a0a);
+  background: transparent;
   padding: 36px clamp(16px, 15vw, 60px);
   position: relative;
 }
@@ -89,7 +89,7 @@
 .nav-right span {
   font-size: 22px;
   cursor: pointer;
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 /* HAMBURGER */
