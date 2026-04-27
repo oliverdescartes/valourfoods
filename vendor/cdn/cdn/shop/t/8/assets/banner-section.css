@@ -10,10 +10,12 @@
   display: flex;
   overflow-x: scroll;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
+
+  overscroll-behavior-x: contain;
 }
 
 .banner-section::-webkit-scrollbar {
