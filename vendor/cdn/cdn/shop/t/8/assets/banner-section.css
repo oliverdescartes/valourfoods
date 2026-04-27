@@ -34,10 +34,6 @@
   transition: 0.3s;
 }
 
-.banner-nav:hover {
-  background: rgba(246, 189, 189, 0.7);
-}
-
 .banner-nav.prev {
   left: -5px;
 }
