@@ -1,759 +1,785 @@
 .scroll-container {
-    height: 400vh;
-    will-change: transform, scale;
-    transform-origin: center center
+  height: 400vh;
+  will-change: transform, scale;
+  transform-origin: center center;
 }
 
 .shopify-section.sachet-video-parent {
-    overflow: hidden
+  overflow: hidden;
 }
 
 .why-you-cheffin-parent {
-    position: relative;
-    height: 920vh
+  position: relative;
+  height: 920vh;
 }
 
 .why-you-cheffin .scrollable-cards .card {
-    position: sticky;
-    opacity: 1;        background: #efe5e5;
-    will-change: transform, opacity;border-radius: 11px;
-    pointer-events: none
+  position: sticky;
+  opacity: 1;
+  background: #efe5e5;
+  will-change: transform, opacity;
+  border-radius: 11px;
+  pointer-events: none;
 }
 
 .why-you-cheffin {
-    max-height: 500vh
+  max-height: 500vh;
 }
 
-@media(max-width:750px) {
-    .why-you-cheffin-parent {
-        position: relative;
-        height: 480vh
-    }
+@media (max-width: 750px) {
+  .why-you-cheffin-parent {
+    position: relative;
+    height: 480vh;
+  }
 
+  .why-you-cheffin {
+    max-height: 350vh;
+  }
+
+  .why-your-kit {
+    justify-content: space-between;
+    overflow: visible;
+    height: 130vh !important;
+  }
+
+  .why-your-kit .scrollable-cards {
+    top: 60%;
+    transform: translateY(0);
+  }
+
+  @media screen and (min-height: 600px) and (max-height: 900px) {
     .why-you-cheffin {
-        max-height: 350vh
+      max-height: 400vh;
+    }
+
+    .why-you-cheffin-parent {
+      position: relative;
+      height: 550vh;
     }
 
     .why-your-kit {
-        justify-content: space-between;
-        overflow: visible;
-        height: 130vh !important
+      height: 150vh !important;
     }
 
     .why-your-kit .scrollable-cards {
-        top: 60%;
-        transform: translateY(0)
+      transform: translateY(-30%);
     }
+  }
 
-    @media screen and (min-height:600px)and (max-height:900px) {
-        .why-you-cheffin {
-            max-height: 400vh
-        }
-
-        .why-you-cheffin-parent {
-            position: relative;
-            height: 550vh
-        }
-
-        .why-your-kit {
-            height: 150vh !important
-        }
-
-        .why-your-kit .scrollable-cards {
-            transform: translateY(-30%)
-        }
-    }
-
-    .section.why-your-kit .smoke-content-parent {
-        padding-bottom: 120px;
-        margin-bottom: 0 !important;
-        top: 40px !important
-    }
+  .section.why-your-kit .smoke-content-parent {
+    padding-bottom: 120px;
+    margin-bottom: 0 !important;
+    top: 40px !important;
+  }
 }
 
-@media(min-width:750px) {
-    .why-you-cheffin .scrollable-cards .card {
-        top: 12vh
-    }
+@media (min-width: 750px) {
+  .why-you-cheffin .scrollable-cards .card {
+    top: 12vh;
+  }
 
-    .why-your-kit {
-        height: 420vh !important;
-        justify-content: space-around !important
-    }
+  .why-your-kit {
+    height: 420vh !important;
+    justify-content: space-around !important;
+  }
 
-    .section.why-you-cheffin .smoke-content-parent {
-        margin-bottom: 160px !important
-    }
+  .section.why-you-cheffin .smoke-content-parent {
+    margin-bottom: 160px !important;
+  }
 
-    .why-your-kit .scrollable-cards {
-        flex-direction: column;
-        gap: 20vh;
-        max-width: 1260px;
-        padding-top: 60vh
-    }
+  .why-your-kit .scrollable-cards {
+    flex-direction: column;
+    gap: 20vh;
+    max-width: 1260px;
+    padding-top: 60vh;
+  }
 
-    .why-your-kit .scrollable-cards .card.card-1 {
-        left: 0
-    }
+  .why-your-kit .scrollable-cards .card.card-1 {
+    left: 0;
+  }
 
-    .why-your-kit .scrollable-cards .card.card-2 {
-        left: 50%;
-        transform: translate(-50%)
-    }
+  .why-your-kit .scrollable-cards .card.card-2 {
+    left: 50%;
+    transform: translate(-50%);
+  }
 
-    .why-your-kit .scrollable-cards .card.card-3 {
-        left: 100%
-    }
+  .why-your-kit .scrollable-cards .card.card-3 {
+    left: 100%;
+  }
 }
 
 .why-you-cheffin-wrapper {
-    position: relative;
-    width: 100%;
-    height: 400vh;
-    overflow: hidden
+  position: relative;
+  width: 100%;
+  height: 400vh;
+  overflow: hidden;
 }
 
 .scroll-container {
-    height: 100%;
-    position: relative
+  height: 100%;
+  position: relative;
 }
 
 .section {
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 100px;
-    align-items: center;
-    justify-content: center;
-    padding: 150px 20px;
-    will-change: transform, filter, scale;
-    transform-origin: center center
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 100px;
+  align-items: center;
+  justify-content: center;
+  padding: 150px 20px;
+  will-change: transform, filter, scale;
+  transform-origin: center center;
 }
 
 .section {
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 100px;
-    align-items: center;
-    justify-content: center;
-    padding: 150px 20px
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 100px;
+  align-items: center;
+  justify-content: center;
+  padding: 150px 20px;
 }
 
 .why-you-cheffin {
-    background: #831a1a;
-    z-index: 2;
-    will-change: transform, filter;
-    transform-origin: center center;
-    height: 100%;
-    justify-content: start !important
+  background: #831a1a;
+  z-index: 2;
+  will-change: transform, filter;
+  transform-origin: center center;
+  height: 100%;
+  justify-content: start !important;
 }
 
 .why-you-cheffin .image {
-    height: auto;padding:14px
+  height: auto;
+  padding: 14px;
 }
 
 .why-you-cheffin .scrollable-cards .card .text-container {
-    font-family: Parkinsans-Regular
+  font-family: Parkinsans-Regular;
 }
 .text-container p {
-    color: #2d0303;
-    font-size: 23px;
-    /* white-space: nowrap; */
-    margin: 8px;
-    font-family: 'Inter', sans-serif;
-    margin-bottom: 20px;
+  color: #e6e2e2;
+  font-size: 23px;
+  /* white-space: nowrap; */
+  margin: 8px;
+  font-family: "Inter", sans-serif;
+  margin-bottom: 20px;
 }
 
 .why-your-kit .scrollable-cards .card .text-container {
-    font-family: Parkinsans-Bold
+  font-family: Parkinsans-Bold;
 }
 
 .why-your-kit {
-       background-color: #e4a14c;
-    background-repeat: repeat;
-    z-index: 1;
-    will-change: transform, filter;
-    transform-origin: center center
+  background-color: #e4a14c;
+  background-repeat: repeat;
+  z-index: 1;
+  will-change: transform, filter;
+  transform-origin: center center;
 }
 
 .scrollable-cards .card img {
-    border-radius: 35px;
-    height: 100%
+  border-radius: 35px;
+  height: 100%;
 }
 
 .scrollable-cards .card {
-    position: relative;
-    opacity: 0
+  position: relative;
+  opacity: 0;
 }
 
-@media(max-width:768px) {
-    .why-you-cheffin .scrollable-cards .card .text-container {
-        font-size: 18px;width:100%
-    }
-    .text-container p{
-        font-size: 18px;
-
-    }
+@media (max-width: 768px) {
+  .why-you-cheffin .scrollable-cards .card .text-container {
+    font-size: 18px;
+    width: 100%;
+  }
+  .text-container p {
+    font-size: 18px;
+  }
 }
 
 .scrollable-cards .card .text-container {
-    width: fit-content;
-    padding: 20px;
-    border-radius: 16px;
-    position: relative;
-    width: 90%;
-    text-align: center;
-    font-size: 20px;
-    font-weight: 700
+  width: fit-content;
+  padding: 20px;
+  border-radius: 16px;
+  position: relative;
+  width: 90%;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .scrollable-cards {
-    display: flex;
-    width: 100%;
-    gap: 20px;
-    height: fit-content
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  height: fit-content;
 }
 
 .scrollable-cards .card {
-    flex: 1;
-    min-width: 0
+  flex: 1;
+  min-width: 0;
 }
 
 .text-container-heading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-family: Parkinsans-Bold;
-    font-weight: 700
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: Parkinsans-Bold;
+  font-weight: 700;
 }
 
 .text-container-heading .why-you-cheffin-heading .first-heading span {
-    font-size: 70px;
-    font-weight: 100;
-    width: fit-content
+  font-size: 70px;
+  font-weight: 100;
+  width: fit-content;
 }
 
 .why-you-cheffin-heading .second-heading span {
-    color: #3d1815;
-    font-size: 70px;
-    font-weight: 100;
-    width: fit-content
+  color: #3d1815;
+  font-size: 70px;
+  font-weight: 100;
+  width: fit-content;
 }
 
-@media(min-width:768px) {
-    .why-you-cheffin-heading .second-heading span {
-        transform: translate(25px);
-        position: relative;
-        z-index: 2
-    }
+@media (min-width: 768px) {
+  .why-you-cheffin-heading .second-heading span {
+    transform: translate(25px);
+    position: relative;
+    z-index: 2;
+  }
 }
 
 .content-box {
-    background-color: #ece4d4;
-    color: #b23b35;
-    font-size: 103px;
-    transform: translate(0) translateY(-30%);
-    padding: 10px 60px;
-    z-index: -1;
-    position: relative;
-    width: fit-content;
-    max-width: max-content
+  background-color: #ece4d4;
+  color: #b23b35;
+  font-size: 103px;
+  transform: translate(0) translateY(-30%);
+  padding: 10px 60px;
+  z-index: -1;
+  position: relative;
+  width: fit-content;
+  max-width: max-content;
 }
 
 .smoke-content-parent {
-    position: sticky;
-    top: 140px;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center
+  position: sticky;
+  top: 140px;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.why-you-cheffin .text-container-heading .why-you-cheffin-heading .first-heading span {
-    color: #fada79;
-    line-height: 1.3
+.why-you-cheffin
+  .text-container-heading
+  .why-you-cheffin-heading
+  .first-heading
+  span {
+  color: #fada79;
+  line-height: 1.3;
 }
 
 .why-you-cheffin .card-1 {
-    transform: rotate(-5deg) translate(-30vw)
+  transform: rotate(-5deg) translate(-30vw);
 }
 
 .why-you-cheffin .card-2 {
-    transform: translate(-10vw)
+  transform: translate(-10vw);
 }
-
-
 
 .why-you-cheffin .card-4 {
-    transform: translate(30vw)
+  transform: translate(30vw);
 }
 
-.why-your-kit .text-container-heading .why-you-cheffin-heading .first-heading span {
-    line-height: 1;
-    margin: 0;
-    color: white;
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    text-wrap: balance;
+.why-your-kit
+  .text-container-heading
+  .why-you-cheffin-heading
+  .first-heading
+  span {
+  line-height: 1;
+  margin: 0;
+  color: white;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  text-wrap: balance;
 }
 
 .why-your-kit .text-container-heading {
-    position: relative;
-    top: 20%
+  position: relative;
+  top: 20%;
 }
 
-.why-your-kit .scrollable-cards .card{
-    border-radius: 35px;
-    background-color: #fff;
-    font-family: Parkinsans-Bold;
+.why-your-kit .scrollable-cards .card {
+  border-radius: 35px;
+  background-color: #fff;
+  font-family: Parkinsans-Bold;
 }
 
 .why-your-kit .scrollable-cards .card .image-content img {
-    height: 240px
+  height: 240px;
 }
 
 .why-your-kit .scrollable-cards .card-1 .text-container,
 .why-your-kit .scrollable-cards .card-3 .text-container {
-    position: relative;
-    height: fit-content;
-    border-radius: 0;
-    background-repeat: repeat;padding-top: 53px;
+  position: relative;
+  height: fit-content;
+  border-radius: 0;
+  background-repeat: repeat;
+  padding-top: 53px;
 }
-
-
 
 .why-your-kit .scrollable-cards .text-container {
-    font-size: 35px;
-    padding: 12px 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 75%
+  font-size: 35px;
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 75%;
 }
 
-
-
 .why-your-kit .scrollable-cards .text-container-card {
-    padding: 32px;
-    text-align: center;
-     padding: 24px;
-        padding-bottom: 46px;
-        text-align: justify;
+  padding: 32px;
+  text-align: center;
+  padding: 24px;
+  padding-bottom: 46px;
+  text-align: justify;
 }
 
 .why-your-kit .scrollable-cards .text-container-card h2 {
-    font-size: 22px;       
-        font-family: 'Inter';
-        font-weight: 500;
-    
+  font-size: 22px;
+  font-family: "Inter";
+  font-weight: 500;
 }
 
 .why-your-kit .scrollable-cards .text-container-card p {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 .why-your-kit .scrollable-cards {
-    position: relative
+  position: relative;
 }
 
 .why-your-kit .scrollable-cards .card {
-    opacity: 1;
-    position: sticky;
-    top: 20%;
-    will-change: transform, opacity;
-    pointer-events: none;
-    max-width: 400px
+  opacity: 1;
+  position: sticky;
+  top: 20%;
+  will-change: transform, opacity;
+  pointer-events: none;
+  max-width: 400px;
 }
 
 .why-you-cheffin .scrollable-cards .card img {
-    height: 456px;
-    width: 370px
+  height: 456px;
+  width: 370px;
 }
 
 .why-you-cheffin .smoke-content-parent img {
-    width: 395px;
-    height: auto;
-    position: absolute;
-    bottom: 18%;
-    left: 50%;
-    transform: translate(-60%);
-    opacity: 0
+  width: 395px;
+  height: auto;
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  transform: translate(-60%);
+  opacity: 0;
 }
 
 .why-your-kit .content-box-green {
-    background-color: #1eaf3d;
-    color: #fff;
-    font-size: 48px;
-    width: fit-content;
-    position: relative;
-    top: 29px;
-    left: 15%;
-    rotate: -2.91deg;
-    z-index: 1;
-    box-shadow: -6px 13px #00000026
+  background-color: #1eaf3d;
+  color: #fff;
+  font-size: 48px;
+  width: fit-content;
+  position: relative;
+  top: 29px;
+  left: 15%;
+  rotate: -2.91deg;
+  z-index: 1;
+  box-shadow: -6px 13px #00000026;
 }
 
 .satchet-vidoe-bottom-design {
-    position: absolute;
-    top: 0%;
-    margin-top: -2px;
-    z-index: 9;
-    left: 0
+  position: absolute;
+  top: 0%;
+  margin-top: -2px;
+  z-index: 9;
+  left: 0;
 }
 
-@media screen and (max-width:420px) {
+@media screen and (max-width: 420px) {
+  .why-your-kit .content-box-green,
+  .content-box.content-box-second {
+    font-size: 36px;
+  }
 
-    .why-your-kit .content-box-green,
-    .content-box.content-box-second {
-        font-size: 36px
-    }
-
-    .text-container-heading .why-you-cheffin-heading .first-heading span,
-    .why-you-cheffin-heading .second-heading span {
-        font-size: 36px !important
-    }
+  .text-container-heading .why-you-cheffin-heading .first-heading span,
+  .why-you-cheffin-heading .second-heading span {
+    font-size: 36px !important;
+  }
 }
 
 .why-you-cheffin .second-word {
-    margin-top: -40px
+  margin-top: -40px;
 }
 
 .why-you-cheffin .second-heading {
-    margin-top: -45px
+  margin-top: -45px;
 }
 
 .why-your-kit .content-box-second {
-    rotate: -5deg;
-    box-shadow: -6px 13px #00000026
+  rotate: -5deg;
+  box-shadow: -6px 13px #00000026;
 }
 
 .why-you-cheffin-heading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    z-index: 9
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 9;
 }
 
 .why-your-kit .second-word {
-    margin-top: -25px
+  margin-top: -25px;
 }
 
 .why-you-cheffin .scrollable-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 18vh;
-    align-items: center;
-    justify-content: center;
-    padding-top: 50vh
+  display: flex;
+  flex-direction: column;
+  gap: 18vh;
+  align-items: center;
+  justify-content: center;
+  padding-top: 50vh;
 }
 
-@media(max-width:750px) {
-    .why-your-kit .scrollable-cards .card .text-container {
-        padding: 9px 20px;
-        padding-top: 53px;
-        height: 44px !important;width:100%
-    }
+@media (max-width: 750px) {
+  .why-your-kit .scrollable-cards .card .text-container {
+    padding: 9px 20px;
+    padding-top: 53px;
+    height: 44px !important;
+    width: 100%;
+  }
 
-    .why-you-cheffin .second-heading {
-        margin-top: -30px
-    }
+  .why-you-cheffin .second-heading {
+    margin-top: -30px;
+  }
 
-    .why-you-cheffin .content-box {
-        margin-top: -1% !important
-    }
+  .why-you-cheffin .content-box {
+    margin-top: -1% !important;
+  }
 
-    .why-your-kit .scrollable-cards .text-container-card h2 {
-                font-size: 15px;
-        font-family: 'Inter';
-        font-weight: 500;
-    }
+  .why-your-kit .scrollable-cards .text-container-card h2 {
+    font-size: 15px;
+    font-family: "Inter";
+    font-weight: 500;
+  }
 
-    .why-your-kit .scrollable-cards .text-container-card p {
-        font-size: 16px
-    }
+  .why-your-kit .scrollable-cards .text-container-card p {
+    font-size: 16px;
+  }
 
-    .why-your-kit .scrollable-cards .text-container {
-        font-size: 24px
-    }
+  .why-your-kit .scrollable-cards .text-container {
+    font-size: 24px;
+  }
 
-    .text-container-heading .why-you-cheffin-heading .first-heading span,
-    .why-you-cheffin-heading .second-heading span {
-        font-size: 44px
-    }
+  .text-container-heading .why-you-cheffin-heading .first-heading span,
+  .why-you-cheffin-heading .second-heading span {
+    font-size: 44px;
+  }
 
-    .content-box {
-        font-size: 48px;
-        padding: 0 10px;
-        margin-top: -1%;
-        margin-left: -2%;
-        display: flex;
-        align-items: center;
-        justify-content: center
-    }
+  .content-box {
+    font-size: 48px;
+    padding: 0 10px;
+    margin-top: -1%;
+    margin-left: -2%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .why-your-kit .scrollable-cards .card {
-        top: 0;
-        left: 0
-    }
+  .why-your-kit .scrollable-cards .card {
+    top: 0;
+    left: 0;
+  }
 
-    .why-you-cheffin .scrollable-cards .card {
-        width: 40%;
-        transform: translate(0);
-        min-width: 85%;          background: #efe5e5;
-    }
+  .why-you-cheffin .scrollable-cards .card {
+    width: 40%;
+    transform: translate(0);
+    min-width: 85%;
+    background: #9f642d;
+  }
 
-    .why-you-cheffin .scrollable-cards .card img {
-        width: 100%;
-        height: 300px
-    }
+  .why-you-cheffin .scrollable-cards .card img {
+    width: 100%;
+    height: 300px;
+  }
 
-    .why-you-cheffin .scrollable-cards .card.card-1 {
-        z-index: 1;
-                height: 600px;
-           
-        top: 30%;   
-    }
+  .why-you-cheffin .scrollable-cards .card.card-1 {
+    z-index: 1;
+    height: 600px;
 
-    .why-you-cheffin .scrollable-cards .card.card-2 {
-        z-index: 2;
-        top: 37%
-    }
+    top: 30%;
+  }
 
-    .why-you-cheffin .scrollable-cards .card.card-3 {
-        z-index: 3;
-        top: 47%
-    }
+  .why-you-cheffin .scrollable-cards .card.card-2 {
+    z-index: 2;
+    top: 37%;
+    transform: rotate(8deg);
+  }
 
-    .why-you-cheffin .scrollable-cards .card.card-4 {
-        z-index: 4;
-        top: 54%
-    }
+  .why-you-cheffin .scrollable-cards .card.card-3 {
+    z-index: 3;
+    top: 47%;
+  }
 
-    .section {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        gap: 0px;
-        align-items: start;
-        justify-content: flex-start
-    }
+  .why-you-cheffin .scrollable-cards .card.card-4 {
+    z-index: 4;
+    top: 54%;
+    transform: rotate(355deg);
+  }
 
-    .smoke-content-parent {
-        height: fit-content;
-        margin-bottom: 20vh
-    }
+  .section {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    align-items: start;
+    justify-content: flex-start;
+  }
 
-    .why-your-kit .scrollable-cards .card {
-        flex: 1;
-        min-width: 0;
-        flex-grow: 1;
-        flex-shrink: 0;
-        min-width: 305px;
-        position: relative;
-        z-index: 1;
-        -webkit-user-drag: none;
-        -khtml-user-drag: none;
-        -moz-user-drag: none;
-        -o-user-drag: none;
-        touch-action: pan-x
-    }
+  .smoke-content-parent {
+    height: fit-content;
+    margin-bottom: 20vh;
+  }
 
-    .why-your-kit .scrollable-cards .card:last-child {
-        margin-right: 30px
-    }
+  .why-your-kit .scrollable-cards .card {
+    flex: 1;
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 0;
+    min-width: 305px;
+    position: relative;
+    z-index: 1;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    touch-action: pan-x;
+  }
 
-    .why-your-kit .scrollable-cards {
-        display: flex;
-        overflow-x: scroll;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
-        min-height: max-content;
-        padding: 50px 0;
-        position: absolute;
-        pointer-events: auto;
-        touch-action: pan-x pan-y;
-        overflow-y: hidden;
-        overflow-x: auto;
-        width: calc(100vw - 16px) !important
-    }
+  .why-your-kit .scrollable-cards .card:last-child {
+    margin-right: 30px;
+  }
 
-    :scope::-webkit-scrollbar {
-        display: none
-    }
+  .why-your-kit .scrollable-cards {
+    display: flex;
+    overflow-x: scroll;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    min-height: max-content;
+    padding: 50px 0;
+    position: absolute;
+    pointer-events: auto;
+    touch-action: pan-x pan-y;
+    overflow-y: hidden;
+    overflow-x: auto;
+    width: calc(100vw - 16px) !important;
+  }
 
-    .why-your-kit .scrollable-cards .card-1 .text-container,
-    .why-your-kit .scrollable-cards .card-3 .text-container {
-        height: fit-content;
-        border-radius: 0;
-        z-index: 10;
-        position: relative;
-        padding-top: 53px;
-        -webkit-user-drag: none;
-        -khtml-user-drag: none;
-        -moz-user-drag: none;
-        -o-user-drag: none
-    }
+  :scope::-webkit-scrollbar {
+    display: none;
+  }
 
-    .why-you-cheffin {
-        height: 100%;
-        display: flex
-    }
+  .why-your-kit .scrollable-cards .card-1 .text-container,
+  .why-your-kit .scrollable-cards .card-3 .text-container {
+    height: fit-content;
+    border-radius: 0;
+    z-index: 10;
+    position: relative;
+    padding-top: 53px;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+  }
 
-    .why-you-cheffin .smoke-content-parent img {
-        width: 260px;
-        height: auto;
-        position: absolute;
-        bottom: 23%;
-        left: 50%;
-        transform: translate(-50%);
-        opacity: 0
-    }
+  .why-you-cheffin {
+    height: 100%;
+    display: flex;
+  }
 
-    .scrollable-cards .card .text-container {
-        padding: 17px 19px
-    }
+  .why-you-cheffin .smoke-content-parent img {
+    width: 260px;
+    height: auto;
+    position: absolute;
+    bottom: 23%;
+    left: 50%;
+    transform: translate(-50%);
+    opacity: 0;
+  }
 
-    .why-your-kit .first-heading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        z-index: 2
-    }
+  .scrollable-cards .card .text-container {
+    padding: 17px 19px;
+  }
 
-    .why-your-kit .first-heading .first-word {
-        margin-left: -33%
-    }
+  .why-your-kit .first-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+  }
 
-    .why-your-kit .content-box-green {
-        position: relative;
-        margin-top: -12%;
-        margin-left: 0;
-        background-image: url("data:image/svg+xml,%3Csvg width='25' height='15' viewBox='0 0 25 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 7.5 Q6.25 2.5 12.5 7.5 T25 7.5' stroke='%23ffffff' stroke-width='0.5' fill='none' opacity='0.2'/%3E%3C/svg%3E");
-        background-repeat: repeat
-    }
+  .why-your-kit .first-heading .first-word {
+    margin-left: -33%;
+  }
 
-    .why-your-kit .second-heading span {
-        margin-left: -200%;
-        font-size: 32px;
-        position: relative;
-        z-index: 5
-    }
+  .why-your-kit .content-box-green {
+    position: relative;
+    margin-top: -12%;
+    margin-left: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='25' height='15' viewBox='0 0 25 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 7.5 Q6.25 2.5 12.5 7.5 T25 7.5' stroke='%23ffffff' stroke-width='0.5' fill='none' opacity='0.2'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
 
-    .why-your-kit .scrollable-cards .text-container-card {
-        padding: 24px;      padding-bottom: 46px;
-    }
+  .why-your-kit .second-heading span {
+    margin-left: -200%;
+    font-size: 32px;
+    position: relative;
+    z-index: 5;
+  }
 
-    .why-your-kit .scrollable-cards::-webkit-scrollbar {
-        display: none
-    }
+  .why-your-kit .scrollable-cards .text-container-card {
+    padding: 24px;
+    padding-bottom: 46px;
+  }
 
-    .why-your-kit .scrollable-cards img {
-        -webkit-user-drag: none;
-        -khtml-user-drag: none;
-        -moz-user-drag: none;
-        -o-user-drag: none
-    }
+  .why-your-kit .scrollable-cards::-webkit-scrollbar {
+    display: none;
+  }
 
-    .why-your-kit.section {
-        padding:350px 16px !important
-    }
+  .why-your-kit .scrollable-cards img {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+  }
 
-    .why-your-kit .scrollable-cards .card {
-        transform: none
-    }
+  .why-your-kit.section {
+    padding: 350px 16px !important;
+  }
+
+  .why-your-kit .scrollable-cards .card {
+    transform: none;
+  }
 }
 
 .why-you-cheffin .content-box {
-    rotate: -4.5deg;
-    box-shadow: -6px 13px #00000026;
-    margin-top: -15px
+  rotate: -4.5deg;
+  box-shadow: -6px 13px #00000026;
+  margin-top: -15px;
 }
 
-@media(min-width:750px) {
-    .why-you-cheffin-parent .pin-spacer {
-        margin-bottom: -100px !important
-    }
+@media (min-width: 750px) {
+  .why-you-cheffin-parent .pin-spacer {
+    margin-bottom: -100px !important;
+  }
 
-    .scrollable-cards .card .text-container {
-        min-width: 287px !important;
-        width: 90%
-    }
+  .scrollable-cards .card .text-container {
+    min-width: 287px !important;
+    width: 90%;
+  }
 
-    .why-you-cheffin-heading .first-heading {
-        display: flex;
-        flex-direction: column
-    }
+  .why-you-cheffin-heading .first-heading {
+    display: flex;
+    flex-direction: column;
+  }
 
-    .why-you-cheffin-heading .second-heading .first-word {
-        margin-left: -210%
-    }
+  .why-you-cheffin-heading .second-heading .first-word {
+    margin-left: -210%;
+  }
 
-    .smoke-content-parent {
-        height: unset
-    }
+  .smoke-content-parent {
+    height: unset;
+  }
 
-    .why-you-cheffin .scrollable-cards .card .text-container {
-        font-size: 24px
-    }
+  .why-you-cheffin .scrollable-cards .card .text-container {
+    font-size: 24px;
+  }
 
-    .why-your-kit .text-container-heading .why-you-cheffin-heading .first-heading span {
-        font-size: 72px
-    }
+  .why-your-kit
+    .text-container-heading
+    .why-you-cheffin-heading
+    .first-heading
+    span {
+    font-size: 72px;
+  }
 
-    .why-your-kit .why-you-cheffin-heading .second-heading .first-word {
-        font-size: 40px;
-        line-height: 1;
-        display: block;
-        overflow: hidden;
-        height: fit-content
-    }
+  .why-your-kit .why-you-cheffin-heading .second-heading .first-word {
+    font-size: 40px;
+    line-height: 1;
+    display: block;
+    overflow: hidden;
+    height: fit-content;
+  }
 
-    .why-your-kit .content-box-green {
-        font-size: 48px !important;
-        margin-top: -6%;
-        margin-left: -14%
-    }
+  .why-your-kit .content-box-green {
+    font-size: 48px !important;
+    margin-top: -6%;
+    margin-left: -14%;
+  }
 
-    .why-your-kit .content-box {
-        font-size: 87px
-    }
+  .why-your-kit .content-box {
+    font-size: 87px;
+  }
 
-    .why-your-kit .text-container-heading {
-        top: -20%
-    }
+  .why-your-kit .text-container-heading {
+    top: -20%;
+  }
 }
 
 .why-your-kit .scrollable-cards .card .image-content p {
-    font-family: 'Inter';border-bottom: 1px solid #000000;
+  font-family: "Inter";
+  border-bottom: 1px solid #000000;
 }
 
-.why-you-cheffin .text-container-heading .why-you-cheffin-heading .first-heading span,
-.why-you-cheffin .text-container-heading .why-you-cheffin-heading .second-heading span {
-    overflow: hidden;
-    display: inline-block
+.why-you-cheffin
+  .text-container-heading
+  .why-you-cheffin-heading
+  .first-heading
+  span,
+.why-you-cheffin
+  .text-container-heading
+  .why-you-cheffin-heading
+  .second-heading
+  span {
+  overflow: hidden;
+  display: inline-block;
 }
 
-.why-your-kit .text-container-heading .why-you-cheffin-heading .first-heading span {
-    overflow: hidden
+.why-your-kit
+  .text-container-heading
+  .why-you-cheffin-heading
+  .first-heading
+  span {
+  overflow: hidden;
 }
 
 .why-your-kit .second-heading span {
-    overflow: hidden;
-    display: inline-block
+  overflow: hidden;
+  display: inline-block;
 }
 
 /*# sourceMappingURL=/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css.map?v=14733560488930574641756093773 */
 
-@media(min-width:640px) {
-
-    .text-container-heading .why-you-cheffin-heading .first-heading span, .why-you-cheffin-heading .second-heading span {
-        font-size: clamp(40px, 14vw, 42px);
-    }
+@media (min-width: 640px) {
+  .text-container-heading .why-you-cheffin-heading .first-heading span,
+  .why-you-cheffin-heading .second-heading span {
+    font-size: clamp(40px, 14vw, 42px);
+  }
 }

@@ -11,8 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
     rel="stylesheet">
-  <link href="vendor/cdn/cdn/shop/t/8/assets/critical.css" rel="stylesheet"
-    type="text/css" media="all" />
+  <link href="vendor/cdn/cdn/shop/t/8/assets/critical.css" rel="stylesheet" type="text/css" media="all" />
 
 
   <meta charset="utf-8">
@@ -27,8 +26,7 @@
   <meta property="og:image:width" content="1440">
   <meta property="og:image:height" content="800">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:description"
-    content="Valour | Liquid Spice">
+  <meta name="twitter:description" content="Valour | Liquid Spice">
 
   <title>
     Valour | Liquid Spice
@@ -38,82 +36,104 @@
 
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
-  <link rel="stylesheet" media="screen"
-    href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
-<script async src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js"  defer="defer"></script>
+  <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
+  <script async src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js" defer="defer"></script>
 
 
 </head>
 <style>
+  html {
+    scroll-behavior: smooth;
+  }
+
+  a {
+    text-decoration: none;
+    /* Removes underline */
+    color: inherit;
+    /* Inherits color from parent text */
+  }
+
+  .loader_logo_vlr {
+    display: flex;
+    gap: 1px;
+    font-size: 52px;
+    letter-spacing: 6px;
+    font-weight: 500;
+    color: #f1de9e;
+    font-family: 'Times New Roman', serif;
+  }
+
+  /* Letters */
+  .loader_logo_vlr span {
+    display: inline-block;
+    /* needed for transform */
+    opacity: 0;
+    transform: translateY(12px);
+    animation: reveal 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  }
 
 
-html {
-  scroll-behavior: smooth;
-}
-a{
-      text-decoration: none; /* Removes underline */
-    color: inherit;         /* Inherits color from parent text */
-}
-.loader_logo_vlr {
-  display: flex;
-  gap: 1px;
-  font-size: 52px;
-  letter-spacing: 6px;
-  font-weight: 500;
-  color: #f1de9e; 
-  font-family: 'Times New Roman', serif;
-}
+  /* Sequential delay */
+  .loader_logo_vlr span:nth-child(1) {
+    animation-delay: 0.1s;
+  }
 
-/* Letters */
-.loader_logo_vlr span {
-  display: inline-block; /* needed for transform */
-  opacity: 0;
-  transform: translateY(12px);
-  animation: reveal 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-}
-
-
-/* Sequential delay */
-.loader_logo_vlr span:nth-child(1) { animation-delay: 0.1s; }
-.loader_logo_vlr span:nth-child(2) {  opacity: 1;                 /* already visible */
-  transform: rotate(180deg) translateY(12px);
+  .loader_logo_vlr span:nth-child(2) {
+    opacity: 1;
+    /* already visible */
+    transform: rotate(180deg) translateY(12px);
     margin-left: -12px;
     margin-right: 9px;
- }
-
-.loader_logo_vlr span:nth-child(3) { animation-delay: 0.3s; }
-.loader_logo_vlr span:nth-child(4) { animation-delay: 0.4s; }
-.loader_logo_vlr span:nth-child(5) { animation-delay: 0.5s; }
-.loader_logo_vlr span:nth-child(6) { animation-delay: 0.6s; }
-
-/* Animation */
-@keyframes reveal {
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
-}
 
- .loader_logo_vlr span:nth-child(2) {
-   animation: revealA 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards
- }
- @keyframes revealA {
-  from {
-    opacity: 0;
-    transform: rotate(180deg) translateY(12px);
+  .loader_logo_vlr span:nth-child(3) {
+    animation-delay: 0.3s;
   }
-  to {
-    opacity: 1;
-    transform: rotate(180deg) translateY(0);
+
+  .loader_logo_vlr span:nth-child(4) {
+    animation-delay: 0.4s;
   }
-}
+
+  .loader_logo_vlr span:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+
+  .loader_logo_vlr span:nth-child(6) {
+    animation-delay: 0.6s;
+  }
+
+  /* Animation */
+  @keyframes reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .loader_logo_vlr span:nth-child(2) {
+    animation: revealA 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards
+  }
+
+  @keyframes revealA {
+    from {
+      opacity: 0;
+      transform: rotate(180deg) translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: rotate(180deg) translateY(0);
+    }
+  }
 
 
-@media (max-width: 550px) {
-  .loader_logo_vlr {
+  @media (max-width: 550px) {
+    .loader_logo_vlr {
 
-  font-size: 36px;}
-}
+      font-size: 36px;
+    }
+  }
+
   /* OVERLAY */
   .cf-popup-overlay {
     position: fixed;
@@ -673,7 +693,7 @@ a{
   .testimonial-sectionxyz .image-grid {
     width: 50%;
     /* remove this when image is displayed (removed from comments in html) */
-    background:grey;
+    background: grey;
     display: block;
     height: 369px;
     /* ------ */
@@ -1024,7 +1044,7 @@ a{
     display: flex;
     transition: 0.3s;
     justify-content: center;
-  text-decoration: none;
+    text-decoration: none;
 
   }
 
@@ -1082,35 +1102,36 @@ a{
 
   /* CENTER LOGO */
 
-.nav-logo {
-  display: flex;
-  gap: 1px;
-  font-size: 20px;
-  letter-spacing: 6px;
-  font-weight: 600;
-  color: #2a2a2a; 
-  font-family: 'Times New Roman', serif;
-}
+  .nav-logo {
+    display: flex;
+    gap: 1px;
+    font-size: 20px;
+    letter-spacing: 6px;
+    font-weight: 600;
+    color: #2a2a2a;
+    font-family: 'Times New Roman', serif;
+  }
 
-/* Letters */
-.nav-logo span {
-  display: inline-block; /* needed for transform */
-  opacity: 1;
-}
+  /* Letters */
+  .nav-logo span {
+    display: inline-block;
+    /* needed for transform */
+    opacity: 1;
+  }
 
 
-/* Sequential delay */
-.nav-logo span:nth-child(2) {
-    transform: rotate(180deg);
+  /* Sequential delay */
+  .nav-logo span:nth-child(2) {
     margin-left: -7px;
     margin-right: 6px;
-}
+    transform: rotate(180deg) translateY(0.5px);
+  }
 
   /* RIGHT ICONS */
   .nav-right {
     display: flex;
     gap: 20px;
-    position:absolute;
+    position: absolute;
     right: 10px;
   }
 
@@ -1406,12 +1427,15 @@ a{
 
 
     .valour-banner__title {
-      font-size: clamp(42px, 14vw, 55px);
+      font-size: clamp(36px, 14vw, 36px);
       line-height: 1.2;
     }
-.valour-banner__content{
-  margin-left: 7px;width: min(90%, 620px);
-}
+
+    .valour-banner__content {
+      margin-left: 7px;
+      width: min(90%, 620px);
+    }
+
     .valour-banner__eyebrow {
       font-size: 12px;
       letter-spacing: 0.24em;
@@ -1950,7 +1974,7 @@ a{
     }
 
     .valour-banner__title {
-      font-size: clamp(32px, 14vw, 32px);
+      font-size: clamp(28px, 14vw, 28px);
       line-height: 1.2;
     }
 
@@ -2012,14 +2036,15 @@ a{
 
     <div>
 
-        <div class="loader_logo_vlr">
-    <span>V</span>
-    <span  class="letter_a">V</span>
-    <span>L</span>
-    <span>O</span>
-    <span>U</span>
-    <span>R</span>
-  </div>
+      <div class="loader_logo_vlr">
+        <span style="
+    transform: translateY(-0.5px);
+">V</span> <span class="letter_a">V</span>
+        <span>L</span>
+        <span>O</span>
+        <span>U</span>
+        <span>R</span>
+      </div>
       <!-- <div class="loading-video-container">
         <img class="loading-video" src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Logo-v3.gif?v=1754633017"
           alt="Loading animation image" aria-label="Loading animation image" loading="eager" fetchpriority="high">
@@ -2063,17 +2088,18 @@ a{
         </div> -->
 
         <!-- LOGO -->
-    <div class="nav-logo">
-    <span>V</span>
-    <span  class="letter_a">V</span>
-    <span>L</span>
-    <span>O</span>
-    <span>U</span>
-    <span>R</span>
-  </div>
+        <div class="nav-logo">
+          <span style="
+    transform: translateY(-0.5px);
+">V</span> <span class="letter_a">V</span>
+          <span>L</span>
+          <span>O</span>
+          <span>U</span>
+          <span>R</span>
+        </div>
         <!-- RIGHT -->
         <div class="nav-right">
-          <a href="/checkout" > <span class="material-symbols-outlined">shopping_bag </span></a>
+          <a href="/checkout"> <span class="material-symbols-outlined">shopping_bag </span></a>
         </div>
 
         <!-- HAMBURGER -->
@@ -2085,10 +2111,8 @@ a{
     </div>
     <section id="shopify-section-template--19781511708886__banner_section_maqcGT"
       class="shopify-section banner-slideshow-section">
-      <link href="vendor/cdn/cdn/shop/t/8/assets/banner-section.css"
-        rel="stylesheet" type="text/css" media="all" />
-      <script src="vendor/cdn/cdn/shop/t/8/assets/banner-slideshow.js"
-        defer></script>
+      <link href="vendor/cdn/cdn/shop/t/8/assets/banner-section.css" rel="stylesheet" type="text/css" media="all" />
+      <script src="vendor/cdn/cdn/shop/t/8/assets/banner-slideshow.js" defer></script>
 
 
 
@@ -2137,8 +2161,8 @@ a{
               </p>
 
               <div class="cta-container">
-                <a href="#slides_Xyz" class="btn primary" >Shop Now</a>
- 
+                <a href="#slides_Xyz" class="btn primary">Shop Now</a>
+
                 <a href="#how-it-works" class="btn link">How it works</a>
               </div>
             </div>
@@ -2203,7 +2227,7 @@ a{
 
 
 
-         
+
 
           <!-- Banner Dots Navigation (Outside scrolling container) -->
 
@@ -2226,14 +2250,14 @@ a{
 
 
     </section>
-    <link href="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-stylesheet.css"
-      rel="stylesheet" type="text/css" media="all" />
+    <link href="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-stylesheet.css" rel="stylesheet" type="text/css"
+      media="all" />
 
     </section>
     <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
       class=" shopify-section text-scrolling-parent">
-      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.CSS"
-        rel="stylesheet" type="text/css" media="all">
+      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.CSS" rel="stylesheet" type="text/css"
+        media="all">
 
       <div class="prod_section_ind">
 
@@ -2257,7 +2281,7 @@ a{
         <div class="container_slider">
           <div class="slider">
 
-            <div class="slides" id="slides_Xyz" >
+            <div class="slides" id="slides_Xyz">
 
               <!-- SLIDE 1 -->
               <div class="product_slide active">
@@ -2314,8 +2338,8 @@ a{
           </div> -->
 
                   <!-- CTA -->
-                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish" class="cta">Order now through whatsapp <img src="assets/images/whtsap.png"
-                      alt="whatsapp"></a>
+                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish"
+                    class="cta">Order now through whatsapp <img src="assets/images/whtsap.png" alt="whatsapp"></a>
                   <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -2331,147 +2355,181 @@ a{
                       </div>
                     </div>
                   </div>
+                  <div class="container_expand_ingre">
+                    <div class="accordion">
+                      <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="header_name">What exactly is this?</span>
+                        <span class="icon">+</span>
+                      </div>
+
+                      <div class="accordion-content" id="content">
+                        <p>
+                          This is not a spice mix.
+                          This is the dish — already built.
+                          We’ve taken the full recipe — fat, spice, base, balance — and reduced it into a single pour.
+                          You add the protein. We’ve done the rest.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                                    <div class="container_expand_ingre">
+                    <div class="accordion">
+                      <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="header_name">How much does one jar serve?</span>
+                        <span class="icon">+</span>
+                      </div>
+
+                      <div class="accordion-content" id="content">
+<p>Depends on how you use it.
+                      <br>
+                      But typically:
+                      <br>
+                      250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
+                      5525 ml → cooks about 3–5 people (up to 1 kg)<br>
+
+                    </p>
+                      </div>
+                    </div>
+                  </div>
                   <!-- INFO BOX -->
 
                 </div>
               </div>
 
-              
 
 
-            <!-- BOTTOM BUTTONS -->
-            <div class="slider-nav">
-              <button class="dot active" onclick="goToSlide(0)"></button>
 
-              <!-- slides buttons -->
-              <!-- <button class="dot" onclick="goToSlide(1)"></button> -->
-              <!-- <button class="dot" onclick="goToSlide(2)"></button> -->
+              <!-- BOTTOM BUTTONS -->
+              <div class="slider-nav">
+                <button class="dot active" onclick="goToSlide(0)"></button>
 
-            </div>
+                <!-- slides buttons -->
+                <!-- <button class="dot" onclick="goToSlide(1)"></button> -->
+                <!-- <button class="dot" onclick="goToSlide(2)"></button> -->
 
-          </div>
-        </div>
-
-
-      </div>
-
-
-      </section>
-
-
-      <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
-        class="shopify-section text-scrolling-parent">
-
-        <div class="text-scrolling-bottom-design">
-          <img src="assets/images/Union_1.png" alt="" loading="lazy" fetchpriority="low">
-        </div>
-
-        <script src="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-javascript.js"
-          defer></script>
-        <script src="vendor/cdn/cdn/shop/t/8/assets/packets-dishes-data.js"
-          defer></script>
-
-
-      </div>
-      <div id="shopify-section-template--19781511708886__sachet_video_gjfm3w"
-        class="shopify-section sachet-video-parent">
-        <link rel="stylesheet"
-          href="vendor/cdn/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
-          media="print" onload="this.media='all'">
-        <div class="cf-wrapper-main">
-
-          <div class="cf-wrapper">
-
-            <button class="cf-nav cf-prev">&#10094;</button>
-
-            <div class="cf-carousel">
-
-              <div class="cf-card "><video src="assets/videos/vid1.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="assets/videos/vid2.mp4" muted loop></video></div>
-              <div class="cf-card  cf-active"><video src="assets/videos/vid2.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
-              <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
-
-            </div>
-
-            <button class="cf-nav cf-next">&#10095;</button>
-
-          </div>
-        </div>
-
-        <div class="timeline-section container" id="how-it-works">
-
-          <div class="valour-banner__title_sec2">
-            <h2>One process. No confusion</h2>
-            <p>Built for consistency, every time.</p>
-          </div>
-
-          <div class="timeline">
-
-            <div class="line"></div>
-
-            <div class="timeline-item left">
-              <div class="cardxyz">
-                <img src="assets/images/img_1_timeline.png">
-                <h3>Fry fish</h3>
-                <p>Until light golden.</p>
               </div>
-              <div class="dot-timeline">1</div>
-            </div>
 
-            <div class="timeline-item right">
-              <div class="cardxyz">
-                <img src="assets/images/img_2_timeline.png">
-                <h3>Pour Liquid spice</h3>
-                <p>3-4 Tablespoons</p>
-              </div>
-              <div class="dot-timeline">2</div>
             </div>
-
-            <div class="timeline-item left">
-              <div class="cardxyz">
-                <img src="assets/images/img_3_timeline.png">
-                <h3>Simmer</h3>
-                <p>5-7 minutes</p>
-              </div>
-              <div class="dot-timeline">3</div>
-            </div>
-
           </div>
+
+
         </div>
 
 
+        </section>
 
 
-      </div>
-      <div id="shopify-section-template--19781511708886__why_you_cheffin_KRe4nc"
-        class="shopify-section why-you-cheffin-parent">
-        <link rel="stylesheet"
-          href="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
-          media="print" onload="this.media='all'">
-        <div class="satchet-vidoe-bottom-design">
-          <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
-            fetchpriority="low">
+        <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
+          class="shopify-section text-scrolling-parent">
+
+          <div class="text-scrolling-bottom-design">
+            <img src="assets/images/Union_1.png" alt="" loading="lazy" fetchpriority="low">
+          </div>
+
+          <script src="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-javascript.js" defer></script>
+          <script src="vendor/cdn/cdn/shop/t/8/assets/packets-dishes-data.js" defer></script>
+
+
         </div>
+        <div id="shopify-section-template--19781511708886__sachet_video_gjfm3w"
+          class="shopify-section sachet-video-parent">
+          <link rel="stylesheet"
+            href="vendor/cdn/cdn/shop/t/8/assets/sachet-video-section.css?v=177558028744687606941756093772"
+            media="print" onload="this.media='all'">
+          <div class="cf-wrapper-main">
 
-        <div class="scroll-container">
-          <section class="section why-you-cheffin">
-            <div class="smoke-content-parent">
+            <div class="cf-wrapper">
 
+              <button class="cf-nav cf-prev">&#10094;</button>
 
+              <div class="cf-carousel">
 
-              <div class="" id="textRevealContainer">
+                <div class="cf-card "><video src="assets/videos/vid1.mp4" muted loop></video></div>
+                <div class="cf-card"><video src="assets/videos/vid2.mp4" muted loop></video></div>
+                <div class="cf-card  cf-active"><video src="assets/videos/vid2.mp4" muted loop></video></div>
+                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
+                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
 
-                <div class="text-container-heading" id="textContent">
-                  <div class="valour-banner__inner22">
-                    <div class="valour-banner__content22">
-                      <h2 class="valour-banner__title line-1">Why You Win,</h2>
-                      <h2 class="valour-banner__title line-2">With Liquid spice.</h2>
-                    </div>
+              </div>
 
-                  </div>
+              <button class="cf-nav cf-next">&#10095;</button>
+
+            </div>
+          </div>
+
+          <div class="timeline-section container" id="how-it-works">
+
+            <div class="valour-banner__title_sec2">
+              <h2>One process. No confusion</h2>
+              <p>Built for consistency, every time.</p>
+            </div>
+
+            <div class="timeline">
+
+              <div class="line"></div>
+
+              <div class="timeline-item left">
+                <div class="cardxyz">
+                  <img src="assets/images/img_1_timeline.png">
+                  <h3>Fry fish</h3>
+                  <p>Until light golden.</p>
                 </div>
-                <!-- <h1 class="taste-heading" id="textContent">
+                <div class="dot-timeline">1</div>
+              </div>
+
+              <div class="timeline-item right">
+                <div class="cardxyz">
+                  <img src="assets/images/img_2_timeline.png">
+                  <h3>Pour Liquid spice</h3>
+                  <p>3-4 Tablespoons</p>
+                </div>
+                <div class="dot-timeline">2</div>
+              </div>
+
+              <div class="timeline-item left">
+                <div class="cardxyz">
+                  <img src="assets/images/img_3_timeline.png">
+                  <h3>Simmer</h3>
+                  <p>5-7 minutes</p>
+                </div>
+                <div class="dot-timeline">3</div>
+              </div>
+
+            </div>
+          </div>
+
+
+
+
+        </div>
+        <div id="shopify-section-template--19781511708886__why_you_cheffin_KRe4nc"
+          class="shopify-section why-you-cheffin-parent">
+          <link rel="stylesheet"
+            href="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
+            media="print" onload="this.media='all'">
+          <div class="satchet-vidoe-bottom-design">
+            <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
+              fetchpriority="low">
+          </div>
+
+          <div class="scroll-container">
+            <section class="section why-you-cheffin">
+              <div class="smoke-content-parent">
+
+
+
+                <div class="" id="textRevealContainer">
+
+                  <div class="text-container-heading" id="textContent">
+                    <div class="valour-banner__inner22">
+                      <div class="valour-banner__content22">
+                        <h2 class="valour-banner__title line-1">Why You Win,</h2>
+                        <h2 class="valour-banner__title line-2">With Liquid spice.</h2>
+                      </div>
+
+                    </div>
+                  </div>
+                  <!-- <h1 class="taste-heading" id="textContent">
          
           <span class="line-1"> We own liquid spice</span>
           <span class="line-2">We simplify spices</span>
@@ -2480,469 +2538,465 @@ a{
 
         </h1>
         <div class="blush-container"> No Noise. No Mess..</div> -->
+                </div>
+
               </div>
 
-            </div>
-
-            <div class="scrollable-cards">
-              <div class="card card-1">
-                <div class="image">
-                  <img style="object-fit: cover; background: #fff;"
-                    src="assets/images/why_liquid_img1.png"
-                    height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
-                </div>
-                <div class="text-container">
-                  <p>3-Step Liquidspice Experience</p>
-                </div>
-              </div>
-
-              <div class="card card-2">
-                <div class="image">
-                  <img style="object-fit: cover; background: #fff;"
-                    src="assets/images/why_liquid_img2.png"
-                    height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
-                </div>
-                <div class="text-container">
-                  <p>Easy Customisation for Home-Style Goodness</p>
-                </div>
-              </div>
-              <div class="card card-4">
-                <div class="image">
-                  <img style="object-fit: cover; background: #fff;"
-                    src="assets/images/why_liquid_img3.png"
-                    height="456" width="100%" alt="Masala tikka">
-                </div>
-                <div class="text-container">
-                  <p>Restaurant-Style Taste in Just 10 Minutes</p>
-                </div>
-              </div>
-
-            </div>
-          </section>
-
-          <section class="section why-your-kit">
-            <div class="smoke-content-parent">
-              <div class="text-container-heading">
-                <div class="why-you-cheffin-heading">
-                  <div class="first-heading">
-                    <span class="first-word">Why LiquidSpice</span>
-                    <span class="second-word">Delivers Way More</span>
-                    <span class="second-word">You’d Expect?</span>
-
+              <div class="scrollable-cards">
+                <div class="card card-1">
+                  <div class="image">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img1.png"
+                      height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
                   </div>
-              
-                </div>
-              </div>
-            </div>
-
-            <div class="scrollable-cards">
-              <div class="card card-1">
-                <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect.png"
-                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
                   <div class="text-container">
-                    <p style="color: #290e06;">Portion Magic</p>
-                  </div>
-                  <div class="text-container-card">
-                    <h2>More to share with your loved ones: A generous meal of 400 g – 450 g that satisfies 2-3 people
-                    </h2>
+                    <p>3-Step Liquidspice Experience</p>
                   </div>
                 </div>
 
-              </div>
-              <div class="card card-2">
-                <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect2.png"
-                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                <div class="card card-2">
+                  <div class="image">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img2.png"
+                      height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
+                  </div>
                   <div class="text-container">
-                    <p style="color: #290e06;">Cooking Pride </p>
-                  </div>
-                  <div class="text-container-card">
-                    <h2>Real satisfaction of cooking something amazing. Fresh ingredients, your control, your timing.
-                    </h2>
+                    <p>Easy Customisation for Home-Style Goodness</p>
                   </div>
                 </div>
-
-              </div>
-              <div class="card card-3">
-                <div class="image image-content">
-                  <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect3.png"
-                    height="228" width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                <div class="card card-4">
+                  <div class="image">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img3.png"
+                      height="456" width="100%" alt="Masala tikka">
+                  </div>
                   <div class="text-container">
-                    <p style="color: #290e06;">Nutrition Win</p>
-                  </div>
-                  <div class="text-container-card">
-                    <h2>High in nutritions, trans fat-free goodness. Quality nutrition that tastes like pure indulgence
-                    </h2>
+                    <p>Restaurant-Style Taste in Just 10 Minutes</p>
                   </div>
                 </div>
 
               </div>
+            </section>
+
+            <section class="section why-your-kit">
+              <div class="smoke-content-parent">
+                <div class="text-container-heading">
+                  <div class="why-you-cheffin-heading">
+                    <div class="first-heading">
+                      <span class="first-word">Why LiquidSpice</span>
+                      <span class="second-word">Delivers Way More</span>
+                      <span class="second-word">You’d Expect?</span>
+
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div class="scrollable-cards">
+                <div class="card card-1">
+                  <div class="image image-content">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect.png" height="228"
+                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                    <div class="text-container">
+                      <p style="color: #290e06;">Portion Magic</p>
+                    </div>
+                    <div class="text-container-card">
+                      <h2>More to share with your loved ones: A generous meal of 400 g – 450 g that satisfies 2-3 people
+                      </h2>
+                    </div>
+                  </div>
+
+                </div>
+                <div class="card card-2">
+                  <div class="image image-content">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect2.png" height="228"
+                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                    <div class="text-container">
+                      <p style="color: #290e06;">Cooking Pride </p>
+                    </div>
+                    <div class="text-container-card">
+                      <h2>Real satisfaction of cooking something amazing. Fresh ingredients, your control, your timing.
+                      </h2>
+                    </div>
+                  </div>
+
+                </div>
+                <div class="card card-3">
+                  <div class="image image-content">
+                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect3.png" height="228"
+                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
+                    <div class="text-container">
+                      <p style="color: #290e06;">Nutrition Win</p>
+                    </div>
+                    <div class="text-container-card">
+                      <h2>High in nutritions, trans fat-free goodness. Quality nutrition that tastes like pure
+                        indulgence
+                      </h2>
+                    </div>
+                  </div>
+
+                </div>
 
 
 
 
-            </div>
-          </section>
-        </div>
-
-        <script src="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-javascript.js"
-          defer></script>
-
-
-      </div>
-      <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
-        class="shopify-section testimonial-sectionxyz-parent">
-        <link rel="stylesheet"
-          href="vendor/cdn/cdn/shop/t/8/assets/testimonial-sectionxyz-stylesheet.css?v=91204637565225421031755792981"
-          media="print" onload="this.media='all'">
-
-
-
-        <div class="testimonial-sectionxyz">
-
-          <div class="header">
-            <h2>Customers <span>love us.</span></h2>
-
-
+              </div>
+            </section>
           </div>
 
-          <div class="carousel-wrapper">
-            <div class="carousel-track" id="track">
+          <script src="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-javascript.js" defer></script>
 
-              <!-- ITEM -->
-              <div class="carousel-item">
-                <div class="image-grid">
-                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                  </div> -->
-                </div>
-
-                <div class="review-card">
-                  <h4>USER 1</h4>
-                  <span>Verfied customer</span>
-                  <p class="stars_review">★★★★★</p>
-                  <p class="review_rev">Amazing experience with the product...</p>
-                </div>
-              </div>
-
-              <!-- ITEM -->
-              <div class="carousel-item">
-                <div class="image-grid">
-                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                  </div> -->
-                </div>
-
-                <div class="review-card">
-                  <h4>USER 2</h4>
-                  <span>Verfied customer</span>
-                  <p class="stars_review">★★★★★</p>
-                  <p class="review_rev">Amazing experience with the product...</p>
-                </div>
-              </div>
-
-              <!-- ITEM -->
-              <div class="carousel-item">
-                <div class="image-grid">
-                  <!-- <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                  </div> -->
-                </div>
-
-                <div class="review-card">
-                  <h4>Another User</h4>
-                  <span>Verfied customer</span>
-                  <p class="stars_review">★★★★★</p>
-                  <p class="review_rev">Amazing experience with the product...</p>
-                </div>
-              </div>
-
-            </div>
-            <div class="cont_nav_crousel">
-              <div class="nav">
-                <button id="prev"><span class="material-symbols-outlined">
-                    arrow_back
-                  </span></button>
-                <button id="next"><span class="material-symbols-outlined">
-                    arrow_forward
-                  </span></button>
-              </div>
-            </div>
-
-          </div>
 
         </div>
-
-
-
-        <div class="testimonial-top-design">
-          <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
-            fetchpriority="low">
-        </div>
-
-
-        <div id="shopify-section-template--19781511708886__faq_section_tnj3kT"
-          class="shopify-section faq-section-parent">
+        <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
+          class="shopify-section testimonial-sectionxyz-parent">
           <link rel="stylesheet"
-            href="vendor/cdn/cdn/shop/t/8/assets/faq-section-stylesheet.css"
+            href="vendor/cdn/cdn/shop/t/8/assets/testimonial-sectionxyz-stylesheet.css?v=91204637565225421031755792981"
             media="print" onload="this.media='all'">
-          <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js"
-            defer></script>
-
-          <div class="faq-section">
-            <div class="faq-heading-container">
-              <span class="faq-heading">The Truth About</span>
-              <span class="faq-subheading">Liquid Spice.</span>
-              <span class="faq-description">You’re not using a masala. You’re finishing a dish. </span>
-            </div>
-            <div class="faq-container">
-
-
-              <div class="faq-item" data-faq-index="1">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">What exactly is this?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>This is not a spice mix.
-                      <br> This is the dish — already built. <br> We’ve taken the full recipe — fat, spice, base,
-                      balance — and reduced it into a single pour. <br>
-
-                      You add the protein.
-                      We’ve done the rest.
-                    </p>
-                  </div>
-                </div>
-              </div>
 
 
 
-              <div class="faq-item" data-faq-index="2">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How is this different from regular masalas?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>Masala helps you cook.
-This is the base of the dish.</p>
-                  </div>
-                </div>
-              </div>
+          <div class="testimonial-sectionxyz">
 
-
-
-              <div class="faq-item" data-faq-index="3">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How long does it take?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>10–15 minutes.
-
-                      No prep. No layering. No corrections.
-
-                      Pour. Add fish. Cook.
-
-                      That’s it.</p>
-                  </div>
-                </div>
-              </div>
-
-
-
-              <div class="faq-item" data-faq-index="4">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Will it actually taste like restaurant food?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>Yes. The base is already balanced.</p>
-                  </div>
-                </div>
-              </div>
-
-
-
-              <div class="faq-item" data-faq-index="5">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Do I still have control while cooking?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>Yes. Just without the complexity.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-
-
-              <div class="faq-item" data-faq-index="6">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">Is this a ready-to-eat product?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>No.
-
-                      Ready-to-eat is passive.
-
-                      Valour is active — you cook, but without complexity.
-
-                      You still feel like you made it.
-                      Just without the mistakes.</p>
-                  </div>
-                </div>
-              </div>
-
-
-
-              <div class="faq-item" data-faq-index="7">
-                <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                  <span class="faq-icon">●</span>
-                  <span class="faq-question-text">How much does one jar serve?</span>
-                  <span class="faq-toggle">
-                    <span class="faq-plus">
-                      <!-- Plus SVG will go here -->
-                      +
-                    </span>
-                    <span class="faq-minus">
-                      <!-- Minus SVG will go here -->
-                      −
-                    </span>
-                  </span>
-                </div>
-                <div class="faq-answer">
-                  <div class="faq-answer-content">
-                    <p>Depends on how you use it.
-                      <br>
-                      But typically:
-                      <br>
-                      250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
-                      5525 ml → cooks about 3–5 people (up to 1 kg)<br>
-
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div class="header">
+              <h2>Customers <span>love us.</span></h2>
 
 
             </div>
+
+            <div class="carousel-wrapper">
+              <div class="carousel-track" id="track">
+
+                <!-- ITEM -->
+                <div class="carousel-item">
+                  <div class="image-grid">
+                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
+                  </div> -->
+                  </div>
+
+                  <div class="review-card">
+                    <h4>USER 1</h4>
+                    <span>Verfied customer</span>
+                    <p class="stars_review">★★★★★</p>
+                    <p class="review_rev">Amazing experience with the product...</p>
+                  </div>
+                </div>
+
+                <!-- ITEM -->
+                <div class="carousel-item">
+                  <div class="image-grid">
+                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
+                  </div> -->
+                  </div>
+
+                  <div class="review-card">
+                    <h4>USER 2</h4>
+                    <span>Verfied customer</span>
+                    <p class="stars_review">★★★★★</p>
+                    <p class="review_rev">Amazing experience with the product...</p>
+                  </div>
+                </div>
+
+                <!-- ITEM -->
+                <div class="carousel-item">
+                  <div class="image-grid">
+                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                  <div class="small-grid">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                  </div> -->
+                  </div>
+
+                  <div class="review-card">
+                    <h4>Another User</h4>
+                    <span>Verfied customer</span>
+                    <p class="stars_review">★★★★★</p>
+                    <p class="review_rev">Amazing experience with the product...</p>
+                  </div>
+                </div>
+
+              </div>
+              <div class="cont_nav_crousel">
+                <div class="nav">
+                  <button id="prev"><span class="material-symbols-outlined">
+                      arrow_back
+                    </span></button>
+                  <button id="next"><span class="material-symbols-outlined">
+                      arrow_forward
+                    </span></button>
+                </div>
+              </div>
+
+            </div>
+
           </div>
 
 
-        </div>
-        <!-- BEGIN sections: footer-group -->
-        <div id="shopify-section-sections--19781511348438__footer"
-          class="shopify-section shopify-section-group-footer-group">
+
+          <div class="testimonial-top-design">
+            <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
+              fetchpriority="low">
+          </div>
 
 
-          <footer class="footer">
-            <div class="footer-top">
+          <div id="shopify-section-template--19781511708886__faq_section_tnj3kT"
+            class="shopify-section faq-section-parent">
+            <link rel="stylesheet" href="vendor/cdn/cdn/shop/t/8/assets/faq-section-stylesheet.css" media="print"
+              onload="this.media='all'">
+            <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js" defer></script>
 
-              <!-- LEFT -->
-              <div class="footer-left">
-                    <div class="nav-logo">
-    <span>V</span>
-    <span  class="letter_a">V</span>
-    <span>L</span>
-    <span>O</span>
-    <span>U</span>
-    <span>R</span>
-  </div>
+            <div class="faq-section">
+              <div class="faq-heading-container">
+                <span class="faq-heading">The Truth About</span>
+                <span class="faq-subheading">Liquid Spice.</span>
+                <span class="faq-description">You’re not using a masala. You’re finishing a dish. </span>
+              </div>
+              <div class="faq-container">
 
-                <p class="footer-desc">
-                  This is a demo store by Clean Canvas. All images and video content
-                  courtesy of Shutterstock and Pexels, and are not for re-use on other stores.
-                </p>
 
-                <!-- SOCIAL -->
-                <div class="footer-social">
-                  <span class="material-symbols-outlined">facebook</span>
-                  <span class="material-symbols-outlined">smart_display</span> <!-- YouTube -->
-                  <span class="material-symbols-outlined">photo_camera</span> <!-- Instagram -->
-                  <span class="material-symbols-outlined">close</span>
+                <div class="faq-item" data-faq-index="1">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">What exactly is this?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>This is not a spice mix.
+                        <br> This is the dish — already built. <br> We’ve taken the full recipe — fat, spice, base,
+                        balance — and reduced it into a single pour. <br>
+
+                        You add the protein.
+                        We’ve done the rest.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- DROPDOWNS -->
+
+
+                <div class="faq-item" data-faq-index="2">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">How is this different from regular masalas?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>Masala helps you cook.
+                        This is the base of the dish.</p>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <div class="faq-item" data-faq-index="3">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">How long does it take?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>10–15 minutes.
+
+                        No prep. No layering. No corrections.
+
+                        Pour. Add fish. Cook.
+
+                        That’s it.</p>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <div class="faq-item" data-faq-index="4">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">Will it actually taste like restaurant food?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>Yes. The base is already balanced.</p>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <div class="faq-item" data-faq-index="5">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">Do I still have control while cooking?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>Yes. Just without the complexity.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <div class="faq-item" data-faq-index="6">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">Is this a ready-to-eat product?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>No.
+
+                        Ready-to-eat is passive.
+
+                        Valour is active — you cook, but without complexity.
+
+                        You still feel like you made it.
+                        Just without the mistakes.</p>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <div class="faq-item" data-faq-index="7">
+                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
+                    <span class="faq-icon">●</span>
+                    <span class="faq-question-text">How much does one jar serve?</span>
+                    <span class="faq-toggle">
+                      <span class="faq-plus">
+                        <!-- Plus SVG will go here -->
+                        +
+                      </span>
+                      <span class="faq-minus">
+                        <!-- Minus SVG will go here -->
+                        −
+                      </span>
+                    </span>
+                  </div>
+                  <div class="faq-answer">
+                    <div class="faq-answer-content">
+                      <p>Depends on how you use it.
+                        <br>
+                        But typically:
+                        <br>
+                        250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
+                        5525 ml → cooks about 3–5 people (up to 1 kg)<br>
+
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
 
               </div>
+            </div>
 
-              <!-- RIGHT -->
-              <!-- <div class="footer-links">
+
+          </div>
+          <!-- BEGIN sections: footer-group -->
+          <div id="shopify-section-sections--19781511348438__footer"
+            class="shopify-section shopify-section-group-footer-group">
+
+
+            <footer class="footer">
+              <div class="footer-top">
+
+                <!-- LEFT -->
+                <div class="footer-left">
+                  <div class="nav-logo">
+                    <span style="
+    transform: translateY(-0.5px);
+">V</span> <span class="letter_a">V</span>
+                    <span>L</span>
+                    <span>O</span>
+                    <span>U</span>
+                    <span>R</span>
+                  </div>
+
+                  <p class="footer-desc">
+                    This is a demo store by Clean Canvas. All images and video content
+                    courtesy of Shutterstock and Pexels, and are not for re-use on other stores.
+                  </p>
+
+                  <!-- SOCIAL -->
+                  <div class="footer-social">
+                    <span class="material-symbols-outlined">facebook</span>
+                    <span class="material-symbols-outlined">smart_display</span> <!-- YouTube -->
+                    <span class="material-symbols-outlined">photo_camera</span> <!-- Instagram -->
+                    <span class="material-symbols-outlined">close</span>
+                  </div>
+
+                  <!-- DROPDOWNS -->
+
+                </div>
+
+                <!-- RIGHT -->
+                <!-- <div class="footer-links">
 
                 <div class="footer-col">
                   <h4>All Departments</h4>
@@ -2967,8 +3021,8 @@ This is the base of the dish.</p>
 
             </div> -->
 
-            <!-- BOTTOM -->
-            <!-- <div class="footer-bottom">
+                <!-- BOTTOM -->
+                <!-- <div class="footer-bottom">
               <p>© 2026 Canopy Theme Canopy. Powered by Shopify</p>
 
               <div class="footer-policy">
@@ -2981,8 +3035,8 @@ This is the base of the dish.</p>
 
 
 
-        </div>
-        <!-- END sections: footer-group -->
+              </div>
+              <!-- END sections: footer-group -->
   </main>
   <div class="cf-popup-overlay" id="cfPopupOverlay">
     <div class="cf-popup-content">
@@ -3445,8 +3499,8 @@ This is the base of the dish.</p>
     });
   </script>
 
-  <script  src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js
-"  defer="defer"></script>
+  <script src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js
+" defer="defer"></script>
 
 </body>
 

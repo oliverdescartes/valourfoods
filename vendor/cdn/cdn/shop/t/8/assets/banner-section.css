@@ -83,13 +83,13 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ffffff80;
+  background: #ffffff;
   cursor: pointer;
   transition: background 0.3s ease;
 }
 
 .banner-dot.active {
-  background: #fff;
+  background: #de0000;
 }
 
 .banner-nav {
