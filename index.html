@@ -37,7 +37,8 @@
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
-  <script async src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js" defer="defer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
 
 </head>
@@ -321,7 +322,7 @@
 
 
   /* ===== FONT IMPORT (recommended) ===== */
-  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap');
+  /* @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap'); */
 
   .banner-content {
     position: absolute;
@@ -1083,11 +1084,13 @@
   }
 
   /* NAVBAR */
-  .navbar {
+.navbar {
     width: 100%;
     position: absolute;
     z-index: 99999;
-  }
+    background: linear-gradient(to bottom, rgb(229 207 194 / 90%), /* darker at top */ rgb(255 253 249 / 4%) /* fully transparent */);
+    color: white;
+}
 
   /* CONTAINER */
   .nav-container {
@@ -1828,6 +1831,133 @@
     color: #555;
   }
 
+  .intro,
+  .outro {
+    min-height: 64vh;
+    display: grid;
+    place-items: center;
+    padding: 8vw;
+    background: #fbfaf7;
+  }
+
+  .intro__inner,
+  .outro__inner {
+    width: min(840px, 100%);
+  }
+
+  .eyebrow {
+    margin: 0 0 18px;
+    color: #7c674f;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2 {
+    margin: 0;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  h1 {
+    max-width: 780px;
+    font-size: clamp(3rem, 8vw, 7rem);
+    line-height: 0.94;
+  }
+
+  .intro p,
+  .outro p {
+    max-width: 620px;
+    margin: 26px 0 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    line-height: 1.55;
+  }
+.intro, .outro {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  background: #f5f5f5;
+}
+
+/* MAIN GRID */
+.spotlight {
+  display: grid;
+  grid-template-columns: 52% 48%;
+  transition: background-color 0.4s ease;
+}
+
+/* LEFT SIDE */
+.spotlight__copy {
+  width: 75%;
+  margin: auto;
+      font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+
+}
+.spotlight__copy h2{
+  font-size: 70px;
+  font-weight:800;
+}
+.panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.panel__content {
+  max-width: 500px;
+}
+.panel__step{
+      font-size: 31px;
+    display: block;
+    width: fit-content;
+    background: green;
+    color: white;
+    padding: 10px 40px;
+    margin-bottom: 20px;
+    border-radius: 40px;
+}
+
+
+/* RIGHT SIDE */
+.spotlight__media-column {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* ✅ STICKY */
+.media-shell {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+/* MEDIA STAGE */
+.media-stage {
+  position: relative;
+  height: 100%;
+  transition: background 0.4s ease;
+}
+
+/* CARDS */
+.media-card {
+    position: absolute;
+    top: 25%;
+    left: 21%;
+    width: 70%;
+    height: 42%;
+    object-fit: cover;
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+}
+/* FIRST CARD */
+.media-card:first-child {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
   /* ================= */
   /* 📱 RESPONSIVE */
   /* ================= */
@@ -2196,7 +2326,7 @@
           <div class="banner-slide " data-slide="1">
             <picture>
 
-              <source media="(min-width: 768px)" srcset="vendor/cdn/cdn/shop/files/hero_banner3nd.png">
+              <source media="(min-width: 768px)" srcset="vendor\cdn\cdn\shop\files\hero_banner_vlrmn.png">
 
 
 
@@ -2372,7 +2502,7 @@
                       </div>
                     </div>
                   </div>
-                                    <div class="container_expand_ingre">
+                  <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
                         <span class="header_name">How much does one jar serve?</span>
@@ -2380,14 +2510,14 @@
                       </div>
 
                       <div class="accordion-content" id="content">
-<p>Depends on how you use it.
-                      <br>
-                      But typically:
-                      <br>
-                      250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
-                      5525 ml → cooks about 3–5 people (up to 1 kg)<br>
+                        <p>Depends on how you use it.
+                          <br>
+                          But typically:
+                          <br>
+                          250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
+                          5525 ml → cooks about 3–5 people (up to 1 kg)<br>
 
-                    </p>
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -2575,70 +2705,79 @@
               </div>
             </section>
 
-            <section class="section why-your-kit">
-              <div class="smoke-content-parent">
-                <div class="text-container-heading">
-                  <div class="why-you-cheffin-heading">
-                    <div class="first-heading">
-                      <span class="first-word">Why LiquidSpice</span>
-                      <span class="second-word">Delivers Way More</span>
-                      <span class="second-word">You’d Expect?</span>
-
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-
-              <div class="scrollable-cards">
-                <div class="card card-1">
-                  <div class="image image-content">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect.png" height="228"
-                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
-                    <div class="text-container">
-                      <p style="color: #290e06;">Portion Magic</p>
-                    </div>
-                    <div class="text-container-card">
-                      <h2>More to share with your loved ones: A generous meal of 400 g – 450 g that satisfies 2-3 people
-                      </h2>
-                    </div>
-                  </div>
-
-                </div>
-                <div class="card card-2">
-                  <div class="image image-content">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect2.png" height="228"
-                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
-                    <div class="text-container">
-                      <p style="color: #290e06;">Cooking Pride </p>
-                    </div>
-                    <div class="text-container-card">
-                      <h2>Real satisfaction of cooking something amazing. Fresh ingredients, your control, your timing.
-                      </h2>
-                    </div>
-                  </div>
-
-                </div>
-                <div class="card card-3">
-                  <div class="image image-content">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/Intersect3.png" height="228"
-                      width="100%" alt="Intersect" loading="lazy" fetchpriority="low">
-                    <div class="text-container">
-                      <p style="color: #290e06;">Nutrition Win</p>
-                    </div>
-                    <div class="text-container-card">
-                      <h2>High in nutritions, trans fat-free goodness. Quality nutrition that tastes like pure
-                        indulgence
-                      </h2>
-                    </div>
-                  </div>
-
-                </div>
+            <section class="section why-your-kit" style="display:block; padding:0;height: auto !important;">
 
 
 
 
-              </div>
+
+<main class="spotlight" id="spotlight">
+
+  <!-- LEFT -->
+  <section class="spotlight__copy">
+
+    <article class="panel" data-bg="#f7f4ee" data-media-bg="#e9e6df">
+      <div class="panel__content">
+        <span class="panel__step">Health</span>
+
+        <h2>
+          Lab Tested.
+          <br> 
+          Real Ingredients.
+          <br>
+
+        </h2>
+      </div>
+    </article>
+
+    <article class="panel" data-bg="#edf2f7" data-media-bg="#e1e8ef">
+      <div class="panel__content">
+        <span class="panel__step">Portion</span>
+
+        <h2>
+          One Jar.
+          <br> 
+          6 people.
+          <br>
+
+        </h2>      </div>
+    </article>
+
+    <article class="panel" data-bg="#f3eee8" data-media-bg="#e9ded4">
+      <div class="panel__content">
+        <span class="panel__step">Many Recipies</span>
+
+        <h2>
+          One Jar.
+          <br> 
+          Makes Many Recipes.
+          <br>
+          Fish, Egg, Mix veg even Chicken.
+          <br>
+
+        </h2>      </div>
+    </article>
+
+
+  </section>
+
+  <!-- RIGHT -->
+  <aside class="spotlight__media-column">
+    <div class="media-shell">
+      <div class="media-stage" id="mediaStage">
+
+        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect.png" />
+        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect2.png" />
+        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect3.png" />
+
+      </div>
+    </div>
+  </aside>
+  
+
+</main>
+
+
             </section>
           </div>
 
@@ -3497,6 +3636,129 @@
         }, 500); // Wait for fade out to complete
       }, 2000); // Wait for GIF to complete (2 seconds)
     });
+
+gsap.registerPlugin(ScrollTrigger);
+
+let ctx;
+
+function init() {
+  const spotlight = document.querySelector("#spotlight");
+  const mediaStage = document.querySelector("#mediaStage");
+
+  const panels = gsap.utils.toArray(".panel");
+  const cards = gsap.utils.toArray(".media-card");
+
+  // 🚨 CRITICAL: sync counts
+  const total = Math.min(panels.length, cards.length);
+
+  ctx = gsap.context(() => {
+
+    // 🔥 FULL RESET (no partial clear)
+    gsap.killTweensOf(cards);
+    ScrollTrigger.getAll().forEach(t => t.kill());
+
+    cards.forEach(card => {
+      card.removeAttribute("style");
+    });
+
+    // INITIAL STATE
+    gsap.set(cards, {
+      autoAlpha: 0,
+      y: 40,
+      scale: 0.96
+    });
+
+    gsap.set(cards[0], {
+      autoAlpha: 1,
+      y: 0,
+      scale: 1
+    });
+
+    // COLOR SYNC
+    function applyColors(i) {
+      const panel = panels[i];
+      if (!panel) return;
+
+      spotlight.style.backgroundColor = panel.dataset.bg;
+      mediaStage.style.backgroundColor = panel.dataset.mediaBg;
+    }
+
+    applyColors(0);
+
+    // 🔥 ONE TRIGGER PER PANEL (no timeline, no confusion)
+    for (let i = 0; i < total; i++) {
+      ScrollTrigger.create({
+        trigger: panels[i],
+        start: "top center",
+        end: "bottom center",
+
+        onEnter: () => switchTo(i),
+        onEnterBack: () => switchTo(i)
+      });
+    }
+
+    let active = 0;
+
+    function switchTo(i) {
+      if (i === active) return;
+
+      const prev = cards[active];
+      const next = cards[i];
+
+      active = i;
+
+      applyColors(i);
+
+      gsap.to(prev, {
+        autoAlpha: 0,
+        y: -40,
+        duration: 0.35,
+        overwrite: true
+      });
+
+      gsap.fromTo(next,
+        { autoAlpha: 0, y: 40 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.35,
+          overwrite: true
+        }
+      );
+    }
+
+  });
+}
+
+
+// CLEANUP
+function destroy() {
+  if (ctx) {
+    ctx.revert();
+    ctx = null;
+  }
+}
+
+
+// INIT
+window.addEventListener("load", () => {
+  destroy();
+  init();
+});
+
+// BFCACHE FIX
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) {
+    destroy();
+    init();
+  }
+});
+
+// OPTIONAL: resize safety
+window.addEventListener("resize", () => {
+  destroy();
+  init();
+});
   </script>
 
   <script src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js

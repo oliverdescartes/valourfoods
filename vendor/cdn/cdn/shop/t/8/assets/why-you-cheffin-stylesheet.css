@@ -8,11 +8,6 @@
   overflow: hidden;
 }
 
-.why-you-cheffin-parent {
-  position: relative;
-  height: 920vh;
-}
-
 .why-you-cheffin .scrollable-cards .card {
   position: sticky;
   opacity: 1;

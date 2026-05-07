@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dual Scroll Spotlight Section</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111317;
+        --muted: #626974;
+        --paper: #f7f7f4;
+        --line: rgba(17, 19, 23, 0.12);
+        --media-bg: #e9e6df;
+        --panel-1: #f7f4ee;
+        --panel-2: #edf2f7;
+        --panel-3: #f3eee8;
+        --panel-4: #eef4ef;
+        --panel-5: #f1f0f5;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: auto;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        overflow-x: hidden;
+      }
+
+      .intro,
+      .outro {
+        min-height: 64vh;
+        display: grid;
+        place-items: center;
+        padding: 8vw;
+        background: #fbfaf7;
+      }
+
+      .intro__inner,
+      .outro__inner {
+        width: min(840px, 100%);
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: #7c674f;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      h1 {
+        max-width: 780px;
+        font-size: clamp(3rem, 8vw, 7rem);
+        line-height: 0.94;
+      }
+
+      .intro p,
+      .outro p {
+        max-width: 620px;
+        margin: 26px 0 0;
+        color: var(--muted);
+        font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+        line-height: 1.55;
+      }
+
+      .spotlight {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 52vw) minmax(420px, 48vw);
+        background: var(--panel-1);
+        transition: background-color 0.45s ease;
+      }
+
+      .spotlight__copy {
+        min-width: 0;
+        width: 75%;
+        justify-self: center;
+      }
+
+      .panel {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 9vh clamp(28px, 8vw, 128px);
+      }
+
+      .panel__content {
+        width: min(560px, 100%);
+      }
+
+      .panel__step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin-bottom: 28px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        color: #6c6256;
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .panel h2 {
+        font-size: clamp(2.4rem, 5vw, 5.6rem);
+        line-height: 0.98;
+      }
+
+      .panel p {
+        max-width: 520px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: clamp(1rem, 1.5vw, 1.18rem);
+        line-height: 1.65;
+      }
+
+      .panel__mobile-media {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .spotlight__media-column {
+        position: relative;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .media-shell {
+        height: 100vh;
+        width: 100%;
+      }
+
+      .media-stage {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+        background: var(--media-bg);
+        transition: background-color 0.45s ease;
+        isolation: isolate;
+      }
+
+      .media-card {
+        position: absolute;
+        top: 25%;
+        left: 25%;
+        width: 50%;
+        height: 50%;
+        background: var(--card-bg);
+        object-fit: cover;
+        object-position: center center;
+        will-change: transform, opacity;
+        transform: scale(0.98);
+        opacity: 0;
+      }
+
+      .media-card:first-child {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      .panel__mobile-media::after {
+        content: attr(data-label);
+        position: absolute;
+        left: 22px;
+        bottom: 20px;
+        color: rgba(17, 19, 23, 0.52);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .media-card--one,
+      .mobile-media--one {
+        --card-bg: #dedbd4;
+      }
+
+      .media-card--two,
+      .mobile-media--two {
+        --card-bg: #d6dde5;
+      }
+
+      .media-card--three,
+      .mobile-media--three {
+        --card-bg: #dfd5cb;
+      }
+
+      .media-card--four,
+      .mobile-media--four {
+        --card-bg: #d5dfd5;
+      }
+
+      .media-card--five,
+      .mobile-media--five {
+        --card-bg: #d9d8e1;
+      }
+
+      @media (max-width: 860px) {
+        .intro,
+        .outro {
+          min-height: auto;
+          padding: 84px 22px;
+        }
+
+        h1 {
+          font-size: clamp(2.7rem, 14vw, 4.8rem);
+        }
+
+        .spotlight {
+          display: block;
+        }
+
+        .spotlight__media-column {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          min-height: 0;
+          padding: 0;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+
+        .panel {
+          min-height: auto;
+          display: block;
+          padding: 64px 22px 78px;
+        }
+
+        .panel__content {
+          width: 100%;
+        }
+
+        .panel__mobile-media {
+          position: relative;
+          display: grid;
+          place-items: center;
+          width: 100%;
+          height: auto;
+          aspect-ratio: 4 / 5;
+          margin-bottom: 34px;
+          overflow: hidden;
+          clip-path: none;
+          white-space: normal;
+          border-radius: 8px;
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.46),
+              rgba(255, 255, 255, 0)
+            ),
+            var(--card-bg);
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+          color: rgba(17, 19, 23, 0.66);
+          font-size: clamp(4rem, 24vw, 7rem);
+          font-weight: 800;
+        }
+
+        .panel__mobile-media img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          border-radius: inherit;
+          object-fit: cover;
+        }
+
+        .panel h2 {
+          font-size: clamp(2.2rem, 12vw, 4.4rem);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="intro">
+      <div class="intro__inner">
+        <p class="eyebrow">Scroll Story System</p>
+        <h1>Dual scroll spotlight for premium product storytelling.</h1>
+        <p>
+          The copy flows at reading speed while the pinned media surface
+          performs a continuous, scroll-scrubbed handoff between product
+          moments.
+        </p>
+      </div>
+    </header>
+
+    <main
+      class="spotlight"
+      id="spotlight"
+      aria-label="Product spotlight sequence"
+    >
+      <section class="spotlight__copy">
+        <article class="panel" data-bg="#f7f4ee" data-media-bg="#e9e6df">
+          <div class="panel__content">
+            <div
+              class="panel__mobile-media mobile-media--one"
+              data-label="Material"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23d8d4cc'/%3E%3Ccircle cx='650' cy='260' r='260' fill='%23f6f1e8' opacity='.7'/%3E%3Crect x='130' y='330' width='640' height='520' rx='34' fill='%239b9184' opacity='.38'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EMaterial%3C/text%3E%3C/svg%3E"
+                alt="Sample material detail"
+              />
+            </div>
+            <span class="panel__step">01</span>
+            <h2>Quiet materials, exact edges.</h2>
+            <p>
+              A calm opening moment introduces the product language with soft
+              contrast, restrained depth, and a surface that feels engineered
+              rather than decorated.
+            </p>
+          </div>
+        </article>
+
+        <article class="panel" data-bg="#edf2f7" data-media-bg="#e1e8ef">
+          <div class="panel__content">
+            <div
+              class="panel__mobile-media mobile-media--two"
+              data-label="Profile"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23cfd9e4'/%3E%3Ccircle cx='210' cy='280' r='230' fill='%23eef5fb' opacity='.78'/%3E%3Cpath d='M255 820 C390 650 485 410 640 220 L735 260 C620 540 525 720 360 925 Z' fill='%236f8396' opacity='.45'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EProfile%3C/text%3E%3C/svg%3E"
+                alt="Sample product profile"
+              />
+            </div>
+            <span class="panel__step">02</span>
+            <h2>A profile that rises into view.</h2>
+            <p>
+              The next visual does not replace the first abruptly. It arrives
+              from below while the previous frame lifts away, keeping the visual
+              rhythm unbroken.
+            </p>
+          </div>
+        </article>
+
+        <article class="panel" data-bg="#f3eee8" data-media-bg="#e9ded4">
+          <div class="panel__content">
+            <div
+              class="panel__mobile-media mobile-media--three"
+              data-label="Detail"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23ddcabd'/%3E%3Ccircle cx='470' cy='500' r='330' fill='%23f7ebe2' opacity='.6'/%3E%3Ccircle cx='470' cy='500' r='185' fill='%239f7862' opacity='.42'/%3E%3Ccircle cx='470' cy='500' r='62' fill='%235b4a42' opacity='.55'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EDetail%3C/text%3E%3C/svg%3E"
+                alt="Sample close detail"
+              />
+            </div>
+            <span class="panel__step">03</span>
+            <h2>Details hold just long enough.</h2>
+            <p>
+              Each image settles in the center for a short beat, giving the
+              viewer time to register the detail before the sequence continues
+              upward.
+            </p>
+          </div>
+        </article>
+
+        <article class="panel" data-bg="#eef4ef" data-media-bg="#e0e9df">
+          <div class="panel__content">
+            <div
+              class="panel__mobile-media mobile-media--four"
+              data-label="Motion"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23cfddcf'/%3E%3Cpath d='M-40 730 C210 530 410 760 640 430 C760 260 880 250 960 300 L960 1125 L-40 1125 Z' fill='%237e9a80' opacity='.42'/%3E%3Cpath d='M150 280 L720 650' stroke='%23f3f8f2' stroke-width='78' stroke-linecap='round' opacity='.72'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EMotion%3C/text%3E%3C/svg%3E"
+                alt="Sample motion scene"
+              />
+            </div>
+            <span class="panel__step">04</span>
+            <h2>Motion stays physically consistent.</h2>
+            <p>
+              The entire sequence uses transform and opacity only, preserving
+              compositing performance and avoiding layout work during scroll.
+            </p>
+          </div>
+        </article>
+
+        <article class="panel" data-bg="#f1f0f5" data-media-bg="#e4e2ec">
+          <div class="panel__content">
+            <div
+              class="panel__mobile-media mobile-media--five"
+              data-label="Finish"
+            >
+              <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23d5d3e0'/%3E%3Crect x='170' y='230' width='560' height='650' rx='54' fill='%23f5f2fb' opacity='.62'/%3E%3Crect x='240' y='315' width='420' height='480' rx='36' fill='%237c7799' opacity='.42'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EFinish%3C/text%3E%3C/svg%3E"
+                alt="Sample final reveal"
+              />
+            </div>
+            <span class="panel__step">05</span>
+            <h2>A polished final reveal.</h2>
+            <p>
+              The last frame completes the chained climb with the same timing
+              model as every previous transition, so there are no gaps, flashes,
+              or sudden swaps.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <aside class="spotlight__media-column" aria-hidden="true">
+        <div class="media-shell">
+          <div class="media-stage" id="mediaStage">
+            <img
+              class="media-card media-card--one"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23d8d4cc'/%3E%3Ccircle cx='650' cy='260' r='260' fill='%23f6f1e8' opacity='.7'/%3E%3Crect x='130' y='330' width='640' height='520' rx='34' fill='%239b9184' opacity='.38'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EMaterial%3C/text%3E%3C/svg%3E"
+              alt=""
+            />
+            <img
+              class="media-card media-card--two"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23cfd9e4'/%3E%3Ccircle cx='210' cy='280' r='230' fill='%23eef5fb' opacity='.78'/%3E%3Cpath d='M255 820 C390 650 485 410 640 220 L735 260 C620 540 525 720 360 925 Z' fill='%236f8396' opacity='.45'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EProfile%3C/text%3E%3C/svg%3E"
+              alt=""
+            />
+            <img
+              class="media-card media-card--three"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23ddcabd'/%3E%3Ccircle cx='470' cy='500' r='330' fill='%23f7ebe2' opacity='.6'/%3E%3Ccircle cx='470' cy='500' r='185' fill='%239f7862' opacity='.42'/%3E%3Ccircle cx='470' cy='500' r='62' fill='%235b4a42' opacity='.55'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EDetail%3C/text%3E%3C/svg%3E"
+              alt=""
+            />
+            <img
+              class="media-card media-card--four"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23cfddcf'/%3E%3Cpath d='M-40 730 C210 530 410 760 640 430 C760 260 880 250 960 300 L960 1125 L-40 1125 Z' fill='%237e9a80' opacity='.42'/%3E%3Cpath d='M150 280 L720 650' stroke='%23f3f8f2' stroke-width='78' stroke-linecap='round' opacity='.72'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EMotion%3C/text%3E%3C/svg%3E"
+              alt=""
+            />
+            <img
+              class="media-card media-card--five"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 1125'%3E%3Crect width='900' height='1125' fill='%23d5d3e0'/%3E%3Crect x='170' y='230' width='560' height='650' rx='54' fill='%23f5f2fb' opacity='.62'/%3E%3Crect x='240' y='315' width='420' height='480' rx='36' fill='%237c7799' opacity='.42'/%3E%3Ctext x='90' y='1010' font-family='Arial' font-size='72' font-weight='700' fill='%23222529'%3EFinish%3C/text%3E%3C/svg%3E"
+              alt=""
+            />
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="outro">
+      <div class="outro__inner">
+        <p class="eyebrow">End State</p>
+        <h2>One timeline. One continuous scroll performance.</h2>
+        <p>
+          The media never toggles on or off. Every frame exists in the stack,
+          and the scroll position simply drives the shared choreography.
+        </p>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script>
+      gsap.registerPlugin(ScrollTrigger);
+
+      const spotlight = document.querySelector("#spotlight");
+      const mediaStage = document.querySelector("#mediaStage");
+      const panels = gsap.utils.toArray(".panel");
+      const cards = gsap.utils.toArray(".media-card");
+
+      function applyPanelColors(panel) {
+        spotlight.style.backgroundColor = panel.dataset.bg;
+        mediaStage.style.backgroundColor = panel.dataset.mediaBg;
+      }
+
+      applyPanelColors(panels[0]);
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 861px)", () => {
+        const segmentCount = cards.length - 1;
+        const fadeDuration = 0.65;
+
+        gsap.set(cards, {
+          opacity: 0,
+          scale: 0.98,
+          force3D: true,
+        });
+
+        gsap.set(cards[0], {
+          opacity: 1,
+          scale: 1,
+        });
+
+        /*
+        Master timeline logic:
+        - Every media card exists in the same stacked position.
+        - The first image is visible immediately for panel 1.
+        - Each transition is a synced crossfade: the outgoing image fades out
+          while the next corresponding image fades in.
+        - The "<" position parameter starts the incoming fade at the exact same
+          timeline moment as the outgoing fade.
+      */
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: spotlight,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: true,
+            pin: ".media-shell",
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        cards.slice(0, -1).forEach((card, index) => {
+          const nextCard = cards[index + 1];
+          const transitionStart = index + 1 - fadeDuration;
+
+          tl.to(
+            card,
+            {
+              opacity: 0,
+              scale: 0.98,
+              duration: fadeDuration,
+            },
+            transitionStart,
+          );
+
+          /*
+          Overlap mechanism:
+          This tween begins at the same timeline position as the exit tween above.
+          The current image fades out while the next corresponding image fades in,
+          keeping the media synced to the left-side step.
+        */
+          tl.to(
+            nextCard,
+            {
+              opacity: 1,
+              scale: 1,
+              duration: fadeDuration,
+            },
+            "<",
+          );
+        });
+
+        tl.to({}, { duration: segmentCount }, 0);
+
+        const colorTriggers = panels.map((panel) =>
+          ScrollTrigger.create({
+            trigger: panel,
+            start: "top center",
+            end: "bottom center",
+            onEnter: () => applyPanelColors(panel),
+            onEnterBack: () => applyPanelColors(panel),
+          }),
+        );
+
+        return () => {
+          colorTriggers.forEach((trigger) => trigger.kill());
+          tl.scrollTrigger.kill();
+          tl.kill();
+        };
+      });
+
+      mm.add("(max-width: 860px)", () => {
+        gsap.set(cards, { clearProps: "all" });
+        panels.forEach((panel) => {
+          panel.style.backgroundColor = panel.dataset.bg;
+        });
+      });
+    </script>
+  </body>
+</html>
