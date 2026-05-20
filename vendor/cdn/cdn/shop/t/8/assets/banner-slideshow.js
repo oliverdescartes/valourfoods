@@ -278,16 +278,15 @@ class BannerTransform {
         );
     }
     setupScrollTrigger() {
-        const bannerSection = document.querySelector(".banner-slideshow-section"),
-            nextSection = document.querySelector(".text-scrolling-parent");
-        if (!bannerSection || !nextSection) return;
+        const bannerSection = document.querySelector(".banner-slideshow-section");
+        if (!bannerSection) return;
         this.scrollTrigger && this.scrollTrigger.kill(), (this.isMobile = window.innerWidth <= 768);
-        const startTrigger = this.isMobile ? "top 20%" : "top bottom";
+        const endDistance = this.isMobile ? "+=80%" : "+=70%";
         (this.scrollTrigger = ScrollTrigger.create({
-            trigger: nextSection,
-            start: startTrigger,
-            end: "top top",
-            scrub: 1,
+            trigger: bannerSection,
+            start: "top top",
+            end: endDistance,
+            scrub: 0.65,
             onUpdate: (self) => {
                 const progress = self.progress,
                     translateY = progress * 15,
@@ -322,6 +321,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 }),
     window.addEventListener("load", () => {
-        typeof gsap < "u" && (gsap.registerPlugin(ScrollTrigger), setTimeout(() => new BannerTransform(), 3e3));
+        typeof gsap < "u" && (gsap.registerPlugin(ScrollTrigger), new BannerTransform());
     }),
     typeof window < "u" && ((window.BannerSlideshow = BannerSlideshow), (window.BannerTransform = BannerTransform));
