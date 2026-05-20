@@ -6,7 +6,7 @@ PHONE_NUMBER_ID = "YOUR_PHONE_NUMBER_ID"
 url = f"https://graph.facebook.com/{API_VERSION}/{PHONE_NUMBER_ID}/messages"
 
 headers = {
-    "Authorization": "Bearer YOUR_ACCESS_TOKEN",
+    "Authorization": "Bearer EAA3lacKOE3wBRbnZCNdHLRZBGtASPPZBVvOrgZCWp1d9MkzdXqluxZAMNfAEqNyeap5Uy8X9wxQJfHpTzOLbUNhujJRS0x0ZCdBDyGvWbRQXsZCiXgA2lzpKFSsvSsKAuZAkZA0LugRcQ4Rfu3eAzOlCMrejNA0mMo4mvkOdSZBQyFsj9KDYGY7jx307JRgy3Ch0E09dUfq4EIQDB2IzTycpM7Y7qZBnObqtaHMeTvrjnPwDCsk5pcAPcjaZBWgWJL4HLIF28JQdZC9bYH76mcqoiMdDu",
     "Content-Type": "application/json",
 }
 

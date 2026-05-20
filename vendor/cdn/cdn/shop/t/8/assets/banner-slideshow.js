@@ -281,8 +281,8 @@ class BannerTransform {
         const bannerSection = document.querySelector(".banner-slideshow-section"),
             nextSection = document.querySelector(".text-scrolling-parent");
         if (!bannerSection || !nextSection) return;
-        this.scrollTrigger && this.scrollTrigger.kill(), (this.isMobile = window.innerWidth <= 508);
-        const startTrigger = this.isMobile ? "top 40%" : "top bottom";
+        this.scrollTrigger && this.scrollTrigger.kill(), (this.isMobile = window.innerWidth <= 768);
+        const startTrigger = this.isMobile ? "top 20%" : "top bottom";
         (this.scrollTrigger = ScrollTrigger.create({
             trigger: nextSection,
             start: startTrigger,

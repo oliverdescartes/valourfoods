@@ -2,6 +2,26 @@
 <html lang="en">
 
 <head>
+<!-- Meta Pixel Code -->
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1298297025090943');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<!-- End Meta Pixel Code -->
+
 
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
@@ -650,20 +670,25 @@
   .testimonial-sectionxyz {
     max-width: 2000px;
     margin: auto;
-    padding: 350px 20px;
+    padding: clamp(130px, 14vw, 260px) 20px;
+    background:
+      linear-gradient(180deg, #fff8ef 0%, #f5ead9 100%);
   }
 
   /* HEADER */
   .testimonial-sectionxyz .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    text-align: center;
   }
 
   /* WRAPPER */
   .testimonial-sectionxyz .carousel-wrapper {
     overflow: hidden;
-    margin-top: 40px;
+    width: min(980px, 100%);
+    margin: clamp(36px, 5vw, 64px) auto 0;
+    padding: 28px;
   }
 
   .cont_nav_crousel {
@@ -675,29 +700,58 @@
   /* TRACK */
   .testimonial-sectionxyz .carousel-track {
     display: flex;
-    gap: 20px;
-    transition: transform 0.5s ease;
+    gap: 28px;
+    align-items: stretch;
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
 
   /* ITEM */
   .testimonial-sectionxyz .carousel-item {
-    min-width: calc(50% - 10px);
+    flex: 0 0 100%;
+    min-width: 100%;
     display: flex;
-    gap: 20px;
-    background: #ffffffe3;
-    padding: 20px;
-    border-radius: 11px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    align-items: stretch;
+    gap: 0;
+    overflow: hidden;
+    background: rgba(255, 248, 239, 0.96);
+    border: 1px solid rgba(131, 26, 26, 0.12);
+    border-radius: 8px;
+    box-shadow:
+      0 0 0 1px rgba(131, 26, 26, 0.08),
+      0 0 34px rgba(131, 26, 26, 0.1),
+      0 20px 46px rgba(52, 25, 11, 0.14);
   }
 
   /* IMAGE GRID */
   .testimonial-sectionxyz .image-grid {
-    width: 50%;
-    /* remove this when image is displayed (removed from comments in html) */
-    background: grey;
+    position: relative;
+    width: 38%;
+    height: auto;
+    min-height: 330px;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+    background: #831a1a;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .testimonial-sectionxyz .review-image {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
-    height: 369px;
-    /* ------ */
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px rgba(250, 234, 222, 0.14);
+  }
+
+  .testimonial-sectionxyz .review-image--large {
+    grid-row: 1 / span 2;
   }
 
   .testimonial-sectionxyz .main-img {
@@ -728,19 +782,22 @@
 
   .testimonial-sectionxyz .header h2 {
     font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: 64px;
-    color: white;
+    margin: 0;
+    font-size: clamp(48px, 7vw, 92px);
+    line-height: 0.92;
+    color: #831a1a;
   }
 
   .testimonial-sectionxyz .header h2 span {
-    color: #e7e79e
+    color: #9a6b1f
   }
 
   /* CARD */
   .testimonial-sectionxyz .review-card {
-    width: 50%;
-    padding: 20px;
-    border-radius: 20px;
+    width: 62%;
+    padding: clamp(28px, 5vw, 58px);
+    border-radius: 0;
+    background: #fff8ef;
   }
 
   .testimonial-sectionxyz .review-card h4,
@@ -750,36 +807,54 @@
   }
 
   .testimonial-sectionxyz .review-card h4 {
-    font-size: 20px;
+    margin: 0;
+    color: #831a1a;
+    font-size: clamp(18px, 2vw, 24px);
+    letter-spacing: 0.02em;
   }
 
   .testimonial-sectionxyz .review-card span {
-    font-size: 16px;
+    font-size: 13px;
     margin-top: 7px;
     display: block;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #afafaf;
+    padding-bottom: 18px;
+    color: #9a6b1f;
+    border-bottom: 1px solid rgba(131, 26, 26, 0.16);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .stars_review {
     color: #d58a00;
-    font-size: 32px;
-    margin-top: 10px;
+    font-size: clamp(22px, 3vw, 30px);
+    margin: 18px 0 0;
+    letter-spacing: 0.08em;
   }
 
   .review_rev {
-    margin-top: 40px;
-    font-size: 23px;
+    margin: clamp(24px, 4vw, 42px) 0 0;
+    color: #44231f;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(28px, 4vw, 46px);
+    line-height: 1.04;
   }
 
   /* NAV */
   .testimonial-sectionxyz .nav button {
-    border: 1px solid #ddd;
-    background: white;
+    border: 1px solid rgba(131, 26, 26, 0.2);
+    background: #831a1a;
+    color: #f7d46c;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     cursor: pointer;
+    transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
+  }
+
+  .testimonial-sectionxyz .nav button:hover {
+    background: #f7d46c;
+    color: #831a1a;
+    transform: translateY(-2px);
   }
 
 
@@ -789,24 +864,37 @@
 
   .testimonial-sectionxyz .carousel-track {
     display: flex;
-    gap: 20px;
-    transition: transform 0.5s ease;
+    gap: 28px;
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .testimonial-sectionxyz .carousel-item {
-    min-width: calc(50% - 10px);
-    /* 2 items visible */
+    flex: 0 0 100%;
+    min-width: 100%;
     display: flex;
-    gap: 20px;
+    gap: 0;
   }
 
   /* layout fix */
-  .testimonial-sectionxyz .image-grid,
+  .testimonial-sectionxyz .image-grid {
+    flex: 0 0 38%;
+    width: 38%;
+  }
+
   .testimonial-sectionxyz .review-card {
-    width: 50%;
+    flex: 1 1 auto;
+    width: 62%;
   }
 
   @media (max-width: 900px) {
+    .testimonial-sectionxyz {
+      padding: 96px 18px 126px;
+    }
+
+    .testimonial-sectionxyz .carousel-wrapper {
+      padding: 18px;
+    }
+
     .testimonial-sectionxyz .carousel-item {
       min-width: 100%;
       flex-direction: column;
@@ -817,8 +905,19 @@
       width: 100%;
     }
 
+    .testimonial-sectionxyz .image-grid {
+      min-height: 170px;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(0, 150px) minmax(0, 120px);
+    }
+
+    .testimonial-sectionxyz .review-image--large {
+      grid-column: 1 / span 2;
+      grid-row: auto;
+    }
+
     .testimonial-sectionxyz .header h2 {
-      font-size: 36px;
+      font-size: clamp(42px, 13vw, 64px);
     }
   }
 
@@ -1224,6 +1323,228 @@
     padding-bottom: 200px;
   }
 
+  .raw-ready-section {
+    position: relative;
+    padding: 10px 20px 190px;
+    overflow: hidden;
+  }
+
+  .raw-ready-section::before {
+    content: "";
+    position: absolute;
+    inset: 8% 0 auto;
+    height: 1px;    top: 137px;
+    background: linear-gradient(90deg, transparent, rgba(250, 234, 222, 0.32), transparent);
+  }
+
+  .raw-ready-inner {
+    width: min(1120px, 92vw);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+    gap: clamp(36px, 6vw, 96px);
+    align-items: center;
+  }
+
+  .raw-ready-heading {
+    margin: 0;
+    color: #faeade;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(58px, 8vw, 128px);
+    line-height: 0.9;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .raw-ready-heading span {
+    display: block;
+    color: #f7d46c;
+  }
+
+  .raw-ready-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .raw-ready-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 82px;
+    padding: 20px 24px;
+    border: 1px solid rgba(250, 234, 222, 0.24);
+    background: rgba(250, 234, 222, 0.08);
+    color: #fff8ef;
+    backdrop-filter: blur(10px);
+  }
+
+  .raw-ready-item::before {
+    content: "";
+    flex: 0 0 10px;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: #f7d46c;
+    box-shadow: 0 0 0 8px rgba(247, 212, 108, 0.1);
+  }
+
+  .raw-ready-item span {
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(20px, 2vw, 30px);
+    line-height: 1.05;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: lowercase;
+  }
+
+  .base-message-section {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(58px, 8vw, 104px) 20px clamp(74px, 9vw, 118px);
+    margin-bottom: clamp(-38px, -3vw, -22px);
+    background:
+      linear-gradient(180deg, transparent 0%, rgba(131, 26, 26, 0.08) 100%),
+      radial-gradient(circle at 18% 24%, rgba(131, 26, 26, 0.09) 0.7px, transparent 1px),
+      radial-gradient(circle at 74% 58%, rgba(255, 248, 239, 0.2) 0.7px, transparent 1px),
+      linear-gradient(115deg, rgba(131, 26, 26, 0.035) 0.5px, transparent 0.5px),
+      #fbab3d;
+    background-size: auto, 24px 24px, 34px 34px, 12px 12px, auto;
+    color: #831a1a;
+  }
+
+  .base-message-section::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 8px;
+    background: #831a1a;
+    pointer-events: none;
+  }
+
+  .base-message-section::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(46px, 7vw, 82px);
+    background: linear-gradient(180deg, transparent, rgba(131, 26, 26, 0.16));
+    pointer-events: none;
+  }
+
+  .base-message-inner {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, 92vw);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr);
+    align-items: end;
+    gap: clamp(28px, 5vw, 80px);
+  }
+
+  .base-message-copy {
+    display: contents;
+  }
+
+  .base-message-kicker {
+    position: relative;
+    margin: 0 0 0.62em;
+    padding-top: 16px;
+    color: #831a1a;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(12px, 1vw, 14px);
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .base-message-kicker::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: min(210px, 100%);
+    height: 2px;
+    background: #831a1a;
+  }
+
+  .base-message-heading {
+    margin: 0;
+    color: #831a1a;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(54px, 8vw, 124px);
+    line-height: 0.82;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .base-message-section + .container_slider {
+    position: relative;
+    z-index: 2;
+  }
+
+  .looks-tastes-section {
+    position: relative;
+    padding: 0 20px 180px;
+    overflow: hidden;
+    background: #831a1a;
+  }
+
+
+  .looks-tastes-inner {
+    position: relative;
+    width: min(1080px, 92vw);
+    margin: 0 auto;
+  }
+
+  .looks-tastes-heading {
+    margin: 0 0 clamp(32px, 5vw, 64px);
+    color: #faeade;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(58px, 8vw, 124px);
+    line-height: 0.9;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .looks-tastes-heading span {
+    display: block;
+    color: #f7d46c;
+  }
+
+  .looks-tastes-video {
+    position: relative;
+    width: min(900px, 100%);
+    margin: 0 auto;
+    overflow: hidden;
+    border: 1px solid rgba(250, 234, 222, 0.24);
+    background: rgba(250, 234, 222, 0.08);
+    box-shadow: 0 28px 70px rgba(34, 8, 8, 0.28);
+  }
+
+  .looks-tastes-video::before {
+    content: "";
+    display: block;
+    padding-top: 56.25%;
+  }
+
+  .looks-tastes-video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
   .slider {
     position: relative;
     width: 64%;
@@ -1369,19 +1690,73 @@
   }
 
   .valour-banner__content {
-    width: 77%;
+    width: min(86%, 980px);
     margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(22px, 3vw, 38px);
   }
 
   .valour-banner__title {
     margin: 0;
     color: white;
     font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: clamp(52px, 6vw, 104px);
-    line-height: 0.94;
+    font-size: clamp(64px, 8vw, 132px);
+    line-height: 0.9;
     font-weight: 600;
     letter-spacing: -0.02em;
     text-wrap: balance;
+  }
+
+  .valour-banner__title .word-animate {
+    margin-right: 0.16em;
+  }
+
+.valour-banner__divider {
+    width: min(420px, 76vw);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: clamp(14px, 2vw, 24px);
+    color: #ffffff29;;
+    margin-top: 24px;
+    margin-bottom: 20px;
+}
+  .valour-banner__divider::before,
+  .valour-banner__divider::after {
+    content: "";
+    height: 3px;
+    background: currentColor;
+    border-radius: 999px;
+  }
+
+  .valour-banner__divider-star {
+    width: clamp(18px, 2.4vw, 30px);
+    height: clamp(18px, 2.4vw, 30px);
+    position: relative;
+    display: inline-block;
+  }
+
+  .valour-banner__divider-star::before,
+  .valour-banner__divider-star::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    background: currentColor;
+  }
+
+  .valour-banner__divider-star::before {
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  }
+
+  .valour-banner__divider-star::after {
+    width: 42%;
+    height: 42%;
+    transform: rotate(45deg);
   }
 
   .valour-banner__eyebrow {
@@ -1396,14 +1771,7 @@
     opacity: 0.9;
   }
 
-  .valour-banner__accent {
-    flex: 0 0 auto;
-    width: 2px;
-    position: absolute;
-    height: min(52vh, 520px);
-    margin-right: clamp(8px, 2vw, 24px);
-    background: linear-gradient(to bottom, transparent 0%, rgba(199, 154, 69, 0.2) 8%, rgb(255 236 0 / 95%) 50%, rgba(199, 154, 69, 0.2) 92%, transparent 100%);
-  }
+
 
   @media (max-width: 900px) {
     .valour-banner__inner {
@@ -1414,7 +1782,7 @@
     }
 
     .valour-banner__content {
-      width: min(78%, 620px);
+      width: min(86%, 720px);
     }
 
     .valour-banner__accent {
@@ -1430,237 +1798,207 @@
 
 
     .valour-banner__title {
-      font-size: clamp(36px, 14vw, 36px);
-      line-height: 1.2;
+      font-size: clamp(48px, 17vw, 72px);
+      line-height: 0.95;
     }
 
     .valour-banner__content {
       margin-left: 7px;
-      width: min(90%, 620px);
+      width: min(92%, 620px);
+      gap: 20px;
     }
 
     .valour-banner__eyebrow {
       font-size: 12px;
       letter-spacing: 0.24em;
     }
+
+    .raw-ready-section {
+      padding: 0 18px 120px;
+    }
+
+    .raw-ready-inner {
+      width: 100%;
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .raw-ready-heading {
+      font-size: clamp(48px, 15vw, 68px);
+    }
+
+    .raw-ready-list {
+      gap: 10px;
+    }
+
+    .raw-ready-item {
+      min-height: 68px;
+      padding: 16px 18px;
+    }
+
+    .base-message-section {
+      padding: 54px 18px 76px;
+      margin-bottom: -26px;
+    }
+
+    .base-message-inner {
+      width: 100%;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .base-message-copy {
+      display: block;
+    }
+
+    .base-message-heading {
+      font-size: clamp(48px, 15vw, 74px);
+      line-height: 0.86;
+    }
+
+    .looks-tastes-section {
+      padding: 0 18px 110px;margin-top: 400px;
+    }
+
+    .looks-tastes-inner {
+      width: 100%;
+    }
+
+    .looks-tastes-heading {
+      font-size: clamp(48px, 15vw, 68px);
+    }
   }
 
-
-  .timeline {
-    position: relative;
-    max-width: 1100px;
-    margin: auto;
-    padding: 100px 0;
-  }
-
-  /* CENTER LINE */
-  .line {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 2px;
-    height: 100%;
-    background: #d8d6d2;
-    transform: translateX(-50%);
-  }
-
-  /* ITEM */
-  .timeline-item {
-    position: relative;
-    width: 50%;
-    padding: 60px;
-    box-sizing: border-box;
-  }
-
-  .timeline-item.left {
-    left: 0;
-    text-align: right;
-  }
-
-  .timeline-item.left .card {
-    margin-left: 102px;
-  }
-
-  .timeline-item.right {
-    left: 50%;
-  }
-
-  /* CARD */
-  .cardxyz {
-    position: relative;
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 20px;
-    width: 320px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
-    display: inline-block;
-    text-align: left;
-    overflow: visible;
-  }
-
-  .cardxyz img {
-    width: 100%;
-    border-radius: 14px;
-    margin-bottom: 15px;
-  }
-
-  .cardxyz h3 {
-    font-size: 22px;
-    margin: 10px 0;
-    text-align: center;
-    font-family: Inter;
-  }
-
-  .cardxyz p {
-    font-size: 14px;
-    color: #666;
-    text-align: center;
-    font-family: Inter;
-  }
-
-  /* 🔥 CONNECTOR NOTCH */
-
-  /* LEFT → pointing right */
-  /* SECTION */
-  .timeline-section {
-    padding: clamp(60px, 10vw, 140px) 0;
-  }
 
   /* HEADING */
   .valour-banner__title_sec2 {
+    position: relative;
     text-align: center;
-    margin-bottom: clamp(40px, 8vw, 100px);
+    width: min(920px, 92vw);
+    margin: clamp(96px, 12vw, 180px) auto clamp(48px, 8vw, 104px);
+    padding-inline: clamp(12px, 3vw, 32px);
   }
 
+  .valour-banner__title_sec2::before {
+    content: "";
+    display: block;
+    width: min(180px, 42vw);
+    height: 2px;
+    margin: 0 auto clamp(20px, 3vw, 34px);
+    background: linear-gradient(90deg, transparent, rgba(199, 154, 69, 0.95), transparent);
+  }
 
-
+.testimonial-sectionxyz-parent{
+  background:white
+}
   .valour-banner__title_sec2 h2 {
     text-align: center;
     margin: 0;
-    color: #0c0c0c;
+  color: #fbf7f7;
     font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: clamp(32px, 6vw, 64px);
-
-    line-height: 0.94;
+    font-size: clamp(48px, 8vw, 112px);
+    line-height: 0.9;
     font-weight: 600;
-    letter-spacing: -0.02em;
-    margin-top: 180px;
-    /* margin-bottom: 140px; */
+    letter-spacing: 0;
+    text-shadow: 0 14px 34px rgba(131, 26, 26, 0.12);
     text-wrap: balance;
   }
 
   .valour-banner__title_sec2 p {
     text-align: center;
-    /* margin: 0; */
-    color: #939393;
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: clamp(16px, 3vw, 28px);
-    margin-top: 20px;
+    margin: clamp(18px, 2.2vw, 26px) auto 0;
+    color: #ffd89a;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(12px, 1.2vw, 16px);
+    line-height: 1.45;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
   }
 
-  /* TIMELINE BASE */
-  .timeline {
+  .process-steps-section {
     position: relative;
-    max-width: 1100px;
-    margin: auto;
+    overflow: hidden;
+    padding: clamp(72px, 10vw, 136px) 20px clamp(96px, 12vw, 150px);
+    background: #831a1a;
   }
 
-  /* CENTER LINE */
-  .line {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 2px;
-    height: 100%;
-    background: #d8d6d2;
-    transform: translateX(-50%);
+ 
+
+  .process-steps-section .valour-banner__title_sec2 {
+    margin: 0 auto clamp(44px, 6vw, 76px);
   }
 
-  /* ITEM */
-  .timeline-item {
+  .process-steps {
     position: relative;
-    width: 50%;
-    padding: clamp(30px, 5vw, 60px);
+    z-index: 1;
+    width: min(920px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    justify-content: center;
+    gap: clamp(10px, 2.6vw, 34px);
   }
 
-  /* LEFT */
-  .timeline-item.left {
-    left: 0;
-    text-align: right;
-  }
-
-  /* RIGHT */
-  .timeline-item.right {
-    left: 50%;
-  }
-
-  /* CARD */
-  .cardxyz {
-    background: #fff;
-    padding: clamp(16px, 3vw, 24px);
-    border-radius: 20px;
-    width: 100%;
-    max-width: 320px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
-    margin-inline: auto;
-  }
-
-  .cardxyz img {
-    width: 100%;
-    border-radius: 12px;
-  }
-
-  .cardxyz h3 {
-    font-size: clamp(18px, 2vw, 22px);
-    margin: 10px 0;
-  }
-
-  .cardxyz p {
-    font-size: clamp(13px, 1.5vw, 14px);
-  }
-
-  /* CONNECTOR */
-  .timeline-item.left .cardxyz::before,
-  .timeline-item.right .cardxyz::before {
+  .process-steps::before {
     content: "";
     position: absolute;
     top: 50%;
-    width: 16px;
-    height: 16px;
-    background: #fff;
-    transform: translateY(-50%) rotate(45deg);
+    left: 13%;
+    right: 13%;
+    height: 1px;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg, transparent, rgba(247, 212, 108, 0.7), transparent);
   }
 
-  /* LEFT CONNECTOR */
-  .timeline-item.left .cardxyz::before {
-    right: -8px;
+  .process-step {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(12px, 2vw, 22px);
+    border: 1px solid rgba(250, 234, 222, 0.22);
+    background: rgba(250, 234, 222, 0.08);
+    color: #fff8ef;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 44px rgba(34, 8, 8, 0.16);
   }
 
-  /* RIGHT CONNECTOR */
-  .timeline-item.right .cardxyz::before {
-    left: -8px;
-  }
-
-  /* DOT */
-  .dot-timeline {
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
-    background: #c94c4c;
-    color: #fff;
+  .process-step__icon {
+    position: relative;
+    z-index: 1;
+    width: clamp(48px, 8vw, 78px);
+    height: clamp(48px, 8vw, 78px);
+    margin: 0 auto clamp(12px, 2vw, 20px);
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(247, 212, 108, 0.54);
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
+    background: #f7d46c;
+    color: #831a1a;
+    box-shadow: 0 0 0 12px rgba(247, 212, 108, 0.1);
   }
 
-  /* RIGHT DOT */
-  .timeline-item.right .dot-timeline {
-    left: 0;
+  .process-step__icon .material-symbols-outlined {
+    font-size: clamp(24px, 4vw, 36px);
+    line-height: 1;
+  }
+
+  .process-step__title {
+    margin: 0;
+    color: #faeade;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(24px, 4.2vw, 46px);
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: lowercase;
+  }
+
+  .process-steps-section + .looks-tastes-section {
+    margin-top: 0;
   }
 
   /* ================= */
@@ -1669,52 +2007,171 @@
 
   @media (max-width: 768px) {
 
-    .timeline {
-      padding: 0 10px;
+    .valour-banner__title_sec2 {
+      margin-top: clamp(72px, 18vw, 112px);
     }
 
-    .line {
-      left: 50%;
+    .valour-banner__title_sec2 p {
+      max-width: 280px;
+      letter-spacing: 0.18em;
     }
 
-    .timeline-item {
-      width: 100%;
-      padding: 40px 0;
-      position: relative;
+    .process-steps-section {
+      padding: 72px 18px 104px;
+    margin-top: 140px;
+        margin-bottom: 190px;
     }
 
-    /* KEEP ZIG-ZAG */
-    .timeline-item.left {
-      left: 0;
-      text-align: right;
-      padding-right: 55%;
+    .process-steps-section .valour-banner__title_sec2 {
+      margin-top: 0;
     }
 
-    .timeline-item.right {
-      left: 0;
-      text-align: left;
-      padding-left: 55%;
+    .process-steps {
+      gap: clamp(8px, 2.4vw, 14px);
     }
 
-    /* CARD SIZE CONTROL */
-    .cardxyz {
-      max-width: 260px;
-      width: 100%;
+    .process-steps::before {
+      top: 50%;
+      left: 13%;
+      right: 13%;
+      height: 1px;
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, transparent, rgba(247, 212, 108, 0.62), transparent);
     }
 
-    /* DOT CENTER FIX */
-    .dot-timeline {
-      left: 50% !important;
-      transform: translate(-50%, -50%);
+    .process-step {
+      padding: clamp(10px, 2.8vw, 16px);
     }
 
-    /* CONNECTOR ADJUST */
-    .timeline-item.left .cardxyz::before {
-      right: -8px;
+    .process-step__icon {
+      width: clamp(44px, 13vw, 62px);
+      height: clamp(44px, 13vw, 62px);
+      margin-bottom: 12px;
     }
 
-    .timeline-item.right .cardxyz::before {
-      left: -8px;
+    .process-step__icon .material-symbols-outlined {
+      font-size: clamp(22px, 7vw, 30px);
+    }
+
+    .process-step__title {
+      font-size: clamp(20px, 7vw, 34px);
+    }
+
+  }
+
+  .final-cta-section {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(88px, 12vw, 150px) 20px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(247, 212, 108, 0.16), transparent 36%),
+      linear-gradient(135deg, #831a1a 0%, #5f1111 100%);
+    color: #faeade;
+    text-align: center;
+  }
+
+  .final-cta-section::before,
+  .final-cta-section::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: min(520px, 84vw);
+    height: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgba(247, 212, 108, 0.68), transparent);
+  }
+
+  .final-cta-section::before {
+    top: clamp(28px, 5vw, 54px);
+  }
+
+  .final-cta-section::after {
+    bottom: clamp(28px, 5vw, 54px);
+  }
+
+  .final-cta-inner {
+    position: relative;
+    z-index: 1;
+    width: min(980px, 100%);
+    margin: 0 auto;
+  }
+
+  .final-cta-title {
+    margin: 0;
+    color: #f7d46c;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(12px, 1.2vw, 16px);
+    line-height: 1.45;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  .final-cta-headline {
+    margin: clamp(16px, 2.8vw, 28px) auto 0;
+    color: #faeade;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(48px, 8vw, 116px);
+    line-height: 0.9;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-wrap: balance;
+    text-shadow: 0 20px 46px rgba(34, 8, 8, 0.28);
+  }
+
+  .final-cta-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 54px;
+    margin-top: clamp(34px, 5vw, 58px);
+    padding: 16px 30px;
+    border: 1px solid rgba(247, 212, 108, 0.86);
+    border-radius: 999px;
+    background: #f7d46c;
+    color: #831a1a;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 0 18px 44px rgba(34, 8, 8, 0.28);
+    transition: transform 0.28s ease, box-shadow 0.28s ease, background 0.28s ease;
+  }
+
+  .final-cta-button:hover {
+    background: #faeade;
+    transform: translateY(-3px);
+    box-shadow: 0 24px 54px rgba(34, 8, 8, 0.34);
+  }
+
+  .final-cta-button img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  @media (max-width: 640px) {
+    .final-cta-section {
+      padding: 82px 18px;
+    }
+
+    .final-cta-title {
+      letter-spacing: 0.22em;
+    }
+
+    .final-cta-headline {
+      font-size: clamp(44px, 14vw, 68px);
+      line-height: 0.95;
+    }
+
+    .final-cta-button {
+      width: min(100%, 320px);
+      padding-inline: 20px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
     }
   }
 
@@ -2024,7 +2481,7 @@
 
     .container_slider {
 
-      margin-top: 284px;
+      margin-top:44px;
     }
   }
 
@@ -2099,10 +2556,6 @@
   }
 
   @media (max-width: 400px) {
-    .cardxyz h3 {
-      font-size: clamp(15px, 2vw, 22px);
-    }
-
     .valour-banner__title {
       font-size: clamp(28px, 14vw, 28px);
       line-height: 1.2;
@@ -2255,7 +2708,7 @@
         <div class="banner-section">
           <!-- Banner Slides -->
 
-          <div class="banner-slide active">
+          <!-- <div class="banner-slide active">
             <picture>
 
               <source media="(min-width: 768px)"
@@ -2264,10 +2717,10 @@
 
 
               <source media="(max-width: 767px)"
-                srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.webp?v=1754497979&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.png?v=1754497979&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.webp?v=1754497979&width=800" alt="" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
 
@@ -2296,7 +2749,7 @@
                 <a href="#how-it-works" class="btn link">How it works</a>
               </div>
             </div>
-          </div>
+          </div> -->
 
 
           <!-- <div class="banner-slide active" data-slide="0">
@@ -2323,7 +2776,7 @@
 
 
 
-          <div class="banner-slide " data-slide="1">
+          <div class="banner-slide active" data-slide="0">
             <picture>
 
               <source media="(min-width: 768px)" srcset="vendor\cdn\cdn\shop\files\hero_banner_vlrmn.png">
@@ -2331,15 +2784,15 @@
 
 
               <source media="(max-width: 767px)"
-                srcset="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800" alt="" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
           </div>
 
-          <div class="banner-slide " data-slide="2">
+          <div class="banner-slide " data-slide="1">
             <picture>
 
               <source media="(min-width: 768px)" srcset="vendor/cdn/cdn/shop/files/hero_banner2nd.png">
@@ -2347,10 +2800,10 @@
 
 
               <source media="(max-width: 767px)"
-                srcset="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800">
+                srcset="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.webp?v=1754497978&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.webp?v=1754497978&width=800" alt="" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
           </div>
@@ -2367,7 +2820,7 @@
 
             <div class="banner-dot " data-slide="1" role="button" tabindex="0" aria-label="Go to slide 2"></div>
 
-            <div class="banner-dot " data-slide="2" role="button" tabindex="0" aria-label="Go to slide 3"></div>
+            <!-- <div class="banner-dot " data-slide="2" role="button" tabindex="0" aria-label="Go to slide 3"></div> -->
 
             <!-- <div class="banner-dot " data-slide="3" role="button" tabindex="0" aria-label="Go to slide 4"></div>
 
@@ -2397,8 +2850,13 @@
           <div class="valour-banner" id="textContent">
             <div class="valour-banner__inner">
               <div class="valour-banner__content">
-                <h2 class="valour-banner__title line-1">Spices, simplified.</h2>
-                <p class="valour-banner__eyebrow line-2">LIQUID SPICE BY VALOUR</p>
+                <div class="valour-banner__divider" aria-hidden="true">
+                  <span class="valour-banner__divider-star"></span>
+                </div>
+                <h2 class="valour-banner__title line-1">More than a spice</h2>
+                <div class="valour-banner__divider" aria-hidden="true">
+                  <span class="valour-banner__divider-star"></span>
+                </div>
               </div>
 
               <div class="valour-banner__accent" aria-hidden="true"></div>
@@ -2407,6 +2865,83 @@
 
         </div>
 
+        <section class="process-steps-section" id="how-it-works" aria-labelledby="process-steps-title">
+          <div class="valour-banner__title_sec2">
+            <h2 id="process-steps-title">One process. No confusion</h2>
+            <p>Built for consistency, every time.</p>
+          </div>
+
+          <div class="process-steps" aria-label="Cooking steps">
+            <article class="process-step">
+              <div class="process-step__icon" aria-hidden="true">
+                <span class="material-symbols-outlined">outdoor_grill</span>
+              </div>
+              <h3 class="process-step__title">fry</h3>
+            </article>
+
+            <article class="process-step">
+              <div class="process-step__icon" aria-hidden="true">
+                <span class="material-symbols-outlined">water_drop</span>
+              </div>
+              <h3 class="process-step__title">pour</h3>
+            </article>
+
+            <article class="process-step">
+              <div class="process-step__icon" aria-hidden="true">
+                <span class="material-symbols-outlined">local_fire_department</span>
+              </div>
+              <h3 class="process-step__title">simmer</h3>
+            </article>
+          </div>
+        </section>
+
+        <section class="looks-tastes-section" aria-labelledby="looks-tastes-title">
+          <div class="looks-tastes-inner">
+            <h2 class="looks-tastes-heading" id="looks-tastes-title">
+              Looks right
+              <span>tastes right</span>
+            </h2>
+
+            <div class="looks-tastes-video">
+              <iframe
+                src="https://www.youtube.com/embed/tgbNymZ7vqY"
+                title="Valour Foods sample video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+            </div>
+          </div>
+        </section>
+
+        <section class="raw-ready-section" aria-labelledby="raw-ready-title">
+          <div class="raw-ready-inner">
+            <h2 class="raw-ready-heading" id="raw-ready-title">
+              from raw
+              <span>to ready</span>
+            </h2>
+
+            <div class="raw-ready-list" aria-label="Preparation steps removed">
+              <div class="raw-ready-item">
+                <span>No grinding</span>
+              </div>
+              <div class="raw-ready-item">
+                <span>no mixing</span>
+              </div>
+              <div class="raw-ready-item">
+                <span>no measuring</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="base-message-section" aria-labelledby="base-message-title">
+          <div class="base-message-inner">
+            <div class="base-message-copy">
+              <p class="base-message-kicker">The quiet core</p>
+              <h2 class="base-message-heading" id="base-message-title">Everything comes down to the base</h2>
+            </div>
+          </div>
+        </section>
 
         <div class="container_slider">
           <div class="slider">
@@ -2488,16 +3023,16 @@
                   <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
-                        <span class="header_name">What exactly is this?</span>
+                        <span class="header_name">What am I paying for ?</span>
                         <span class="icon">+</span>
                       </div>
 
                       <div class="accordion-content" id="content">
                         <p>
-                          This is not a spice mix.
-                          This is the dish — already built.
-                          We’ve taken the full recipe — fat, spice, base, balance — and reduced it into a single pour.
-                          You add the protein. We’ve done the rest.
+                          
+                          The hardest part of the dish — Already done.
+                          Including getting the taste right — everytime.
+                          It's not spices. It's the entire cooking base.
                         </p>
                       </div>
                     </div>
@@ -2545,7 +3080,6 @@
 
         </div>
 
-
         </section>
 
 
@@ -2587,204 +3121,8 @@
             </div>
           </div>
 
-          <div class="timeline-section container" id="how-it-works">
-
-            <div class="valour-banner__title_sec2">
-              <h2>One process. No confusion</h2>
-              <p>Built for consistency, every time.</p>
-            </div>
-
-            <div class="timeline">
-
-              <div class="line"></div>
-
-              <div class="timeline-item left">
-                <div class="cardxyz">
-                  <img src="assets/images/img_1_timeline.png">
-                  <h3>Fry fish</h3>
-                  <p>Until light golden.</p>
-                </div>
-                <div class="dot-timeline">1</div>
-              </div>
-
-              <div class="timeline-item right">
-                <div class="cardxyz">
-                  <img src="assets/images/img_2_timeline.png">
-                  <h3>Pour Liquid spice</h3>
-                  <p>3-4 Tablespoons</p>
-                </div>
-                <div class="dot-timeline">2</div>
-              </div>
-
-              <div class="timeline-item left">
-                <div class="cardxyz">
-                  <img src="assets/images/img_3_timeline.png">
-                  <h3>Simmer</h3>
-                  <p>5-7 minutes</p>
-                </div>
-                <div class="dot-timeline">3</div>
-              </div>
-
-            </div>
-          </div>
-
-
-
-
         </div>
-        <div id="shopify-section-template--19781511708886__why_you_cheffin_KRe4nc"
-          class="shopify-section why-you-cheffin-parent">
-          <link rel="stylesheet"
-            href="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-stylesheet.css?v=14733560488930574641756093773"
-            media="print" onload="this.media='all'">
-          <div class="satchet-vidoe-bottom-design">
-            <img src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Union.png?v=1754146505" alt="" loading="lazy"
-              fetchpriority="low">
-          </div>
-
-          <div class="scroll-container">
-            <section class="section why-you-cheffin">
-              <div class="smoke-content-parent">
-
-
-
-                <div class="" id="textRevealContainer">
-
-                  <div class="text-container-heading" id="textContent">
-                    <div class="valour-banner__inner22">
-                      <div class="valour-banner__content22">
-                        <h2 class="valour-banner__title line-1">Why You Win,</h2>
-                        <h2 class="valour-banner__title line-2">With Liquid spice.</h2>
-                      </div>
-
-                    </div>
-                  </div>
-                  <!-- <h1 class="taste-heading" id="textContent">
-         
-          <span class="line-1"> We own liquid spice</span>
-          <span class="line-2">We simplify spices</span>
-          <span class="line-3">into one clean bottle</span>
-
-
-        </h1>
-        <div class="blush-container"> No Noise. No Mess..</div> -->
-                </div>
-
-              </div>
-
-              <div class="scrollable-cards">
-                <div class="card card-1">
-                  <div class="image">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img1.png"
-                      height="456" width="100%" alt="Package contents" loading="lazy" fetchpriority="low">
-                  </div>
-                  <div class="text-container">
-                    <p>3-Step Liquidspice Experience</p>
-                  </div>
-                </div>
-
-                <div class="card card-2">
-                  <div class="image">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img2.png"
-                      height="456" width="100%" alt="Group eating" loading="lazy" fetchpriority="low">
-                  </div>
-                  <div class="text-container">
-                    <p>Easy Customisation for Home-Style Goodness</p>
-                  </div>
-                </div>
-                <div class="card card-4">
-                  <div class="image">
-                    <img style="object-fit: cover; background: #fff;" src="assets/images/why_liquid_img3.png"
-                      height="456" width="100%" alt="Masala tikka">
-                  </div>
-                  <div class="text-container">
-                    <p>Restaurant-Style Taste in Just 10 Minutes</p>
-                  </div>
-                </div>
-
-              </div>
-            </section>
-
-            <section class="section why-your-kit" style="display:block; padding:0;height: auto !important;">
-
-
-
-
-
-<main class="spotlight" id="spotlight">
-
-  <!-- LEFT -->
-  <section class="spotlight__copy">
-
-    <article class="panel" data-bg="#f7f4ee" data-media-bg="#e9e6df">
-      <div class="panel__content">
-        <span class="panel__step">Health</span>
-
-        <h2>
-          Lab Tested.
-          <br> 
-          Real Ingredients.
-          <br>
-
-        </h2>
-      </div>
-    </article>
-
-    <article class="panel" data-bg="#edf2f7" data-media-bg="#e1e8ef">
-      <div class="panel__content">
-        <span class="panel__step">Portion</span>
-
-        <h2>
-          One Jar.
-          <br> 
-          6 people.
-          <br>
-
-        </h2>      </div>
-    </article>
-
-    <article class="panel" data-bg="#f3eee8" data-media-bg="#e9ded4">
-      <div class="panel__content">
-        <span class="panel__step">Many Recipies</span>
-
-        <h2>
-          One Jar.
-          <br> 
-          Makes Many Recipes.
-          <br>
-          Fish, Egg, Mix veg even Chicken.
-          <br>
-
-        </h2>      </div>
-    </article>
-
-
-  </section>
-
-  <!-- RIGHT -->
-  <aside class="spotlight__media-column">
-    <div class="media-shell">
-      <div class="media-stage" id="mediaStage">
-
-        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect.png" />
-        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect2.png" />
-        <img class="media-card" src="vendor\cdn\cdn\shop\files\Intersect3.png" />
-
-      </div>
-    </div>
-  </aside>
-  
-
-</main>
-
-
-            </section>
-          </div>
-
-          <script src="vendor/cdn/cdn/shop/t/8/assets/why-you-cheffin-javascript.js" defer></script>
-
-
-        </div>
+        
         <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
           class="shopify-section testimonial-sectionxyz-parent">
           <link rel="stylesheet"
@@ -2807,11 +3145,9 @@
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9">
-                  </div> -->
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img1.png" alt="Valour liquid spice package">
+                    <img class="review-image" src="assets/images/cooking_img_vlr.png" alt="Cooking with liquid spice">
+                    <img class="review-image" src="assets/images/velvey_buttermain.png" alt="Valour liquid spice jar">
                   </div>
 
                   <div class="review-card">
@@ -2825,11 +3161,9 @@
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                    <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91">
-                  </div> -->
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img2.png" alt="Customers enjoying a meal">
+                    <img class="review-image" src="assets/images/image_2_prod.png" alt="Valour product detail">
+                    <img class="review-image" src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="Prepared chicken tikka masala">
                   </div>
 
                   <div class="review-card">
@@ -2843,11 +3177,9 @@
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <!-- <img class="main-img" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                  <div class="small-grid">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
-                  </div> -->
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img3.png" alt="Finished masala dish">
+                    <img class="review-image" src="assets/images/image_3_prod.png" alt="Valour serving detail">
+                    <img class="review-image" src="assets/images/Kadhai_Veg_Cheffin.png" alt="Prepared kadhai veg">
                   </div>
 
                   <div class="review-card">
@@ -2888,215 +3220,17 @@
               onload="this.media='all'">
             <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js" defer></script>
 
-            <div class="faq-section">
-              <div class="faq-heading-container">
-                <span class="faq-heading">The Truth About</span>
-                <span class="faq-subheading">Liquid Spice.</span>
-                <span class="faq-description">You’re not using a masala. You’re finishing a dish. </span>
-              </div>
-              <div class="faq-container">
-
-
-                <div class="faq-item" data-faq-index="1">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">What exactly is this?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>This is not a spice mix.
-                        <br> This is the dish — already built. <br> We’ve taken the full recipe — fat, spice, base,
-                        balance — and reduced it into a single pour. <br>
-
-                        You add the protein.
-                        We’ve done the rest.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="2">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">How is this different from regular masalas?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>Masala helps you cook.
-                        This is the base of the dish.</p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="3">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">How long does it take?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>10–15 minutes.
-
-                        No prep. No layering. No corrections.
-
-                        Pour. Add fish. Cook.
-
-                        That’s it.</p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="4">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">Will it actually taste like restaurant food?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>Yes. The base is already balanced.</p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="5">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">Do I still have control while cooking?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>Yes. Just without the complexity.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="6">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">Is this a ready-to-eat product?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>No.
-
-                        Ready-to-eat is passive.
-
-                        Valour is active — you cook, but without complexity.
-
-                        You still feel like you made it.
-                        Just without the mistakes.</p>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                <div class="faq-item" data-faq-index="7">
-                  <div class="faq-question" role="button" tabindex="0" aria-expanded="false">
-                    <span class="faq-icon">●</span>
-                    <span class="faq-question-text">How much does one jar serve?</span>
-                    <span class="faq-toggle">
-                      <span class="faq-plus">
-                        <!-- Plus SVG will go here -->
-                        +
-                      </span>
-                      <span class="faq-minus">
-                        <!-- Minus SVG will go here -->
-                        −
-                      </span>
-                    </span>
-                  </div>
-                  <div class="faq-answer">
-                    <div class="faq-answer-content">
-                      <p>Depends on how you use it.
-                        <br>
-                        But typically:
-                        <br>
-                        250 ml → cooks about 2–3 people (500–700 g fish/chicken)<br>
-                        5525 ml → cooks about 3–5 people (up to 1 kg)<br>
-
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-
-              </div>
-            </div>
 
 
           </div>
+          <section class="final-cta-section" aria-labelledby="final-cta-title">
+            <div class="final-cta-inner">
+              <p class="final-cta-title" id="final-cta-title">Cook better</p>
+              <h2 class="final-cta-headline">The core is already handled</h2>
+              <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish"
+                class="final-cta-button">Order now <img src="assets/images/whtsap.png" alt="WhatsApp"></a>
+            </div>
+          </section>
           <!-- BEGIN sections: footer-group -->
           <div id="shopify-section-sections--19781511348438__footer"
             class="shopify-section shopify-section-group-footer-group">
@@ -3423,34 +3557,6 @@
     });
 
 
-
-
-
-
-
-
-
-
-    // for timeline dot
-
-    const items = document.querySelectorAll(".timeline-item");
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("show");
-        }
-      });
-    }, {
-      threshold: 0.2
-    });
-
-    items.forEach(item => observer.observe(item));
-
-
-
-    // end 
-
     const track = document.getElementById("track");
     const next = document.getElementById("next");
     const prev = document.getElementById("prev");
@@ -3458,19 +3564,17 @@
     let index = 0;
 
     function getVisibleItems() {
-      return window.innerWidth <= 900 ? 1 : 2;
+      return 1;
     }
 
     function updateSlide() {
       const item = document.querySelector(".carousel-item");
-      console.log(document.querySelector(".carousel-item"))
       if (!item) return;
 
       const trackStyles = window.getComputedStyle(track);
       const gap = parseFloat(trackStyles.gap) || 0;
 
       const itemWidth = item.offsetWidth + gap;
-      console.log(track)
 
       track.style.transform = `translateX(-${index * itemWidth}px)`;
     }
@@ -3479,7 +3583,6 @@
     next.addEventListener("click", () => {
       const visibleItems = getVisibleItems();
       const totalItems = track.children.length;
-      console.log(visibleItems, totalItems)
       if (index < totalItems - visibleItems) {
         index++;
         updateSlide();
@@ -3639,6 +3742,216 @@
 
 gsap.registerPlugin(ScrollTrigger);
 
+function initProductStoryAnimations() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const looksHeading = document.querySelector(".looks-tastes-heading");
+  const looksVideo = document.querySelector(".looks-tastes-video");
+  const rawReadySection = document.querySelector(".raw-ready-section");
+  const cfWrapperMain = document.querySelector(".cf-wrapper-main");
+  const processHeading = document.querySelector(".valour-banner__title_sec2");
+  const activeProductSlide = document.querySelector(".product_slide.active");
+  const productMainImage = document.querySelector(".product_slide.active .main-image");
+
+  if (reduceMotion) {
+    const animatedElements = [
+      looksHeading,
+      looksVideo,
+      rawReadySection,
+      cfWrapperMain,
+      processHeading,
+      activeProductSlide,
+      productMainImage,
+      ...document.querySelectorAll(".raw-ready-heading, .raw-ready-item")
+    ].filter(Boolean);
+
+    gsap.set(animatedElements, {
+      clearProps: "all"
+    });
+    return;
+  }
+
+  if (looksHeading) {
+    gsap.fromTo(looksHeading,
+      {
+        autoAlpha: 0,
+        y: 48
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: looksHeading,
+          start: "top 82%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (looksVideo) {
+    gsap.fromTo(looksVideo,
+      {
+        autoAlpha: 0,
+        y: 64,
+        scale: 0.96
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 1.1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: looksVideo,
+          start: "top 82%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (rawReadySection) {
+    const rawReadyParts = rawReadySection.querySelectorAll(".raw-ready-heading, .raw-ready-item");
+
+    gsap.fromTo(rawReadySection,
+      {
+        autoAlpha: 0,
+        y: 56
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.8,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: rawReadySection,
+          start: "top 82%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+
+    gsap.fromTo(rawReadyParts,
+      {
+        autoAlpha: 0,
+        y: 34
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.8,
+        ease: "power3.out",
+        stagger: 0.14,
+        scrollTrigger: {
+          trigger: rawReadySection,
+          start: "top 76%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (cfWrapperMain) {
+    gsap.fromTo(cfWrapperMain,
+      {
+        autoAlpha: 0,
+        y: 56,
+        scale: 0.97
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.9,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: cfWrapperMain,
+          start: "top 82%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (processHeading) {
+    gsap.fromTo(processHeading,
+      {
+        autoAlpha: 0,
+        y: 48
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.85,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: processHeading,
+          start: "top 82%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (activeProductSlide) {
+    gsap.fromTo(activeProductSlide,
+      {
+        autoAlpha: 0,
+        y: 58
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.95,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: activeProductSlide,
+          start: "top 84%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+
+  if (productMainImage) {
+    gsap.fromTo(productMainImage,
+      {
+        autoAlpha: 0,
+        y: 38,
+        scale: 0.94
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: activeProductSlide || productMainImage,
+          start: "top 78%",
+          toggleActions: "play reverse play reverse"
+        }
+      }
+    );
+  }
+}
+
+window.addEventListener("load", () => {
+  const runProductStoryAnimations = () => {
+    initProductStoryAnimations();
+    ScrollTrigger.refresh();
+  };
+  const mainContent = document.getElementById("main-content");
+
+  if (mainContent && window.getComputedStyle(mainContent).display === "none") {
+    setTimeout(runProductStoryAnimations, 2600);
+  } else {
+    runProductStoryAnimations();
+  }
+});
+
 let ctx;
 
 function init() {
@@ -3653,10 +3966,8 @@ function init() {
 
   ctx = gsap.context(() => {
 
-    // 🔥 FULL RESET (no partial clear)
+    // Reset this section without touching other page scroll animations.
     gsap.killTweensOf(cards);
-    ScrollTrigger.getAll().forEach(t => t.kill());
-
     cards.forEach(card => {
       card.removeAttribute("style");
     });

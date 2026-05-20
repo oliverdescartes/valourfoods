@@ -15,14 +15,18 @@ function initTextScrollAnimation() {
     console.warn("Text elements not found");
     return;
   }
-  const isMobile = window.innerWidth <= 768;
+  if (textContent.dataset.wordAnimationReady === "true") {
+    ScrollTrigger.refresh();
+    return;
+  }
   function wrapWordsInSpans(element) {
     const walker = document.createTreeWalker(
         element,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: (node2) =>
-            node2.parentNode.classList?.contains("blush-container")
+            node2.parentNode.classList?.contains("blush-container") ||
+            node2.parentNode.classList?.contains("word-animate")
               ? NodeFilter.FILTER_REJECT
               : NodeFilter.FILTER_ACCEPT,
         },
@@ -49,6 +53,7 @@ function initTextScrollAnimation() {
     });
   }
   wrapWordsInSpans(textContent);
+  textContent.dataset.wordAnimationReady = "true";
   const wordElements = textContent.querySelectorAll(".word-animate"),
     blushContainer = document.querySelector(".blush-container");
   if (!wordElements.length) {
@@ -61,28 +66,36 @@ function initTextScrollAnimation() {
     : console.warn(
         "Blush container not found - animations may not work correctly",
       );
+  gsap.set(wordElements, {
+    display: "inline-block",
+    color: "rgb(255, 255, 255)",
+    opacity: 0.12,
+    y: 26,
+    filter: "blur(8px)",
+    willChange: "transform, opacity, filter, color",
+  });
   const masterTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: textRevealContainer,
-        start: "top 70%",
-        end: "top 50%",
-        scrub: 2,
+        start: "top 80%",
+        end: "bottom 45%",
+        scrub: 1.2,
         markers: !1,
       },
     }),
     totalWords = wordElements.length;
   (wordElements.forEach((word, index) => {
     const wordDuration = 1 / totalWords,
-      startPosition = index * wordDuration;
-    masterTimeline.fromTo(
+      startPosition = index * wordDuration * 0.75;
+    masterTimeline.to(
       word,
-      { color: "rgb(255, 255, 255)", opacity: 0.1 },
       {
-        display: "inline-block",
         color: "rgb(250, 234, 222)",
         opacity: 1,
-        duration: wordDuration,
-        ease: "power2.inOut",
+        y: 0,
+        filter: "blur(0px)",
+        duration: wordDuration * 2,
+        ease: "power2.out",
       },
       startPosition,
     );

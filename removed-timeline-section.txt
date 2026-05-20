@@ -1,0 +1,274 @@
+Removed timeline-section container code from index.html
+
+HTML
+----
+          <div class="timeline-section container" id="how-it-works">
+
+            <div class="valour-banner__title_sec2">
+              <h2>One process. No confusion</h2>
+              <p>Built for consistency, every time.</p>
+            </div>
+
+            <div class="timeline">
+
+              <div class="line"></div>
+
+              <div class="timeline-item left">
+                <div class="cardxyz">
+                  <img src="assets/images/img_1_timeline.png">
+                  <h3>Fry fish</h3>
+                  <p>Until light golden.</p>
+                </div>
+                <div class="dot-timeline">1</div>
+              </div>
+
+              <div class="timeline-item right">
+                <div class="cardxyz">
+                  <img src="assets/images/img_2_timeline.png">
+                  <h3>Pour Liquid spice</h3>
+                  <p>3-4 Tablespoons</p>
+                </div>
+                <div class="dot-timeline">2</div>
+              </div>
+
+              <div class="timeline-item left">
+                <div class="cardxyz">
+                  <img src="assets/images/img_3_timeline.png">
+                  <h3>Simmer</h3>
+                  <p>5-7 minutes</p>
+                </div>
+                <div class="dot-timeline">3</div>
+              </div>
+
+            </div>
+          </div>
+
+CSS
+---
+  .timeline {
+    position: relative;
+    max-width: 1100px;
+    margin: auto;
+    padding: 100px 0;
+  }
+
+  .line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #d8d6d2;
+    transform: translateX(-50%);
+  }
+
+  .timeline-item {
+    position: relative;
+    width: 50%;
+    padding: 60px;
+    box-sizing: border-box;
+  }
+
+  .timeline-item.left {
+    left: 0;
+    text-align: right;
+  }
+
+  .timeline-item.left .card {
+    margin-left: 102px;
+  }
+
+  .timeline-item.right {
+    left: 50%;
+  }
+
+  .cardxyz {
+    position: relative;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 20px;
+    width: 320px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    display: inline-block;
+    text-align: left;
+    overflow: visible;
+  }
+
+  .cardxyz img {
+    width: 100%;
+    border-radius: 14px;
+    margin-bottom: 15px;
+  }
+
+  .cardxyz h3 {
+    font-size: 22px;
+    margin: 10px 0;
+    text-align: center;
+    font-family: Inter;
+  }
+
+  .cardxyz p {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    font-family: Inter;
+  }
+
+  .timeline-section {
+    padding: clamp(60px, 10vw, 140px) 0;
+  }
+
+  .timeline {
+    position: relative;
+    max-width: 1100px;
+    margin: auto;
+  }
+
+  .line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #d8d6d2;
+    transform: translateX(-50%);
+  }
+
+  .timeline-item {
+    position: relative;
+    width: 50%;
+    padding: clamp(30px, 5vw, 60px);
+  }
+
+  .timeline-item.left {
+    left: 0;
+    text-align: right;
+  }
+
+  .timeline-item.right {
+    left: 50%;
+  }
+
+  .cardxyz {
+    background: #fff;
+    padding: clamp(16px, 3vw, 24px);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+    margin-inline: auto;
+  }
+
+  .cardxyz img {
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  .cardxyz h3 {
+    font-size: clamp(18px, 2vw, 22px);
+    margin: 10px 0;
+  }
+
+  .cardxyz p {
+    font-size: clamp(13px, 1.5vw, 14px);
+  }
+
+  .timeline-item.left .cardxyz::before,
+  .timeline-item.right .cardxyz::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .timeline-item.left .cardxyz::before {
+    right: -8px;
+  }
+
+  .timeline-item.right .cardxyz::before {
+    left: -8px;
+  }
+
+  .dot-timeline {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    background: #c94c4c;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .timeline-item.right .dot-timeline {
+    left: 0;
+  }
+
+  @media (max-width: 768px) {
+    .timeline {
+      padding: 0 10px;
+    }
+
+    .line {
+      left: 50%;
+    }
+
+    .timeline-item {
+      width: 100%;
+      padding: 40px 0;
+      position: relative;
+    }
+
+    .timeline-item.left {
+      left: 0;
+      text-align: right;
+      padding-right: 55%;
+    }
+
+    .timeline-item.right {
+      left: 0;
+      text-align: left;
+      padding-left: 55%;
+    }
+
+    .cardxyz {
+      max-width: 260px;
+      width: 100%;
+    }
+
+    .dot-timeline {
+      left: 50% !important;
+      transform: translate(-50%, -50%);
+    }
+
+    .timeline-item.left .cardxyz::before {
+      right: -8px;
+    }
+
+    .timeline-item.right .cardxyz::before {
+      left: -8px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .cardxyz h3 {
+      font-size: clamp(15px, 2vw, 22px);
+    }
+  }
+
+Related JavaScript Removed
+--------------------------
+The IntersectionObserver code for .timeline-item was removed.
+The GSAP animation code for .timeline-item was removed.
+
+Note
+----
+Shared .valour-banner__title_sec2 styles were not removed from index.html because the process steps section still uses that class.

@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Cart Replica</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f8f8f8;
+        color: #1d1d1d;
+      }
+
+      img {
+        width: 100%;
+        display: block;
+      }
+
+      button {
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .page {
+        max-width: 1280px;
+        margin: auto;
+        padding: 30px 20px 120px;
+      }
+
+      .cart-title {
+        font-size: 42px;
+        font-weight: 600;
+        margin-bottom: 30px;
+      }
+
+      .cart-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 32px;
+        align-items: start;
+      }
+
+      /* LEFT */
+
+      .cart-card {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 18px;
+        padding: 20px;
+        position: relative;
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        font-size: 26px;
+        color: #555;
+        cursor: pointer;
+      }
+
+      .cart-item {
+        display: flex;
+        gap: 20px;
+      }
+
+      .product-image {
+        width: 140px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #ececec;
+        background: #fafafa;
+        flex-shrink: 0;
+      }
+
+      .product-info {
+        flex: 1;
+      }
+
+      .product-title {
+        font-size: 20px;
+        font-weight: 500;
+        margin-bottom: 14px;
+      }
+
+      .price-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .price {
+        font-size: 34px;
+        font-weight: 700;
+      }
+
+      .old-price {
+        color: #8f8f8f;
+        text-decoration: line-through;
+        font-size: 18px;
+      }
+
+      .delivery {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #444;
+        font-size: 15px;
+      }
+
+      .qty-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+      }
+
+      .qty-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: #ef6b8a;
+        color: #fff;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .qty-number {
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .features {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .feature {
+        text-align: center;
+        font-size: 13px;
+        padding: 8px;
+        background: #fdecef;
+        border-right: 1px solid #efb2bf;
+        font-weight: 600;
+      }
+
+      .feature:last-child {
+        border-right: none;
+      }
+
+      .gift-wrap {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+      }
+
+      .gift-wrap span {
+        color: #e06086;
+        font-weight: 600;
+      }
+
+      .checkbox {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #222;
+        border-radius: 3px;
+      }
+
+      /* LETTER */
+
+      .letter-box {
+        margin-top: 26px;
+        border: 2px solid #6d32d1;
+        border-radius: 16px;
+        padding: 20px;
+        background: #fff;
+        position: relative;
+      }
+
+      .free-badge {
+        position: absolute;
+        right: 16px;
+        top: -14px;
+        background: #6d32d1;
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .letter-title {
+        color: #5825bd;
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+
+      .letter-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .letter-text {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        max-width: 500px;
+        color: #222;
+        line-height: 1.5;
+      }
+
+      .letter-icon {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #f0bfd0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ef6b8a;
+        font-size: 24px;
+      }
+
+      /* TOGGLE */
+
+      .toggle {
+        width: 74px;
+        height: 40px;
+        border-radius: 50px;
+        background: #f5d0db;
+        position: relative;
+        cursor: pointer;
+        transition: 0.3s;
+        flex-shrink: 0;
+      }
+
+      .toggle::before {
+        content: "";
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #fff;
+        top: 6px;
+        left: 6px;
+        transition: 0.3s;
+      }
+
+      .toggle.active {
+        background: #ef6b8a;
+      }
+
+      .toggle.active::before {
+        left: 40px;
+      }
+
+      /* OFFERS */
+
+      .offers-wrapper {
+        margin-top: 28px;
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+      }
+
+      .offers-header {
+        padding: 20px;
+        background: #f4f4f4;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .offers-header h2 {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+
+      .offers-header p {
+        color: #444;
+      }
+
+      .offer-item {
+        border-bottom: 1px solid #ddd;
+      }
+
+      .offer-top {
+        padding: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: 0.25s;
+      }
+
+      .offer-top:hover {
+        background: #fafafa;
+      }
+
+      .offer-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .offer-icon {
+        font-size: 32px;
+      }
+
+      .offer-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #3a3a3a;
+      }
+
+      .offer-arrow {
+        font-size: 24px;
+        transition: 0.3s;
+      }
+
+      .offer-item.active .offer-arrow {
+        transform: rotate(180deg);
+      }
+
+      .offer-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease;
+        background: #fff;
+      }
+
+      .offer-inner {
+        padding: 0 22px 22px;
+      }
+
+      .coupon-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px dashed #e06086;
+        border-radius: 10px;
+        padding: 16px;
+        background: #fff7fa;
+      }
+
+      .coupon-code {
+        font-size: 22px;
+        font-weight: 700;
+        color: #c73e68;
+        letter-spacing: 1px;
+      }
+
+      .copy-btn {
+        background: #ef6b8a;
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+      }
+
+      .close-offers {
+        padding: 22px;
+        text-align: center;
+        font-size: 18px;
+        cursor: pointer;
+        background: #fafafa;
+      }
+
+      /* PRODUCTS */
+
+      .section-title {
+        margin: 36px 0 10px;
+        font-size: 38px;
+        font-weight: 600;
+      }
+
+      .section-sub {
+        font-size: 28px;
+        margin-bottom: 22px;
+        color: #333;
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .product-card {
+        background: #fff;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .product-details {
+        padding: 12px;
+      }
+
+      .product-price {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .product-name {
+        color: #555;
+        margin-bottom: 12px;
+        min-height: 44px;
+      }
+
+      .add-btn {
+        width: 100%;
+        background: #f5c8d3;
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      /* RIGHT */
+
+      .summary {
+        background: #f2f2f2;
+        border-radius: 16px;
+        padding: 24px;
+        position: sticky;
+        top: 20px;
+      }
+
+      .summary h3 {
+        font-size: 26px;
+        margin-bottom: 22px;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .summary-price {
+        font-size: 30px;
+        font-weight: 700;
+      }
+
+      .summary-old {
+        text-decoration: line-through;
+        color: #999;
+        margin-right: 10px;
+      }
+
+      .summary-note {
+        font-size: 14px;
+        color: #666;
+        padding-top: 16px;
+        border-top: 1px solid #ddd;
+      }
+
+      .checkout-btn {
+        margin-top: 26px;
+        width: 100%;
+        background: #ef6b8a;
+        color: #fff;
+        padding: 18px;
+        border-radius: 12px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      /* MOBILE BAR */
+
+      .mobile-bottom {
+        display: none;
+      }
+
+      /* RESPONSIVE */
+
+      @media (max-width: 1100px) {
+        .cart-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .summary {
+          display: none;
+        }
+
+        .product-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .page {
+          padding: 20px 0 120px;
+        }
+
+        .cart-title {
+          font-size: 22px;
+          padding: 0 16px;
+          margin-bottom: 20px;
+        }
+
+        .cart-card,
+        .letter-box,
+        .offers-wrapper {
+          border-radius: 0;
+        }
+
+        .cart-item {
+          flex-direction: row;
+          gap: 14px;
+        }
+
+        .product-image {
+          width: 120px;
+        }
+
+        .product-title {
+          font-size: 18px;
+        }
+
+        .price {
+          font-size: 26px;
+        }
+
+        .old-price {
+          font-size: 16px;
+        }
+
+        .qty-box {
+          gap: 10px;
+        }
+
+        .qty-btn {
+          width: 30px;
+          height: 30px;
+        }
+
+        .features {
+          grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .feature {
+          font-size: 10px;
+          padding: 7px 4px;
+        }
+
+        .letter-title {
+          font-size: 18px;
+        }
+
+        .letter-content {
+          gap: 12px;
+        }
+
+        .letter-text {
+          font-size: 14px;
+        }
+
+        .offers-header h2 {
+          font-size: 20px;
+        }
+
+        .offer-title {
+          font-size: 17px;
+        }
+
+        .coupon-code {
+          font-size: 18px;
+        }
+
+        .copy-btn {
+          padding: 10px 14px;
+          font-size: 14px;
+        }
+
+        .section-title {
+          font-size: 24px;
+          padding: 0 16px;
+        }
+
+        .section-sub {
+          font-size: 18px;
+          padding: 0 16px;
+        }
+
+        .product-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          padding: 0 10px;
+        }
+
+        .product-price {
+          font-size: 18px;
+        }
+
+        .add-btn {
+          font-size: 16px;
+          padding: 12px;
+        }
+
+        .mobile-bottom {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          background: #fff;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          border-top: 1px solid #ddd;
+          z-index: 100;
+        }
+
+        .mobile-price {
+          font-size: 18px;
+          font-weight: 700;
+        }
+
+        .mobile-checkout {
+          background: #ef6b8a;
+          color: #fff;
+          padding: 14px 22px;
+          border-radius: 10px;
+          font-weight: 700;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1 class="cart-title">Shopping Cart</h1>
+
+      <div class="cart-layout">
+        <!-- LEFT -->
+        <div>
+          <div class="cart-card">
+            <div class="close-btn">&times;</div>
+
+            <div class="cart-item">
+              <div class="product-image">
+                <img
+                  src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?q=80&w=900&auto=format&fit=crop"
+                  alt=""
+                />
+              </div>
+
+              <div class="product-info">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 20px;
+                    align-items: flex-start;
+                  "
+                >
+                  <div>
+                    <div class="product-title">Golden Daze Ring</div>
+
+                    <div class="price-row">
+                      <div class="price">₹1,999</div>
+                      <div class="old-price">₹3,599</div>
+                    </div>
+
+                    <div class="delivery">🚚 Free Delivery</div>
+                  </div>
+
+                  <div class="qty-box">
+                    <button class="qty-btn minus">−</button>
+                    <div class="qty-number">1</div>
+                    <button class="qty-btn plus">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="features">
+              <div class="feature">6-Month Warranty</div>
+              <div class="feature">Lifetime Plating Service</div>
+              <div class="feature">15-Day Easy Returns</div>
+            </div>
+
+            <div class="gift-wrap">
+              <div class="checkbox"></div>
+              <div>
+                Add a <span>gift wrap</span> & a message with this item (+ ₹50)
+              </div>
+            </div>
+          </div>
+
+          <!-- LETTER -->
+
+          <div class="letter-box">
+            <div class="free-badge">FREE</div>
+
+            <div class="letter-title">Send a Digital Letter</div>
+
+            <div class="letter-content">
+              <div class="letter-text">
+                <div class="letter-icon">✉</div>
+
+                <div>
+                  Send a digital letter to your special one—delivered to them on
+                  WhatsApp when they receive their gift
+                </div>
+              </div>
+
+              <div class="toggle" id="toggle"></div>
+            </div>
+          </div>
+
+          <!-- OFFERS -->
+
+          <div class="offers-wrapper">
+            <div class="offers-header">
+              <h2>Offers for you</h2>
+              <p>Copy the coupon code below and apply it at checkout!</p>
+            </div>
+
+            <!-- OFFER -->
+
+            <div class="offer-item active">
+              <div class="offer-top">
+                <div class="offer-left">
+                  <div class="offer-icon">🏷️</div>
+                  <div class="offer-title">
+                    EXTRA 15% Off on orders above ₹2999
+                  </div>
+                </div>
+
+                <div class="offer-arrow">⌃</div>
+              </div>
+
+              <div class="offer-body" style="max-height: 180px">
+                <div class="offer-inner">
+                  <div class="coupon-row">
+                    <div class="coupon-code">GIVA15</div>
+                    <button class="copy-btn" data-code="GIVA15">
+                      Copy Code
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OFFER -->
+
+            <div class="offer-item">
+              <div class="offer-top">
+                <div class="offer-left">
+                  <div class="offer-icon">🏷️</div>
+                  <div class="offer-title">
+                    FLAT 15% OFF on your first order above ₹999 on Silver
+                    Jewellery
+                  </div>
+                </div>
+
+                <div class="offer-arrow">⌄</div>
+              </div>
+
+              <div class="offer-body">
+                <div class="offer-inner">
+                  <div class="coupon-row">
+                    <div class="coupon-code">FIRST15</div>
+                    <button class="copy-btn" data-code="FIRST15">
+                      Copy Code
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OFFER -->
+
+            <div class="offer-item">
+              <div class="offer-top">
+                <div class="offer-left">
+                  <div class="offer-icon">🏷️</div>
+                  <div class="offer-title">
+                    EXTRA 10% Off on orders above ₹1799
+                  </div>
+                </div>
+
+                <div class="offer-arrow">⌄</div>
+              </div>
+
+              <div class="offer-body">
+                <div class="offer-inner">
+                  <div class="coupon-row">
+                    <div class="coupon-code">EXTRA10</div>
+                    <button class="copy-btn" data-code="EXTRA10">
+                      Copy Code
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OFFER -->
+
+            <div class="offer-item">
+              <div class="offer-top">
+                <div class="offer-left">
+                  <div class="offer-icon">🏷️</div>
+                  <div class="offer-title">
+                    FLAT 20% Off on orders above ₹4999
+                  </div>
+                </div>
+
+                <div class="offer-arrow">⌄</div>
+              </div>
+
+              <div class="offer-body">
+                <div class="offer-inner">
+                  <div class="coupon-row">
+                    <div class="coupon-code">SAVE20</div>
+                    <button class="copy-btn" data-code="SAVE20">
+                      Copy Code
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="close-offers">Close</div>
+          </div>
+
+          <!-- PRODUCTS -->
+
+          <h2 class="section-title">Don't Miss Out</h2>
+          <h3 class="section-sub">Heartfelt Extras</h3>
+
+          <div class="product-grid">
+            <div class="product-card">
+              <img
+                src="https://images.unsplash.com/photo-1543295204-8e6d9d7d0cce?q=80&w=1000&auto=format&fit=crop"
+              />
+
+              <div class="product-details">
+                <div class="product-price">₹499</div>
+                <div class="product-name">All My Love Combo Box</div>
+                <button class="add-btn">Add to Cart</button>
+              </div>
+            </div>
+
+            <div class="product-card">
+              <img
+                src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1000&auto=format&fit=crop"
+              />
+
+              <div class="product-details">
+                <div class="product-price">₹599</div>
+                <div class="product-name">Iconic Monogram Bag</div>
+                <button class="add-btn">Add to Cart</button>
+              </div>
+            </div>
+
+            <div class="product-card">
+              <img
+                src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1000&auto=format&fit=crop"
+              />
+
+              <div class="product-details">
+                <div class="product-price">₹149</div>
+                <div class="product-name">Melt My Heart Candle</div>
+                <button class="add-btn">Add to Cart</button>
+              </div>
+            </div>
+
+            <div class="product-card">
+              <img
+                src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop"
+              />
+
+              <div class="product-details">
+                <div class="product-price">₹349</div>
+                <div class="product-name">Red Bauble Gift</div>
+                <button class="add-btn">Add to Cart</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+
+        <div class="summary">
+          <h3>Order Summary</h3>
+
+          <div class="summary-row">
+            <div>Estimated total:</div>
+
+            <div>
+              <span class="summary-old">₹3,599.00</span>
+              <span class="summary-price">₹1,999.00</span>
+            </div>
+          </div>
+
+          <div class="summary-note">
+            Pan India Free Shipping for orders above Rs. 450
+          </div>
+
+          <button class="checkout-btn">🔒 Checkout Securely</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE CHECKOUT -->
+
+    <div class="mobile-bottom">
+      <div>
+        <div class="mobile-price">₹1,999</div>
+        <div
+          style="font-size: 13px; color: #888; text-decoration: line-through"
+        >
+          MRP ₹3,599
+        </div>
+      </div>
+
+      <button class="mobile-checkout">🔒 Checkout Securely</button>
+    </div>
+
+    <script>
+      // TOGGLE
+
+      const toggle = document.getElementById("toggle");
+
+      toggle.addEventListener("click", () => {
+        toggle.classList.toggle("active");
+      });
+
+      // QUANTITY
+
+      const plus = document.querySelector(".plus");
+      const minus = document.querySelector(".minus");
+      const qty = document.querySelector(".qty-number");
+
+      let count = 1;
+
+      plus.addEventListener("click", () => {
+        count++;
+        qty.textContent = count;
+      });
+
+      minus.addEventListener("click", () => {
+        if (count > 1) {
+          count--;
+          qty.textContent = count;
+        }
+      });
+
+      // OFFER ACCORDION
+
+      const offerItems = document.querySelectorAll(".offer-item");
+
+      offerItems.forEach((item) => {
+        const top = item.querySelector(".offer-top");
+        const body = item.querySelector(".offer-body");
+
+        top.addEventListener("click", () => {
+          const isActive = item.classList.contains("active");
+
+          offerItems.forEach((other) => {
+            other.classList.remove("active");
+            other.querySelector(".offer-body").style.maxHeight = null;
+          });
+
+          if (!isActive) {
+            item.classList.add("active");
+            body.style.maxHeight = body.scrollHeight + "px";
+          }
+        });
+      });
+
+      // COPY CODE
+
+      const copyButtons = document.querySelectorAll(".copy-btn");
+
+      copyButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const code = btn.dataset.code;
+
+          navigator.clipboard.writeText(code);
+
+          const original = btn.innerText;
+
+          btn.innerText = "Copied!";
+
+          setTimeout(() => {
+            btn.innerText = original;
+          }, 1500);
+        });
+      });
+
+      // CLOSE OFFERS
+
+      const closeOffers = document.querySelector(".close-offers");
+      const offersWrapper = document.querySelector(".offers-wrapper");
+
+      closeOffers.addEventListener("click", () => {
+        offersWrapper.style.display = "none";
+      });
+    </script>
+  </body>
+</html>
