@@ -1160,13 +1160,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .product-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    display: block;
     margin-top: 14px;
   }
 
   .product-action-btn {
+    display: block;
+    width: 100%;
     min-height: 50px;
     border-radius: 999px;
     border: 1px solid rgba(247, 212, 108, 0.72);
@@ -1178,6 +1178,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     text-transform: uppercase;
     cursor: pointer;
     transition: transform 0.28s ease, background 0.28s ease, color 0.28s ease, border-color 0.28s ease;
+  }
+
+  .product-action-btn + .product-action-btn {
+    margin-top: 12px;
   }
 
   .product-action-btn--buy {
@@ -1238,10 +1242,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   /* CONTAINER */
   .nav-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
+    gap: clamp(10px, 3vw, 28px);
     position: relative;
+    min-height: 58px;
+    padding: 0 clamp(14px, 4vw, 42px);
   }
 
   /* LEFT LINKS */
@@ -1250,6 +1257,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* CENTER LOGO */
 
   .nav-logo {
+    position: static;
+    left: auto;
+    transform: none;
+    grid-column: 2;
+    justify-self: center;
     display: flex;
     gap: 1px;
     font-size: 20px;
@@ -1274,12 +1286,100 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     transform: rotate(180deg) translateY(0.5px);
   }
 
+  .nav-shop {
+    position: static;
+    grid-column: 1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 16px;
+    border: 1px solid rgba(42, 42, 42, 0.34);
+    border-radius: 999px;
+    color: #2a2a2a;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  }
+
+  .nav-shop:hover {
+    background: #2a2a2a;
+    color: #fff8ef;
+    transform: translateY(-1px);
+  }
+
   /* RIGHT ICONS */
   .nav-right {
+    grid-column: 3;
+    justify-self: end;
     display: flex;
     gap: 20px;
-    position: absolute;
-    right: 10px;
+    position: static;
+  }
+
+  @media (max-width: 768px) {
+    .nav-container {
+      min-height: 50px;
+      padding: 0 clamp(12px, 3.5vw, 24px);
+      gap: 8px;
+    }
+
+    .nav-shop {
+      min-height: 32px;
+      padding: 0 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-shop:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  @media (max-width: 420px) {
+    .nav-container {
+      grid-template-columns: auto 1fr auto;
+      padding: 0 12px;
+    }
+
+    .nav-shop {
+      min-height: 30px;
+      padding: 0 8px;
+      font-size: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-logo {
+      font-size: clamp(15px, 4.6vw, 18px);
+      letter-spacing: clamp(3px, 1.1vw, 5px);
+      min-width: 0;
+    }
+
+    .nav-right {
+      gap: 10px;
+    }
+
+    .nav-right .material-symbols-outlined {
+      font-size: 21px;
+    }
+  }
+
+  @media (max-width: 340px) {
+    .nav-shop {
+      padding: 0 7px;
+      font-size: 9px;
+    }
+
+    .nav-logo {
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
   }
 
   .prod_section_ind {
@@ -1974,6 +2074,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     margin: 0 auto clamp(44px, 6vw, 76px);
   }
 
+  .process-steps-section .comparison-slider {
+    width: min(1420px, 100%);
+    margin: 0 auto;
+  }
+
   .process-steps {
     position: relative;
     z-index: 1;
@@ -2218,44 +2323,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       font-size: 13px;
       letter-spacing: 0.08em;
     }
-  }
-
-  .comparison-section {
-    padding: clamp(84px, 11vw, 150px) 20px;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(247, 212, 108, 0.12), transparent 32%),
-      linear-gradient(180deg, #fff8ef 0%, #f1e2cb 100%);
-    color: #44231f;
-    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-  }
-
-  .comparison-shell {
-    width: min(1420px, 100%);
-    margin: 0 auto;
-  }
-
-  .comparison-intro {
-    width: min(760px, 100%);
-    margin: 0 auto clamp(34px, 5vw, 62px);
-    text-align: center;
-  }
-
-  .comparison-kicker {
-    margin: 0 0 14px;
-    color: #9a6b1f;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-  }
-
-  .comparison-title {
-    margin: 0;
-    color: #831a1a;
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: clamp(46px, 7vw, 96px);
-    line-height: 0.92;
-    font-weight: 600;
   }
 
   .comparison-slider {
@@ -2549,10 +2616,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   @media (max-width: 760px) {
-    .comparison-section {
-      padding-inline: 14px;
-    }
-
     .comparison-slider {
       min-height: 620px;
       border-radius: 6px;
@@ -2785,14 +2848,15 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     gap: clamp(20px, 4vw, 42px);
   }
 
-  .footer-links a {
-    color: rgba(68, 35, 31, 0.72);
+.footer-links a {
+    color: rgb(25 31 71 / 72%);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.16em;
+    text-decoration: underline;
     text-transform: uppercase;
     transition: color 0.28s ease, transform 0.28s ease;
-  }
+}
 
   .footer-links a:hover {
     color: #831a1a;
@@ -3163,7 +3227,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
 
     .product-actions {
-      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .product-action-btn + .product-action-btn {
+      margin-top: 8px;
     }
 
     .product-action-btn {
@@ -3208,10 +3276,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       padding: 14px;
       padding-top: 21px;
       padding-top: 21px;
-    }
-
-    .product-actions {
-      grid-template-columns: 1fr;
     }
 
     .price {
@@ -3467,6 +3531,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
         </div> -->
 
         <!-- LOGO -->
+        <a class="nav-shop" href="#shop">Shop now</a>
         <div class="nav-logo">
           <span style="
     transform: translateY(-0.5px);
@@ -3638,7 +3703,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.CSS" rel="stylesheet" type="text/css"
         media="all">
 
-      <div class="prod_section_ind">
+      <div class="prod_section_ind" id="shop">
 
 
         <div class="taste-content" id="textRevealContainer">
@@ -3667,27 +3732,68 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
             <p>Built for consistency, every time.</p>
           </div>
 
-          <div class="process-steps" aria-label="Cooking steps">
-            <article class="process-step">
-              <div class="process-step__icon" aria-hidden="true">
-                <span class="material-symbols-outlined">outdoor_grill</span>
+          <div class="comparison-slider" data-comparison-slider>
+            <div class="comparison-panel comparison-panel--traditional" aria-hidden="true">
+              <div class="comparison-scene">
+                <div class="prep-surface"></div>
+                <div class="prep-flow"></div>
+                <div class="prep-card prep-card--mixer">
+                  <span class="material-symbols-outlined">blender</span>
+                  <small>Mixer grinder</small>
+                </div>
+                <div class="prep-card prep-card--spices">
+                  <span class="material-symbols-outlined">grain</span>
+                  <small>Spice bowls</small>
+                </div>
+                <div class="prep-card prep-card--coconut">
+                  <span class="material-symbols-outlined">egg_alt</span>
+                  <small>Coconut</small>
+                </div>
+                <div class="prep-card prep-card--onion">
+                  <span class="material-symbols-outlined">restaurant</span>
+                  <small>Chopped onions</small>
+                </div>
+                <div class="prep-card prep-card--measure">
+                  <span class="material-symbols-outlined">straighten</span>
+                  <small>Measuring spoons</small>
+                </div>
+                <div class="prep-card prep-card--containers">
+                  <span class="material-symbols-outlined">inventory_2</span>
+                  <small>Containers</small>
+                </div>
               </div>
-              <h3 class="process-step__title">fry</h3>
-            </article>
+              <div class="comparison-caption">
+                <p class="comparison-label">Traditional Preparation</p>
+                <h3 class="comparison-heading">Too many steps.</h3>
+              </div>
+            </div>
 
-            <article class="process-step">
-              <div class="process-step__icon" aria-hidden="true">
-                <span class="material-symbols-outlined">water_drop</span>
+            <div class="comparison-panel comparison-panel--valour" aria-hidden="true">
+              <div class="comparison-scene">
+                <div class="valour-surface"></div>
+                <span class="steam" aria-hidden="true"></span>
+                <div class="valour-card valour-card--pour">
+                  <span class="material-symbols-outlined">water_drop</span>
+                  <small>Liquid spice</small>
+                </div>
+                <div class="valour-card valour-card--pan">
+                  <img src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="">
+                </div>
+                <div class="valour-card valour-card--woman" aria-label="Elegant Bengali woman cooking calmly"></div>
               </div>
-              <h3 class="process-step__title">pour</h3>
-            </article>
+              <div class="comparison-caption">
+                <p class="comparison-label">VALOUR</p>
+                <h3 class="comparison-heading">Fry. Pour. Simmer.</h3>
+              </div>
+            </div>
 
-            <article class="process-step">
-              <div class="process-step__icon" aria-hidden="true">
-                <span class="material-symbols-outlined">local_fire_department</span>
+            <div class="comparison-divider" aria-hidden="true">
+              <div class="comparison-handle">
+                <span class="material-symbols-outlined">drag_indicator</span>
               </div>
-              <h3 class="process-step__title">simmer</h3>
-            </article>
+            </div>
+            <input class="comparison-range" type="range" min="0" max="100" value="50"
+              aria-label="Drag to compare traditional preparation with Valour cooking">
           </div>
         </section>
 
@@ -3798,9 +3904,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
             </div>
           </div> -->
 
-                  <!-- CTA -->
-                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish"
-                    class="cta">Order now through whatsapp <img src="assets/images/whtsap.png" alt="whatsapp"></a>
                   <div class="product-actions" aria-label="Product purchase actions">
                     <button class="product-action-btn product-action-btn--buy" type="button">BUY NOW</button>
                     <button class="product-action-btn product-action-btn--cart" type="button">ADD TO CART</button>
@@ -4023,79 +4126,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
 
           </div>
-          <section class="comparison-section" aria-labelledby="comparison-title">
-            <div class="comparison-shell">
-              <div class="comparison-intro">
-                <p class="comparison-kicker">Before Valour / With Valour</p>
-                <h2 class="comparison-title" id="comparison-title">One divider. Two ways to cook.</h2>
-              </div>
-
-              <div class="comparison-slider" data-comparison-slider>
-                <div class="comparison-panel comparison-panel--traditional" aria-hidden="true">
-                  <div class="comparison-scene">
-                    <div class="prep-surface"></div>
-                    <div class="prep-flow"></div>
-                    <div class="prep-card prep-card--mixer">
-                      <span class="material-symbols-outlined">blender</span>
-                      <small>Mixer grinder</small>
-                    </div>
-                    <div class="prep-card prep-card--spices">
-                      <span class="material-symbols-outlined">grain</span>
-                      <small>Spice bowls</small>
-                    </div>
-                    <div class="prep-card prep-card--coconut">
-                      <span class="material-symbols-outlined">egg_alt</span>
-                      <small>Coconut</small>
-                    </div>
-                    <div class="prep-card prep-card--onion">
-                      <span class="material-symbols-outlined">restaurant</span>
-                      <small>Chopped onions</small>
-                    </div>
-                    <div class="prep-card prep-card--measure">
-                      <span class="material-symbols-outlined">straighten</span>
-                      <small>Measuring spoons</small>
-                    </div>
-                    <div class="prep-card prep-card--containers">
-                      <span class="material-symbols-outlined">inventory_2</span>
-                      <small>Containers</small>
-                    </div>
-                  </div>
-                  <div class="comparison-caption">
-                    <p class="comparison-label">Traditional Preparation</p>
-                    <h3 class="comparison-heading">Too many steps.</h3>
-                  </div>
-                </div>
-
-                <div class="comparison-panel comparison-panel--valour" aria-hidden="true">
-                  <div class="comparison-scene">
-                    <div class="valour-surface"></div>
-                    <span class="steam" aria-hidden="true"></span>
-                    <div class="valour-card valour-card--pour">
-                      <span class="material-symbols-outlined">water_drop</span>
-                      <small>Liquid spice</small>
-                    </div>
-                    <div class="valour-card valour-card--pan">
-                      <img src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="">
-                    </div>
-                    <div class="valour-card valour-card--woman" aria-label="Elegant Bengali woman cooking calmly"></div>
-                  </div>
-                  <div class="comparison-caption">
-                    <p class="comparison-label">VALOUR</p>
-                    <h3 class="comparison-heading">Fry. Pour. Simmer.</h3>
-                  </div>
-                </div>
-
-                <div class="comparison-divider" aria-hidden="true">
-                  <div class="comparison-handle">
-                    <span class="material-symbols-outlined">drag_indicator</span>
-                  </div>
-                </div>
-                <input class="comparison-range" type="range" min="0" max="100" value="50"
-                  aria-label="Drag to compare traditional preparation with Valour cooking">
-              </div>
-            </div>
-          </section>
-
           <section class="final-cta-section" aria-labelledby="final-cta-title">
             <div class="final-cta-inner">
               <p class="final-cta-title" id="final-cta-title">Cook better</p>
