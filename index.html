@@ -1159,6 +1159,51 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     transform: translateY(-2px);
   }
 
+  .product-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .product-action-btn {
+    min-height: 50px;
+    border-radius: 999px;
+    border: 1px solid rgba(247, 212, 108, 0.72);
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.28s ease, background 0.28s ease, color 0.28s ease, border-color 0.28s ease;
+  }
+
+  .product-action-btn--buy {
+    background: #f7d46c;
+    color: #831a1a;
+  }
+
+  .product-action-btn--cart {
+    background: transparent;
+    color: #f7d46c;
+  }
+
+  .product-action-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .product-action-btn--buy:hover {
+    background: #fff8ef;
+    border-color: #fff8ef;
+  }
+
+  .product-action-btn--cart:hover {
+    background: rgba(247, 212, 108, 0.12);
+    border-color: #f7d46c;
+  }
+
   /* INFO */
 
   /* RESPONSIVE */
@@ -2175,117 +2220,650 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
   }
 
+  .comparison-section {
+    padding: clamp(84px, 11vw, 150px) 20px;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(247, 212, 108, 0.12), transparent 32%),
+      linear-gradient(180deg, #fff8ef 0%, #f1e2cb 100%);
+    color: #44231f;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .comparison-shell {
+    width: min(1420px, 100%);
+    margin: 0 auto;
+  }
+
+  .comparison-intro {
+    width: min(760px, 100%);
+    margin: 0 auto clamp(34px, 5vw, 62px);
+    text-align: center;
+  }
+
+  .comparison-kicker {
+    margin: 0 0 14px;
+    color: #9a6b1f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  .comparison-title {
+    margin: 0;
+    color: #831a1a;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(46px, 7vw, 96px);
+    line-height: 0.92;
+    font-weight: 600;
+  }
+
+  .comparison-slider {
+    --split: 50%;
+    position: relative;
+    min-height: clamp(520px, 64vw, 760px);
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid rgba(131, 26, 26, 0.12);
+    box-shadow: 0 28px 90px rgba(68, 35, 31, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    isolation: isolate;
+  }
+
+  .comparison-panel {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .comparison-panel--traditional {
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.62), transparent 28%),
+      linear-gradient(135deg, #e9d7bb 0%, #d8c2a0 100%);
+    clip-path: inset(0 calc(100% - var(--split)) 0 0);
+  }
+
+  .comparison-panel--valour {
+    background:
+      radial-gradient(circle at 72% 18%, rgba(255, 248, 239, 0.78), transparent 34%),
+      linear-gradient(135deg, #f8efe2 0%, #efd4b0 48%, #c77a42 100%);
+    clip-path: inset(0 0 0 var(--split));
+  }
+
+  .comparison-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 42%, rgba(35, 12, 8, 0.48) 100%);
+    pointer-events: none;
+  }
+
+  .comparison-scene {
+    position: absolute;
+    inset: 0;
+  }
+
+  .prep-surface,
+  .valour-surface {
+    position: absolute;
+    inset: 11% 7% 18%;
+    border-radius: 18px;
+    background: rgba(255, 248, 239, 0.42);
+    box-shadow: 0 26px 80px rgba(68, 35, 31, 0.15);
+    transform: rotate(-2deg);
+  }
+
+  .valour-surface {
+    background: rgba(255, 248, 239, 0.38);
+    transform: rotate(2deg);
+  }
+
+  .prep-card,
+  .valour-card {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid rgba(131, 26, 26, 0.1);
+    background: rgba(255, 248, 239, 0.72);
+    box-shadow: 0 18px 48px rgba(68, 35, 31, 0.18);
+    backdrop-filter: blur(10px);
+  }
+
+  .prep-card .material-symbols-outlined,
+  .valour-card .material-symbols-outlined {
+    color: #831a1a;
+    font-size: clamp(28px, 4vw, 50px);
+  }
+
+  .prep-card small,
+  .valour-card small {
+    color: rgba(68, 35, 31, 0.66);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .prep-card--mixer {
+    left: 10%;
+    top: 16%;
+    width: min(23vw, 280px);
+    aspect-ratio: 1.15;
+    border-radius: 22px;
+    transform: rotate(-7deg);
+  }
+
+  .prep-card--spices {
+    left: 34%;
+    top: 22%;
+    width: min(18vw, 210px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    transform: rotate(8deg);
+  }
+
+  .prep-card--onion {
+    left: 18%;
+    top: 50%;
+    width: min(17vw, 205px);
+    aspect-ratio: 1.08;
+    border-radius: 20px;
+    transform: rotate(6deg);
+  }
+
+  .prep-card--measure {
+    left: 43%;
+    top: 48%;
+    width: min(19vw, 230px);
+    aspect-ratio: 1.35;
+    border-radius: 999px;
+    transform: rotate(-9deg);
+  }
+
+  .prep-card--coconut {
+    left: 7%;
+    top: 36%;
+    width: min(13vw, 150px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    transform: rotate(12deg);
+  }
+
+  .prep-card--containers {
+    left: 51%;
+    top: 29%;
+    width: min(13vw, 160px);
+    aspect-ratio: 1;
+    border-radius: 18px;
+    transform: rotate(-4deg);
+  }
+
+  .prep-flow {
+    position: absolute;
+    left: 30%;
+    top: 38%;
+    width: min(25vw, 310px);
+    height: 1px;
+    background: linear-gradient(90deg, rgba(131, 26, 26, 0), rgba(131, 26, 26, 0.34), rgba(131, 26, 26, 0));
+    transform: rotate(18deg);
+  }
+
+  .prep-flow::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: -4px;
+    width: 9px;
+    height: 9px;
+    border-top: 1px solid rgba(131, 26, 26, 0.42);
+    border-right: 1px solid rgba(131, 26, 26, 0.42);
+    transform: rotate(45deg);
+  }
+
+  .valour-card--pan {
+    right: 10%;
+    top: 22%;
+    width: min(34vw, 430px);
+    aspect-ratio: 1.25;
+    border-radius: 30px;
+    overflow: hidden;
+  }
+
+  .valour-card--pan img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .valour-card--pour {
+    right: 38%;
+    top: 19%;
+    width: min(15vw, 180px);
+    aspect-ratio: 0.82;
+    border-radius: 999px;
+    transform: rotate(-9deg);
+  }
+
+  .valour-card--woman {
+    right: 11%;
+    top: 55%;
+    width: min(22vw, 270px);
+    aspect-ratio: 1.6;
+    border-radius: 24px;
+    transform: rotate(3deg);
+  }
+
+  .valour-card--woman::before {
+    content: "";
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #44231f;
+    box-shadow: 0 58px 0 18px rgba(131, 26, 26, 0.92), 0 112px 0 8px rgba(247, 212, 108, 0.65);
+  }
+
+  .steam {
+    position: absolute;
+    right: 26%;
+    top: 12%;
+    width: 90px;
+    height: 140px;
+    border-left: 1px solid rgba(255, 248, 239, 0.76);
+    border-radius: 50%;
+    opacity: 0.72;
+    transform: rotate(18deg);
+  }
+
+  .comparison-caption {
+    position: absolute;
+    z-index: 2;
+    left: clamp(28px, 4vw, 58px);
+    right: clamp(28px, 4vw, 58px);
+    bottom: clamp(26px, 4vw, 48px);
+    color: #fff8ef;
+  }
+
+  .comparison-panel--valour .comparison-caption {
+    text-align: right;
+  }
+
+  .comparison-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.74;
+  }
+
+  .comparison-heading {
+    margin: 0;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(34px, 5vw, 72px);
+    line-height: 0.92;
+    font-weight: 600;
+  }
+
+  .comparison-divider {
+    position: absolute;
+    z-index: 6;
+    top: 0;
+    bottom: 0;
+    left: var(--split);
+    width: 2px;
+    background: rgba(255, 248, 239, 0.94);
+    transform: translateX(-50%);
+    box-shadow: 0 0 24px rgba(255, 248, 239, 0.5);
+    pointer-events: none;
+  }
+
+  .comparison-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(255, 248, 239, 0.96);
+    color: #831a1a;
+    box-shadow: 0 16px 42px rgba(34, 8, 8, 0.24);
+    transform: translate(-50%, -50%);
+  }
+
+  .comparison-handle span {
+    font-size: 24px;
+  }
+
+  .comparison-range {
+    position: absolute;
+    z-index: 8;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: ew-resize;
+  }
+
+  @media (max-width: 760px) {
+    .comparison-section {
+      padding-inline: 14px;
+    }
+
+    .comparison-slider {
+      min-height: 620px;
+      border-radius: 6px;
+    }
+
+    .prep-card--mixer {
+      left: 7%;
+      width: 210px;
+    }
+
+    .prep-card--spices {
+      left: 36%;
+      top: 30%;
+      width: 150px;
+    }
+
+    .prep-card--onion {
+      left: 13%;
+      top: 54%;
+      width: 160px;
+    }
+
+    .prep-card--measure {
+      left: 44%;
+      top: 52%;
+      width: 170px;
+    }
+
+    .prep-card--coconut {
+      width: 108px;
+    }
+
+    .prep-card--containers {
+      left: 53%;
+      top: 41%;
+      width: 120px;
+    }
+
+    .valour-card--pan {
+      right: 7%;
+      top: 25%;
+      width: 280px;
+    }
+
+    .valour-card--pour {
+      right: 42%;
+      width: 118px;
+    }
+
+    .valour-card--woman {
+      right: 9%;
+      top: 58%;
+      width: 210px;
+    }
+
+    .comparison-panel--valour .comparison-caption,
+    .comparison-caption {
+      text-align: left;
+    }
+  }
+
   /*footer*/
 
 
 
   .footer {
-    background: #f4f4f4;
-    padding: 90px 20px 200px 30px;
-    font-family: "Inter", sans-serif;
-    color: #333;
+    position: relative;
+    overflow: hidden;
+    padding: clamp(104px, 14vw, 190px) 20px clamp(30px, 5vw, 48px);
+    background:
+      radial-gradient(circle at 50% -10%, rgba(131, 26, 26, 0.08), transparent 34%),
+      radial-gradient(circle at 8% 88%, rgba(247, 212, 108, 0.18), transparent 30%),
+      linear-gradient(180deg, #fff8ef 0%, #f5ead9 48%, #ead8bd 100%);
+    color: #44231f;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
   }
 
-  /* TOP */
+  .footer::before {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    pointer-events: none;
+    border-top: 1px solid rgba(131, 26, 26, 0.12);
+    border-bottom: 1px solid rgba(154, 107, 31, 0.16);
+  }
+
+  .footer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, transparent, rgba(131, 26, 26, 0.06), transparent);
+    opacity: 0.5;
+    transform: translateY(-38%);
+  }
+
   .footer-top {
-    max-width: 1200px;
-    margin: auto;
-    display: flex;
-    justify-content: space-between;
-    gap: 60px;
+    position: relative;
+    z-index: 1;
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    text-align: center;
   }
 
-  /* LEFT */
   .footer-left {
-    max-width: 350px;
+    max-width: none;
   }
 
-  .footer-logo {
-    width: 140px;
-    margin-bottom: 15px;
+  .footer .nav-logo {
+    color: #831a1a;
+    width: fit-content;
+    margin: 0 auto clamp(44px, 7vw, 82px);
+    font-size: clamp(22px, 3vw, 34px);
+    letter-spacing: clamp(8px, 1.2vw, 14px);
+    opacity: 0.9;
+  }
+
+  .footer .nav-logo span:nth-child(2) {
+    margin-left: -9px;
+    margin-right: 8px;
+  }
+
+  .footer-kicker {
+    margin: 0 0 clamp(18px, 3vw, 28px);
+    color: rgba(154, 107, 31, 0.82);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+  }
+
+  .footer-title {
+    max-width: 920px;
+    margin: 0 auto;
+    color: #831a1a;
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: clamp(52px, 9vw, 124px);
+    line-height: 0.86;
+    font-weight: 600;
+    text-wrap: balance;
+    text-shadow: 0 22px 62px rgba(131, 26, 26, 0.12);
   }
 
   .footer-desc {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 20px;
+    max-width: 600px;
+    margin: clamp(28px, 4vw, 44px) auto 0;
+    color: rgba(68, 35, 31, 0.72);
+    font-size: clamp(15px, 1.5vw, 18px);
+    line-height: 1.8;
   }
 
-  .footer-social {
+  .footer-actions {
     display: flex;
-    gap: 14px;
-    margin-bottom: 20px;
+    justify-content: center;
+    margin-top: clamp(42px, 6vw, 72px);
   }
 
-  .footer-social .material-symbols-outlined {
-    font-size: 20px;
-    color: #555;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  .footer-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: min(100%, 270px);
+    min-height: 58px;
+    padding: 18px 32px;
+    border: 1px solid rgba(131, 26, 26, 0.18);
+    border-radius: 999px;
+    background: #831a1a;
+    color: #fff8ef;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    box-shadow:
+      0 20px 54px rgba(131, 26, 26, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    transition: transform 0.32s ease, background 0.32s ease, border-color 0.32s ease, box-shadow 0.32s ease;
   }
 
-  .footer-social .material-symbols-outlined:hover {
-    color: #000;
+  .footer-button:hover {
+    background: #5d1010;
+    border-color: #5d1010;
+    transform: translateY(-4px);
+    box-shadow:
+      0 28px 68px rgba(131, 26, 26, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+
+  .footer-trust {
+    position: relative;
+    z-index: 1;
+    width: min(760px, 100%);
+    margin: clamp(48px, 7vw, 88px) auto 0;
+    padding-block: 18px;
+    border-top: 1px solid rgba(131, 26, 26, 0.12);
+    border-bottom: 1px solid rgba(131, 26, 26, 0.12);
+    display: flex;
+    justify-content: center;
+    gap: clamp(14px, 4vw, 34px);
+    color: rgba(68, 35, 31, 0.56);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .footer-trust span + span {
+    position: relative;
+  }
+
+  .footer-trust span + span::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: calc(clamp(14px, 4vw, 34px) / -2);
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(154, 107, 31, 0.48);
+    transform: translate(-50%, -50%);
+  }
+
+  .footer-links {
+    position: relative;
+    z-index: 1;
+    margin: clamp(52px, 8vw, 96px) auto 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(20px, 4vw, 42px);
+  }
+
+  .footer-links a {
+    color: rgba(68, 35, 31, 0.72);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: color 0.28s ease, transform 0.28s ease;
+  }
+
+  .footer-links a:hover {
+    color: #831a1a;
     transform: translateY(-2px);
   }
 
-  /* SELECTS */
-
-
-
-  /* LINKS */
-  .footer-links {
+  .footer-social {
+    position: relative;
+    z-index: 1;
     display: flex;
-    gap: 60px;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin-top: clamp(42px, 6vw, 68px);
   }
 
-  .footer-col h4 {
-    margin-bottom: 10px;
-    font-size: 16px;
+  .footer-social-label {
+    color: rgba(154, 107, 31, 0.68);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
   }
 
-  .footer-col a {
-    display: block;
-    text-decoration: none;
-    color: #555;
-    font-size: 14px;
-    margin-bottom: 8px;
-    transition: 0.3s;
+  .footer-social-icons {
+    display: flex;
+    gap: 12px;
   }
 
-  .footer-col a:hover {
-    color: #000;
+  .footer-social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(131, 26, 26, 0.16);
+    border-radius: 999px;
+    color: rgba(68, 35, 31, 0.7);
+    transition: transform 0.28s ease, border-color 0.28s ease, color 0.28s ease, background 0.28s ease;
   }
 
-  .footer-note {
-    font-size: 14px;
-    color: #666;
-    max-width: 220px;
+  .footer-social a:hover {
+    background: rgba(131, 26, 26, 0.06);
+    border-color: rgba(131, 26, 26, 0.34);
+    color: #831a1a;
+    transform: translateY(-3px);
   }
 
-  /* BOTTOM */
+  .footer-social .material-symbols-outlined {
+    font-size: 19px;
+  }
+
   .footer-bottom {
-    border-top: 1px solid #ddd;
-    margin-top: 40px;
-    padding-top: 20px;
-
-    max-width: 1200px;
-    margin-inline: auto;
-
+    position: relative;
+    z-index: 1;
+    width: min(1080px, 100%);
+    margin: clamp(58px, 8vw, 96px) auto 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(131, 26, 26, 0.1);
     display: flex;
     justify-content: space-between;
-    align-items: center;
-  }
-
-  .footer-policy {
-    display: flex;
     gap: 20px;
+    align-items: center;
+    color: rgba(68, 35, 31, 0.48);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  .footer-policy a {
-    text-decoration: none;
-    font-size: 13px;
-    color: #555;
+  .footer-origin {
+    color: rgba(154, 107, 31, 0.64);
   }
 
   .intro,
@@ -2420,30 +2998,64 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* ================= */
 
   @media (max-width: 900px) {
-    .footer-top {
-      flex-direction: column;
-      gap: 40px;
-    }
-
-    .footer-links {
-      flex-wrap: wrap;
-      gap: 30px;
+    .footer-title {
+      max-width: 760px;
     }
   }
 
   @media (max-width: 600px) {
+    .footer {
+      padding: 88px 18px 28px;
+    }
+
+    .footer::before {
+      inset: 10px;
+    }
+
+    .footer .nav-logo {
+      margin-bottom: 48px;
+    }
+
+    .footer-kicker {
+      letter-spacing: 0.24em;
+    }
+
+    .footer-title {
+      font-size: clamp(48px, 17vw, 72px);
+    }
+
+    .footer-desc {
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .footer-button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .footer-trust {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+    }
+
+    .footer-trust span + span::before {
+      display: none;
+    }
+
     .footer-links {
       flex-direction: column;
+      gap: 18px;
     }
 
     .footer-bottom {
       flex-direction: column;
+      align-items: center;
       gap: 10px;
       text-align: center;
-    }
-
-    .footer-selects {
-      flex-direction: column;
     }
   }
 
@@ -2550,6 +3162,16 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       margin-top: -9px;
     }
 
+    .product-actions {
+      gap: 8px;
+    }
+
+    .product-action-btn {
+      min-height: 46px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
     .testimonial-sectionxyz .header h2 {
       font-size: 35px;
     }
@@ -2586,6 +3208,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       padding: 14px;
       padding-top: 21px;
       padding-top: 21px;
+    }
+
+    .product-actions {
+      grid-template-columns: 1fr;
     }
 
     .price {
@@ -3175,6 +3801,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <!-- CTA -->
                   <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish"
                     class="cta">Order now through whatsapp <img src="assets/images/whtsap.png" alt="whatsapp"></a>
+                  <div class="product-actions" aria-label="Product purchase actions">
+                    <button class="product-action-btn product-action-btn--buy" type="button">BUY NOW</button>
+                    <button class="product-action-btn product-action-btn--cart" type="button">ADD TO CART</button>
+                  </div>
                   <div class="container_expand_ingre">
                     <div class="accordion">
                       <div class="accordion-header" onclick="toggleAccordion(this)">
@@ -3393,6 +4023,79 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
 
           </div>
+          <section class="comparison-section" aria-labelledby="comparison-title">
+            <div class="comparison-shell">
+              <div class="comparison-intro">
+                <p class="comparison-kicker">Before Valour / With Valour</p>
+                <h2 class="comparison-title" id="comparison-title">One divider. Two ways to cook.</h2>
+              </div>
+
+              <div class="comparison-slider" data-comparison-slider>
+                <div class="comparison-panel comparison-panel--traditional" aria-hidden="true">
+                  <div class="comparison-scene">
+                    <div class="prep-surface"></div>
+                    <div class="prep-flow"></div>
+                    <div class="prep-card prep-card--mixer">
+                      <span class="material-symbols-outlined">blender</span>
+                      <small>Mixer grinder</small>
+                    </div>
+                    <div class="prep-card prep-card--spices">
+                      <span class="material-symbols-outlined">grain</span>
+                      <small>Spice bowls</small>
+                    </div>
+                    <div class="prep-card prep-card--coconut">
+                      <span class="material-symbols-outlined">egg_alt</span>
+                      <small>Coconut</small>
+                    </div>
+                    <div class="prep-card prep-card--onion">
+                      <span class="material-symbols-outlined">restaurant</span>
+                      <small>Chopped onions</small>
+                    </div>
+                    <div class="prep-card prep-card--measure">
+                      <span class="material-symbols-outlined">straighten</span>
+                      <small>Measuring spoons</small>
+                    </div>
+                    <div class="prep-card prep-card--containers">
+                      <span class="material-symbols-outlined">inventory_2</span>
+                      <small>Containers</small>
+                    </div>
+                  </div>
+                  <div class="comparison-caption">
+                    <p class="comparison-label">Traditional Preparation</p>
+                    <h3 class="comparison-heading">Too many steps.</h3>
+                  </div>
+                </div>
+
+                <div class="comparison-panel comparison-panel--valour" aria-hidden="true">
+                  <div class="comparison-scene">
+                    <div class="valour-surface"></div>
+                    <span class="steam" aria-hidden="true"></span>
+                    <div class="valour-card valour-card--pour">
+                      <span class="material-symbols-outlined">water_drop</span>
+                      <small>Liquid spice</small>
+                    </div>
+                    <div class="valour-card valour-card--pan">
+                      <img src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="">
+                    </div>
+                    <div class="valour-card valour-card--woman" aria-label="Elegant Bengali woman cooking calmly"></div>
+                  </div>
+                  <div class="comparison-caption">
+                    <p class="comparison-label">VALOUR</p>
+                    <h3 class="comparison-heading">Fry. Pour. Simmer.</h3>
+                  </div>
+                </div>
+
+                <div class="comparison-divider" aria-hidden="true">
+                  <div class="comparison-handle">
+                    <span class="material-symbols-outlined">drag_indicator</span>
+                  </div>
+                </div>
+                <input class="comparison-range" type="range" min="0" max="100" value="50"
+                  aria-label="Drag to compare traditional preparation with Valour cooking">
+              </div>
+            </div>
+          </section>
+
           <section class="final-cta-section" aria-labelledby="final-cta-title">
             <div class="final-cta-inner">
               <p class="final-cta-title" id="final-cta-title">Cook better</p>
@@ -3421,50 +4124,44 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                     <span>R</span>
                   </div>
 
+                  <p class="footer-kicker">CAREFULLY PREPARED FOR EVERYDAY COOKING</p>
+                  <h2 class="footer-title">Cook more.
+Prepare less.</h2>
                   <p class="footer-desc">
-                    This is a demo store by Clean Canvas. All images and video content
-                    courtesy of Shutterstock and Pexels, and are not for re-use on other stores.
+                    Made to reduce the preparation behind rich cooking.
                   </p>
 
-                  <!-- SOCIAL -->
-                  <div class="footer-social">
-                    <span class="material-symbols-outlined">facebook</span>
-                    <span class="material-symbols-outlined">smart_display</span> <!-- YouTube -->
-                    <span class="material-symbols-outlined">photo_camera</span> <!-- Instagram -->
-                    <span class="material-symbols-outlined">close</span>
+                  <!-- <div class="footer-actions">
+                    <a class="footer-button"
+                      href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish">Order on
+                      WhatsApp</a>
+                  </div> -->
+
+                </div>
+
+                <div class="footer-trust" aria-label="Valour product principles">
+                  <span>No grinding</span>
+                  <span>No measuring</span>
+                  <span>Designed for consistency</span>
+                </div>
+
+                <nav class="footer-links" aria-label="Footer navigation">
+                  <a href="#how-it-works">How it works</a>
+                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish">Order on
+                    WhatsApp</a>
+                  <a href="#" aria-label="Valour on Instagram">Instagram</a>
+                </nav>
+
+                <div class="footer-social">
+                  <span class="footer-social-label">Follow Valour</span>
+                  <div class="footer-social-icons" aria-label="Social links">
+                    <a href="#" aria-label="Valour on Instagram"><span
+                        class="material-symbols-outlined">photo_camera</span></a>
+                    <a href="https://wa.me/917005328132?text=I%20want%20to%20know%20More!"
+                      aria-label="Chat with Valour on WhatsApp"><span class="material-symbols-outlined">chat</span></a>
                   </div>
-
-                  <!-- DROPDOWNS -->
-
                 </div>
 
-                <!-- RIGHT -->
-                <!-- <div class="footer-links">
-
-                <div class="footer-col">
-                  <h4>All Departments</h4>
-                  <a href="#">Fruit & Vegetables</a>
-                  <a href="#">Meat & Fish</a>
-                  <a href="#">Cheese & Dairy</a>
-                  <a href="#">Store Cupboard</a>
-                  <a href="#">The Bakery</a>
-                </div>
-
-                <div class="footer-col">
-                  <h4>Help & Support</h4>
-                  <a href="#">Customer Service</a>
-                  <a href="#">Contact Us</a>
-                  <a href="#">About us</a>
-                  <a href="#">Returns Info</a>
-                </div>
-
-
-
-              </div>
-
-            </div> -->
-
-                <!-- BOTTOM -->
                 <!-- <div class="footer-bottom">
               <p>© 2026 Canopy Theme Canopy. Powered by Shopify</p>
 
@@ -3474,19 +4171,22 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
               </div>
             </div>
           </footer> -->
-
-
-
-
               </div>
-              <!-- END sections: footer-group -->
+
+              <div class="footer-bottom">
+                <p>&copy; 2026 Valour Foods. All rights reserved.</p>
+                <p class="footer-origin">Modern liquid spice for Indian kitchens.</p>
+              </div>
+            </footer>
+          </div>
+          <!-- END sections: footer-group -->
 
   <div class="valour-whatsapp-support" data-whatsapp-support aria-live="polite">
     <div class="valour-whatsapp-support__bubble" data-whatsapp-bubble>
       <button class="valour-whatsapp-support__close" type="button" data-whatsapp-close aria-label="Close WhatsApp help message">&times;</button>
       <p class="valour-whatsapp-support__text">Have more questions?<br>Get answers now.</p>
     </div>
-    <a class="valour-whatsapp-support__button" href="https://wa.me/919999999999" target="_blank" rel="noopener" aria-label="Chat with VALOUR on WhatsApp">
+    <a class="valour-whatsapp-support__button" href="https://wa.me/917005328132?text=I%20want%20to%20know%20More!" target="_blank" rel="noopener" aria-label="Chat with VALOUR on WhatsApp">
       <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
         <path fill="currentColor" d="M16.04 4.4c-6.35 0-11.52 5.06-11.52 11.28 0 1.99.54 3.93 1.56 5.62l-1.66 6.05 6.24-1.6a11.7 11.7 0 0 0 5.38 1.31c6.35 0 11.52-5.06 11.52-11.28S22.39 4.4 16.04 4.4Zm0 20.76c-1.72 0-3.4-.45-4.87-1.31l-.35-.2-3.7.95.98-3.57-.23-.36a9.22 9.22 0 0 1-1.45-4.99c0-5.17 4.32-9.38 9.62-9.38s9.62 4.21 9.62 9.38-4.31 9.48-9.62 9.48Zm5.27-7.03c-.29-.14-1.7-.82-1.96-.91-.26-.1-.45-.14-.64.14-.19.29-.73.91-.9 1.1-.17.19-.33.21-.62.07-.29-.14-1.22-.44-2.32-1.4-.86-.75-1.44-1.67-1.61-1.95-.17-.29-.02-.44.13-.58.13-.13.29-.33.43-.5.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.5-.07-.14-.64-1.51-.88-2.07-.23-.54-.47-.47-.64-.48h-.55c-.19 0-.5.07-.76.36-.26.29-1 1-1 2.43s1.03 2.81 1.17 3c.14.19 2.03 3.04 4.93 4.26.69.29 1.22.46 1.64.59.69.21 1.32.18 1.82.11.56-.08 1.7-.68 1.94-1.34.24-.66.24-1.22.17-1.34-.07-.12-.26-.19-.55-.33Z" />
       </svg>
@@ -4253,6 +4953,22 @@ window.addEventListener("resize", () => {
   destroy();
   init();
 });
+
+function initValourComparisonSlider() {
+  document.querySelectorAll("[data-comparison-slider]").forEach((slider) => {
+    const range = slider.querySelector(".comparison-range");
+    if (!range) return;
+
+    const updateSplit = () => {
+      slider.style.setProperty("--split", `${range.value}%`);
+    };
+
+    range.addEventListener("input", updateSplit);
+    updateSplit();
+  });
+}
+
+window.addEventListener("load", initValourComparisonSlider);
 
 function initValourWhatsappSupport() {
   const support = document.querySelector("[data-whatsapp-support]");
