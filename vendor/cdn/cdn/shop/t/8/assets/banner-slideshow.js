@@ -20,6 +20,7 @@ class BannerSlideshow {
                 (this.lastWheelAt = 0),
                 (this.touchStartX = 0),
                 (this.touchStartY = 0),
+                (this.transitionDuration = 700),
                 (this.boundHandlers = new Map()),
                 !(this.totalSlides <= 1) && this.init());
     }
@@ -205,7 +206,7 @@ goToSlide(targetIndex, isUserInitiated = false) {
             this.isUserInteracting = false;
             this.resumeAutoplay();
         }
-    }, 350);
+    }, this.transitionDuration);
 }
     nextSlide(isUserInitiated = false) {
         if ((!isUserInitiated && this.isUserInteracting) || this.isTransitioning) return;
@@ -215,7 +216,7 @@ goToSlide(targetIndex, isUserInitiated = false) {
                 this.container.scrollTo({ left: nextIndex * this.container.clientWidth, behavior: "smooth" }),
                 setTimeout(() => {
                     this.resetToFirstSlide(), (this.isTransitioning = !1);
-                }, 350))
+                }, this.transitionDuration))
             : this.goToSlide(nextIndex, isUserInitiated);
     }
     prevSlide(isUserInitiated = false) {
