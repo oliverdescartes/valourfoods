@@ -1067,20 +1067,60 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   /* TITLE + PRICE */
   .title-price {
-    display: block;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    gap: 14px;
   }
 
   .title-price h1 {
-    font-size: 32px;
-    font-weight: 700;
+    margin: 0;
+    font-size: clamp(38px, 4.2vw, 56px);
+    line-height: 0.95;
+    font-weight: 650;
     color: #ffffffd4;
+    letter-spacing: 0;
+  }
+
+  .product-subtitle {
+    max-width: 420px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: clamp(15px, 1.4vw, 18px);
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .product-note {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .product-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .product-meta span {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .price {
     display: block;
-    margin-top: 8px;
+    margin-top: 2px;
     font-size: 22px;
     font-weight: 600;
     color: white;
@@ -1088,6 +1128,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   .product_slide .right p {
     color: white;
+  }
+
+  .product_slide .right .product-subtitle {
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .product_slide .right .product-note {
+    color: rgba(255, 255, 255, 0.62);
   }
 
   /* RATING */
@@ -1508,40 +1556,80 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .raw-ready-list {
+    position: relative;
     display: grid;
-    gap: 14px;
+    gap: 18px;
+    counter-reset: rawReady;
+  }
+
+  .raw-ready-list::before {
+    content: "";
+    position: absolute;
+    left: 34px;
+    top: 34px;
+    bottom: 34px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(247, 212, 108, 0.66), transparent);
+    opacity: 0.72;
   }
 
   .raw-ready-item {
+    counter-increment: rawReady;
     position: relative;
     display: flex;
     align-items: center;
-    gap: 18px;
-    min-height: 82px;
-    padding: 20px 24px;
-    border: 1px solid rgba(250, 234, 222, 0.24);
-    background: rgba(250, 234, 222, 0.08);
+    gap: 20px;
+    min-height: 92px;
+    padding: 18px 24px 18px 96px;
+    border: 1px dashed rgba(247, 212, 108, 0.4);
+    border-radius: 8px;
+    background:
+      linear-gradient(90deg, rgba(247, 212, 108, 0.16), transparent 42%),
+      rgba(250, 234, 222, 0.06);
     color: #fff8ef;
-    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(255, 248, 239, 0.12), 0 18px 42px rgba(34, 8, 8, 0.12);
+    overflow: hidden;
   }
 
   .raw-ready-item::before {
-    content: "";
-    flex: 0 0 10px;
-    width: 10px;
-    height: 10px;
-    transform: rotate(45deg);
+    content: "NO";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 68px;
+    display: grid;
+    place-items: center;
     background: #f7d46c;
-    box-shadow: 0 0 0 8px rgba(247, 212, 108, 0.1);
+    color: #831a1a;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    box-shadow: 10px 0 32px rgba(34, 8, 8, 0.14);
+  }
+
+  .raw-ready-item::after {
+    content: "0" counter(rawReady);
+    position: absolute;
+    right: 18px;
+    bottom: 12px;
+    color: rgba(250, 234, 222, 0.22);
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    font-size: 38px;
+    line-height: 1;
+    font-weight: 600;
   }
 
   .raw-ready-item span {
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: clamp(20px, 2vw, 30px);
+    font-size: clamp(18px, 1.8vw, 26px);
     line-height: 1.05;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: lowercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .base-message-section {
@@ -1973,12 +2061,29 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
 
     .raw-ready-list {
-      gap: 10px;
+      gap: 12px;
+    }
+
+    .raw-ready-list::before {
+      left: 28px;
+      top: 28px;
+      bottom: 28px;
     }
 
     .raw-ready-item {
-      min-height: 68px;
-      padding: 16px 18px;
+      min-height: 76px;
+      padding: 16px 48px 16px 78px;
+    }
+
+    .raw-ready-item::before {
+      width: 56px;
+      font-size: 12px;
+    }
+
+    .raw-ready-item::after {
+      right: 12px;
+      bottom: 10px;
+      font-size: 30px;
     }
 
     .base-message-section {
@@ -2071,7 +2176,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
  
 
   .process-steps-section .valour-banner__title_sec2 {
-    margin: 0 auto clamp(44px, 6vw, 76px);
+    margin: 0 auto clamp(80px, 6vw, 76px);
   }
 
   .process-steps-section .comparison-slider {
@@ -2168,7 +2273,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
     .process-steps-section {
       padding: 72px 18px 104px;
-    margin-top: 140px;
+    margin-top: 80px;
         margin-bottom: 190px;
     }
 
@@ -2553,9 +2658,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   .comparison-caption {
     position: absolute;
     z-index: 2;
-    left: clamp(28px, 4vw, 58px);
-    right: clamp(28px, 4vw, 58px);
-    bottom: clamp(26px, 4vw, 48px);
+    inset: 0;
     color: #fff8ef;
   }
 
@@ -2564,7 +2667,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .comparison-label {
-    margin: 0 0 8px;
+    position: absolute;
+    top: clamp(22px, 3vw, 42px);
+    right: clamp(24px, 4vw, 58px);
+    margin: 0;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -2572,7 +2678,15 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     opacity: 0.74;
   }
 
+  .comparison-panel--traditional .comparison-label {
+    right: calc(100% - var(--split) + clamp(24px, 4vw, 58px));
+  }
+
   .comparison-heading {
+    position: absolute;
+    left: clamp(28px, 4vw, 58px);
+    right: clamp(28px, 4vw, 58px);
+    bottom: clamp(26px, 4vw, 48px);
     margin: 0;
     font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
     font-size: clamp(34px, 5vw, 72px);
@@ -2586,19 +2700,31 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     top: 0;
     bottom: 0;
     left: var(--split);
-    width: 2px;
-    background: rgba(255, 248, 239, 0.94);
+    width: 44px;
     transform: translateX(-50%);
-    box-shadow: 0 0 24px rgba(255, 248, 239, 0.5);
-    pointer-events: none;
+    cursor: ew-resize;
+    touch-action: none;
+    pointer-events: auto;
   }
 
-  .comparison-handle {
+  .comparison-divider::before {
+    content: "";
     position: absolute;
-    top: 50%;
+    top: 0;
+    bottom: 0;
     left: 50%;
-    width: 52px;
-    height: 52px;
+    width: 2px;
+    background: rgba(255, 248, 239, 0.94);
+    box-shadow: 0 0 24px rgba(255, 248, 239, 0.5);
+    transform: translateX(-50%);
+  }
+
+.comparison-handle {
+    position: absolute;
+    top: 90%;
+    left: 50%;
+    width: 45px;
+    height: 45px;
     display: grid;
     place-items: center;
     border-radius: 999px;
@@ -2606,8 +2732,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     color: #831a1a;
     box-shadow: 0 16px 42px rgba(34, 8, 8, 0.24);
     transform: translate(-50%, -50%);
-  }
-
+    pointer-events: auto;
+}
   .comparison-handle span {
     font-size: 24px;
   }
@@ -2620,11 +2746,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     height: 100%;
     opacity: 0;
     cursor: ew-resize;
+    pointer-events: none;
   }
 
   @media (max-width: 760px) {
     .comparison-slider {
-      min-height: 620px;
+      min-height: 450px;
       border-radius: 6px;
     }
 
@@ -3146,7 +3273,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   @media (max-width: 1000px) {
     .title-price h1 {
-      font-size: 24px;
+      font-size: clamp(32px, 7vw, 44px);
     }
 
     .product_slide .right p {
@@ -3154,6 +3281,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       font-size: 12px;
       font-family: 'Inter';
 
+    }
+
+    .product-subtitle {
+      font-size: 15px;
+    }
+
+    .product-note {
+      font-size: 13px;
     }
 
     .product_slide .cta {
@@ -3173,12 +3308,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   @media (max-width: 600px) {
 
     .title-price h1 {
-      font-size: 20px;
+      font-size: clamp(30px, 10vw, 38px);
     }
 
     .product_slide .right p {
       color: #ffffffd9;
-      font-size: 10px;
+      font-size: 12px;
     }
 
     .price {
@@ -3267,7 +3402,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
 
     .title-price h1 {
-      font-size: 18px;
+      font-size: 30px;
     }
 
     .thumbnails img {
@@ -3747,7 +3882,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <img src="vendor/cdn/cdn/shop/files/before_comp.webp" alt="">
               </div>
               <div class="comparison-caption">
-                <p class="comparison-label">Traditional Preparation</p>
+                <p class="comparison-label">Normal cooking</p>
                 <h3 class="comparison-heading">Too many steps.</h3>
               </div>
             </div>
@@ -3757,7 +3892,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <img src="vendor/cdn/cdn/shop/files/after_comp.webp" alt="">
               </div>
               <div class="comparison-caption">
-                <p class="comparison-label">VALOUR</p>
+                <p class="comparison-label">Liquid spice cooking</p>
                 <h3 class="comparison-heading">Fry. Pour. Simmer.</h3>
               </div>
             </div>
@@ -3851,7 +3986,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <p class="brand">LIQUID SPICE</p>
 
                   <div class="title-price">
-                    <h1>Velvety butter | Coconut mustard liquid spice | makes 1kg mustard fish | Healthy and tasty</h1>
+                    <h1>Milky Musturd</h1>
+                    <p class="product-subtitle">Liquid spice for Coconut mustard fish.</p>
+                    <p class="product-note">The base, already balanced.</p>
+                    <div class="product-meta" aria-label="Product size and yield">
+                      <span>520ml</span>
+                      <span>Makes 1 kg fish</span>
+                    </div>
                     <span class="price">₹350.00</span>
                   </div>
 
@@ -4968,12 +5109,37 @@ window.addEventListener("resize", () => {
 function initValourComparisonSlider() {
   document.querySelectorAll("[data-comparison-slider]").forEach((slider) => {
     const range = slider.querySelector(".comparison-range");
-    if (!range) return;
+    const divider = slider.querySelector(".comparison-divider");
+    if (!range || !divider) return;
 
     const updateSplit = () => {
       slider.style.setProperty("--split", `${range.value}%`);
     };
 
+    const setSplitFromPointer = (event) => {
+      const rect = slider.getBoundingClientRect();
+      const position = ((event.clientX - rect.left) / rect.width) * 100;
+      range.value = Math.max(0, Math.min(100, position));
+      updateSplit();
+    };
+
+    const stopDragging = (event) => {
+      divider.releasePointerCapture?.(event.pointerId);
+      divider.removeEventListener("pointermove", setSplitFromPointer);
+      divider.removeEventListener("pointerup", stopDragging);
+      divider.removeEventListener("pointercancel", stopDragging);
+    };
+
+    const startDragging = (event) => {
+      event.preventDefault();
+      divider.setPointerCapture?.(event.pointerId);
+      setSplitFromPointer(event);
+      divider.addEventListener("pointermove", setSplitFromPointer);
+      divider.addEventListener("pointerup", stopDragging);
+      divider.addEventListener("pointercancel", stopDragging);
+    };
+
+    divider.addEventListener("pointerdown", startDragging);
     range.addEventListener("input", updateSplit);
     updateSplit();
   });
