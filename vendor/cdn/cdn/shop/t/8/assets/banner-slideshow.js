@@ -17,6 +17,9 @@ class BannerSlideshow {
                 (this.autoplayTimer = null),
                 (this.scrollTimer = null),
                 (this.isTransitioning = !1),
+                (this.lastWheelAt = 0),
+                (this.touchStartX = 0),
+                (this.touchStartY = 0),
                 (this.boundHandlers = new Map()),
                 !(this.totalSlides <= 1) && this.init());
     }
@@ -40,6 +43,17 @@ class BannerSlideshow {
             (this.totalSlides = this.slides.length);
     }
 bindEvents() {
+    const wheelHandler = (e) => this.handleWheel(e);
+    const touchStartHandler = (e) => this.handleTouchStart(e);
+    const touchEndHandler = (e) => this.handleTouchEnd(e);
+
+    this.container.addEventListener("wheel", wheelHandler, { passive: false });
+    this.container.addEventListener("touchstart", touchStartHandler, { passive: true });
+    this.container.addEventListener("touchend", touchEndHandler, { passive: true });
+    this.boundHandlers.set("wheel", wheelHandler);
+    this.boundHandlers.set("touchstart-controlled", { element: this.container, handler: touchStartHandler, event: "touchstart" });
+    this.boundHandlers.set("touchend-controlled", { element: this.container, handler: touchEndHandler, event: "touchend" });
+
     const scrollHandler = () => this.handleScroll();
     this.container.addEventListener("scroll", scrollHandler, { passive: true });
     this.boundHandlers.set("scroll", scrollHandler);
@@ -77,6 +91,33 @@ bindEvents() {
 
     this.bindDotEvents();
 }
+    handleWheel(e) {
+        const horizontalDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0;
+        if (!horizontalDelta) return;
+
+        e.preventDefault();
+
+        const now = Date.now();
+        if (now - this.lastWheelAt < 650 || this.isTransitioning) return;
+        this.lastWheelAt = now;
+
+        horizontalDelta > 0 ? this.nextSlide(true) : this.prevSlide(true);
+    }
+    handleTouchStart(e) {
+        if (!e.changedTouches.length) return;
+        this.touchStartX = e.changedTouches[0].clientX;
+        this.touchStartY = e.changedTouches[0].clientY;
+    }
+    handleTouchEnd(e) {
+        if (!e.changedTouches.length) return;
+
+        const diffX = e.changedTouches[0].clientX - this.touchStartX,
+            diffY = e.changedTouches[0].clientY - this.touchStartY;
+
+        if (Math.abs(diffX) < 45 || Math.abs(diffX) < Math.abs(diffY) * 1.15) return;
+
+        diffX < 0 ? this.nextSlide(true) : this.prevSlide(true);
+    }
     bindDotEvents() {
         this.dots.forEach((dot, index) => {
             const clickHandler = (e) => {
@@ -166,8 +207,8 @@ goToSlide(targetIndex, isUserInitiated = false) {
         }
     }, 350);
 }
-    nextSlide() {
-        if (this.isUserInteracting || this.isTransitioning) return;
+    nextSlide(isUserInitiated = false) {
+        if ((!isUserInitiated && this.isUserInteracting) || this.isTransitioning) return;
         const nextIndex = this.currentIndex + 1;
         nextIndex >= this.totalSlides - 1
             ? ((this.isTransitioning = !0),
@@ -175,7 +216,13 @@ goToSlide(targetIndex, isUserInitiated = false) {
                 setTimeout(() => {
                     this.resetToFirstSlide(), (this.isTransitioning = !1);
                 }, 350))
-            : this.goToSlide(nextIndex);
+            : this.goToSlide(nextIndex, isUserInitiated);
+    }
+    prevSlide(isUserInitiated = false) {
+        if ((!isUserInitiated && this.isUserInteracting) || this.isTransitioning) return;
+        const originalSlidesCount = this.totalSlides - 1,
+            prevIndex = this.currentIndex <= 0 ? originalSlidesCount - 1 : this.currentIndex - 1;
+        this.goToSlide(prevIndex, isUserInitiated);
     }
     resetToFirstSlide() {
         (this.container.style.scrollBehavior = "auto"),
