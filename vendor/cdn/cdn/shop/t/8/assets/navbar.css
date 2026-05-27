@@ -91,7 +91,10 @@
   cursor: pointer;
   color: rgb(0, 0, 0);
 }
-
+.nav-right .cart-count-badge {
+  color: white;
+  font-size: 12px;
+}
 /* HAMBURGER */
 .menu-toggle {
   display: none;
@@ -187,7 +190,7 @@ footer .nav-logo {
   .navbar {
     padding: 13px;
     padding-top: 13px;
-    padding-bottom: 40px;
+    padding-bottom: 10px;
   }
 
   .nav-left {

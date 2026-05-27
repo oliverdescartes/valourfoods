@@ -3,994 +3,531 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GIVA Checkout Replica</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+    <meta
+      name="description"
+      content="Valour premium liquid spice cart and checkout."
     />
-
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: "Inter", sans-serif;
-        background: #ffffff;
-        color: #111;
-      }
-
-      img {
-        width: 100%;
-        display: block;
-      }
-
-      button,
-      input,
-      select {
-        font-family: inherit;
-      }
-
-      a {
-        color: #111827;
-      }
-
-      .checkout-wrapper {
-        display: grid;
-        grid-template-columns: 52% 48%;
-        min-height: 100vh;
-      }
-
-      /* LEFT */
-
-      .left-side {
-        padding: 0 52px 40px;
-        max-width: 760px;
-        margin-left: auto;
-        width: 100%;
-      }
-
-      .logo-bar {
-        height: 74px;
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid #ececec;
-        margin-bottom: 28px;
-      }
-
-      .logo {
-        font-size: 28px;
-        font-weight: 700;
-        letter-spacing: 3px;
-      }
-
-      .section {
-        margin-bottom: 28px;
-      }
-
-      .section-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-      }
-
-      .section-title h2 {
-        font-size: 28px;
-        font-weight: 600;
-      }
-
-      .signin {
-        font-size: 14px;
-        text-decoration: underline;
-        cursor: pointer;
-      }
-
-      .input-group {
-        margin-bottom: 14px;
-      }
-
-      .label {
-        font-size: 12px;
-        margin-bottom: 5px;
-        color: #6b7280;
-      }
-
-      input,
-      select {
-        width: 100%;
-        height: 52px;
-        border: 1px solid #d9dde3;
-        background: #f4f7fb;
-        border-radius: 8px;
-        padding: 0 14px;
-        outline: none;
-        transition: 0.2s;
-        font-size: 14px;
-      }
-
-      input:focus,
-      select:focus {
-        border-color: #2b6cb0;
-        background: #fff;
-      }
-
-      .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
-      .grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-      }
-
-      .phone-group {
-        display: grid;
-        grid-template-columns: 1fr 60px;
-        gap: 0;
-      }
-
-      .phone-flag {
-        border: 1px solid #d9dde3;
-        border-left: none;
-        background: #f4f7fb;
-        border-radius: 0 8px 8px 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .checkbox {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 12px;
-        font-size: 14px;
-      }
-
-      .checkbox input {
-        width: 16px;
-        height: 16px;
-      }
-
-      /* ALERT */
-
-      .alert {
-        border: 1px solid #f4c8c8;
-        background: #fff5f5;
-        color: #d13f3f;
-        padding: 14px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        font-size: 14px;
-      }
-
-      /* COUPONS */
-
-      .coupon-box {
-        margin-bottom: 30px;
-      }
-
-      .coupon-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-      }
-
-      .coupon-title {
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .coupon-input {
-        display: grid;
-        grid-template-columns: 1fr 92px;
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-
-      .apply-btn {
-        background: #e36c89;
-        border: none;
-        color: #fff;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      .coupon-toggle {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 14px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .coupon-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .coupon-card {
-        border: 1px solid #dfdfdf;
-        border-radius: 8px;
-        padding: 14px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .coupon-name {
-        font-weight: 700;
-        margin-bottom: 5px;
-      }
-
-      .coupon-desc {
-        font-size: 12px;
-        color: #444;
-      }
-
-      .coupon-apply {
-        background: none;
-        border: none;
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      /* SHIPPING */
-
-      .shipping-card {
-        border: 1px solid #111827;
-        border-radius: 8px;
-        padding: 18px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 14px;
-      }
-
-      /* PAYMENT */
-
-      .payment-section {
-        margin-top: 30px;
-      }
-
-      .payment-sub {
-        color: #6b7280;
-        font-size: 14px;
-        margin-bottom: 18px;
-      }
-
-      .payment-box {
-        border: 1px solid #dcdcdc;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .payment-option {
-        border-bottom: 1px solid #e7e7e7;
-      }
-
-      .payment-option:last-child {
-        border-bottom: none;
-      }
-
-      .payment-head {
-        padding: 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        background: #fff;
-      }
-
-      .payment-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 14px;
-      }
-
-      .radio {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #bbb;
-        border-radius: 50%;
-        position: relative;
-      }
-
-      .payment-option.active .radio {
-        border-color: #0f172a;
-      }
-
-      .payment-option.active .radio::after {
-        content: "";
-        width: 8px;
-        height: 8px;
-        background: #0f172a;
-        border-radius: 50%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-      }
-
-      .payment-icons {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .payment-icon {
-        background: #f4f4f4;
-        padding: 4px 7px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-      }
-
-      .payment-body {
-        background: #f8f8f8;
-        padding: 16px 20px;
-        font-size: 14px;
-        line-height: 1.6;
-        display: none;
-      }
-
-      .payment-option.active .payment-body {
-        display: block;
-      }
-
-      /* BILLING */
-
-      .billing-box {
-        border: 1px solid #dcdcdc;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .billing-option {
-        padding: 16px;
-        border-bottom: 1px solid #ececec;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-      }
-
-      .billing-option:last-child {
-        border-bottom: none;
-      }
-
-      .billing-option.active {
-        background: #eef5ff;
-        border: 1px solid #111827;
-      }
-
-      .pay-button {
-        width: 100%;
-        height: 56px;
-        border: none;
-        background: #e36c89;
-        color: #fff;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        margin-top: 30px;
-        cursor: pointer;
-      }
-
-      .footer-links {
-        border-top: 1px solid #ececec;
-        margin-top: 30px;
-        padding-top: 18px;
-        display: flex;
-        gap: 18px;
-        font-size: 13px;
-      }
-
-      /* RIGHT */
-
-      .right-side {
-        background: #f5f5f5;
-        border-left: 1px solid #e6e6e6;
-        padding: 38px 50px;
-      }
-
-      .summary-inner {
-        max-width: 420px;
-      }
-
-      .product-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 22px;
-      }
-
-      .product-info {
-        display: flex;
-        gap: 14px;
-      }
-
-      .product-image {
-        width: 64px;
-        height: 64px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #ddd;
-        position: relative;
-        background: #fff;
-      }
-
-      .product-count {
-        position: absolute;
-        top: -7px;
-        right: -7px;
-        background: #111;
-        color: #fff;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-      }
-
-      .product-title {
-        font-size: 14px;
-        margin-bottom: 4px;
-      }
-
-      .product-type {
-        color: #777;
-        font-size: 12px;
-      }
-
-      .product-price {
-        font-size: 15px;
-      }
-
-      .summary-coupon {
-        display: grid;
-        grid-template-columns: 1fr 80px;
-        gap: 10px;
-        margin-bottom: 24px;
-      }
-
-      .summary-line {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        font-size: 14px;
-      }
-
-      .total-box {
-        border-top: 1px solid #ddd;
-        padding-top: 18px;
-        margin-top: 18px;
-      }
-
-      .total-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .total-price {
-        font-size: 32px;
-        font-weight: 700;
-      }
-
-      .tax {
-        color: #777;
-        margin-top: 8px;
-        font-size: 14px;
-      }
-
-      /* MOBILE */
-
-      .mobile-summary {
-        display: none;
-      }
-
-      @media (max-width: 980px) {
-        .checkout-wrapper {
-          grid-template-columns: 1fr;
-        }
-
-        .right-side {
-          display: none;
-        }
-
-        .left-side {
-          max-width: 100%;
-          padding: 0 18px 120px;
-        }
-
-        .logo-bar {
-          height: 64px;
-        }
-
-        .mobile-summary {
-          display: block;
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          background: #fff;
-          border-top: 1px solid #ddd;
-          padding: 14px 16px;
-          z-index: 999;
-        }
-
-        .mobile-summary-inner {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .mobile-price {
-          font-size: 24px;
-          font-weight: 700;
-        }
-
-        .mobile-btn {
-          background: #e36c89;
-          border: none;
-          color: #fff;
-          height: 48px;
-          padding: 0 26px;
-          border-radius: 8px;
-          font-weight: 600;
-        }
-      }
-
-      @media (max-width: 640px) {
-        .grid-2,
-        .grid-3 {
-          grid-template-columns: 1fr;
-        }
-
-        .section-title h2 {
-          font-size: 24px;
-        }
-
-        .coupon-input,
-        .summary-coupon {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
+    <title>Cart and Checkout | VALOUR</title>
+    <link rel="stylesheet" href="checkout-styles.css" />
   </head>
-
   <body>
-    <div class="checkout-wrapper">
-      <!-- LEFT -->
+    <div class="page-shell">
+      <header class="checkout-header" aria-label="Checkout header">
+        <a class="brand-mark" href="index.html" aria-label="Go to Valour home">
+          <span>VALOUR</span>
+          <small>Liquid Spice</small>
+        </a>
 
-      <div class="left-side">
-        <div class="logo-bar">
-          <div class="logo">GIVA</div>
+        <div class="header-assurance" aria-label="Checkout reassurance">
+          <span>Secure checkout</span>
+          <span>Small-batch crafted</span>
+          <span>Human support</span>
         </div>
+      </header>
 
-        <div class="alert">⛔ Phone number should be 10 digits</div>
-
-        <!-- DISCOUNT -->
-
-        <div class="coupon-box">
-          <div class="coupon-header">
-            <div class="coupon-title">Apply Discount Code</div>
+      <main class="checkout-layout">
+        <section class="checkout-main" aria-labelledby="cart-title">
+          <div class="progress-card" aria-label="Checkout progress">
+            <div class="progress-step is-active" data-progress-step="cart">
+              <span>1</span>
+              <p>Cart</p>
+            </div>
+            <div class="progress-line" aria-hidden="true"></div>
+            <div class="progress-step" data-progress-step="details">
+              <span>2</span>
+              <p>Details</p>
+            </div>
+            <div class="progress-line" aria-hidden="true"></div>
+            <div class="progress-step" data-progress-step="payment">
+              <span>3</span>
+              <p>Payment</p>
+            </div>
           </div>
 
-          <div class="coupon-input">
-            <input type="text" placeholder="Discount Code" />
-            <button class="apply-btn">Apply</button>
-          </div>
-
-          <div class="coupon-toggle">
-            <span>All coupons</span>
-            <span>⌃</span>
-          </div>
-
-          <div class="coupon-list">
-            <div class="coupon-card">
+          <section class="panel cart-panel" aria-labelledby="cart-title">
+            <div class="panel-heading">
               <div>
-                <div class="coupon-name">GIVA15</div>
-                <div class="coupon-desc">
-                  Extra 15% Off on orders above ₹2999
-                </div>
+                <p class="eyebrow">Your selection</p>
+                <h2 id="cart-title">Cart</h2>
               </div>
-
-              <button class="coupon-apply" data-code="GIVA15">Apply</button>
+              <button
+                class="quiet-btn"
+                type="button"
+                data-action="restore-cart"
+              >
+                Restore sample cart
+              </button>
             </div>
 
-            <div class="coupon-card">
+            <div class="cart-items" data-cart-items></div>
+
+            <div class="empty-state" data-empty-state hidden>
+              <div class="empty-art" aria-hidden="true"></div>
+              <h3>Your cart is quietly waiting.</h3>
+              <p>
+                Add Valour liquid spice to begin a faster, more confident
+                kitchen ritual.
+              </p>
+              <a class="primary-link" href="index.html">Return to shop</a>
+            </div>
+          </section>
+
+          <section class="panel coupon-panel" aria-labelledby="coupon-title">
+            <div class="panel-heading">
               <div>
-                <div class="coupon-name">NEW15</div>
-                <div class="coupon-desc">
-                  FLAT 15% off above ₹999 on your first order
-                </div>
+                <p class="eyebrow">A small courtesy</p>
+                <h2 id="coupon-title">Apply coupon</h2>
               </div>
-
-              <button class="coupon-apply" data-code="NEW15">Apply</button>
+              <button
+                class="quiet-btn"
+                type="button"
+                data-action="clear-coupon"
+              >
+                Clear
+              </button>
             </div>
 
-            <div class="coupon-card">
-              <div>
-                <div class="coupon-name">GIVA10</div>
-                <div class="coupon-desc">
-                  Extra 10% Off on orders above ₹1799
-                </div>
-              </div>
-
-              <button class="coupon-apply" data-code="GIVA10">Apply</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- GIFT CARD -->
-
-        <div class="coupon-box">
-          <div class="coupon-header">
-            <div class="coupon-title">Apply Gift Card</div>
-            <span>⌃</span>
-          </div>
-
-          <div class="input-group">
-            <input type="text" placeholder="Gift Card Number" />
-          </div>
-
-          <div class="coupon-input">
-            <input type="text" placeholder="Gift Card Pin" />
-            <button class="apply-btn" style="background: #efefef; color: #444">
-              Apply
-            </button>
-          </div>
-        </div>
-
-        <!-- CONTACT -->
-
-        <div class="section">
-          <div class="section-title">
-            <h2>Contact</h2>
-            <div class="signin">Sign in</div>
-          </div>
-
-          <div class="input-group">
-            <div class="label">Email</div>
-            <input type="email" value="bhattacharyaprince7@gmail.com" />
-          </div>
-
-          <label class="checkbox">
-            <input type="checkbox" checked />
-            Notify me for orders, updates and offers.
-          </label>
-        </div>
-
-        <!-- DELIVERY -->
-
-        <div class="section">
-          <div class="section-title">
-            <h2>Delivery</h2>
-          </div>
-
-          <div class="input-group">
-            <div class="label">Country/Region</div>
-
-            <select>
-              <option>India</option>
-            </select>
-          </div>
-
-          <div class="grid-2">
-            <div class="input-group">
-              <div class="label">First name</div>
-              <input type="text" value="priyangshou" />
-            </div>
-
-            <div class="input-group">
-              <div class="label">Last name</div>
-              <input type="text" value="bhattacharjee" />
-            </div>
-          </div>
-
-          <div class="input-group">
-            <div class="label">Address</div>
-            <input type="text" value="Madhya Badharghat" />
-          </div>
-
-          <div class="input-group">
-            <div class="label">Apartment, suite, etc. (optional)</div>
-            <input
-              type="text"
-              value="6th building , opposite street of Gramin bank"
-            />
-          </div>
-
-          <div class="grid-3">
-            <div class="input-group">
-              <div class="label">City</div>
-              <input type="text" value="Agartala" />
-            </div>
-
-            <div class="input-group">
-              <div class="label">State</div>
-
-              <select>
-                <option>Tripura</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <div class="label">PIN code</div>
-              <input type="text" value="799003" />
-            </div>
-          </div>
-
-          <div class="input-group">
-            <div class="label">Phone</div>
-
-            <div class="phone-group">
+            <div class="coupon-input-row">
+              <label class="sr-only" for="coupon-code">Coupon code</label>
               <input
+                id="coupon-code"
+                name="coupon-code"
                 type="text"
-                value="092330 54806"
-                style="border-radius: 8px 0 0 8px"
+                autocomplete="off"
+                placeholder="WELCOME10"
+                data-coupon-input
               />
-              <div class="phone-flag">🇮🇳</div>
+              <button
+                class="secondary-btn"
+                type="button"
+                data-action="apply-coupon"
+              >
+                Apply
+              </button>
             </div>
-          </div>
+            <p class="field-message" data-coupon-message aria-live="polite"></p>
 
-          <label class="checkbox">
-            <input type="checkbox" />
-            Save this information for next time
-          </label>
-        </div>
-
-        <!-- SHIPPING -->
-
-        <div class="section">
-          <div class="section-title">
-            <h2>Shipping method</h2>
-          </div>
-
-          <div class="shipping-card">
-            <span>Standard shipping (Free)</span>
-            <strong>FREE</strong>
-          </div>
-        </div>
-
-        <!-- PAYMENT -->
-
-        <div class="payment-section">
-          <div class="section-title">
-            <h2>Payment</h2>
-          </div>
-
-          <div class="payment-sub">
-            All transactions are secure and encrypted.
-          </div>
-
-          <div class="payment-box">
-            <div class="payment-option active">
-              <div class="payment-head">
-                <div class="payment-left">
-                  <div class="radio"></div>
-                  Pay with UPI, Cards, Net Banking, etc.
-                </div>
-
-                <div class="payment-icons">
-                  <div class="payment-icon">UPI</div>
-                  <div class="payment-icon">RuPay</div>
-                  <div class="payment-icon">VISA</div>
-                </div>
-              </div>
-
-              <div class="payment-body">
-                You'll be redirected to Pay with UPI, Cards, Net Banking, etc.
-                to complete your purchase.
-              </div>
+            <div class="coupon-grid" aria-label="Available coupons">
+              <button class="coupon-chip" type="button" data-coupon="WELCOME10">
+                <strong>WELCOME10</strong>
+                <span>10% off for new kitchens</span>
+              </button>
+              <button
+                class="coupon-chip"
+                type="button"
+                data-coupon="FIRSTORDER"
+              >
+                <strong>FIRSTORDER</strong>
+                <span>Rs. 75 off above Rs. 499</span>
+              </button>
+              <button class="coupon-chip" type="button" data-coupon="VALOURVIP">
+                <strong>VALOURVIP</strong>
+                <span>15% off above Rs. 799</span>
+              </button>
             </div>
+          </section>
 
-            <div class="payment-option">
-              <div class="payment-head">
-                <div class="payment-left">
-                  <div class="radio"></div>
-                  CRED Pay (Rewards on UPI, Cards, etc.)
-                </div>
-
-                <div class="payment-icons">
-                  <div class="payment-icon">UPI</div>
-                  <div class="payment-icon">VISA</div>
-                  <div class="payment-icon">MC</div>
-                </div>
-              </div>
-
-              <div class="payment-body">
-                Pay securely with CRED and earn rewards on every payment.
-              </div>
-            </div>
-
-            <div class="payment-option">
-              <div class="payment-head">
-                <div class="payment-left">
-                  <div class="radio"></div>
-                  Cash on Delivery (COD)
-                </div>
-              </div>
-
-              <div class="payment-body">
-                Additional ₹49 convenience charge may apply.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- BILLING -->
-
-        <div class="section" style="margin-top: 32px">
-          <div class="section-title">
-            <h2>Billing address</h2>
-          </div>
-
-          <div class="billing-box">
-            <div class="billing-option active">
-              <div class="radio"></div>
-              Same as shipping address
-            </div>
-
-            <div class="billing-option">
-              <div class="radio"></div>
-              Use a different billing address
-            </div>
-          </div>
-        </div>
-
-        <button class="pay-button">Pay now</button>
-
-        <div class="footer-links">
-          <a href="#">Refund policy</a>
-          <a href="#">Privacy policy</a>
-          <a href="#">Terms of service</a>
-        </div>
-      </div>
-
-      <!-- RIGHT -->
-
-      <div class="right-side">
-        <div class="summary-inner">
-          <div class="product-row">
-            <div class="product-info">
-              <div class="product-image">
-                <img
-                  src="https://images.unsplash.com/photo-1617038220319-276d3cfab638?q=80&w=1000&auto=format&fit=crop"
-                />
-
-                <div class="product-count">1</div>
-              </div>
-
+          <form class="panel checkout-form" data-checkout-form novalidate>
+            <div class="panel-heading">
               <div>
-                <div class="product-title">Golden Daze Ring</div>
-                <div class="product-type">type: others</div>
+                <p class="eyebrow">Delivery details</p>
+                <h2>Where should we send it?</h2>
               </div>
             </div>
 
-            <div class="product-price">₹1,999.00</div>
-          </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="full-name">Full name</label>
+                <input
+                  id="full-name"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                />
+                <p class="field-error" data-error-for="name"></p>
+              </div>
+              <div class="field">
+                <label for="phone">Phone</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                />
+                <p class="field-error" data-error-for="phone"></p>
+              </div>
+              <div class="field form-wide">
+                <label for="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                />
+                <p class="field-error" data-error-for="email"></p>
+              </div>
+              <div class="field form-wide">
+                <label for="address">Address</label>
+                <input
+                  id="address"
+                  name="address"
+                  type="text"
+                  autocomplete="street-address"
+                />
+                <p class="field-error" data-error-for="address"></p>
+              </div>
+              <div class="field">
+                <label for="landmark">Landmark</label>
+                <input id="landmark" name="landmark" type="text" />
+              </div>
+              <div class="field">
+                <label for="city">City</label>
+                <input
+                  id="city"
+                  name="city"
+                  type="text"
+                  autocomplete="address-level2"
+                />
+                <p class="field-error" data-error-for="city"></p>
+              </div>
+              <div class="field">
+                <label for="state">State</label>
+                <select id="state" name="state" autocomplete="address-level1">
+                  <option value="">Select state</option>
+                  <option>Assam</option>
+                  <option>Delhi</option>
+                  <option>Gujarat</option>
+                  <option>Karnataka</option>
+                  <option>Maharashtra</option>
+                  <option>Tamil Nadu</option>
+                  <option>Telangana</option>
+                  <option>West Bengal</option>
+                  <option>Other</option>
+                </select>
+                <p class="field-error" data-error-for="state"></p>
+              </div>
+              <div class="field">
+                <label for="pincode">Pincode</label>
+                <input
+                  id="pincode"
+                  name="pincode"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  autocomplete="postal-code"
+                />
+                <p class="field-error" data-error-for="pincode"></p>
+              </div>
+            </div>
 
-          <div class="summary-coupon">
-            <input type="text" placeholder="Enter discount code" />
-            <button class="apply-btn" style="background: #efefef; color: #444">
-              Apply
+            <div class="payment-section">
+              <div class="panel-heading payment-heading">
+                <div>
+                  <p class="eyebrow">Payment</p>
+                  <h2>Choose a comfortable method.</h2>
+                </div>
+              </div>
+
+              <div
+                class="payment-options"
+                role="radiogroup"
+                aria-label="Payment method"
+              >
+                <label class="payment-option is-selected">
+                  <input type="radio" name="payment" value="COD" checked />
+                  <span>
+                    <strong>Cash on delivery</strong>
+                    <small>Pay when the jar reaches your door.</small>
+                  </span>
+                </label>
+                <label class="payment-option">
+                  <input type="radio" name="payment" value="UPI" />
+                  <span>
+                    <strong>UPI</strong>
+                    <small>Fast bank-to-bank payment.</small>
+                  </span>
+                </label>
+                <label class="payment-option">
+                  <input type="radio" name="payment" value="Razorpay" />
+                  <span>
+                    <strong>Razorpay</strong>
+                    <small>Cards, wallets, and secure online payment.</small>
+                  </span>
+                </label>
+                <label class="payment-option">
+                  <input type="radio" name="payment" value="Net banking" />
+                  <span>
+                    <strong>Net banking</strong>
+                    <small>Pay through your preferred bank.</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+          </form>
+
+          <section class="summary-panel mobile-summary-panel" aria-labelledby="mobile-summary-title">
+            <div class="summary-card">
+              <button
+                class="summary-toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="mobile-summary-content"
+                data-action="toggle-mobile-summary"
+              >
+                <span>
+                  <span class="eyebrow">Order summary</span>
+                  <strong id="mobile-summary-title">Review total</strong>
+                </span>
+                <span data-total>Rs. 0</span>
+              </button>
+
+              <div class="mobile-summary-content" id="mobile-summary-content" data-mobile-summary-content hidden>
+                <div class="summary-lines">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong data-subtotal>Rs. 0</strong>
+                  </div>
+                  <div>
+                    <span>Shipping</span>
+                    <strong data-shipping>Rs. 0</strong>
+                  </div>
+                  <div>
+                    <span>Discount</span>
+                    <strong data-discount>Rs. 0</strong>
+                  </div>
+                  <div>
+                    <span>Taxes</span>
+                    <strong data-tax>Rs. 0</strong>
+                  </div>
+                </div>
+
+                <div class="summary-total">
+                  <span>Total payable</span>
+                  <strong data-total>Rs. 0</strong>
+                </div>
+
+                <div class="summary-note">
+                  <strong data-applied-coupon>No coupon applied</strong>
+                  <span>GST included. Shipping updates with your order value and pincode.</span>
+                </div>
+
+                <button class="primary-btn summary-checkout" type="button" data-action="submit-order" data-order-button>
+                  Place order
+                </button>
+
+                <a
+                  class="whatsapp-btn"
+                  href="https://wa.me/917005328132?text=Hi%20VALOUR%2C%20I%20need%20help%20with%20checkout"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  WhatsApp support
+                </a>
+
+                <div class="secure-copy">
+                  <p>Secure payment environment</p>
+                  <p>Delivery estimate shared before dispatch</p>
+                  <p>Support available for product and order questions</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="panel delivery-panel"
+            aria-labelledby="delivery-title"
+          >
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Delivery estimate</p>
+                <h2 id="delivery-title">Freshly packed. Carefully sent.</h2>
+              </div>
+            </div>
+            <div class="delivery-grid">
+              <div>
+                <span class="mini-label">Timeline</span>
+                <strong data-delivery-window>Enter pincode for estimate</strong>
+              </div>
+              <div>
+                <span class="mini-label">Shipping</span>
+                <strong data-shipping-label>Calculated in summary</strong>
+              </div>
+              <div>
+                <span class="mini-label">Support</span>
+                <strong>WhatsApp order help</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="trust-strip" aria-label="Valour trust indicators">
+            <article>
+              <span aria-hidden="true">01</span>
+              <h3>Lab-tested reassurance</h3>
+              <p>Crafted with food safety and consistency in mind.</p>
+            </article>
+            <article>
+              <span aria-hidden="true">02</span>
+              <h3>Small-batch care</h3>
+              <p>Balanced for Indian kitchens, packed with restraint.</p>
+            </article>
+            <article>
+              <span aria-hidden="true">03</span>
+              <h3>Human support</h3>
+              <p>Questions are handled directly on WhatsApp.</p>
+            </article>
+          </section>
+        </section>
+
+        <aside class="summary-panel desktop-summary-panel" aria-labelledby="summary-title">
+          <div class="summary-card">
+            <div class="summary-header">
+              <div>
+                <p class="eyebrow">Order summary</p>
+                <h2 id="summary-title">Clear before you pay.</h2>
+              </div>
+              <span class="summary-count" data-summary-count>0 items</span>
+            </div>
+
+            <div class="summary-lines">
+              <div>
+                <span>Subtotal</span>
+                <strong data-subtotal>Rs. 0</strong>
+              </div>
+              <div>
+                <span>Shipping</span>
+                <strong data-shipping>Rs. 0</strong>
+              </div>
+              <div>
+                <span>Discount</span>
+                <strong data-discount>Rs. 0</strong>
+              </div>
+              <div>
+                <span>Taxes</span>
+                <strong data-tax>Rs. 0</strong>
+              </div>
+            </div>
+
+            <div class="summary-total">
+              <span>Total payable</span>
+              <strong data-total>Rs. 0</strong>
+            </div>
+
+            <div class="summary-note">
+              <strong data-applied-coupon>No coupon applied</strong>
+              <span
+                >GST included. Shipping updates with your order value and
+                pincode.</span
+              >
+            </div>
+
+            <button
+              class="primary-btn summary-checkout"
+              type="button"
+              data-action="submit-order"
+              data-order-button
+            >
+              Place order
+            </button>
+
+            <a
+              class="whatsapp-btn"
+              href="https://wa.me/917005328132?text=Hi%20VALOUR%2C%20I%20need%20help%20with%20checkout"
+              target="_blank"
+              rel="noopener"
+            >
+              WhatsApp support
+            </a>
+
+            <div class="secure-copy">
+              <p>Secure payment environment</p>
+              <p>Delivery estimate shared before dispatch</p>
+              <p>Support available for product and order questions</p>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="mobile-pay-bar" data-mobile-bar>
+      <div>
+        <span>Total</span>
+        <strong data-mobile-total>Rs. 0</strong>
+      </div>
+      <button class="primary-btn" type="button" data-action="submit-order" data-order-button>
+        Place order
+      </button>
+    </div>
+
+    <div class="toast-region" data-toast-region aria-live="polite"></div>
+
+    <div class="success-modal" data-success-modal hidden>
+      <div
+        class="success-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="success-title"
+      >
+        <div class="success-icon" aria-hidden="true"></div>
+        <p class="eyebrow">Order received</p>
+        <h2 id="success-title">Your Valour order is confirmed.</h2>
+        <p>
+          We have saved this order locally for now. Payment and backend
+          integration hooks are ready for Razorpay, GA, and Meta events.
+        </p>
+        <button class="primary-btn" type="button" data-action="close-success">
+          Continue
+        </button>
+      </div>
+    </div>
+
+    <div class="otp-modal" data-otp-modal hidden>
+      <div
+        class="otp-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="otp-title"
+      >
+        <button
+          class="modal-close"
+          type="button"
+          aria-label="Close verification"
+          data-action="close-otp"
+        >
+          &times;
+        </button>
+        <p class="eyebrow">Quick verification</p>
+        <h2 id="otp-title">Before you order, let's verify it's you.</h2>
+        <p data-otp-message>
+          We will send a one-time password to the mobile number in your
+          delivery details.
+        </p>
+        <form class="otp-form" data-otp-form novalidate>
+          <label for="otp-code">Enter OTP</label>
+          <div class="otp-input-row">
+            <input
+              id="otp-code"
+              name="otp"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="6-digit OTP"
+              data-otp-input
+            />
+            <button class="primary-btn" type="submit" data-verify-otp>
+              Verify
             </button>
           </div>
-
-          <div class="summary-line">
-            <span>Subtotal</span>
-            <span>₹1,999.00</span>
-          </div>
-
-          <div class="summary-line">
-            <span>Shipping</span>
-            <span>FREE</span>
-          </div>
-
-          <div class="total-box">
-            <div class="total-row">
-              <div>
-                <div>Total</div>
-              </div>
-
-              <div class="total-price">₹1,999.00</div>
-            </div>
-
-            <div class="tax">Including ₹58.22 in taxes</div>
-          </div>
-        </div>
+          <p class="field-error" data-otp-error aria-live="polite"></p>
+        </form>
+        <button class="quiet-btn resend-otp" type="button" data-action="resend-otp">
+          Resend OTP
+        </button>
       </div>
     </div>
 
-    <!-- MOBILE BAR -->
-
-    <div class="mobile-summary">
-      <div class="mobile-summary-inner">
-        <div>
-          <div class="mobile-price">₹1,999</div>
-          <div style="font-size: 12px; color: #777">Inclusive of taxes</div>
-        </div>
-
-        <button class="mobile-btn">Pay now</button>
-      </div>
-    </div>
-
-    <script>
-      // PAYMENT ACCORDION
-
-      const paymentOptions = document.querySelectorAll(".payment-option");
-
-      paymentOptions.forEach((option) => {
-        option.addEventListener("click", () => {
-          paymentOptions.forEach((o) => {
-            o.classList.remove("active");
-          });
-
-          option.classList.add("active");
-        });
-      });
-
-      // BILLING OPTION
-
-      const billingOptions = document.querySelectorAll(".billing-option");
-
-      billingOptions.forEach((option) => {
-        option.addEventListener("click", () => {
-          billingOptions.forEach((o) => {
-            o.classList.remove("active");
-          });
-
-          option.classList.add("active");
-        });
-      });
-
-      // COUPON APPLY
-
-      const couponButtons = document.querySelectorAll(".coupon-apply");
-
-      couponButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const code = btn.dataset.code;
-
-          navigator.clipboard.writeText(code);
-
-          btn.innerText = "Applied";
-
-          setTimeout(() => {
-            btn.innerText = "Apply";
-          }, 1500);
-        });
-      });
-
-      // PAYMENT BUTTON
-
-      const payBtn = document.querySelector(".pay-button");
-
-      payBtn.addEventListener("click", () => {
-        payBtn.innerText = "Processing...";
-
-        setTimeout(() => {
-          payBtn.innerText = "Payment Successful ✓";
-        }, 2500);
-      });
-    </script>
+    <script src="checkout-script.js" defer></script>
   </body>
 </html>
