@@ -4,12 +4,19 @@ const DRAFT_KEY = "valour_checkout_address";
 const USER_KEY = "user";
 const OTP_VALIDITY_MS = 5 * 60 * 1000;
 const DEMO_OTP_CODE = "123456";
+const CHECKOUT_STEPS = {
+  CART: "cart",
+  DETAILS: "details",
+  REVIEW: "review",
+  SUCCESS: "success",
+};
 
 const sampleCart = [
   {
     id: "velvety-butter-520",
     name: "Velvety Butter Liquid Spice",
-    descriptor: "Coconut mustard cooking base for fish, chicken, and vegetables.",
+    descriptor:
+      "Coconut mustard cooking base for fish, chicken, and vegetables.",
     size: "520 ml",
     serves: "Makes up to 1 kg",
     price: 350,
@@ -53,6 +60,8 @@ const state = {
     tax: 0,
     total: 0,
   },
+  step: CHECKOUT_STEPS.CART,
+  paymentMethod: "COD",
 };
 
 function cloneCart(cart) {
@@ -60,18 +69,31 @@ function cloneCart(cart) {
 }
 
 const dom = {
+  checkoutLayout: document.querySelector(".checkout-layout"),
   cartItems: document.querySelector("[data-cart-items]"),
   emptyState: document.querySelector("[data-empty-state]"),
   couponInput: document.querySelector("[data-coupon-input]"),
   couponMessage: document.querySelector("[data-coupon-message]"),
   couponRow: document.querySelector(".coupon-input-row"),
+  mobileBarLabel: document.querySelector("[data-mobile-bar-label]"),
   mobileTotal: document.querySelector("[data-mobile-total]"),
+  floatingStepButton: document.querySelector("[data-floating-step-button]"),
   shippingLabel: document.querySelector("[data-shipping-label]"),
-  deliveryWindow: document.querySelector("[data-delivery-window]"),
+  cartPanel: document.querySelector(".cart-panel"),
+  couponPanel: document.querySelector(".coupon-panel"),
+  stepActions: document.querySelectorAll("[data-step-actions]"),
   form: document.querySelector("[data-checkout-form]"),
+  deliveryPanel: document.querySelector(".delivery-panel"),
+  trustStrip: document.querySelector(".trust-strip"),
+  mobileSummaryPanel: document.querySelector(".mobile-summary-panel"),
   orderButtons: document.querySelectorAll("[data-order-button]"),
   toastRegion: document.querySelector("[data-toast-region]"),
-  successModal: document.querySelector("[data-success-modal]"),
+  successPanel: document.querySelector("[data-success-panel]"),
+  successOrderItems: document.querySelector("[data-success-order-items]"),
+  successOrderId: document.querySelector("[data-success-order-id]"),
+  successDelivery: document.querySelector("[data-success-delivery]"),
+  successPayment: document.querySelector("[data-success-payment]"),
+  successTotal: document.querySelector("[data-success-total]"),
   otpModal: document.querySelector("[data-otp-modal]"),
   otpForm: document.querySelector("[data-otp-form]"),
   otpInput: document.querySelector("[data-otp-input]"),
@@ -85,6 +107,7 @@ const otpState = {
   phone: "",
   expiresAt: 0,
   pendingUser: null,
+  nextAction: null,
 };
 
 function money(value) {
@@ -106,7 +129,7 @@ function getFormValues() {
     Object.entries(values).map(([key, value]) => [
       key,
       typeof value === "string" ? value.trim() : value,
-    ])
+    ]),
   );
 }
 
@@ -114,9 +137,9 @@ function getStoredUser() {
   return readJSON(USER_KEY, null);
 }
 
-function hasVerifiedUser() {
+function hasVerifiedUser(phone = getFormValues().phone) {
   const user = getStoredUser();
-  return Boolean(user && user.phone);
+  return Boolean(user && user.phone === String(phone || "").trim());
 }
 
 function setOrderButtonLabels() {
@@ -124,6 +147,53 @@ function setOrderButtonLabels() {
   dom.orderButtons.forEach((button) => {
     button.textContent = label;
   });
+  updateFloatingSubtotalBar();
+}
+
+function updateFloatingSubtotalBar() {
+  if (!dom.floatingStepButton || !dom.mobileBarLabel || !dom.mobileTotal)
+    return;
+
+  const isReviewStep = state.step === CHECKOUT_STEPS.REVIEW;
+  dom.mobileBarLabel.textContent = isReviewStep ? "Total" : "Subtotal";
+  dom.mobileTotal.textContent = isReviewStep
+    ? money(state.totals.total)
+    : money(state.totals.subtotal);
+  dom.floatingStepButton.textContent =
+    isReviewStep && hasVerifiedUser() ? "Place order" : "Continue";
+}
+
+function setCheckoutStep(step) {
+  if (!state.cart.length) {
+    state.step = CHECKOUT_STEPS.CART;
+  } else {
+    state.step = step;
+  }
+
+  renderCheckoutStage();
+  updateProgress();
+}
+
+function renderCheckoutStage() {
+  const isEmpty = state.cart.length === 0;
+  const isCartStep = state.step === CHECKOUT_STEPS.CART;
+  const isDetailsStep = state.step === CHECKOUT_STEPS.DETAILS;
+  const isReviewStep = state.step === CHECKOUT_STEPS.REVIEW;
+  const isSuccessStep = state.step === CHECKOUT_STEPS.SUCCESS;
+
+  dom.cartPanel.hidden = !isCartStep || isSuccessStep;
+  dom.couponPanel.hidden = isEmpty || !isCartStep;
+  dom.form.hidden = isEmpty || !isDetailsStep;
+  dom.deliveryPanel.hidden = true;
+  dom.trustStrip.hidden = !isSuccessStep;
+  dom.mobileSummaryPanel.hidden = isEmpty || !isReviewStep;
+  dom.successPanel.hidden = !isSuccessStep;
+  dom.mobileBar.hidden = isEmpty || isSuccessStep;
+  dom.stepActions.forEach((action) => {
+    action.hidden = isEmpty || action.dataset.stepActions !== state.step;
+  });
+  dom.checkoutLayout.classList.add("is-single-column");
+  updateFloatingSubtotalBar();
 }
 
 function saveState() {
@@ -252,10 +322,8 @@ function renderCart() {
   const isEmpty = state.cart.length === 0;
   dom.emptyState.hidden = !isEmpty;
   dom.cartItems.hidden = isEmpty;
-  dom.form.toggleAttribute("hidden", isEmpty);
-  document.querySelector(".coupon-panel").toggleAttribute("hidden", isEmpty);
-  document.querySelector(".delivery-panel").toggleAttribute("hidden", isEmpty);
-  document.querySelector(".mobile-summary-panel").toggleAttribute("hidden", isEmpty);
+  if (isEmpty) state.step = CHECKOUT_STEPS.CART;
+  renderCheckoutStage();
 }
 
 function renderCouponState() {
@@ -276,36 +344,67 @@ function renderSummary() {
 
   const count = itemCount();
   setTextAll("[data-subtotal]", money(state.totals.subtotal));
-  setTextAll("[data-shipping]", state.totals.shipping === 0 ? "Free" : money(state.totals.shipping));
-  setTextAll("[data-discount]", state.totals.discount ? `- ${money(state.totals.discount)}` : "Rs. 0");
+  setTextAll(
+    "[data-shipping]",
+    state.totals.shipping === 0 ? "Free" : money(state.totals.shipping),
+  );
+  setTextAll(
+    "[data-discount]",
+    state.totals.discount ? `- ${money(state.totals.discount)}` : "Rs. 0",
+  );
   setTextAll("[data-tax]", money(state.totals.tax));
   setTextAll("[data-total]", money(state.totals.total));
-  dom.mobileTotal.textContent = money(state.totals.total);
-  setTextAll("[data-summary-count]", `${count} ${count === 1 ? "item" : "items"}`);
-  dom.shippingLabel.textContent = state.totals.shipping === 0 ? "Free above threshold" : money(state.totals.shipping);
+  dom.mobileTotal.textContent =
+    state.step === CHECKOUT_STEPS.REVIEW
+      ? money(state.totals.total)
+      : money(state.totals.subtotal);
+  setTextAll(
+    "[data-summary-count]",
+    `${count} ${count === 1 ? "item" : "items"}`,
+  );
+  dom.shippingLabel.textContent =
+    state.totals.shipping === 0
+      ? "Free above threshold"
+      : money(state.totals.shipping);
   dom.mobileBar.hidden = state.cart.length === 0;
 
   updateProgress();
   renderCouponState();
   setOrderButtonLabels();
+  updateFloatingSubtotalBar();
 }
 
 function updateProgress() {
   const hasCart = state.cart.length > 0;
   const hasAddress = validateForm(false);
-  const hasPayment = Boolean(dom.form.elements.payment.value);
+  const isCartStep = state.step === CHECKOUT_STEPS.CART;
+  const isDetailsStep = state.step === CHECKOUT_STEPS.DETAILS;
+  const isReviewStep = state.step === CHECKOUT_STEPS.REVIEW;
+  const isSuccessStep = state.step === CHECKOUT_STEPS.SUCCESS;
 
   document.querySelectorAll("[data-progress-step]").forEach((step) => {
     const name = step.dataset.progressStep;
-    step.classList.toggle("is-active", name === "cart" && hasCart);
-    step.classList.toggle("is-complete", name === "cart" && hasCart);
-    step.classList.toggle("is-active", name === "details" && hasAddress && !hasPayment);
-    step.classList.toggle("is-complete", name === "details" && hasAddress);
-    step.classList.toggle("is-active", name === "payment" && hasAddress && hasPayment);
+    step.classList.toggle(
+      "is-active",
+      (name === "cart" && isCartStep) ||
+        (name === "details" && isDetailsStep) ||
+        (name === "payment" && (isReviewStep || isSuccessStep)),
+    );
+    step.classList.toggle(
+      "is-complete",
+      (name === "cart" && hasCart && !isCartStep) ||
+        (name === "details" && hasAddress && (isReviewStep || isSuccessStep)) ||
+        (name === "payment" && isSuccessStep),
+    );
   });
 
   document.querySelectorAll(".progress-line").forEach((line, index) => {
-    line.classList.toggle("is-complete", index === 0 ? hasCart : hasAddress);
+    line.classList.toggle(
+      "is-complete",
+      index === 0
+        ? !isCartStep && hasCart
+        : (isReviewStep || isSuccessStep) && hasAddress,
+    );
   });
 }
 
@@ -420,16 +519,24 @@ function validateForm(showErrors = true) {
   const values = getFormValues();
   const errors = {};
 
-  if (!values.name || values.name.trim().length < 2) errors.name = "Enter your full name.";
-  if (!/^[6-9]\d{9}$/.test((values.phone || "").trim())) errors.phone = "Enter a valid 10-digit phone.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((values.email || "").trim())) errors.email = "Enter a valid email.";
-  if (!values.address || values.address.trim().length < 8) errors.address = "Enter your full address.";
-  if (!values.city || values.city.trim().length < 2) errors.city = "Enter your city.";
+  if (!values.name || values.name.trim().length < 2)
+    errors.name = "Enter your full name.";
+  if (!/^[6-9]\d{9}$/.test((values.phone || "").trim()))
+    errors.phone = "Enter a valid 10-digit phone.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((values.email || "").trim()))
+    errors.email = "Enter a valid email.";
+  if (!values.address || values.address.trim().length < 8)
+    errors.address = "Enter your full address.";
+  if (!values.city || values.city.trim().length < 2)
+    errors.city = "Enter your city.";
   if (!values.state) errors.state = "Select your state.";
-  if (!/^\d{6}$/.test((values.pincode || "").trim())) errors.pincode = "Enter a valid 6-digit pincode.";
+  if (!/^\d{6}$/.test((values.pincode || "").trim()))
+    errors.pincode = "Enter a valid 6-digit pincode.";
 
   if (showErrors) {
-    document.querySelectorAll(".field").forEach((field) => field.classList.remove("is-invalid"));
+    document
+      .querySelectorAll(".field")
+      .forEach((field) => field.classList.remove("is-invalid"));
     document.querySelectorAll("[data-error-for]").forEach((field) => {
       field.textContent = errors[field.dataset.errorFor] || "";
       if (errors[field.dataset.errorFor]) {
@@ -455,23 +562,53 @@ function hydrateDraft() {
   });
 }
 
+function addBusinessDays(date, days) {
+  const result = new Date(date);
+  let remaining = days;
+
+  while (remaining > 0) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay();
+    if (day !== 0 && day !== 6) remaining -= 1;
+  }
+
+  return result;
+}
+
+function formatDeliveryDate(date) {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function getDeliveryEstimateText(minDays, maxDays) {
+  const today = new Date();
+  const fromDate = formatDeliveryDate(addBusinessDays(today, minDays));
+  const toDate = formatDeliveryDate(addBusinessDays(today, maxDays));
+  return `Delivery by ${fromDate} - ${toDate}`;
+}
+
 function updateDeliveryEstimate() {
   const pincode = getPincode();
+  let deliveryText = "Enter pincode for estimate";
+
   if (!/^\d{6}$/.test(pincode)) {
-    dom.deliveryWindow.textContent = "Enter pincode for estimate";
+    setTextAll("[data-delivery-window]", deliveryText);
     renderSummary();
     return;
   }
 
   const prefix = Number(pincode.slice(0, 2));
   if (prefix >= 70 && prefix <= 79) {
-    dom.deliveryWindow.textContent = "Estimated 2 to 4 business days";
+    deliveryText = getDeliveryEstimateText(2, 4);
   } else if (prefix >= 10 && prefix <= 59) {
-    dom.deliveryWindow.textContent = "Estimated 4 to 6 business days";
+    deliveryText = getDeliveryEstimateText(4, 6);
   } else {
-    dom.deliveryWindow.textContent = "Estimated 5 to 8 business days";
+    deliveryText = getDeliveryEstimateText(5, 8);
   }
 
+  setTextAll("[data-delivery-window]", deliveryText);
   renderSummary();
 }
 
@@ -482,6 +619,99 @@ function setLoading(button, loading) {
 
 function setOrderLoading(loading) {
   dom.orderButtons.forEach((button) => setLoading(button, loading));
+}
+
+function setPaymentMethod(method) {
+  state.paymentMethod = method;
+
+  document.querySelectorAll("[data-payment-input]").forEach((input) => {
+    input.checked = input.value === method;
+    input
+      .closest(".payment-option")
+      .classList.toggle("is-selected", input.checked);
+  });
+}
+
+function renderSuccessOrderItems() {
+  if (!dom.successOrderItems) return;
+
+  dom.successOrderItems.innerHTML = "";
+  state.cart.forEach((item) => {
+    const row = document.createElement("p");
+    const name = document.createElement("span");
+    const quantity = document.createElement("strong");
+
+    name.textContent = item.name;
+    quantity.textContent = `Qty ${item.quantity}`;
+    row.append(name, quantity);
+    dom.successOrderItems.appendChild(row);
+  });
+
+  const deliveryText =
+    document.querySelector("[data-delivery-window]")?.textContent ||
+    "Delivery estimate will be shared soon";
+  const orderId = `VALOUR-${Date.now().toString().slice(-6)}`;
+
+  dom.successOrderId.textContent = orderId;
+  dom.successDelivery.textContent = deliveryText;
+  dom.successPayment.textContent = state.paymentMethod;
+  dom.successTotal.textContent = money(state.totals.total);
+}
+
+function continueToDetails() {
+  if (!state.cart.length) {
+    showToast("Add an item before continuing.", "error");
+    return;
+  }
+
+  setCheckoutStep(CHECKOUT_STEPS.DETAILS);
+  dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
+  trackEvent("valour_checkout_step_details");
+}
+
+function showReviewStep() {
+  saveDraft();
+  updateDeliveryEstimate();
+  setCheckoutStep(CHECKOUT_STEPS.REVIEW);
+  document
+    .querySelector(".mobile-summary-panel")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  trackEvent("valour_checkout_step_review", {
+    value: state.totals.total,
+    currency: "INR",
+  });
+}
+
+function continueToReview(event) {
+  if (event) event.preventDefault();
+
+  if (!validateForm(true)) {
+    showToast("A few delivery details need attention.", "error");
+    return;
+  }
+
+  const values = getFormValues();
+  if (!hasVerifiedUser(values.phone)) {
+    saveDraft();
+    startOtpVerification("review");
+    return;
+  }
+
+  showReviewStep();
+}
+
+function handleFloatingStep() {
+  if (state.step === CHECKOUT_STEPS.CART) {
+    continueToDetails();
+    return;
+  }
+
+  if (state.step === CHECKOUT_STEPS.DETAILS) {
+    continueToReview();
+    return;
+  }
+
+  placeOrder();
 }
 
 function sendOtp(phone) {
@@ -507,8 +737,9 @@ function closeOtpModal() {
   document.body.classList.remove("is-modal-open");
 }
 
-function startOtpVerification() {
+function startOtpVerification(nextAction = null) {
   const values = getFormValues();
+  otpState.nextAction = nextAction;
   otpState.pendingUser = {
     name: values.name,
     phone: values.phone,
@@ -552,7 +783,15 @@ function verifyOtp(event) {
   closeOtpModal();
   setOrderButtonLabels();
   trackEvent("valour_user_verified", { phone: otpState.phone });
-  showToast("Mobile verified. You can place your order now.");
+  showToast("Mobile verified.");
+
+  if (otpState.nextAction === "review") {
+    otpState.nextAction = null;
+    showReviewStep();
+    return;
+  }
+
+  otpState.nextAction = null;
 }
 
 function placeOrder(event) {
@@ -568,8 +807,9 @@ function placeOrder(event) {
     return;
   }
 
-  if (!hasVerifiedUser()) {
-    startOtpVerification();
+  if (!hasVerifiedUser(getFormValues().phone)) {
+    showToast("Verify your mobile number before placing the order.", "error");
+    setCheckoutStep(CHECKOUT_STEPS.DETAILS);
     return;
   }
 
@@ -578,24 +818,23 @@ function placeOrder(event) {
     value: state.totals.total,
     currency: "INR",
     coupon: state.coupon,
-    payment_method: dom.form.elements.payment.value,
+    payment_method: state.paymentMethod,
   });
 
   window.setTimeout(() => {
     setOrderLoading(false);
+    renderSuccessOrderItems();
     trackEvent("valour_purchase_placeholder", {
       value: state.totals.total,
       currency: "INR",
       items: state.cart,
     });
-    dom.successModal.hidden = false;
-    document.body.classList.add("is-modal-open");
+    setCheckoutStep(CHECKOUT_STEPS.SUCCESS);
+    dom.successPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 900);
 }
 
 function closeSuccess() {
-  dom.successModal.hidden = true;
-  document.body.classList.remove("is-modal-open");
   state.cart = [];
   state.coupon = null;
   dom.couponInput.value = "";
@@ -616,14 +855,16 @@ function bindEvents() {
     if (button.dataset.action === "remove") removeItem(id);
   });
 
-  document.querySelector("[data-action='apply-coupon']").addEventListener("click", () => {
-    const button = document.querySelector("[data-action='apply-coupon']");
-    setLoading(button, true);
-    window.setTimeout(() => {
-      setLoading(button, false);
-      applyCoupon(dom.couponInput.value);
-    }, 300);
-  });
+  document
+    .querySelector("[data-action='apply-coupon']")
+    .addEventListener("click", () => {
+      const button = document.querySelector("[data-action='apply-coupon']");
+      setLoading(button, true);
+      window.setTimeout(() => {
+        setLoading(button, false);
+        applyCoupon(dom.couponInput.value);
+      }, 300);
+    });
 
   dom.couponInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -636,60 +877,71 @@ function bindEvents() {
     chip.addEventListener("click", () => applyCoupon(chip.dataset.coupon));
   });
 
-  document.querySelector("[data-action='clear-coupon']").addEventListener("click", clearCoupon);
-  document.querySelector("[data-action='restore-cart']").addEventListener("click", restoreCart);
+  document
+    .querySelector("[data-action='clear-coupon']")
+    .addEventListener("click", clearCoupon);
+  document
+    .querySelector("[data-action='restore-cart']")
+    .addEventListener("click", restoreCart);
+  document
+    .querySelector("[data-action='continue-to-details']")
+    .addEventListener("click", continueToDetails);
+  document
+    .querySelector("[data-action='continue-to-review']")
+    .addEventListener("click", continueToReview);
+  document
+    .querySelector("[data-action='floating-step']")
+    .addEventListener("click", handleFloatingStep);
 
-  document.querySelectorAll("[data-action='focus-checkout']").forEach((button) => {
-    button.addEventListener("click", () => {
-      dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
-      trackEvent("valour_continue_to_checkout");
+  document
+    .querySelectorAll("[data-action='focus-checkout']")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
+        trackEvent("valour_continue_to_checkout");
+      });
     });
-  });
 
-  document.querySelectorAll("[data-action='submit-order']").forEach((button) => {
-    button.addEventListener("click", placeOrder);
-  });
+  document
+    .querySelectorAll("[data-action='submit-order']")
+    .forEach((button) => {
+      button.addEventListener("click", placeOrder);
+    });
 
-  document.querySelector("[data-action='toggle-mobile-summary']").addEventListener("click", (event) => {
-    const button = event.currentTarget;
-    const content = document.querySelector("[data-mobile-summary-content]");
-    const isExpanded = button.getAttribute("aria-expanded") === "true";
-
-    button.setAttribute("aria-expanded", String(!isExpanded));
-    content.hidden = isExpanded;
-  });
-
-  dom.form.addEventListener("submit", placeOrder);
+  dom.form.addEventListener("submit", continueToReview);
   dom.form.addEventListener("input", () => {
     saveDraft();
     updateProgress();
   });
   dom.form.elements.pincode.addEventListener("input", updateDeliveryEstimate);
 
-  document.querySelectorAll(".payment-option").forEach((option) => {
-    option.addEventListener("click", () => {
-      document.querySelectorAll(".payment-option").forEach((item) => {
-        item.classList.remove("is-selected");
-      });
-      option.classList.add("is-selected");
+  document.querySelectorAll("[data-payment-input]").forEach((input) => {
+    input.addEventListener("change", () => {
+      setPaymentMethod(input.value);
       trackEvent("valour_payment_select", {
-        payment_method: option.querySelector("input").value,
+        payment_method: input.value,
       });
       updateProgress();
     });
   });
 
-  document.querySelector("[data-action='close-success']").addEventListener("click", closeSuccess);
-  document.querySelector("[data-action='close-otp']").addEventListener("click", closeOtpModal);
-  document.querySelector("[data-action='resend-otp']").addEventListener("click", () => {
-    if (!validateForm(true)) {
-      closeOtpModal();
-      showToast("Update the delivery details before resending OTP.", "error");
-      return;
-    }
+  document
+    .querySelector("[data-action='close-success']")
+    .addEventListener("click", closeSuccess);
+  document
+    .querySelector("[data-action='close-otp']")
+    .addEventListener("click", closeOtpModal);
+  document
+    .querySelector("[data-action='resend-otp']")
+    .addEventListener("click", () => {
+      if (!validateForm(true)) {
+        closeOtpModal();
+        showToast("Update the delivery details before resending OTP.", "error");
+        return;
+      }
 
-    startOtpVerification();
-  });
+      startOtpVerification(otpState.nextAction);
+    });
   dom.otpForm.addEventListener("submit", verifyOtp);
 }
 
@@ -702,6 +954,7 @@ function init() {
     state.coupon = null;
   }
 
+  setPaymentMethod(state.paymentMethod);
   bindEvents();
   renderAll();
   updateDeliveryEstimate();

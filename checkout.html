@@ -40,7 +40,7 @@
             <div class="progress-line" aria-hidden="true"></div>
             <div class="progress-step" data-progress-step="payment">
               <span>3</span>
-              <p>Payment</p>
+              <p>Review</p>
             </div>
           </div>
 
@@ -107,25 +107,46 @@
             </div>
             <p class="field-message" data-coupon-message aria-live="polite"></p>
 
-            <div class="coupon-grid" aria-label="Available coupons">
-              <button class="coupon-chip" type="button" data-coupon="WELCOME10">
-                <strong>WELCOME10</strong>
-                <span>10% off for new kitchens</span>
-              </button>
-              <button
-                class="coupon-chip"
-                type="button"
-                data-coupon="FIRSTORDER"
-              >
-                <strong>FIRSTORDER</strong>
-                <span>Rs. 75 off above Rs. 499</span>
-              </button>
-              <button class="coupon-chip" type="button" data-coupon="VALOURVIP">
-                <strong>VALOURVIP</strong>
-                <span>15% off above Rs. 799</span>
-              </button>
-            </div>
+            <details class="coupon-dropdown">
+              <summary>View available coupons</summary>
+              <div class="coupon-grid" aria-label="Available coupons">
+                <button
+                  class="coupon-chip"
+                  type="button"
+                  data-coupon="WELCOME10"
+                >
+                  <strong>WELCOME10</strong>
+                  <span>10% off for new kitchens</span>
+                </button>
+                <button
+                  class="coupon-chip"
+                  type="button"
+                  data-coupon="FIRSTORDER"
+                >
+                  <strong>FIRSTORDER</strong>
+                  <span>Rs. 75 off above Rs. 499</span>
+                </button>
+                <button
+                  class="coupon-chip"
+                  type="button"
+                  data-coupon="VALOURVIP"
+                >
+                  <strong>VALOURVIP</strong>
+                  <span>15% off above Rs. 799</span>
+                </button>
+              </div>
+            </details>
           </section>
+
+          <div class="checkout-step-actions" data-step-actions="cart">
+            <button
+              class="primary-btn"
+              type="button"
+              data-action="continue-to-details"
+            >
+              Continue
+            </button>
+          </div>
 
           <form class="panel checkout-form" data-checkout-form novalidate>
             <div class="panel-heading">
@@ -220,13 +241,26 @@
                 <p class="field-error" data-error-for="pincode"></p>
               </div>
             </div>
+          </form>
 
-            <div class="payment-section">
-              <div class="panel-heading payment-heading">
-                <div>
-                  <p class="eyebrow">Payment</p>
-                  <h2>Choose a comfortable method.</h2>
-                </div>
+          <div class="checkout-step-actions" data-step-actions="details">
+            <button
+              class="primary-btn"
+              type="button"
+              data-action="continue-to-review"
+            >
+              Continue
+            </button>
+          </div>
+
+          <section
+            class="summary-panel mobile-summary-panel"
+            aria-labelledby="mobile-summary-title"
+          >
+            <div class="payment-card">
+              <div class="payment-card-heading">
+                <p class="eyebrow">Payment</p>
+                <h2>Choose a comfortable method.</h2>
               </div>
 
               <div
@@ -235,28 +269,49 @@
                 aria-label="Payment method"
               >
                 <label class="payment-option is-selected">
-                  <input type="radio" name="payment" value="COD" checked />
+                  <input
+                    type="radio"
+                    name="mobile-payment"
+                    value="COD"
+                    data-payment-input
+                    checked
+                  />
                   <span>
                     <strong>Cash on delivery</strong>
                     <small>Pay when the jar reaches your door.</small>
                   </span>
                 </label>
                 <label class="payment-option">
-                  <input type="radio" name="payment" value="UPI" />
+                  <input
+                    type="radio"
+                    name="mobile-payment"
+                    value="UPI"
+                    data-payment-input
+                  />
                   <span>
                     <strong>UPI</strong>
                     <small>Fast bank-to-bank payment.</small>
                   </span>
                 </label>
                 <label class="payment-option">
-                  <input type="radio" name="payment" value="Razorpay" />
+                  <input
+                    type="radio"
+                    name="mobile-payment"
+                    value="Razorpay"
+                    data-payment-input
+                  />
                   <span>
                     <strong>Razorpay</strong>
                     <small>Cards, wallets, and secure online payment.</small>
                   </span>
                 </label>
                 <label class="payment-option">
-                  <input type="radio" name="payment" value="Net banking" />
+                  <input
+                    type="radio"
+                    name="mobile-payment"
+                    value="Net banking"
+                    data-payment-input
+                  />
                   <span>
                     <strong>Net banking</strong>
                     <small>Pay through your preferred bank.</small>
@@ -265,25 +320,18 @@
               </div>
             </div>
 
-          </form>
-
-          <section class="summary-panel mobile-summary-panel" aria-labelledby="mobile-summary-title">
             <div class="summary-card">
-              <button
-                class="summary-toggle"
-                type="button"
-                aria-expanded="false"
-                aria-controls="mobile-summary-content"
-                data-action="toggle-mobile-summary"
-              >
+              <div class="mobile-summary-heading">
                 <span>
-                  <span class="eyebrow">Order summary</span>
-                  <strong id="mobile-summary-title">Review total</strong>
+                  <span>Order summary</span>
                 </span>
-                <span data-total>Rs. 0</span>
-              </button>
+              </div>
 
-              <div class="mobile-summary-content" id="mobile-summary-content" data-mobile-summary-content hidden>
+              <div
+                class="mobile-summary-content"
+                id="mobile-summary-content"
+                data-mobile-summary-content
+              >
                 <div class="summary-lines">
                   <div>
                     <span>Subtotal</span>
@@ -310,29 +358,133 @@
 
                 <div class="summary-note">
                   <strong data-applied-coupon>No coupon applied</strong>
-                  <span>GST included. Shipping updates with your order value and pincode.</span>
+                  <span
+                    >GST included. Shipping updates with your order value and
+                    pincode.</span
+                  >
                 </div>
 
-                <button class="primary-btn summary-checkout" type="button" data-action="submit-order" data-order-button>
+                <button
+                  class="primary-btn summary-checkout"
+                  type="button"
+                  data-action="submit-order"
+                  data-order-button
+                >
                   Place order
                 </button>
-
-                <a
-                  class="whatsapp-btn"
-                  href="https://wa.me/917005328132?text=Hi%20VALOUR%2C%20I%20need%20help%20with%20checkout"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  WhatsApp support
-                </a>
-
-                <div class="secure-copy">
-                  <p>Secure payment environment</p>
-                  <p>Delivery estimate shared before dispatch</p>
-                  <p>Support available for product and order questions</p>
-                </div>
               </div>
             </div>
+
+            <div class="review-assurance" aria-label="Order reassurances">
+              <article>
+                <span class="review-assurance-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M3 7h11v9H3z" />
+                    <path d="M14 10h4l3 3v3h-7z" />
+                    <path d="M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                    <path d="M18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Delivery</strong>
+                  <span data-delivery-window>Enter pincode for estimate</span>
+                </div>
+              </article>
+              <article>
+                <span class="review-assurance-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M8 7h8a5 5 0 1 1 0 10H7" />
+                    <path d="M10 4 7 7l3 3" />
+                    <path d="M7 7h9" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>7-days return</strong>
+                  <span>Easy help for damaged packs.</span>
+                </div>
+              </article>
+              <article>
+                <span class="review-assurance-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M5 6h14v10H8l-3 3z" />
+                    <path d="M8 10h8" />
+                    <path d="M8 13h5" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>WhatsApp support</strong>
+                  <span>Help with product and order questions.</span>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section
+            class="panel order-success-panel"
+            aria-labelledby="success-title"
+            hidden
+            data-success-panel
+          >
+            <div class="order-success-hero">
+              <div class="success-icon" aria-hidden="true"></div>
+              <div>
+                <p class="eyebrow">Order placed</p>
+                <h2 id="success-title">Thank you, your order is confirmed.</h2>
+                <p>
+                  We have received your Valour order and will share dispatch
+                  updates on your registered mobile number.
+                </p>
+              </div>
+            </div>
+
+            <div class="order-success-meta">
+              <article>
+                <span>Order number</span>
+                <strong data-success-order-id>VALOUR-0000</strong>
+              </article>
+              <article>
+                <span>Delivery</span>
+                <strong data-success-delivery>Enter pincode for estimate</strong>
+              </article>
+              <article>
+                <span>Payment</span>
+                <strong data-success-payment>COD</strong>
+              </article>
+              <article>
+                <span>Total paid</span>
+                <strong data-success-total>Rs. 0</strong>
+              </article>
+            </div>
+
+            <div class="success-order-summary" data-success-order-summary>
+              <span class="success-order-icon" aria-hidden="true"></span>
+              <div>
+                <strong>Order items</strong>
+                <div data-success-order-items></div>
+              </div>
+            </div>
+
+            <button class="primary-btn" type="button" data-action="close-success">
+              Continue shopping
+            </button>
+          </section>
+
+          <section class="trust-strip" aria-label="Valour trust indicators">
+            <article>
+              <span aria-hidden="true">01</span>
+              <h3>Lab-tested reassurance</h3>
+              <p>Crafted with food safety and consistency in mind.</p>
+            </article>
+            <article>
+              <span aria-hidden="true">02</span>
+              <h3>Small-batch care</h3>
+              <p>Balanced for Indian kitchens, packed with restraint.</p>
+            </article>
+            <article>
+              <span aria-hidden="true">03</span>
+              <h3>Human support</h3>
+              <p>Questions are handled directly on WhatsApp.</p>
+            </article>
           </section>
 
           <section
@@ -360,127 +512,27 @@
               </div>
             </div>
           </section>
-
-          <section class="trust-strip" aria-label="Valour trust indicators">
-            <article>
-              <span aria-hidden="true">01</span>
-              <h3>Lab-tested reassurance</h3>
-              <p>Crafted with food safety and consistency in mind.</p>
-            </article>
-            <article>
-              <span aria-hidden="true">02</span>
-              <h3>Small-batch care</h3>
-              <p>Balanced for Indian kitchens, packed with restraint.</p>
-            </article>
-            <article>
-              <span aria-hidden="true">03</span>
-              <h3>Human support</h3>
-              <p>Questions are handled directly on WhatsApp.</p>
-            </article>
-          </section>
         </section>
 
-        <aside class="summary-panel desktop-summary-panel" aria-labelledby="summary-title">
-          <div class="summary-card">
-            <div class="summary-header">
-              <div>
-                <p class="eyebrow">Order summary</p>
-                <h2 id="summary-title">Clear before you pay.</h2>
-              </div>
-              <span class="summary-count" data-summary-count>0 items</span>
-            </div>
-
-            <div class="summary-lines">
-              <div>
-                <span>Subtotal</span>
-                <strong data-subtotal>Rs. 0</strong>
-              </div>
-              <div>
-                <span>Shipping</span>
-                <strong data-shipping>Rs. 0</strong>
-              </div>
-              <div>
-                <span>Discount</span>
-                <strong data-discount>Rs. 0</strong>
-              </div>
-              <div>
-                <span>Taxes</span>
-                <strong data-tax>Rs. 0</strong>
-              </div>
-            </div>
-
-            <div class="summary-total">
-              <span>Total payable</span>
-              <strong data-total>Rs. 0</strong>
-            </div>
-
-            <div class="summary-note">
-              <strong data-applied-coupon>No coupon applied</strong>
-              <span
-                >GST included. Shipping updates with your order value and
-                pincode.</span
-              >
-            </div>
-
-            <button
-              class="primary-btn summary-checkout"
-              type="button"
-              data-action="submit-order"
-              data-order-button
-            >
-              Place order
-            </button>
-
-            <a
-              class="whatsapp-btn"
-              href="https://wa.me/917005328132?text=Hi%20VALOUR%2C%20I%20need%20help%20with%20checkout"
-              target="_blank"
-              rel="noopener"
-            >
-              WhatsApp support
-            </a>
-
-            <div class="secure-copy">
-              <p>Secure payment environment</p>
-              <p>Delivery estimate shared before dispatch</p>
-              <p>Support available for product and order questions</p>
-            </div>
-          </div>
-        </aside>
       </main>
     </div>
 
     <div class="mobile-pay-bar" data-mobile-bar>
       <div>
-        <span>Total</span>
+        <span data-mobile-bar-label>Subtotal</span>
         <strong data-mobile-total>Rs. 0</strong>
       </div>
-      <button class="primary-btn" type="button" data-action="submit-order" data-order-button>
-        Place order
+      <button
+        class="primary-btn"
+        type="button"
+        data-action="floating-step"
+        data-floating-step-button
+      >
+        Continue
       </button>
     </div>
 
     <div class="toast-region" data-toast-region aria-live="polite"></div>
-
-    <div class="success-modal" data-success-modal hidden>
-      <div
-        class="success-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="success-title"
-      >
-        <div class="success-icon" aria-hidden="true"></div>
-        <p class="eyebrow">Order received</p>
-        <h2 id="success-title">Your Valour order is confirmed.</h2>
-        <p>
-          We have saved this order locally for now. Payment and backend
-          integration hooks are ready for Razorpay, GA, and Meta events.
-        </p>
-        <button class="primary-btn" type="button" data-action="close-success">
-          Continue
-        </button>
-      </div>
-    </div>
 
     <div class="otp-modal" data-otp-modal hidden>
       <div
@@ -500,8 +552,8 @@
         <p class="eyebrow">Quick verification</p>
         <h2 id="otp-title">Before you order, let's verify it's you.</h2>
         <p data-otp-message>
-          We will send a one-time password to the mobile number in your
-          delivery details.
+          We will send a one-time password to the mobile number in your delivery
+          details.
         </p>
         <form class="otp-form" data-otp-form novalidate>
           <label for="otp-code">Enter OTP</label>
@@ -522,7 +574,11 @@
           </div>
           <p class="field-error" data-otp-error aria-live="polite"></p>
         </form>
-        <button class="quiet-btn resend-otp" type="button" data-action="resend-otp">
+        <button
+          class="quiet-btn resend-otp"
+          type="button"
+          data-action="resend-otp"
+        >
           Resend OTP
         </button>
       </div>
