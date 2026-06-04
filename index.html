@@ -74,84 +74,86 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     /* Inherits color from parent text */
   }
 
-  .loader_logo_vlr {
-    display: flex;
-    gap: 1px;
-    font-size: 52px;
-    letter-spacing: 6px;
-    font-weight: 500;
-    color: #f1de9e;
-    font-family: 'Times New Roman', serif;
+  .loader-logo {
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Letters */
-  .loader_logo_vlr span {
-    display: inline-block;
-    /* needed for transform */
+  .loader-logo img {
+    display: block;
+    width: clamp(190px, 28vw, 330px);
+    height: auto;
     opacity: 0;
+    clip-path: inset(0 100% 0 0);
     transform: translateY(12px);
-    animation: reveal 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    animation: loaderLogoReveal 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
   }
 
-
-  /* Sequential delay */
-  .loader_logo_vlr span:nth-child(1) {
-    animation-delay: 0.1s;
+  .loader-logo::after {
+    content: "";
+    position: absolute;
+    inset: -35% -20%;
+    pointer-events: none;
+    background: linear-gradient(110deg,
+        transparent 38%,
+        rgba(255, 241, 194, 0.15) 45%,
+        rgba(255, 246, 216, 0.72) 50%,
+        rgba(255, 241, 194, 0.15) 55%,
+        transparent 62%);
+    transform: translateX(-120%);
+    animation: loaderLogoShine 0.85s ease-in-out 1.05s forwards;
   }
 
-  .loader_logo_vlr span:nth-child(2) {
-    opacity: 1;
-    /* already visible */
-    transform: rotate(180deg) translateY(12px);
-    margin-left: -12px;
-    margin-right: 9px;
+  .loading-phase-container {
+    will-change: transform;
+    transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1),
+      visibility 0s linear 0.85s;z-index: 99999999;
   }
 
-  .loader_logo_vlr span:nth-child(3) {
-    animation-delay: 0.3s;
+  .loading-phase-container.is-exiting {
+    transform: translateY(-100%);
+    visibility: hidden;
   }
 
-  .loader_logo_vlr span:nth-child(4) {
-    animation-delay: 0.4s;
+  #loading-phase .loading-bar-container {
+    height: 3px;
+    max-width: 360px;
+    overflow: hidden;
   }
 
-  .loader_logo_vlr span:nth-child(5) {
-    animation-delay: 0.5s;
+  #loading-phase .loading-bar {
+    animation-duration: 1.8s;
   }
 
-  .loader_logo_vlr span:nth-child(6) {
-    animation-delay: 0.6s;
-  }
-
-  /* Animation */
-  @keyframes reveal {
+  @keyframes loaderLogoReveal {
     to {
       opacity: 1;
+      clip-path: inset(0 0 0 0);
       transform: translateY(0);
     }
   }
 
-  .loader_logo_vlr span:nth-child(2) {
-    animation: revealA 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards
-  }
-
-  @keyframes revealA {
-    from {
-      opacity: 0;
-      transform: rotate(180deg) translateY(12px);
-    }
-
+  @keyframes loaderLogoShine {
     to {
-      opacity: 1;
-      transform: rotate(180deg) translateY(0);
+      transform: translateX(120%);
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .loader-logo img,
+    .loader-logo::after,
+    .loading-bar {
+      animation: none;
+    }
 
-  @media (max-width: 550px) {
-    .loader_logo_vlr {
+    .loader-logo img {
+      opacity: 1;
+      clip-path: none;
+      transform: none;
+    }
 
-      font-size: 36px;
+    .loading-phase-container {
+      transition-duration: 0.25s;
     }
   }
 
@@ -1641,21 +1643,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     font-weight: 600;
     color: #2a2a2a;
     font-family: 'Times New Roman', serif;
+    margin-left: -19px;
   }
 
-  /* Letters */
-  .nav-logo span {
-    display: inline-block;
-    /* needed for transform */
-    opacity: 1;
-  }
-
-
-  /* Sequential delay */
-  .nav-logo span:nth-child(2) {
-    margin-left: -7px;
-    margin-right: 6px;
-    transform: rotate(180deg) translateY(0.5px);
+  .nav-logo img {
+    display: block;
+    width: clamp(100px, 10vw, 145px);
+    height: auto;
   }
 
   .nav-shop {
@@ -3314,9 +3308,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     opacity: 0.9;
   }
 
-  .footer .nav-logo span:nth-child(2) {
-    margin-left: -9px;
-    margin-right: 8px;
+  .footer .nav-logo img {
+    width: clamp(160px, 20vw, 260px);
   }
 
   .footer-kicker {
@@ -4128,23 +4121,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
     <div>
 
-      <div class="loader_logo_vlr">
-        <span style="
-    transform: translateY(-0.5px);
-">V</span> <span class="letter_a">V</span>
-        <span>L</span>
-        <span>O</span>
-        <span>U</span>
-        <span>R</span>
+      <div class="loader-logo">
+        <img src="vendor/cdn/cdn/shop/files/valourlogo_load.webp" alt="Valour" fetchpriority="high">
       </div>
-      <!-- <div class="loading-video-container">
-        <img class="loading-video" src="cdn.shopify.com/s/files/1/0769/9601/8390/files/Logo-v3.gif?v=1754633017"
-          alt="Loading animation image" aria-label="Loading animation image" loading="eager" fetchpriority="high">
-      </div> -->
       <div class="loading-bar-container">
         <div class="loading-bar"></div>
       </div>
-      <div class="loading-percentage"></div>
     </div>
 
   </div>
@@ -4182,13 +4164,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
         <!-- LOGO -->
         <a class="nav-shop" href="#shop">Shop now</a>
         <div class="nav-logo">
-          <span style="
-    transform: translateY(-0.5px);
-">V</span> <span class="letter_a">V</span>
-          <span>L</span>
-          <span>O</span>
-          <span>U</span>
-          <span>R</span>
+          <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
         </div>
         <!-- RIGHT -->
         <div class="nav-right">
@@ -4514,9 +4490,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="thumbnails">
 
                     <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp">
-                    <img src="assets/images/image_2_prod.png">
+                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png">
 
-                    <img src="assets/images/image_3_prod.png">
+                    <img src="vendor/cdn/cdn/shop/files/image_3_prod.png">
                   </div>
 
                   <div class="main-image">
@@ -4828,13 +4804,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- LEFT -->
                 <div class="footer-left">
                   <div class="nav-logo">
-                    <span style="
-    transform: translateY(-0.5px);
-">V</span> <span class="letter_a">V</span>
-                    <span>L</span>
-                    <span>O</span>
-                    <span>U</span>
-                    <span>R</span>
+                    <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
                   </div>
 
                   <p class="footer-kicker">CAREFULLY PREPARED FOR EVERYDAY COOKING</p>
@@ -5385,30 +5355,33 @@ Prepare less.</h2>
     document.addEventListener('DOMContentLoaded', function () {
       const loadingPhase = document.getElementById('loading-phase');
       const mainContent = document.getElementById('main-content');
-      const loadingImage = document.querySelector('.loading-video'); // Now it's an image/GIF
+      const loaderStartedAt = performance.now();
+      const minimumDisplayTime = 1950;
+      let hasRevealed = false;
 
-      // No need to play anything since it's a GIF that auto-plays
-      console.log('Loading phase initialized with 2-second GIF');
+      function revealMainContent() {
+        if (hasRevealed || !loadingPhase || !mainContent) return;
+        hasRevealed = true;
 
-      // Show main content and hide loading after 2 seconds (matching GIF duration)
-      setTimeout(function () {
-        // Fade out loading phase
-        loadingPhase.style.transition = 'opacity 0.5s ease-out';
-        loadingPhase.style.opacity = '0';
+        const remainingTime = Math.max(0, minimumDisplayTime - (performance.now() - loaderStartedAt));
 
         setTimeout(function () {
-          // Hide loading phase completely and show main content
-          loadingPhase.style.display = 'none';
           mainContent.style.display = 'block';
+          loadingPhase.classList.add('is-exiting');
 
-          // Fade in main content
-          mainContent.style.opacity = '0';
-          mainContent.style.transition = 'opacity 0.5s ease-in';
           setTimeout(function () {
-            mainContent.style.opacity = '1';
-          }, 50);
-        }, 500); // Wait for fade out to complete
-      }, 2000); // Wait for GIF to complete (2 seconds)
+            loadingPhase.style.display = 'none';
+          }, 900);
+        }, remainingTime);
+      }
+
+      if (document.readyState === 'complete') {
+        revealMainContent();
+      } else {
+        window.addEventListener('load', revealMainContent, { once: true });
+      }
+
+      setTimeout(revealMainContent, 4000);
     });
 
 gsap.registerPlugin(ScrollTrigger);
