@@ -57,6 +57,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
@@ -86,7 +87,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     opacity: 0;
     clip-path: inset(0 100% 0 0);
     transform: translateY(12px);
-    animation: loaderLogoReveal 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+    animation: loaderLogoReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
   }
 
   .loader-logo::after {
@@ -101,13 +102,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
         rgba(255, 241, 194, 0.15) 55%,
         transparent 62%);
     transform: translateX(-120%);
-    animation: loaderLogoShine 0.85s ease-in-out 1.05s forwards;
+    animation: loaderLogoShine 0.6s ease-in-out 0.75s forwards;
   }
 
   .loading-phase-container {
     will-change: transform;
-    transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1),
-      visibility 0s linear 0.85s;z-index: 99999999;
+    transition: transform 0.65s cubic-bezier(0.76, 0, 0.24, 1),
+      visibility 0s linear 0.65s;
+    z-index: 999999;
   }
 
   .loading-phase-container.is-exiting {
@@ -122,7 +124,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   #loading-phase .loading-bar {
-    animation-duration: 1.8s;
+    animation-duration: 1.35s;
   }
 
   @keyframes loaderLogoReveal {
@@ -4197,7 +4199,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           <button class="buy-sheet-close" type="button" data-buy-sheet-close aria-label="Close buy panel">&times;</button>
         </div>
         <div class="buy-sheet-product">
-          <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.png" alt="" data-buy-sheet-image>
+          <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.png" alt="" data-buy-sheet-image loading="lazy" decoding="async">
           <div>
             <strong data-buy-sheet-name>Milky Mustard Liquid Spice</strong>
             <span data-buy-sheet-meta>520 ml · Makes 1 kg fish</span>
@@ -4313,8 +4315,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 srcset="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800" alt="" loading="lazy"
-                fetchpriority="low" width="800" height="auto">
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800" alt="" loading="eager"
+                fetchpriority="high" width="800" height="auto">
             </picture>
           </div>
 
@@ -4400,7 +4402,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           <div class="comparison-slider" data-comparison-slider>
             <div class="comparison-panel comparison-panel--traditional" aria-hidden="true">
               <div class="comparison-scene">
-                <img src="vendor/cdn/cdn/shop/files/before_comp.webp" alt="">
+                <img src="vendor/cdn/cdn/shop/files/before_comp.webp" alt="" loading="lazy" decoding="async">
               </div>
               <div class="comparison-caption">
                 <p class="comparison-label">Normal cooking</p>
@@ -4410,7 +4412,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
             <div class="comparison-panel comparison-panel--valour" aria-hidden="true">
               <div class="comparison-scene">
-                <img src="vendor/cdn/cdn/shop/files/after_comp.webp" alt="">
+                <img src="vendor/cdn/cdn/shop/files/after_comp.webp" alt="" loading="lazy" decoding="async">
               </div>
               <div class="comparison-caption">
                 <p class="comparison-label">Liquid spice cooking</p>
@@ -4439,6 +4441,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
               <iframe
                 src="https://www.youtube.com/embed/tgbNymZ7vqY"
                 title="Valour Foods sample video"
+                loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin"
                 allowfullscreen></iframe>
@@ -4489,14 +4492,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
                   <div class="thumbnails">
 
-                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp">
-                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png">
+                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" loading="lazy" decoding="async">
 
-                    <img src="vendor/cdn/cdn/shop/files/image_3_prod.png">
+                    <img src="vendor/cdn/cdn/shop/files/image_3_prod.png" loading="lazy" decoding="async">
                   </div>
 
                   <div class="main-image">
-                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="product">
+                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="product" loading="lazy" decoding="async">
                   </div>
 
                 </div>
@@ -4670,11 +4673,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
               <div class="cf-carousel">
 
-                <div class="cf-card "><video src="assets/videos/vid1.mp4" muted loop></video></div>
-                <div class="cf-card"><video src="assets/videos/vid2.mp4" muted loop></video></div>
-                <div class="cf-card  cf-active"><video src="assets/videos/vid2.mp4" muted loop></video></div>
-                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
-                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop></video></div>
+                <div class="cf-card "><video src="assets/videos/vid1.mp4" muted loop preload="none"></video></div>
+                <div class="cf-card"><video src="assets/videos/vid2.mp4" muted loop preload="none"></video></div>
+                <div class="cf-card  cf-active"><video src="assets/videos/vid2.mp4" muted loop preload="none"></video></div>
+                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop preload="none"></video></div>
+                <div class="cf-card"><video src="assets/videos/vid1.mp4" muted loop preload="none"></video></div>
 
               </div>
 
@@ -4707,9 +4710,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img1.png" alt="Valour liquid spice package">
-                    <img class="review-image" src="assets/images/cooking_img_vlr.png" alt="Cooking with liquid spice">
-                    <img class="review-image" src="assets/images/velvey_buttermain.png" alt="Valour liquid spice jar">
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img1.png" alt="Valour liquid spice package" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/cooking_img_vlr.png" alt="Cooking with liquid spice" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/velvey_buttermain.png" alt="Valour liquid spice jar" loading="lazy" decoding="async">
                   </div>
 
                   <div class="review-card">
@@ -4723,9 +4726,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img2.png" alt="Customers enjoying a meal">
-                    <img class="review-image" src="assets/images/image_2_prod.png" alt="Valour product detail">
-                    <img class="review-image" src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="Prepared chicken tikka masala">
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img2.png" alt="Customers enjoying a meal" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/image_2_prod.png" alt="Valour product detail" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="Prepared chicken tikka masala" loading="lazy" decoding="async">
                   </div>
 
                   <div class="review-card">
@@ -4739,9 +4742,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- ITEM -->
                 <div class="carousel-item">
                   <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img3.png" alt="Finished masala dish">
-                    <img class="review-image" src="assets/images/image_3_prod.png" alt="Valour serving detail">
-                    <img class="review-image" src="assets/images/Kadhai_Veg_Cheffin.png" alt="Prepared kadhai veg">
+                    <img class="review-image review-image--large" src="assets/images/why_liquid_img3.png" alt="Finished masala dish" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/image_3_prod.png" alt="Valour serving detail" loading="lazy" decoding="async">
+                    <img class="review-image" src="assets/images/Kadhai_Veg_Cheffin.png" alt="Prepared kadhai veg" loading="lazy" decoding="async">
                   </div>
 
                   <div class="review-card">
@@ -4804,7 +4807,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- LEFT -->
                 <div class="footer-left">
                   <div class="nav-logo">
-                    <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
+                    <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour" loading="lazy" decoding="async">
                   </div>
 
                   <p class="footer-kicker">CAREFULLY PREPARED FOR EVERYDAY COOKING</p>
@@ -5080,8 +5083,19 @@ Prepare less.</h2>
     });
 
     /* 🚀 INIT */
-    cf3d_updateCarousel();
-    cf3d_startAutoSlide();
+    const cf3d_observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          cf3d_updateCarousel();
+          cf3d_startAutoSlide();
+        } else {
+          cf3d_clearAutoSlide();
+          cf3d_cards.forEach((card) => card.querySelector('video')?.pause());
+        }
+      });
+    }, { rootMargin: '300px 0px', threshold: 0.01 });
+
+    cf3d_observer.observe(document.querySelector('.cf-wrapper-main'));
 
     // end
 
@@ -5356,7 +5370,7 @@ Prepare less.</h2>
       const loadingPhase = document.getElementById('loading-phase');
       const mainContent = document.getElementById('main-content');
       const loaderStartedAt = performance.now();
-      const minimumDisplayTime = 1950;
+      const minimumDisplayTime = 1400;
       let hasRevealed = false;
 
       function revealMainContent() {
@@ -5371,17 +5385,11 @@ Prepare less.</h2>
 
           setTimeout(function () {
             loadingPhase.style.display = 'none';
-          }, 900);
+          }, 700);
         }, remainingTime);
       }
 
-      if (document.readyState === 'complete') {
-        revealMainContent();
-      } else {
-        window.addEventListener('load', revealMainContent, { once: true });
-      }
-
-      setTimeout(revealMainContent, 4000);
+      revealMainContent();
     });
 
 gsap.registerPlugin(ScrollTrigger);
@@ -6021,9 +6029,6 @@ function initValourWhatsappSupport() {
 
 window.addEventListener("load", initValourWhatsappSupport);
   </script>
-
-  <script src="vendor/cdn/cdn/shop/t/8/assets/scrollTrigger.js
-" defer="defer"></script>
 
 </body>
 
