@@ -2,6 +2,8 @@ const STORAGE_KEY = "valour_checkout_cart";
 const COUPON_KEY = "valour_checkout_coupon";
 const DRAFT_KEY = "valour_checkout_address";
 const USER_KEY = "user";
+const ORDER_RESULT_KEY = "valour_latest_order";
+const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const OTP_VALIDITY_MS = 5 * 60 * 1000;
 const DEMO_OTP_CODE = "123456";
 const CHECKOUT_STEPS = {
@@ -60,8 +62,29 @@ const state = {
     tax: 0,
     total: 0,
   },
+  deliveryQuote: null,
+  deliveryRequestId: 0,
   step: CHECKOUT_STEPS.CART,
-  paymentMethod: "COD",
+  paymentMethod: "upi",
+};
+
+const RAZORPAY_PAYMENT_METHODS = {
+  upi: {
+    label: "UPI",
+    blockName: "Pay using UPI",
+  },
+  card: {
+    label: "Cards",
+    blockName: "Pay using card",
+  },
+  netbanking: {
+    label: "Net banking",
+    blockName: "Pay using net banking",
+  },
+  wallet: {
+    label: "Wallets",
+    blockName: "Pay using wallet",
+  },
 };
 
 function cloneCart(cart) {
@@ -94,6 +117,9 @@ const dom = {
   successDelivery: document.querySelector("[data-success-delivery]"),
   successPayment: document.querySelector("[data-success-payment]"),
   successTotal: document.querySelector("[data-success-total]"),
+  shippingCourier: document.querySelector("[data-shipping-courier]"),
+  shippingWindow: document.querySelector("[data-shipping-window]"),
+  shippingMode: document.querySelector("[data-shipping-mode]"),
   otpModal: document.querySelector("[data-otp-modal]"),
   otpForm: document.querySelector("[data-otp-form]"),
   otpInput: document.querySelector("[data-otp-input]"),
@@ -232,6 +258,162 @@ function showToast(message, type = "success") {
   window.setTimeout(() => toast.remove(), 3300);
 }
 
+async function postJSON(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || "Request failed. Please try again.");
+  }
+
+  return data;
+}
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", resolve, { once: true });
+      existingScript.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () =>
+      reject(new Error("Unable to load Razorpay. Please check your network."));
+    document.head.appendChild(script);
+  });
+}
+
+function getPaymentMethodLabel(method = state.paymentMethod) {
+  if (method === "COD") return "Cash on delivery";
+  return RAZORPAY_PAYMENT_METHODS[method]?.label || "UPI";
+}
+
+function buildRazorpayMethodOptions(method) {
+  const enabledMethod = RAZORPAY_PAYMENT_METHODS[method] ? method : "upi";
+
+  if (enabledMethod === "upi") {
+    return {};
+  }
+
+  return {
+    config: {
+      display: {
+        blocks: {
+          preferred: {
+            name: RAZORPAY_PAYMENT_METHODS[enabledMethod].blockName,
+            instruments: [{ method: enabledMethod }],
+          },
+        },
+        sequence: ["block.preferred"],
+        preferences: {
+          show_default_blocks: true,
+        },
+      },
+    },
+  };
+}
+
+function getCheckoutAttribution() {
+  let stored = {};
+
+  try {
+    stored = JSON.parse(sessionStorage.getItem(ATTRIBUTION_KEY) || "{}");
+  } catch (_error) {
+    stored = {};
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  let referrerHost = "";
+
+  try {
+    referrerHost = document.referrer ? new URL(document.referrer).hostname : "";
+  } catch (_error) {
+    referrerHost = "";
+  }
+
+  const attribution = {
+    source:
+      params.get("utm_source") ||
+      params.get("source") ||
+      stored.source ||
+      referrerHost ||
+      "direct",
+    campaign:
+      params.get("utm_campaign") ||
+      params.get("campaign") ||
+      stored.campaign ||
+      "",
+    cookingType: "fish",
+    purchaseIntent: "high",
+    activationPreference: "custom_checkout",
+    segment: "checkout_intent",
+  };
+
+  sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution));
+
+  return attribution;
+}
+
+function buildOrderPayload() {
+  const values = getFormValues();
+  const tracking = getCheckoutAttribution();
+
+  return {
+    checkout: values,
+    payment: {
+      method: state.paymentMethod,
+      label: getPaymentMethodLabel(),
+    },
+    products: state.cart.map((item) => ({
+      id: item.id,
+      name: item.name,
+      size: item.size,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+    totals: { ...state.totals },
+    coupon: state.coupon,
+    tracking,
+    delivery: {
+      estimate:
+        document.querySelector("[data-delivery-window]")?.textContent ||
+        "Delivery estimate will be shared soon",
+      quote: state.deliveryQuote,
+    },
+  };
+}
+
+function redirectToPaymentFailed(message) {
+  sessionStorage.setItem(
+    ORDER_RESULT_KEY,
+    JSON.stringify({
+      status: "failed",
+      message,
+      totalAmount: state.totals.total,
+      paymentMethod: state.paymentMethod,
+      paymentMethodLabel: getPaymentMethodLabel(),
+      createdAt: new Date().toISOString(),
+    }),
+  );
+  window.location.href = "payment-failed.html";
+}
+
 function getSubtotal() {
   return state.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
@@ -239,6 +421,9 @@ function getSubtotal() {
 function calculateShipping(subtotal, pincode = "") {
   if (!subtotal) return 0;
   if (subtotal >= 799) return 0;
+  if (state.deliveryQuote && Number.isFinite(Number(state.deliveryQuote.price))) {
+    return Math.round(Number(state.deliveryQuote.price));
+  }
   if (/^78/.test(pincode)) return 35;
   return 65;
 }
@@ -370,8 +555,26 @@ function renderSummary() {
 
   updateProgress();
   renderCouponState();
+  renderShippingPreview();
   setOrderButtonLabels();
   updateFloatingSubtotalBar();
+}
+
+function renderShippingPreview() {
+  if (!dom.shippingCourier || !dom.shippingWindow || !dom.shippingMode) return;
+
+  const pincode = getPincode();
+  const hasPincode = /^\d{6}$/.test(pincode);
+  const quote = state.deliveryQuote;
+  const deliveryText =
+    document.querySelector("[data-delivery-window]")?.textContent ||
+    "Enter pincode for estimate";
+
+  dom.shippingCourier.textContent = quote?.name || (hasPincode ? "Shiprocket test courier" : "Enter pincode");
+  dom.shippingWindow.textContent = deliveryText;
+  dom.shippingMode.textContent = quote?.testMode
+    ? "Testing only"
+    : "Quote only";
 }
 
 function updateProgress() {
@@ -589,23 +792,70 @@ function getDeliveryEstimateText(minDays, maxDays) {
   return `Delivery by ${fromDate} - ${toDate}`;
 }
 
-function updateDeliveryEstimate() {
+function getFallbackDeliveryEstimate(pincode) {
+  const prefix = Number(pincode.slice(0, 2));
+
+  if (prefix >= 70 && prefix <= 79) {
+    return getDeliveryEstimateText(2, 4);
+  }
+
+  if (prefix >= 10 && prefix <= 59) {
+    return getDeliveryEstimateText(4, 6);
+  }
+
+  return getDeliveryEstimateText(5, 8);
+}
+
+function parseDeliveryDays(days) {
+  const matches = String(days || "").match(/\d+/g);
+  if (!matches || matches.length === 0) return null;
+
+  const min = Number(matches[0]);
+  const max = Number(matches[matches.length - 1]);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+
+  return { min, max: Math.max(min, max) };
+}
+
+async function updateDeliveryEstimate() {
   const pincode = getPincode();
   let deliveryText = "Enter pincode for estimate";
 
   if (!/^\d{6}$/.test(pincode)) {
+    state.deliveryQuote = null;
     setTextAll("[data-delivery-window]", deliveryText);
     renderSummary();
     return;
   }
 
-  const prefix = Number(pincode.slice(0, 2));
-  if (prefix >= 70 && prefix <= 79) {
-    deliveryText = getDeliveryEstimateText(2, 4);
-  } else if (prefix >= 10 && prefix <= 59) {
-    deliveryText = getDeliveryEstimateText(4, 6);
-  } else {
-    deliveryText = getDeliveryEstimateText(5, 8);
+  const requestId = state.deliveryRequestId + 1;
+  state.deliveryRequestId = requestId;
+  deliveryText = "Checking delivery options...";
+  setTextAll("[data-delivery-window]", deliveryText);
+
+  try {
+    const response = await fetch(
+      `/api/delivery-options?pincode=${encodeURIComponent(pincode)}`,
+    );
+    const data = await response.json();
+
+    if (requestId !== state.deliveryRequestId) return;
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || "Delivery options unavailable");
+    }
+
+    state.deliveryQuote = data.best || data.cheapest || null;
+    const days = parseDeliveryDays(state.deliveryQuote?.delivery_days);
+    deliveryText = days
+      ? getDeliveryEstimateText(days.min, days.max)
+      : getFallbackDeliveryEstimate(pincode);
+  } catch (error) {
+    if (requestId !== state.deliveryRequestId) return;
+
+    state.deliveryQuote = null;
+    deliveryText = getFallbackDeliveryEstimate(pincode);
   }
 
   setTextAll("[data-delivery-window]", deliveryText);
@@ -654,7 +904,7 @@ function renderSuccessOrderItems() {
 
   dom.successOrderId.textContent = orderId;
   dom.successDelivery.textContent = deliveryText;
-  dom.successPayment.textContent = state.paymentMethod;
+  dom.successPayment.textContent = getPaymentMethodLabel();
   dom.successTotal.textContent = money(state.totals.total);
 }
 
@@ -794,7 +1044,69 @@ function verifyOtp(event) {
   otpState.nextAction = null;
 }
 
-function placeOrder(event) {
+async function startRazorpayPayment({ razorpayOrder, orderPayload }) {
+  const values = getFormValues();
+
+  await loadRazorpayCheckout();
+
+  return new Promise((resolve, reject) => {
+    const methodOptions = buildRazorpayMethodOptions(state.paymentMethod);
+
+    // Payment step: open Razorpay's standard popup while the customer stays on this custom checkout page.
+    const checkout = new window.Razorpay({
+      key: razorpayOrder.key_id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      name: "VALOUR",
+      description: "Valour checkout payment",
+      order_id: razorpayOrder.order_id,
+      prefill: {
+        name: values.name,
+        email: values.email,
+        contact: values.phone,
+      },
+      notes: {
+        pincode: values.pincode,
+        source: "custom_checkout",
+        preferred_payment_method: getPaymentMethodLabel(),
+      },
+      theme: {
+        color: "#831a1a",
+      },
+      ...methodOptions,
+      handler: async (paymentResponse) => {
+        try {
+          // Signature verification step: backend validates Razorpay's HMAC before saving the order.
+          const verifiedOrder = await postJSON("/api/payment/verify", {
+            ...paymentResponse,
+            order: orderPayload,
+          });
+          resolve(verifiedOrder);
+        } catch (error) {
+          reject(error);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          reject(new Error("Payment was cancelled before completion."));
+        },
+      },
+    });
+
+    checkout.on("payment.failed", (response) => {
+      reject(
+        new Error(
+          response.error?.description ||
+            "Razorpay could not complete the payment.",
+        ),
+      );
+    });
+
+    checkout.open();
+  });
+}
+
+async function placeOrder(event) {
   if (event) event.preventDefault();
 
   if (!state.cart.length) {
@@ -813,25 +1125,74 @@ function placeOrder(event) {
     return;
   }
 
+  if (state.paymentMethod === "COD") {
+    showToast(
+      "Cash on delivery is not active yet. Please choose UPI, Cards, Net banking, or Wallets.",
+      "error",
+    );
+    return;
+  }
+
   setOrderLoading(true);
+  showToast(`Opening ${getPaymentMethodLabel()} payment...`);
   trackEvent("valour_begin_checkout", {
     value: state.totals.total,
     currency: "INR",
     coupon: state.coupon,
-    payment_method: state.paymentMethod,
+    payment_method: getPaymentMethodLabel(),
   });
 
-  window.setTimeout(() => {
-    setOrderLoading(false);
-    renderSuccessOrderItems();
-    trackEvent("valour_purchase_placeholder", {
+  try {
+    renderSummary();
+    const orderPayload = buildOrderPayload();
+
+    // Create order step: backend creates the Razorpay order for the final payable total.
+    const razorpayOrder = await postJSON("/api/payment/create-order", {
+      amount: state.totals.total,
+      currency: "INR",
+    });
+
+    const verifiedOrder = await startRazorpayPayment({
+      razorpayOrder,
+      orderPayload,
+    });
+
+    sessionStorage.setItem(
+      ORDER_RESULT_KEY,
+      JSON.stringify({
+        ...verifiedOrder.order,
+        orderId: verifiedOrder.orderId,
+        deliveryEstimate: orderPayload.delivery.estimate,
+        paymentMethod: state.paymentMethod,
+        paymentMethodLabel: getPaymentMethodLabel(),
+      }),
+    );
+
+    trackEvent("valour_purchase", {
       value: state.totals.total,
       currency: "INR",
       items: state.cart,
+      razorpay_order_id: verifiedOrder.order?.razorpayOrderId,
     });
-    setCheckoutStep(CHECKOUT_STEPS.SUCCESS);
-    dom.successPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 900);
+
+    state.cart = [];
+    state.coupon = null;
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(COUPON_KEY);
+
+    window.location.href = "order-success.html";
+  } catch (error) {
+    console.error("Payment failed", error);
+    trackEvent("valour_payment_failed", {
+      value: state.totals.total,
+      currency: "INR",
+      reason: error.message,
+    });
+    showToast(error.message || "Payment failed. Please try again.", "error");
+    redirectToPaymentFailed(error.message || "Payment failed. Please try again.");
+  } finally {
+    setOrderLoading(false);
+  }
 }
 
 function closeSuccess() {

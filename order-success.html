@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Valour order payment success." />
+    <title>Order Success | VALOUR</title>
+    <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png" />
+    <link rel="stylesheet" href="checkout-styles.css" />
+  </head>
+  <!-- Google tag (gtag.js) testing -->
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"
+  ></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-YRQF7PS079");
+  </script>
+
+  <body>
+    <div class="navbar">
+      <div class="container nav-container">
+        <a
+          class="nav-shop checkout-back-nav"
+          href="index.html"
+          aria-label="Go back to shop"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="M15 18 9 12l6-6" />
+          </svg>
+          <span>Go back</span>
+        </a>
+
+        <a class="nav-logo" href="/" aria-label="VALOUR home">
+          <img
+            src="vendor/cdn/cdn/shop/files/valourblacklogo.webp"
+            alt="Valour"
+          />
+        </a>
+
+        <div class="nav-right" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="page-shell order-success-shell">
+      <main class="checkout-layout is-single-column">
+        <section class="checkout-main" aria-labelledby="success-title">
+          <section class="panel order-success-panel order-confirmed-panel">
+            <div class="order-success-hero">
+              <div
+                class="success-icon order-confirmed-icon"
+                aria-hidden="true"
+              ></div>
+              <div>
+                <p class="eyebrow">Order placed</p>
+                <h1 id="success-title">Thank you, your order is confirmed.</h1>
+                <p>
+                  Your payment has been verified and your Valour order is now
+                  saved. We will share dispatch updates on WhatsApp.
+                </p>
+              </div>
+            </div>
+
+            <div class="order-success-meta">
+              <article>
+                <span>Order number</span>
+                <strong data-order-id>VALOUR-0000</strong>
+              </article>
+              <article>
+                <span>Delivery</span>
+                <strong data-delivery
+                  >Delivery estimate will be shared soon</strong
+                >
+              </article>
+              <article>
+                <span>Payment</span>
+                <strong data-payment>Razorpay paid</strong>
+              </article>
+              <article>
+                <span>Total paid</span>
+                <strong data-total>Rs. 0</strong>
+              </article>
+            </div>
+
+            <div class="success-order-summary">
+              <span class="success-order-icon" aria-hidden="true"></span>
+              <div>
+                <strong>Order items</strong>
+                <div data-items></div>
+              </div>
+            </div>
+
+            <a class="primary-btn" href="index.html">Continue shopping</a>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const ORDER_RESULT_KEY = "valour_latest_order";
+
+      function money(value) {
+        return `Rs. ${Math.round(Number(value) || 0).toLocaleString("en-IN")}`;
+      }
+
+      function readOrder() {
+        try {
+          return JSON.parse(sessionStorage.getItem(ORDER_RESULT_KEY) || "{}");
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function getPaymentMethodLabel(order) {
+        const methodLabels = {
+          upi: "UPI",
+          card: "Cards",
+          netbanking: "Net banking",
+          wallet: "Wallets",
+          COD: "Cash on delivery",
+        };
+        const method =
+          order.paymentMethod ||
+          order.payment?.method ||
+          order.checkout?.paymentMethod ||
+          order.checkout?.payment_method;
+
+        return (
+          order.paymentMethodLabel ||
+          order.payment?.label ||
+          order.checkout?.paymentMethodLabel ||
+          order.checkout?.payment_method_label ||
+          methodLabels[method] ||
+          "Payment"
+        );
+      }
+
+      const order = readOrder();
+      const shortOrderId = order.orderNumber
+        ? order.orderNumber
+        : order.orderId
+          ? `VALOUR-${String(order.orderId).slice(-6).toUpperCase()}`
+          : "VALOUR-0000";
+
+      document.querySelector("[data-order-id]").textContent = shortOrderId;
+      document.querySelector("[data-delivery]").textContent =
+        order.deliveryEstimate || "Delivery estimate will be shared soon";
+      document.querySelector("[data-payment]").textContent =
+        getPaymentMethodLabel(order);
+      document.querySelector("[data-total]").textContent = money(
+        order.totalAmount,
+      );
+
+      const items = document.querySelector("[data-items]");
+      const products = order.products || [];
+
+      if (!products.length) {
+        const row = document.createElement("p");
+        const name = document.createElement("span");
+        const quantity = document.createElement("strong");
+
+        name.textContent = "Order items will be confirmed by our team.";
+        quantity.textContent = "";
+        row.append(name, quantity);
+        items.appendChild(row);
+      }
+
+      products.forEach((item) => {
+        const row = document.createElement("p");
+        const name = document.createElement("span");
+        const quantity = document.createElement("strong");
+
+        name.textContent = item.name;
+        quantity.textContent = `Qty ${item.quantity}`;
+        row.append(name, quantity);
+        items.appendChild(row);
+      });
+    </script>
+  </body>
+</html>

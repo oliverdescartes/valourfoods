@@ -1,6 +1,21 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) testing -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-YRQF7PS079");
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
@@ -8,23 +23,35 @@
       content="Valour premium liquid spice cart and checkout."
     />
     <title>Cart and Checkout | VALOUR</title>
+    <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png" />
     <link rel="stylesheet" href="checkout-styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="checkout-header" aria-label="Checkout header">
-        <a class="brand-mark" href="index.html" aria-label="Go to Valour home">
-          <span>VALOUR</span>
-          <small>Liquid Spice</small>
+    <div class="navbar">
+      <div class="container nav-container">
+        <a
+          class="nav-shop checkout-back-nav"
+          href="index.html"
+          aria-label="Go back to shop"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="M15 18 9 12l6-6" />
+          </svg>
+          <span>Go back</span>
         </a>
 
-        <div class="header-assurance" aria-label="Checkout reassurance">
-          <span>Secure checkout</span>
-          <span>Small-batch crafted</span>
-          <span>Human support</span>
-        </div>
-      </header>
+        <a class="nav-logo" href="/" aria-label="VALOUR home">
+          <img
+            src="vendor/cdn/cdn/shop/files/valourblacklogo.webp"
+            alt="Valour"
+          />
+        </a>
 
+        <div class="nav-right" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="page-shell">
       <main class="checkout-layout">
         <section class="checkout-main" aria-labelledby="cart-title">
           <div class="progress-card" aria-label="Checkout progress">
@@ -268,56 +295,175 @@
                 role="radiogroup"
                 aria-label="Payment method"
               >
-                <label class="payment-option is-selected">
+                <label class="payment-option">
                   <input
                     type="radio"
                     name="mobile-payment"
                     value="COD"
                     data-payment-input
-                    checked
                   />
+                  <span class="payment-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 7h16v10H4z" />
+                      <path d="M8 11h8" />
+                      <path d="M8 14h5" />
+                    </svg>
+                  </span>
                   <span>
                     <strong>Cash on delivery</strong>
-                    <small>Pay when the jar reaches your door.</small>
+                    <small>Pay at your door. Currently unavailable.</small>
                   </span>
                 </label>
-                <label class="payment-option">
+                <label class="payment-option is-selected">
                   <input
                     type="radio"
                     name="mobile-payment"
-                    value="UPI"
+                    value="upi"
                     data-payment-input
+                    checked
                   />
+                  <span class="payment-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M7 7h10" />
+                      <path d="M7 12h10" />
+                      <path d="M7 17h6" />
+                      <path d="M10 7c4 0 4 5 0 5H7l6 5" />
+                    </svg>
+                  </span>
                   <span>
                     <strong>UPI</strong>
-                    <small>Fast bank-to-bank payment.</small>
+                    <small>Test with success@razorpay when UPI appears.</small>
                   </span>
                 </label>
                 <label class="payment-option">
                   <input
                     type="radio"
                     name="mobile-payment"
-                    value="Razorpay"
+                    value="card"
                     data-payment-input
                   />
+                  <span class="payment-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M3 7h18v10H3z" />
+                      <path d="M3 10h18" />
+                      <path d="M7 14h4" />
+                    </svg>
+                  </span>
                   <span>
-                    <strong>Razorpay</strong>
-                    <small>Cards, wallets, and secure online payment.</small>
+                    <strong>Cards</strong>
+                    <small>Pay with credit or debit card.</small>
                   </span>
                 </label>
                 <label class="payment-option">
                   <input
                     type="radio"
                     name="mobile-payment"
-                    value="Net banking"
+                    value="netbanking"
                     data-payment-input
                   />
+                  <span class="payment-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 10h16" />
+                      <path d="M6 10v8" />
+                      <path d="M10 10v8" />
+                      <path d="M14 10v8" />
+                      <path d="M18 10v8" />
+                      <path d="M3 18h18" />
+                      <path d="M12 4 4 10h16z" />
+                    </svg>
+                  </span>
                   <span>
                     <strong>Net banking</strong>
                     <small>Pay through your preferred bank.</small>
                   </span>
                 </label>
+                <label class="payment-option">
+                  <input
+                    type="radio"
+                    name="mobile-payment"
+                    value="wallet"
+                    data-payment-input
+                  />
+                  <span class="payment-option-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 7h15a2 2 0 0 1 2 2v8H4a2 2 0 0 1-2-2V7z" />
+                      <path d="M4 7V5h12" />
+                      <path d="M17 12h4" />
+                    </svg>
+                  </span>
+                  <span>
+                    <strong>Wallets</strong>
+                    <small>Use supported wallets inside checkout.</small>
+                  </span>
+                </label>
               </div>
+              <p class="payment-method-note">
+                UPI in test mode depends on Razorpay availability for your
+                account setup. If UPI does not appear in the popup while
+                onboarding is pending, use Cards for test orders and retry UPI
+                after account activation/payment methods are enabled.
+              </p>
+            </div>
+
+            <div class="shipping-card">
+              <div class="shipping-card-heading">
+                <p class="eyebrow">Shipping</p>
+                <h2>Shiprocket delivery setup</h2>
+              </div>
+
+              <div class="shipping-status-grid">
+                <article>
+                  <span class="shipping-status-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M3 7h11v9H3z" />
+                      <path d="M14 10h4l3 3v3h-7z" />
+                      <path d="M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                      <path d="M18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <span>Courier</span>
+                    <strong data-shipping-courier>Checking pincode</strong>
+                  </div>
+                </article>
+                <article>
+                  <span class="shipping-status-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M8 3v3" />
+                      <path d="M16 3v3" />
+                      <path d="M4 8h16" />
+                      <path d="M5 5h14v15H5z" />
+                      <path d="M8 12h3" />
+                      <path d="M13 12h3" />
+                    </svg>
+                  </span>
+                  <div>
+                    <span>Expected delivery</span>
+                    <strong data-shipping-window
+                      >Enter pincode for estimate</strong
+                    >
+                  </div>
+                </article>
+                <article>
+                  <span class="shipping-status-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z" />
+                      <path d="m9 12 2 2 4-5" />
+                    </svg>
+                  </span>
+                  <div>
+                    <span>Mode</span>
+                    <strong data-shipping-mode>Testing only</strong>
+                  </div>
+                </article>
+              </div>
+
+              <p class="shipping-method-note">
+                This checkout is configured for Shiprocket testing. A paid test
+                order creates a test shipping record first; real Shiprocket
+                order creation stays disabled until production flags are
+                changed.
+              </p>
             </div>
 
             <div class="summary-card">
@@ -444,7 +590,9 @@
               </article>
               <article>
                 <span>Delivery</span>
-                <strong data-success-delivery>Enter pincode for estimate</strong>
+                <strong data-success-delivery
+                  >Enter pincode for estimate</strong
+                >
               </article>
               <article>
                 <span>Payment</span>
@@ -464,7 +612,11 @@
               </div>
             </div>
 
-            <button class="primary-btn" type="button" data-action="close-success">
+            <button
+              class="primary-btn"
+              type="button"
+              data-action="close-success"
+            >
               Continue shopping
             </button>
           </section>
@@ -513,7 +665,6 @@
             </div>
           </section>
         </section>
-
       </main>
     </div>
 

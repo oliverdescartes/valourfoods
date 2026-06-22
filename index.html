@@ -2,14 +2,23 @@
 <html lang="en">
 
 <head>
-<!-- Meta Pixel Code -->
+  <!-- Google tag (gtag.js) testing -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YRQF7PS079');
+</script>
+
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
+n.queue=[];t=b.createElement(e);t.async=!0;4
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
@@ -51,6 +60,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   <title>
     Valour | Liquid Spice
   </title>
+  <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png" />
 
   <link rel="canonical" href="vendor/cdn/">
 
@@ -117,10 +127,22 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     visibility: hidden;
   }
 
+  #loading-phase > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   #loading-phase .loading-bar-container {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: min(60vw, 360px);
     height: 3px;
     max-width: 360px;
+    margin-top: 48px;
     overflow: hidden;
+    transform: none;
   }
 
   #loading-phase .loading-bar {
@@ -156,6 +178,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
     .loading-phase-container {
       transition-duration: 0.25s;
+    }
+  }
+
+  @media (max-width: 550px) {
+    #loading-phase .loading-bar-container {
+      width: min(72vw, 280px);
+      margin-top: 38px;
     }
   }
 
@@ -4165,9 +4194,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
         <!-- LOGO -->
         <a class="nav-shop" href="#shop">Shop now</a>
-        <div class="nav-logo">
+        <a class="nav-logo" href="/" aria-label="VALOUR home">
           <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
-        </div>
+        </a>
         <!-- RIGHT -->
         <div class="nav-right">
           <a class="cart-link" href="checkout.html" aria-label="Open cart">
@@ -4393,6 +4422,25 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
         </div>
 
+        <section class="looks-tastes-section" aria-labelledby="looks-tastes-title">
+          <div class="looks-tastes-inner">
+            <h2 class="looks-tastes-heading" id="looks-tastes-title">
+              Looks right
+              <span>tastes right</span>
+            </h2>
+
+            <div class="looks-tastes-video">
+              <iframe
+                src="https://www.youtube.com/embed/tgbNymZ7vqY"
+                title="Valour Foods sample video"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+            </div>
+          </div>
+        </section>
+
         <section class="process-steps-section" id="how-it-works" aria-labelledby="process-steps-title">
           <div class="valour-banner__title_sec2">
             <h2 id="process-steps-title">One process. No confusion</h2>
@@ -4427,25 +4475,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
             </div>
             <input class="comparison-range" type="range" min="0" max="100" value="50"
               aria-label="Drag to compare traditional preparation with Valour cooking">
-          </div>
-        </section>
-
-        <section class="looks-tastes-section" aria-labelledby="looks-tastes-title">
-          <div class="looks-tastes-inner">
-            <h2 class="looks-tastes-heading" id="looks-tastes-title">
-              Looks right
-              <span>tastes right</span>
-            </h2>
-
-            <div class="looks-tastes-video">
-              <iframe
-                src="https://www.youtube.com/embed/tgbNymZ7vqY"
-                title="Valour Foods sample video"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allowfullscreen></iframe>
-            </div>
           </div>
         </section>
 

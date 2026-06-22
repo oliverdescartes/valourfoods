@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Valour order payment failed." />
+    <title>Payment Failed | VALOUR</title>
+    <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png" />
+    <link rel="stylesheet" href="checkout-styles.css" />
+  </head>
+
+  <!-- Google tag (gtag.js) testing -->
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"
+  ></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-YRQF7PS079");
+  </script>
+
+  <body>
+    <div class="navbar">
+      <div class="container nav-container">
+        <a
+          class="nav-shop checkout-back-nav"
+          href="checkout.html"
+          aria-label="Go back to checkout"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="M15 18 9 12l6-6" />
+          </svg>
+          <span>Go back</span>
+        </a>
+
+        <a class="nav-logo" href="/" aria-label="VALOUR home">
+          <img
+            src="vendor/cdn/cdn/shop/files/valourblacklogo.webp"
+            alt="Valour"
+          />
+        </a>
+
+        <div class="nav-right" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="page-shell payment-failed-shell">
+      <main class="checkout-layout is-single-column">
+        <section class="checkout-main" aria-labelledby="failed-title">
+          <section class="panel order-success-panel payment-failed-panel">
+            <div class="order-success-hero">
+              <div class="failure-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 8v5" />
+                  <path d="M12 17h.01" />
+                  <path
+                    d="M10.2 4.4 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.8 4.4a2 2 0 0 0-3.6 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p class="eyebrow">Payment failed</p>
+                <h1 id="failed-title">We could not complete the payment.</h1>
+                <p data-failure-message>
+                  No money was captured and your cart is still safe. You can
+                  retry checkout with UPI, cards, net banking, or wallet.
+                </p>
+              </div>
+            </div>
+
+            <div class="order-success-meta">
+              <article>
+                <span>Status</span>
+                <strong>Not paid</strong>
+              </article>
+              <article>
+                <span>Order save</span>
+                <strong>Skipped</strong>
+              </article>
+              <article>
+                <span>Payment</span>
+                <strong data-payment>Payment failed</strong>
+              </article>
+              <article>
+                <span>Total attempted</span>
+                <strong data-total>Rs. 0</strong>
+              </article>
+            </div>
+
+            <a class="primary-btn" href="checkout.html">Try payment again</a>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const ORDER_RESULT_KEY = "valour_latest_order";
+
+      function money(value) {
+        return `Rs. ${Math.round(Number(value) || 0).toLocaleString("en-IN")}`;
+      }
+
+      function getPaymentMethodLabel(result) {
+        const methodLabels = {
+          upi: "UPI",
+          card: "Cards",
+          netbanking: "Net banking",
+          wallet: "Wallets",
+          COD: "Cash on delivery",
+        };
+        const method =
+          result.paymentMethod ||
+          result.payment?.method ||
+          result.checkout?.paymentMethod ||
+          result.checkout?.payment_method;
+
+        return (
+          result.paymentMethodLabel ||
+          result.payment?.label ||
+          result.checkout?.paymentMethodLabel ||
+          result.checkout?.payment_method_label ||
+          methodLabels[method] ||
+          "Payment"
+        );
+      }
+
+      try {
+        const result = JSON.parse(
+          sessionStorage.getItem(ORDER_RESULT_KEY) || "{}",
+        );
+        document.querySelector("[data-total]").textContent = money(
+          result.totalAmount,
+        );
+        document.querySelector("[data-payment]").textContent =
+          getPaymentMethodLabel(result);
+        if (result.message) {
+          document.querySelector("[data-failure-message]").textContent =
+            result.message;
+        }
+      } catch (error) {
+        document.querySelector("[data-total]").textContent = "Rs. 0";
+        document.querySelector("[data-payment]").textContent =
+          "Payment failed";
+      }
+    </script>
+  </body>
+</html>
