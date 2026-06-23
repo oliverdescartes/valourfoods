@@ -47,23 +47,44 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <meta property="og:site_name" content="Cheffin">
-  <meta property="og:url" content="vendor/cdn/">
-  <meta property="og:title" content="Valour | Liquid Spice &amp; Authentic">
+  <meta name="description" content="Make rich coconut mustard fish without grinding mustard, coconut, or spices. Valour Milky Mustard helps you cook authentic Bengali-style fish curry with less effort.">
+  <meta property="og:site_name" content="Valour">
+  <meta property="og:url" content="https://liquidspice.in/">
+  <meta property="og:title" content="Cook Coconut Mustard Fish Without Grinding | Valour Milky Mustard">
+  <meta property="og:description" content="Make rich coconut mustard fish without grinding mustard, coconut, or spices. Valour Milky Mustard helps you cook authentic Bengali-style fish curry with less effort.">
   <meta property="og:type" content="website">
 
   <meta property="og:image:width" content="1440">
   <meta property="og:image:height" content="800">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:description" content="Valour | Liquid Spice">
+  <meta name="twitter:title" content="Cook Coconut Mustard Fish Without Grinding | Valour Milky Mustard">
+  <meta name="twitter:description" content="Make rich coconut mustard fish without grinding mustard, coconut, or spices.">
 
-  <title>
-    Valour | Liquid Spice
-  </title>
+  <title>Cook Coconut Mustard Fish Without Grinding | Valour Milky Mustard</title>
   <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png" />
 
-  <link rel="canonical" href="vendor/cdn/">
-
+  <link rel="canonical" href="https://liquidspice.in/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Milky Mustard",
+      "brand": {
+        "@type": "Brand",
+        "name": "Valour"
+      },
+      "category": "Liquid Spice",
+      "description": "Milky Mustard is a ready-balanced liquid spice that helps you cook coconut mustard fish at home without grinding mustard seeds, coconut, or spices.",
+      "image": "https://liquidspice.in/vendor/cdn/cdn/shop/files/velvey_buttermain.webp",
+      "offers": {
+        "@type": "Offer",
+        "url": "https://liquidspice.in/#slides_Xyz",
+        "priceCurrency": "INR",
+        "price": "350",
+        "availability": "https://schema.org/InStock"
+      }
+    }
+  </script>
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
@@ -83,6 +104,21 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     /* Removes underline */
     color: inherit;
     /* Inherits color from parent text */
+  }
+
+  .announcement-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .announcement-text .material-symbols-outlined {
+    display: inline-block;
+    color: inherit;
+    font-size: 1.05em;
+    font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+    line-height: 1;
+    vertical-align: -0.12em;
   }
 
   .loader-logo {
@@ -394,23 +430,26 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* ===== MAIN TITLE ===== */
   .hero-title {
     font-family: 'Anton', sans-serif;
-    font-size: 7rem;
-    line-height: 1;
-    letter-spacing: 1px;
+    font-size: clamp(2.8rem, 6.4vw, 6.2rem);
+    line-height: 0.96;
+    letter-spacing: 0;
     margin: 0;
     color: #3b0a0a;
-    text-align: justify;
+    text-align: left;
+    max-width: 920px;
   }
 
   /* ===== SUBTITLE ===== */
   .hero-subtitle {
-    font-size: 4.4rem;
+    font-size: clamp(1.5rem, 3.6vw, 3.4rem);
     font-weight: 700;
     margin-top: 16px;
     margin-bottom: 28px;
     font-family: 'Inter', sans-serif;
     color: #7a3e2f;
     font-family: 'Anton', sans-serif;
+    line-height: 1.05;
+    max-width: 880px;
   }
 
   /* ===== HIGHLIGHT TEXT ===== */
@@ -861,7 +900,22 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     color: #d58a00;
     font-size: clamp(22px, 3vw, 30px);
     margin: 18px 0 0;
-    letter-spacing: 0.08em;
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .stars_review svg {
+    display: inline-block;
+    margin-top: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+    color: inherit;
+    width: 1em;
+    height: 1em;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1;
   }
 
   .review_rev {
@@ -1138,7 +1192,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     display: block;
   }
 
-  .title-price h1 {
+  .title-price h1,
+  .title-price h2 {
     margin: 0;
     color: #f9e7d1;
     font-family: Georgia, "Times New Roman", serif;
@@ -1155,15 +1210,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     font-size: 14px;
     line-height: 1.45;
     font-weight: 600;
-  }
-
-  .product-support {
-    margin: 14px 0 0;
-    color: rgba(255, 255, 255, 0.66);
-    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.45;
-    font-weight: 700;
   }
 
   .product-specs {
@@ -3742,7 +3788,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   @media (max-width: 1000px) {
-    .title-price h1 {
+    .title-price h1,
+    .title-price h2 {
       font-size: 24px;
     }
 
@@ -3769,7 +3816,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   @media (max-width: 600px) {
 
-    .title-price h1 {
+    .title-price h1,
+    .title-price h2 {
       font-size: 20px;
     }
 
@@ -3863,7 +3911,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       margin-top: -5px;
     }
 
-    .title-price h1 {
+    .title-price h1,
+    .title-price h2 {
       font-size: 18px;
     }
 
@@ -3929,7 +3978,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       font-size: 13px;
     }
 
-    .title-price h1 {
+    .title-price h1,
+    .title-price h2 {
       font-size: 30px;
       line-height: 0.98;
     }
@@ -3939,14 +3989,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       color: #ffffff;
       font-size: 14px;
       line-height: 1.45;
-    }
-
-    .product_slide .right .product-support {
-      margin-top: 14px;
-      color: rgba(255, 255, 255, 0.66);
-      font-size: 14px;
-      line-height: 1.45;
-      font-weight: 700;
     }
 
     .product-specs {
@@ -4169,9 +4211,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     <!-- ===== ANNOUNCEMENT BAR ===== -->
     <div class="announcement-bar">
       <div class="announcement-track" id="track-xf">
-        <div class="announcement-text">🚚 Free shipping on all orders over ₹ 500</div>
+        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
         <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
-        <div class="announcement-text">🚚 Free shipping on all orders over ₹ 500</div>
+        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
         <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
       </div>
 
@@ -4228,9 +4270,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           <button class="buy-sheet-close" type="button" data-buy-sheet-close aria-label="Close buy panel">&times;</button>
         </div>
         <div class="buy-sheet-product">
-          <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.png" alt="" data-buy-sheet-image loading="lazy" decoding="async">
+          <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.png" alt="Valour Milky Mustard liquid spice bottle" data-buy-sheet-image loading="lazy" decoding="async">
           <div>
-            <strong data-buy-sheet-name>Milky Mustard Liquid Spice</strong>
+            <strong data-buy-sheet-name>Milky Mustard</strong>
             <span data-buy-sheet-meta>520 ml · Makes 1 kg fish</span>
           </div>
         </div>
@@ -4277,27 +4319,25 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.webp?v=1754497979&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.webp?v=1754497979&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TBX.webp?v=1754497979&width=800" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
 
             <div class="banner-content">
               <h1 class="hero-title">
-                Coconut <br>
-                Mustard Fish.
+                Milky Mustard Liquid Spice for Coconut Mustard Fish
               </h1>
 
               <h2 class="hero-subtitle">
-                Without The Old Process.
+                Make rich coconut mustard fish without grinding mustard, coconut, or spices.
               </h2>
 
               <p class="hero-highlight">
-                This is liquid spice.
+                Traditional flavour. Less preparation.
               </p>
 
               <p class="hero-description">
-                Built for Bengali Coconut <br>
-                Mustard Fish.
+                Cook coconut mustard fish without grinding.
               </p>
 
               <div class="cta-container">
@@ -4321,7 +4361,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 srcset="vendor/cdn/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_3_TB.png?v=1754497979&width=800" alt="Valour Milky Mustard liquid spice for coconut mustard fish" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
             <div class="cta-container">
@@ -4344,7 +4384,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 srcset="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800" alt="" loading="eager"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_2_TB.webp?v=1754497978&width=800" alt="Bengali-style mustard fish curry made with Milky Mustard" loading="eager"
                 fetchpriority="high" width="800" height="auto">
             </picture>
           </div>
@@ -4360,7 +4400,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 srcset="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800">
 
 
-              <img src="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="" loading="lazy"
+              <img src="vendor/cdn/cdn/shop/files/Mob_banner_4_TB.png?v=1754497978&width=800" alt="Finished coconut mustard fish served with Valour Milky Mustard" loading="lazy"
                 fetchpriority="low" width="800" height="auto">
             </picture>
           </div>
@@ -4450,7 +4490,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           <div class="comparison-slider" data-comparison-slider>
             <div class="comparison-panel comparison-panel--traditional" aria-hidden="true">
               <div class="comparison-scene">
-                <img src="vendor/cdn/cdn/shop/files/before_comp.webp" alt="" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/before_comp.webp" alt="Traditional cooking compared with Milky Mustard liquid spice" loading="lazy" decoding="async">
               </div>
               <div class="comparison-caption">
                 <p class="comparison-label">Normal cooking</p>
@@ -4460,7 +4500,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
             <div class="comparison-panel comparison-panel--valour" aria-hidden="true">
               <div class="comparison-scene">
-                <img src="vendor/cdn/cdn/shop/files/after_comp.webp" alt="" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/after_comp.webp" alt="How to cook coconut mustard fish using Milky Mustard" loading="lazy" decoding="async">
               </div>
               <div class="comparison-caption">
                 <p class="comparison-label">Liquid spice cooking</p>
@@ -4521,14 +4561,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
                   <div class="thumbnails">
 
-                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" loading="lazy" decoding="async">
-                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="Valour Milky Mustard liquid spice bottle" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="lazy" decoding="async">
 
-                    <img src="vendor/cdn/cdn/shop/files/image_3_prod.png" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/image_3_prod.png" alt="How to cook coconut mustard fish using Milky Mustard" loading="lazy" decoding="async">
                   </div>
 
                   <div class="main-image">
-                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="product" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="Valour Milky Mustard liquid spice bottle" loading="lazy" decoding="async">
                   </div>
 
                 </div>
@@ -4539,9 +4579,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <p class="brand">LIQUID SPICE</p>
 
                   <div class="title-price">
-                    <h1>Milky Mustard</h1>
-                    <p class="product-kicker">Liquid spice for Coconut mustard fish.</p>
-                    <p class="product-support">The base, already balanced.</p>
+                    <h2>Milky Mustard Liquid Spice</h2>
+                    <p class="product-kicker">Make coconut mustard fish without grinding mustard, coconut, or spices.</p>
                     <div class="product-specs" aria-label="Product details">
                       <span>520ml</span>
                       <span>Makes 1 kg fish</span>
@@ -4579,7 +4618,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                       type="button"
                       data-product-id="milky-mustard-520"
                       data-product-name="Milky Mustard Liquid Spice"
-                      data-product-descriptor="Liquid spice for Coconut mustard fish. The base, already balanced."
+                      data-product-descriptor="Make coconut mustard fish without grinding mustard, coconut, or spices."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg fish"
                       data-product-price="350"
@@ -4591,7 +4630,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                       type="button"
                       data-product-id="milky-mustard-520"
                       data-product-name="Milky Mustard Liquid Spice"
-                      data-product-descriptor="Liquid spice for Coconut mustard fish. The base, already balanced."
+                      data-product-descriptor="Make coconut mustard fish without grinding mustard, coconut, or spices."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg fish"
                       data-product-price="350"
@@ -4676,7 +4715,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
         </section>
 
-
         <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
           class="shopify-section text-scrolling-parent">
 
@@ -4747,7 +4785,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="review-card">
                     <h4>USER 1</h4>
                     <span>Verfied customer</span>
-                    <p class="stars_review">★★★★★</p>
+                    <p class="stars_review" aria-label="5 out of 5 stars">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                    </p>
                     <p class="review_rev">Amazing experience with the product...</p>
                   </div>
                 </div>
@@ -4763,7 +4807,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="review-card">
                     <h4>USER 2</h4>
                     <span>Verfied customer</span>
-                    <p class="stars_review">★★★★★</p>
+                    <p class="stars_review" aria-label="5 out of 5 stars">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                    </p>
                     <p class="review_rev">Amazing experience with the product...</p>
                   </div>
                 </div>
@@ -4779,7 +4829,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="review-card">
                     <h4>Another User</h4>
                     <span>Verfied customer</span>
-                    <p class="stars_review">★★★★★</p>
+                    <p class="stars_review" aria-label="5 out of 5 stars">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
+                    </p>
                     <p class="review_rev">Amazing experience with the product...</p>
                   </div>
                 </div>
@@ -4814,14 +4870,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
               onload="this.media='all'">
             <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js" defer></script>
 
-
-
           </div>
           <section class="final-cta-section" aria-labelledby="final-cta-title">
             <div class="final-cta-inner">
               <p class="final-cta-title" id="final-cta-title">Cook better</p>
               <h2 class="final-cta-headline">The core is already handled</h2>
-              <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish"
+              <a href="#slides_Xyz"
                 class="final-cta-button">Order now </a>
             </div>
           </section>
@@ -4862,8 +4916,8 @@ Prepare less.</h2>
 
                 <nav class="footer-links" aria-label="Footer navigation">
                   <a href="#how-it-works">How it works</a>
-                  <a href="https://wa.me/917005328132?text=I%20want%20to%20order%20Milky%20mustard%20fish">Order on
-                    WhatsApp</a>
+                  <a href="privacy-policy">
+                    Privacy policy</a>
                   <a href="#" aria-label="Valour on Instagram">Instagram</a>
                 </nav>
 
@@ -5911,7 +5965,7 @@ function initValourCartActions() {
 
   function getProductFromButton(button) {
     const productSlide = button.closest(".product_slide");
-    const productName = button.dataset.productName || productSlide?.querySelector(".title-price h1")?.textContent.trim() || "Valour product";
+    const productName = button.dataset.productName || productSlide?.querySelector(".title-price h1, .title-price h2")?.textContent.trim() || "Valour product";
     const productPrice = Number(button.dataset.productPrice || productSlide?.querySelector(".price")?.textContent.replace(/[^\d.]/g, "") || 0);
 
     return {

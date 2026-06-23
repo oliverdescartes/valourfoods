@@ -9,6 +9,14 @@ const Razorpay = require("razorpay");
 
 const app = express();
 app.use(cors());
+// app.use(
+//   cors({
+//     origin: [
+//       "https://www.liquidspice.in",
+//       "https://liquidspice.in",
+//     ],
+//   })
+// );
 app.use(express.json());
 
 const axios = require("axios");
@@ -3671,7 +3679,7 @@ async function startServer() {
   await connectDB();
 
   app.listen(PORT, () => {
-    console.log(`VALOUR running on  http://liquidspice.in`);
+    console.log(`VALOUR running on  http://localhost:${PORT}`);
   });
 }
 
