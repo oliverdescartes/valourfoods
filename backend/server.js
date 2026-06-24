@@ -3237,12 +3237,6 @@ function verifyRazorpaySignature({
 // ======================
 // API ROUTES (🔥 MUST BE FIRST)
 // ======================
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "LiquidSpice API",
-  });
-});
 
 app.use("/auth", require("./routes/auth"));
 app.use("/user", require("./routes/user"));

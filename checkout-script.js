@@ -6,6 +6,8 @@ const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const OTP_VALIDITY_MS = 5 * 60 * 1000;
 const DEMO_OTP_CODE = "123456";
+const API_BASE = "https://api.liquidspice.in";
+
 const CHECKOUT_STEPS = {
   CART: "cart",
   DETAILS: "details",
@@ -259,6 +261,7 @@ function showToast(message, type = "success") {
 }
 
 async function postJSON(url, payload) {
+  console.log(`POST ${url}`, "hey there!!!!");
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -421,7 +424,10 @@ function getSubtotal() {
 function calculateShipping(subtotal, pincode = "") {
   if (!subtotal) return 0;
   if (subtotal >= 799) return 0;
-  if (state.deliveryQuote && Number.isFinite(Number(state.deliveryQuote.price))) {
+  if (
+    state.deliveryQuote &&
+    Number.isFinite(Number(state.deliveryQuote.price))
+  ) {
     return Math.round(Number(state.deliveryQuote.price));
   }
   if (/^78/.test(pincode)) return 35;
@@ -570,7 +576,8 @@ function renderShippingPreview() {
     document.querySelector("[data-delivery-window]")?.textContent ||
     "Enter pincode for estimate";
 
-  dom.shippingCourier.textContent = quote?.name || (hasPincode ? "Shiprocket test courier" : "Enter pincode");
+  dom.shippingCourier.textContent =
+    quote?.name || (hasPincode ? "Shiprocket test courier" : "Enter pincode");
   dom.shippingWindow.textContent = deliveryText;
   dom.shippingMode.textContent = quote?.testMode
     ? "Testing only"
@@ -836,7 +843,7 @@ async function updateDeliveryEstimate() {
 
   try {
     const response = await fetch(
-      `/api/delivery-options?pincode=${encodeURIComponent(pincode)}`,
+      `${API_BASE}/api/delivery-options?pincode=${encodeURIComponent(pincode)}`,
     );
     const data = await response.json();
 
@@ -1077,10 +1084,13 @@ async function startRazorpayPayment({ razorpayOrder, orderPayload }) {
       handler: async (paymentResponse) => {
         try {
           // Signature verification step: backend validates Razorpay's HMAC before saving the order.
-          const verifiedOrder = await postJSON("/api/payment/verify", {
-            ...paymentResponse,
-            order: orderPayload,
-          });
+          const verifiedOrder = await postJSON(
+            `${API_BASE}/api/payment/verify`,
+            {
+              ...paymentResponse,
+              order: orderPayload,
+            },
+          );
           resolve(verifiedOrder);
         } catch (error) {
           reject(error);
@@ -1147,10 +1157,13 @@ async function placeOrder(event) {
     const orderPayload = buildOrderPayload();
 
     // Create order step: backend creates the Razorpay order for the final payable total.
-    const razorpayOrder = await postJSON("/api/payment/create-order", {
-      amount: state.totals.total,
-      currency: "INR",
-    });
+    const razorpayOrder = await postJSON(
+      `${API_BASE}/api/payment/create-order`,
+      {
+        amount: state.totals.total,
+        currency: "INR",
+      },
+    );
 
     const verifiedOrder = await startRazorpayPayment({
       razorpayOrder,
@@ -1189,7 +1202,9 @@ async function placeOrder(event) {
       reason: error.message,
     });
     showToast(error.message || "Payment failed. Please try again.", "error");
-    redirectToPaymentFailed(error.message || "Payment failed. Please try again.");
+    redirectToPaymentFailed(
+      error.message || "Payment failed. Please try again.",
+    );
   } finally {
     setOrderLoading(false);
   }
