@@ -135,7 +135,18 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     transform: translateY(12px);
     animation: loaderLogoReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
   }
-
+  .valour-hero__title {
+    max-width: 11ch;
+    margin: 0 auto;
+    color: inherit;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(3.65rem, 16vw, 7.75rem);
+    font-weight: 600;
+    line-height: 0.82;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
   .loader-logo::after {
     content: "";
     position: absolute;
@@ -1031,7 +1042,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     gap: 40px;
     width: 100%;
     background: #ffffff1c;
-    padding: 45px;
+    padding: 0;
     border-radius: 20px;
     margin: auto;
     margin-top: 49px;
@@ -1174,12 +1185,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   /* RIGHT SIDE */
-  .right {
+  .product_slide .right {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0;
     max-width: 430px;
+    box-sizing: border-box;
+    padding: 45px;
   }
 
   .brand {
@@ -1725,7 +1738,23 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
     .thumbnails {
       flex-direction: row;
-      justify-content: center;
+      justify-content: safe center;
+      width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 3px 0 8px;
+    }
+
+    .thumbnails::-webkit-scrollbar {
+      display: none;
+    }
+
+    .thumbnails img {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
     }
   }
 
@@ -2653,11 +2682,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     .valour-banner__inner {
       padding: 212px 24px;
     }
-.product_slide{
-      padding: 0;
-}
-
-.product_slide .right {padding:40px}
     .valour-banner__title {
       font-size: clamp(48px, 17vw, 72px);
       line-height: 0.95;
@@ -3978,15 +4002,18 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   @media (max-width: 500px) {
     .product_slide {
-      padding: 27px;
-      padding-bottom: 87px;
-      padding-top: 50px;
+      padding: 0;
+    }
+
+    .product_slide .right {
+      padding: 27px 27px 50px;
     }
 
     .thumbnails img {
       width: 80px;
       height: 80px;
     }
+
 
     .testimonial-sectionxyz .main-img {
       height: 170px;
@@ -4062,11 +4089,16 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
 
     .thumbnails img {
-      width: 45px;
-      height: 45px;
+      width: 55px;
+      height: 55px;
     }
 
+
     .product_slide {
+      padding: 0;
+    }
+
+    .product_slide .right {
       padding-left: 17px;
       padding-right: 17px;
     }
@@ -4365,18 +4397,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     background: transparent;
   }
 
-  .valour-hero__title {
-    max-width: 11ch;
-    margin: 0 auto;
-    color: inherit;
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: clamp(3.65rem, 16vw, 7.75rem);
-    font-weight: 600;
-    line-height: 0.82;
-    letter-spacing: -0.045em;
-    text-wrap: balance;
-    overflow-wrap: break-word;
-  }
+
 
   .valour-hero__scroll-cue {
     width: fit-content;
@@ -4467,6 +4488,23 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       width: min(64vw, 55rem);
     }
 
+  }
+  /* Show exactly three product thumbnails at every mobile carousel position. */
+  @media (max-width: 900px) {
+    .product_slide .thumbnails {
+      width: min(78%, 280px);
+      gap: 12px;
+      padding:5px;
+      margin-inline: auto;
+    }
+
+    .product_slide .thumbnails img {
+      flex: 0 0 calc((100% - 24px) / 3);
+      width: calc((100% - 24px) / 3);
+      height: auto;
+      aspect-ratio: 1;
+      box-sizing: border-box;
+    }
   }
 </style>
 
@@ -4622,7 +4660,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           </div>
         </section>
 
-        <div class="container_slider">
+       <div class="container_slider" data-autoplay="false">
           <div class="product-tabs" role="tablist" aria-label="Choose a product">
             <button class="product-tab active" type="button" role="tab" aria-selected="true" onclick="goToSlide(0)">Velvety Butter Chicken</button>
             <button class="product-tab" type="button" role="tab" aria-selected="false" onclick="goToSlide(1)">Mithila Fish Curry</button>
@@ -4646,11 +4684,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="thumbnails">
 
                     <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.webp" alt="Valour Milky Mustard liquid spice bottle" loading="lazy" decoding="async">
-                                        <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.png" alt="How to cook coconut mustard fish using Milky Mustard" loading="lazy" decoding="async">
-
-                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="lazy" decoding="async">
+                                        <!-- <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.png" alt="How to cook coconut mustard fish using Milky Mustard" loading="lazy" decoding="async"> -->
                     <img src="vendor/cdn/cdn/shop/files/imagetab2.png" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
 
+                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="lazy" decoding="async">
+                    
                   </div>
                 </div>
 
