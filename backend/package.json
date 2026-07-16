@@ -9,6 +9,8 @@
     "chat:quantity": "node simulate-whatsapp-chat.js quantity --debug",
     "chat:guided": "node simulate-whatsapp-chat.js guided --debug",
     "test": "node test-whatsapp-flow.js",
+    "whatsapp:test-bot": "node meta-whatsapp-test-bot.js",
+    "webhook:check": "node meta-webhook-check.js",
     "start": "node server.js"
   },
   "keywords": [],

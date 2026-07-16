@@ -1,857 +1,1106 @@
 <!doctype html>
 <html lang="en-IN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      const PRIVACY_CONFIG = {
+        businessName: "VALOUR",
+        websiteUrl: "https://liquidspice.in",
+        supportEmail: "support@liquidspice.in",
+        supportPhone: "+91 7005328132",
+        businessAddress: "123, Main Street, Bangalore, Karnataka 560001",
+        effectiveDate: "1st January 2023",
+      };
+    </script>
+    <meta name="robots" content="index, follow" />
+    <meta
+      name="description"
+      content="Read VALOUR's Privacy Policy for information about how we collect, use, share, protect, and retain customer data for orders, payments, shipping, WhatsApp communication, analytics, and advertising."
+    />
+    <meta property="og:site_name" content="VALOUR" />
+    <meta property="og:title" content="Privacy Policy | VALOUR" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:description"
+      content="VALOUR Privacy Policy covering ecommerce orders, Razorpay payments, Shiprocket delivery, WhatsApp support, analytics, advertising, cookies, and user rights."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Privacy Policy | VALOUR" />
+    <meta
+      name="twitter:description"
+      content="How VALOUR collects, uses, shares, and protects personal information."
+    />
 
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>
-    const PRIVACY_CONFIG = {
-      businessName: "VALOUR",
-      websiteUrl: "https://liquidspice.in",
-      supportEmail: "support@liquidspice.in",
-      supportPhone: "+91 98765 43210",
-      businessAddress: "123, Main Street, Bangalore, Karnataka 560001",
-      effectiveDate: "1st January 2023"
-    };
-  </script>
-  <meta name="robots" content="index, follow">
-  <meta name="description" content="Read VALOUR's Privacy Policy for information about how we collect, use, share, protect, and retain customer data for orders, payments, shipping, WhatsApp communication, analytics, and advertising.">
-  <meta property="og:site_name" content="VALOUR">
-  <meta property="og:title" content="Privacy Policy | VALOUR">
-  <meta property="og:type" content="website">
-  <meta property="og:description" content="VALOUR Privacy Policy covering ecommerce orders, Razorpay payments, Shiprocket delivery, WhatsApp support, analytics, advertising, cookies, and user rights.">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Privacy Policy | VALOUR">
-  <meta name="twitter:description" content="How VALOUR collects, uses, shares, and protects personal information.">
+    <title>Privacy Policy | VALOUR</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="vendor/cdn/cdn/shop/files/valourlogobrowser.png"
+    />
+    <link rel="canonical" href="" />
 
-  <title>Privacy Policy | VALOUR</title>
-  <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png">
-  <link rel="canonical" href="">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --ink: #17140f;
-      --muted: #6c6255;
-      --line: #e7ded0;
-      --paper: #fffaf1;
-      --panel: #ffffff;
-      --accent: #9c6a2d;
-      --accent-dark: #4c2f17;
-      --leaf: #1f5137;
-      --shadow: 0 24px 70px rgba(58, 38, 18, 0.12);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      color: var(--ink);
-      background:
-        linear-gradient(180deg, rgba(255, 250, 241, 0.92), rgba(255, 255, 255, 0.96)),
-        radial-gradient(circle at top left, rgba(156, 106, 45, 0.13), transparent 36%),
-        var(--paper);
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.7;
-    }
-
-    a {
-      color: var(--accent-dark);
-      text-decoration-thickness: 1px;
-      text-underline-offset: 4px;
-    }
-
-    .privacy-shell {
-      min-height: 100vh;
-    }
-
-    .policy-navbar-wrap {
-      border-bottom: 1px solid rgba(76, 47, 23, 0.12);
-      background: rgba(255, 250, 241, 0.82);
-      backdrop-filter: blur(16px);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .policy-navbar-wrap .privacy-navbar {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 22px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .policy-navbar-wrap .nav-logo {
-      display: inline-flex;
-      align-items: center;
-      text-decoration: none;
-    }
-
-    .policy-navbar-wrap .nav-logo img {
-      display: block;
-      width: clamp(100px, 10vw, 145px);
-      height: auto;
-    }
-
-    .policy-navbar-wrap .nav-shop {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      min-height: 34px;
-      padding: 0 16px;
-      border: 1px solid rgba(42, 42, 42, 0.34);
-      border-radius: 999px;
-      background: transparent;
-      color: #2a2a2a;
-      font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-      font-size: 12px;
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-decoration: none;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: nowrap;
-      transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
-    }
-
-    .policy-navbar-wrap .nav-shop:hover,
-    .policy-navbar-wrap .nav-shop:focus {
-      background: #2a2a2a;
-      color: #fff8ef;
-      transform: translateY(-1px);
-    }
-
-    .privacy-hero {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: clamp(56px, 8vw, 96px) 0 clamp(28px, 5vw, 56px);
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.55fr);
-      gap: clamp(28px, 6vw, 72px);
-      align-items: end;
-    }
-
-    .eyebrow {
-      margin: 0 0 12px;
-      color: var(--leaf);
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3 {
-      color: var(--ink);
-      line-height: 1.08;
-      letter-spacing: 0;
-    }
-
-    h1 {
-      margin: 0;
-      max-width: 780px;
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-size: clamp(3.1rem, 9vw, 6.7rem);
-      font-weight: 700;
-    }
-
-    .hero-copy {
-      max-width: 760px;
-      margin: 22px 0 0;
-      color: var(--muted);
-      font-size: clamp(1rem, 1.6vw, 1.15rem);
-    }
-
-    .policy-meta {
-      padding: 24px;
-      border: 1px solid rgba(76, 47, 23, 0.12);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.74);
-      box-shadow: var(--shadow);
-    }
-
-    .policy-meta dl {
-      margin: 0;
-      display: grid;
-      gap: 16px;
-    }
-
-    .policy-meta dt {
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .policy-meta dd {
-      margin: 5px 0 0;
-      color: var(--ink);
-      font-weight: 700;
-    }
-
-    .privacy-layout {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 0 0 clamp(64px, 9vw, 110px);
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: clamp(28px, 5vw, 64px);
-      align-items: start;
-    }
-
-    .toc {
-      position: sticky;
-      top: 100px;
-      padding: 20px;
-      border: 1px solid rgba(76, 47, 23, 0.12);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.72);
-    }
-
-    .toc h2 {
-      margin: 0 0 14px;
-      font-family: Inter, system-ui, sans-serif;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .toc ol {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 8px;
-    }
-
-    .toc a {
-      display: block;
-      color: var(--muted);
-      font-size: 0.92rem;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .toc a:hover,
-    .toc a:focus {
-      color: var(--accent-dark);
-    }
-
-    .policy-card {
-      border: 1px solid rgba(76, 47, 23, 0.12);
-      border-radius: 8px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .policy-section {
-      padding: clamp(26px, 4vw, 44px);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .policy-section:last-child {
-      border-bottom: 0;
-    }
-
-    .policy-section h2 {
-      margin: 0 0 16px;
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 700;
-    }
-
-    .policy-section h3 {
-      margin: 26px 0 10px;
-      font-size: 1.04rem;
-      font-weight: 800;
-    }
-
-    .policy-section p {
-      margin: 0 0 14px;
-      color: #433a31;
-      font-size: 1rem;
-    }
-
-    .policy-section p:last-child {
-      margin-bottom: 0;
-    }
-
-    .policy-section ul {
-      margin: 12px 0 0;
-      padding-left: 20px;
-      color: #433a31;
-    }
-
-    .policy-section li {
-      margin: 8px 0;
-    }
-
-    .notice {
-      margin-top: 18px;
-      padding: 18px 20px;
-      border-left: 4px solid var(--accent);
-      border-radius: 0 8px 8px 0;
-      background: #fff7e8;
-      color: #3e3023;
-      font-weight: 600;
-    }
-
-    .contact-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 18px;
-    }
-
-    .contact-row {
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 14px;
-      padding: 14px 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .contact-row strong {
-      color: var(--muted);
-      font-size: 0.86rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .privacy-footer {
-      border-top: 1px solid rgba(76, 47, 23, 0.12);
-      padding: 28px 16px;
-      color: var(--muted);
-      background: #fff7e8;
-      text-align: center;
-      font-size: 0.92rem;
-    }
-
-    @media (max-width: 880px) {
-      .privacy-hero,
-      .privacy-layout {
-        grid-template-columns: 1fr;
+    <style>
+      :root {
+        --ink: #17140f;
+        --muted: #6c6255;
+        --line: #e7ded0;
+        --paper: #fffaf1;
+        --panel: #ffffff;
+        --accent: #9c6a2d;
+        --accent-dark: #4c2f17;
+        --leaf: #1f5137;
+        --shadow: 0 24px 70px rgba(58, 38, 18, 0.12);
       }
 
-      .policy-meta {
-        box-shadow: none;
+      * {
+        box-sizing: border-box;
       }
 
-      .toc {
-        position: static;
+      html {
+        scroll-behavior: smooth;
       }
 
-      .toc ol {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 250, 241, 0.92),
+            rgba(255, 255, 255, 0.96)
+          ),
+          radial-gradient(
+            circle at top left,
+            rgba(156, 106, 45, 0.13),
+            transparent 36%
+          ),
+          var(--paper);
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.7;
       }
-    }
 
-    @media (max-width: 560px) {
-      .toc ol {
-        grid-template-columns: 1fr;
+      a {
+        color: var(--accent-dark);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
       }
 
-      .policy-section {
-        padding: 24px 18px;
+      .privacy-shell {
+        min-height: 100vh;
       }
 
-      .contact-row {
-        grid-template-columns: 1fr;
-        gap: 4px;
+      .policy-navbar-wrap {
+        border-bottom: 1px solid rgba(76, 47, 23, 0.12);
+        background: rgba(255, 250, 241, 0.82);
+        backdrop-filter: blur(16px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
       }
-    }
 
-    @media (max-width: 768px) {
       .policy-navbar-wrap .privacy-navbar {
-        width: min(100% - 28px, 1120px);
-        padding: 14px 0;
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 22px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
       }
 
-      .policy-navbar-wrap .nav-shop {
-        min-height: 32px;
-        padding: 0 12px;
-        font-size: 11px;
-        letter-spacing: 0.08em;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .policy-navbar-wrap .nav-shop {
-        min-height: 30px;
-        padding: 0 8px;
-        font-size: 10px;
-        letter-spacing: 0.02em;
+      .policy-navbar-wrap .nav-logo {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
       }
 
       .policy-navbar-wrap .nav-logo img {
-        width: clamp(92px, 27vw, 118px);
+        display: block;
+        width: clamp(100px, 10vw, 145px);
+        height: auto;
       }
-    }
-  </style>
-</head>
 
-<body>
-  <div class="privacy-shell">
-    <header class="policy-navbar-wrap">
-      <nav class="privacy-navbar" aria-label="Main navigation">
-        <a class="nav-logo" href="/" aria-label="VALOUR home">
-          <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
-        </a>
-        <a class="nav-shop" href="/#shop">Shop Now</a>
-      </nav>
-    </header>
+      .policy-navbar-wrap .nav-shop {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-height: 34px;
+        padding: 0 16px;
+        border: 1px solid rgba(42, 42, 42, 0.34);
+        border-radius: 999px;
+        background: transparent;
+        color: #2a2a2a;
+        font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+        font-size: 12px;
+        line-height: 1;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+        transition:
+          background 0.25s ease,
+          color 0.25s ease,
+          transform 0.25s ease;
+      }
 
-    <main>
-      <section class="privacy-hero" aria-labelledby="privacy-title">
-        <div>
-          <p class="eyebrow">Privacy Policy</p>
-          <h1 id="privacy-title">How <span data-config="businessName">VALOUR</span> protects your information</h1>
-          <p class="hero-copy">
-            This Privacy Policy explains how <span data-config="businessName">VALOUR</span> collects, uses, shares,
-            stores, and protects personal information when you visit our website, purchase liquid spice cooking bases,
-            contact us, receive WhatsApp updates, or interact with our advertising and analytics technologies.
-          </p>
+      .policy-navbar-wrap .nav-shop:hover,
+      .policy-navbar-wrap .nav-shop:focus {
+        background: #2a2a2a;
+        color: #fff8ef;
+        transform: translateY(-1px);
+      }
+
+      .privacy-hero {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: clamp(56px, 8vw, 96px) 0 clamp(28px, 5vw, 56px);
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.55fr);
+        gap: clamp(28px, 6vw, 72px);
+        align-items: end;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--leaf);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: var(--ink);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 780px;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(3.1rem, 9vw, 6.7rem);
+        font-weight: 700;
+      }
+
+      .hero-copy {
+        max-width: 760px;
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: clamp(1rem, 1.6vw, 1.15rem);
+      }
+
+      .policy-meta {
+        padding: 24px;
+        border: 1px solid rgba(76, 47, 23, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.74);
+        box-shadow: var(--shadow);
+      }
+
+      .policy-meta dl {
+        margin: 0;
+        display: grid;
+        gap: 16px;
+      }
+
+      .policy-meta dt {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .policy-meta dd {
+        margin: 5px 0 0;
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .privacy-layout {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 0 0 clamp(64px, 9vw, 110px);
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: clamp(28px, 5vw, 64px);
+        align-items: start;
+      }
+
+      .toc {
+        position: sticky;
+        top: 100px;
+        padding: 20px;
+        border: 1px solid rgba(76, 47, 23, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .toc h2 {
+        margin: 0 0 14px;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .toc ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+
+      .toc a {
+        display: block;
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .toc a:hover,
+      .toc a:focus {
+        color: var(--accent-dark);
+      }
+
+      .policy-card {
+        border: 1px solid rgba(76, 47, 23, 0.12);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .policy-section {
+        padding: clamp(26px, 4vw, 44px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .policy-section:last-child {
+        border-bottom: 0;
+      }
+
+      .policy-section h2 {
+        margin: 0 0 16px;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 700;
+      }
+
+      .policy-section h3 {
+        margin: 26px 0 10px;
+        font-size: 1.04rem;
+        font-weight: 800;
+      }
+
+      .policy-section p {
+        margin: 0 0 14px;
+        color: #433a31;
+        font-size: 1rem;
+      }
+
+      .policy-section p:last-child {
+        margin-bottom: 0;
+      }
+
+      .policy-section ul {
+        margin: 12px 0 0;
+        padding-left: 20px;
+        color: #433a31;
+      }
+
+      .policy-section li {
+        margin: 8px 0;
+      }
+
+      .notice {
+        margin-top: 18px;
+        padding: 18px 20px;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 8px 8px 0;
+        background: #fff7e8;
+        color: #3e3023;
+        font-weight: 600;
+      }
+
+      .contact-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .contact-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 14px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .contact-row strong {
+        color: var(--muted);
+        font-size: 0.86rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .privacy-footer {
+        border-top: 1px solid rgba(76, 47, 23, 0.12);
+        padding: 28px 16px;
+        color: var(--muted);
+        background: #fff7e8;
+        text-align: center;
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 880px) {
+        .privacy-hero,
+        .privacy-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .policy-meta {
+          box-shadow: none;
+        }
+
+        .toc {
+          position: static;
+        }
+
+        .toc ol {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 560px) {
+        .toc ol {
+          grid-template-columns: 1fr;
+        }
+
+        .policy-section {
+          padding: 24px 18px;
+        }
+
+        .contact-row {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .policy-navbar-wrap .privacy-navbar {
+          width: min(100% - 28px, 1120px);
+          padding: 14px 0;
+        }
+
+        .policy-navbar-wrap .nav-shop {
+          min-height: 32px;
+          padding: 0 12px;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .policy-navbar-wrap .nav-shop {
+          min-height: 30px;
+          padding: 0 8px;
+          font-size: 10px;
+          letter-spacing: 0.02em;
+        }
+
+        .policy-navbar-wrap .nav-logo img {
+          width: clamp(92px, 27vw, 118px);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="privacy-shell">
+      <header class="policy-navbar-wrap">
+        <nav class="privacy-navbar" aria-label="Main navigation">
+          <a class="nav-logo" href="/" aria-label="VALOUR home">
+            <img
+              src="vendor/cdn/cdn/shop/files/valourblacklogo.webp"
+              alt="Valour"
+            />
+          </a>
+          <a class="nav-shop" href="/#shop">Shop Now</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="privacy-hero" aria-labelledby="privacy-title">
+          <div>
+            <p class="eyebrow">Privacy Policy</p>
+            <h1 id="privacy-title">
+              How <span data-config="businessName">VALOUR</span> protects your
+              information
+            </h1>
+            <p class="hero-copy">
+              This Privacy Policy explains how
+              <span data-config="businessName">VALOUR</span> collects, uses,
+              shares, stores, and protects personal information when you visit
+              our website, purchase liquid spice cooking bases, contact us,
+              receive WhatsApp updates, or interact with our advertising and
+              analytics technologies.
+            </p>
+          </div>
+          <aside class="policy-meta" aria-label="Policy summary">
+            <dl>
+              <div>
+                <dt>Business</dt>
+                <dd data-config="businessName">VALOUR</dd>
+              </div>
+              <div>
+                <dt>Effective Date</dt>
+                <dd
+                  data-config="effectiveDate"
+                  data-fallback="Published on this page"
+                >
+                  Published on this page
+                </dd>
+              </div>
+              <div>
+                <dt>Applies To</dt>
+                <dd>India ecommerce customers and website visitors</dd>
+              </div>
+            </dl>
+          </aside>
+        </section>
+
+        <div class="privacy-layout">
+          <aside class="toc" aria-label="Privacy Policy contents">
+            <h2>Contents</h2>
+            <ol>
+              <li><a href="#introduction">Introduction</a></li>
+              <li>
+                <a href="#information-we-collect">Information We Collect</a>
+              </li>
+              <li>
+                <a href="#how-we-use-information">How We Use Information</a>
+              </li>
+              <li><a href="#order-processing">Order Processing</a></li>
+              <li><a href="#payments">Payments</a></li>
+              <li><a href="#shipping">Shipping and Delivery</a></li>
+              <li><a href="#whatsapp">WhatsApp Communication</a></li>
+              <li><a href="#marketing">Marketing Communications</a></li>
+              <li><a href="#cookies">Cookies and Tracking</a></li>
+              <li><a href="#analytics">Analytics and Advertising</a></li>
+              <li><a href="#third-party-services">Third-Party Services</a></li>
+              <li><a href="#retention">Data Retention</a></li>
+              <li><a href="#rights">User Rights</a></li>
+              <li><a href="#security">Data Security</a></li>
+              <li><a href="#children">Children's Privacy</a></li>
+              <li><a href="#changes">Changes</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ol>
+          </aside>
+
+          <article class="policy-card">
+            <section class="policy-section" id="introduction">
+              <h2>Introduction</h2>
+              <p>
+                This Privacy Policy applies to the website, ecommerce store,
+                customer support channels, WhatsApp Business communications,
+                marketing activities, and related services operated by
+                <span data-config="businessName">VALOUR</span>
+                in India. By visiting our website, placing an order, submitting
+                your details, communicating with us, or using our services, you
+                agree to the collection and use of information as described in
+                this Privacy Policy.
+              </p>
+              <p>
+                <span data-config="businessName">VALOUR</span> sells FMCG food
+                products, including liquid spice cooking bases, through a
+                direct-to-consumer ecommerce model. We collect only the
+                information reasonably required to operate our store, process
+                orders, deliver products, provide support, improve our website,
+                prevent misuse, and conduct lawful marketing.
+              </p>
+            </section>
+
+            <section class="policy-section" id="information-we-collect">
+              <h2>Information We Collect</h2>
+              <p>
+                We may collect the following categories of information directly
+                from you, automatically from your device, or through service
+                providers used to operate our ecommerce business.
+              </p>
+              <h3>Information you provide</h3>
+              <ul>
+                <li>
+                  Name, mobile number, email address, shipping address, and
+                  billing information.
+                </li>
+                <li>
+                  Order details, including products purchased, quantity, price,
+                  discounts, order status, delivery status, returns, refunds,
+                  and support history.
+                </li>
+                <li>
+                  Information submitted through checkout forms, contact forms,
+                  WhatsApp messages, email support, feedback forms, surveys,
+                  offers, or promotions.
+                </li>
+                <li>
+                  Any information you choose to provide when communicating with
+                  our customer support team.
+                </li>
+              </ul>
+              <h3>Information collected automatically</h3>
+              <ul>
+                <li>
+                  Device and browser information, including device type,
+                  operating system, browser type, IP address, approximate
+                  location, language preferences, and referring pages.
+                </li>
+                <li>
+                  Website usage data, including pages viewed, links clicked,
+                  time spent on pages, cart activity, checkout activity,
+                  campaign interactions, and other diagnostic data.
+                </li>
+                <li>
+                  Cookie identifiers, advertising identifiers, analytics events,
+                  and similar online tracking signals.
+                </li>
+              </ul>
+            </section>
+
+            <section class="policy-section" id="how-we-use-information">
+              <h2>How We Use Information</h2>
+              <p>
+                We use personal information for legitimate ecommerce, customer
+                service, legal, security, analytics, and marketing purposes,
+                including to:
+              </p>
+              <ul>
+                <li>
+                  Receive, confirm, process, ship, deliver, cancel, return,
+                  replace, or refund orders.
+                </li>
+                <li>
+                  Send transactional updates such as order confirmation, payment
+                  status, shipping status, delivery updates, support responses,
+                  and service messages.
+                </li>
+                <li>
+                  Process payments, verify transactions, prevent fraud, and
+                  maintain accurate financial and tax records.
+                </li>
+                <li>
+                  Provide customer support through WhatsApp Business API, email,
+                  phone, or other support channels.
+                </li>
+                <li>
+                  Improve our website, product assortment, checkout experience,
+                  delivery experience, customer service, advertising, and
+                  internal operations.
+                </li>
+                <li>
+                  Measure website traffic, campaign performance, conversions,
+                  and customer journeys using analytics and advertising tools.
+                </li>
+                <li>
+                  Send marketing messages, offers, product updates, and
+                  promotional communication where permitted by law or with your
+                  consent where required.
+                </li>
+                <li>
+                  Protect our website, users, business, rights, and systems
+                  against misuse, fraud, security threats, illegal activity, or
+                  policy violations.
+                </li>
+                <li>
+                  Comply with applicable laws, regulations, accounting
+                  obligations, tax requirements, lawful requests, and dispute
+                  resolution processes.
+                </li>
+              </ul>
+            </section>
+
+            <section class="policy-section" id="order-processing">
+              <h2>Order Processing</h2>
+              <p>
+                When you place an order, we use your name, mobile number, email
+                address, shipping address, billing information, order details,
+                and relevant transaction information to confirm your purchase,
+                prepare your order, issue invoices, coordinate delivery, provide
+                updates, handle customer support, and manage returns,
+                replacements, cancellations, or refunds.
+              </p>
+              <p>
+                We may contact you by WhatsApp, SMS, phone, or email for
+                transactional purposes related to your order, including
+                confirmation, payment status, shipping updates, failed delivery
+                attempts, address clarifications, and post-purchase support.
+              </p>
+            </section>
+
+            <section class="policy-section" id="payments">
+              <h2>Payments</h2>
+              <p>
+                Payments on our website are processed through Razorpay and its
+                payment infrastructure. We may share necessary transaction
+                information with Razorpay for payment processing, transaction
+                authentication, fraud prevention, refunds, chargebacks,
+                reconciliation, and compliance purposes.
+              </p>
+              <p class="notice">
+                <span data-config="businessName">VALOUR</span> does not store
+                your full debit card, credit card, UPI, net banking, wallet, or
+                other sensitive payment instrument details on our systems.
+                Payment card details and sensitive payment credentials are
+                processed securely through Razorpay in accordance with
+                applicable payment security standards and Razorpay's own
+                policies.
+              </p>
+              <p>
+                We may receive limited payment status information, such as
+                transaction ID, payment method type, amount, payment success or
+                failure status, refund status, and related reference numbers.
+              </p>
+            </section>
+
+            <section class="policy-section" id="shipping">
+              <h2>Shipping and Delivery</h2>
+              <p>
+                To fulfill orders, we may share your name, mobile number, email
+                address, shipping address, order details, package details,
+                invoice information, and delivery instructions with Shiprocket
+                and courier partners used for logistics, pickup, tracking,
+                delivery, non-delivery resolution, reverse pickup, returns, and
+                related customer communication.
+              </p>
+              <p>
+                Courier partners may contact you directly for delivery
+                coordination, address confirmation, delivery rescheduling, proof
+                of delivery, cash collection where applicable, failed delivery
+                attempts, or return pickup coordination.
+              </p>
+            </section>
+
+            <section class="policy-section" id="whatsapp">
+              <h2>WhatsApp Communication</h2>
+              <p>
+                We may use WhatsApp Business API to send order-related updates,
+                support messages, delivery notifications, product information,
+                feedback requests, and marketing communication where permitted.
+                For this purpose, we may share your mobile number, name, order
+                details, message content, and communication status with Meta
+                Platforms and WhatsApp Business service providers involved in
+                delivering these messages.
+              </p>
+              <p>
+                WhatsApp messages may include transactional messages such as
+                order confirmation, payment updates, shipment tracking, delivery
+                updates, and customer support responses. Marketing messages on
+                WhatsApp will be sent in accordance with applicable consent and
+                opt-out requirements.
+              </p>
+              <p>
+                You may opt out of promotional WhatsApp messages by following
+                the unsubscribe or opt-out instructions in the message, replying
+                with an opt-out request where supported, or contacting us using
+                the details in this Privacy Policy. Even if you opt out of
+                marketing messages, we may continue sending necessary
+                transactional or service-related communications.
+              </p>
+            </section>
+
+            <section class="policy-section" id="marketing">
+              <h2>Marketing Communications</h2>
+              <p>
+                We may use your name, email address, mobile number, order
+                history, product preferences, website usage data, and campaign
+                interactions to send product updates, offers, launch
+                announcements, reminders, surveys, and other marketing
+                communications through email, WhatsApp, SMS, phone, website
+                notifications, or online advertising platforms.
+              </p>
+              <p>
+                You can opt out of promotional communications at any time by
+                using unsubscribe options where available or by contacting us.
+                Opting out of marketing does not affect transactional
+                communications required to process your orders or provide
+                support.
+              </p>
+            </section>
+
+            <section class="policy-section" id="cookies">
+              <h2>Cookies and Tracking Technologies</h2>
+              <p>
+                Our website may use cookies, pixels, tags, scripts, SDKs, local
+                storage, server logs, and similar technologies to operate the
+                website, remember preferences, secure sessions, analyze usage,
+                improve performance, personalize content, measure conversions,
+                and deliver or evaluate advertising.
+              </p>
+              <p>
+                These technologies may collect device and browser information,
+                IP address, approximate location, pages viewed, events
+                performed, referral source, cart and checkout interactions, and
+                advertising identifiers.
+              </p>
+              <p>
+                You can manage cookies through your browser settings. If you
+                disable certain cookies, some parts of the website, checkout,
+                analytics, personalization, or advertising measurement may not
+                function as intended.
+              </p>
+            </section>
+
+            <section class="policy-section" id="analytics">
+              <h2>Analytics and Advertising</h2>
+              <p>
+                We may use Google Analytics 4, Google Tag Manager, Google Ads,
+                Meta Pixel, Meta Conversion API, Facebook Ads, Instagram Ads,
+                and similar analytics or advertising platforms to understand
+                website usage, measure ad performance, attribute conversions,
+                build audiences, improve campaigns, and show more relevant ads.
+              </p>
+              <p>
+                For these purposes, we may share or make available website usage
+                data, device and browser information, cookie identifiers, hashed
+                contact information where supported, purchase events, cart
+                events, checkout events, page view events, and conversion
+                information with Google, Meta Platforms, and other advertising
+                or analytics partners.
+              </p>
+              <p>
+                These platforms may process information according to their own
+                terms and privacy policies. Their tools may connect your
+                activity on our website with your activity on other websites,
+                apps, or services, depending on your account settings, consent
+                choices, browser settings, and applicable law.
+              </p>
+            </section>
+
+            <section class="policy-section" id="third-party-services">
+              <h2>Third-Party Services</h2>
+              <p>
+                We may share personal information with trusted service providers
+                and partners only as reasonably required to operate our
+                business, provide our services, or comply with law. These may
+                include:
+              </p>
+              <ul>
+                <li>
+                  Razorpay for payment processing, refunds, fraud prevention,
+                  transaction verification, and payment compliance.
+                </li>
+                <li>
+                  Shiprocket and courier partners for order fulfillment,
+                  shipment tracking, delivery, return pickup, and logistics
+                  support.
+                </li>
+                <li>
+                  Meta Platforms and WhatsApp Business service providers for
+                  WhatsApp communication, customer support, service messages,
+                  and permitted marketing communication.
+                </li>
+                <li>
+                  Google Analytics, Google Tag Manager, Google Ads, Meta Pixel,
+                  Meta Conversion API, Facebook Ads, Instagram Ads, and other
+                  analytics or advertising platforms for website analytics,
+                  campaign measurement, conversion tracking, and marketing.
+                </li>
+                <li>
+                  Email, hosting, database, security, customer support,
+                  accounting, legal, compliance, and technology providers that
+                  help us operate the website and business.
+                </li>
+                <li>
+                  Government authorities, regulators, courts, law enforcement
+                  agencies, professional advisers, or other parties where
+                  disclosure is required or permitted by law.
+                </li>
+              </ul>
+              <p>
+                We do not sell personal information as a standalone business.
+                However, some advertising and analytics technologies may be
+                considered sharing of information for targeted advertising or
+                measurement under certain privacy laws.
+              </p>
+            </section>
+
+            <section class="policy-section" id="retention">
+              <h2>Data Retention</h2>
+              <p>
+                We retain personal information for as long as necessary to
+                fulfill the purposes described in this Privacy Policy, including
+                order processing, delivery, customer support, accounting, tax,
+                audit, fraud prevention, legal compliance, dispute resolution,
+                analytics, and legitimate business recordkeeping.
+              </p>
+              <p>
+                Order, invoice, payment, delivery, and support records may be
+                retained for periods required under applicable Indian laws, tax
+                rules, accounting requirements, ecommerce obligations,
+                limitation periods, and internal compliance needs. When
+                information is no longer required, we will delete, anonymize, or
+                securely restrict it in accordance with our operational and
+                legal requirements.
+              </p>
+            </section>
+
+            <section class="policy-section" id="rights">
+              <h2>User Rights</h2>
+              <p>
+                Subject to applicable law, you may contact
+                <span data-config="businessName">VALOUR</span> to exercise
+                privacy rights regarding your personal information, including
+                requests to:
+              </p>
+              <ul>
+                <li>Access the personal information we hold about you.</li>
+                <li>
+                  Correct or update inaccurate or incomplete personal
+                  information.
+                </li>
+                <li>
+                  Request deletion of your personal information, subject to
+                  legal, tax, fraud prevention, dispute, and operational
+                  retention requirements.
+                </li>
+                <li>
+                  Withdraw consent for optional marketing communications where
+                  processing is based on consent.
+                </li>
+                <li>
+                  Opt out of promotional communications through available
+                  unsubscribe or opt-out mechanisms.
+                </li>
+              </ul>
+              <p>
+                To protect your privacy and security, we may verify your
+                identity before responding to a request. We may be unable to
+                delete information that is required for completed transactions,
+                legal compliance, tax records, fraud prevention, security, or
+                dispute resolution.
+              </p>
+            </section>
+
+            <section class="policy-section" id="security">
+              <h2>Data Security</h2>
+              <p>
+                We use reasonable technical, administrative, and organizational
+                safeguards designed to protect personal information against
+                unauthorized access, disclosure, alteration, misuse, or loss.
+                These safeguards may include access controls, secure payment
+                processing through Razorpay, limited internal access, system
+                monitoring, and vendor controls.
+              </p>
+              <p>
+                No website, internet transmission, storage system, or electronic
+                communication method is completely secure. You are responsible
+                for using secure devices, protecting your account and
+                communication channels, and avoiding sharing sensitive
+                information through unsecured means.
+              </p>
+            </section>
+
+            <section class="policy-section" id="children">
+              <h2>Children's Privacy</h2>
+              <p>
+                Our website and products are intended for general consumers and
+                are not directed at children. We do not knowingly collect
+                personal information from children without appropriate consent
+                from a parent or guardian where required by applicable law. If
+                you believe a child has provided us personal information without
+                proper consent, please contact us so we can review and take
+                appropriate action.
+              </p>
+            </section>
+
+            <section class="policy-section" id="changes">
+              <h2>Changes to this Privacy Policy</h2>
+              <p>
+                We may update this Privacy Policy from time to time to reflect
+                changes in our business, website, technology, service providers,
+                legal requirements, or privacy practices. The updated version
+                will be posted on this page with the effective date shown above
+                where available.
+              </p>
+              <p>
+                Your continued use of our website or services after an updated
+                Privacy Policy is posted means you acknowledge the revised
+                policy. We encourage you to review this page periodically.
+              </p>
+            </section>
+
+            <section class="policy-section" id="contact">
+              <h2>Contact Information</h2>
+              <p>
+                If you have questions about this Privacy Policy, our privacy
+                practices, or want to access, correct, or request deletion of
+                your personal information, you may contact
+                <span data-config="businessName">VALOUR</span>
+                using the details below.
+              </p>
+              <div class="contact-list" aria-label="Contact details">
+                <div class="contact-row" data-optional="supportEmail">
+                  <strong>Email</strong>
+                  <span data-config="supportEmail"></span>
+                </div>
+                <div class="contact-row" data-optional="supportPhone">
+                  <strong>Phone</strong>
+                  <span data-config="supportPhone"></span>
+                </div>
+                <div class="contact-row" data-optional="businessAddress">
+                  <strong>Address</strong>
+                  <span data-config="businessAddress"></span>
+                </div>
+                <div class="contact-row" data-optional="websiteUrl">
+                  <strong>Website</strong>
+                  <span data-config="websiteUrl"></span>
+                </div>
+              </div>
+              <p id="contactFallback">
+                Contact details for
+                <span data-config="businessName">VALOUR</span> are available
+                through the official website and active customer support
+                channels displayed on the store.
+              </p>
+            </section>
+          </article>
         </div>
-        <aside class="policy-meta" aria-label="Policy summary">
-          <dl>
-            <div>
-              <dt>Business</dt>
-              <dd data-config="businessName">VALOUR</dd>
-            </div>
-            <div>
-              <dt>Effective Date</dt>
-              <dd data-config="effectiveDate" data-fallback="Published on this page">Published on this page</dd>
-            </div>
-            <div>
-              <dt>Applies To</dt>
-              <dd>India ecommerce customers and website visitors</dd>
-            </div>
-          </dl>
-        </aside>
-      </section>
+      </main>
 
-      <div class="privacy-layout">
-        <aside class="toc" aria-label="Privacy Policy contents">
-          <h2>Contents</h2>
-          <ol>
-            <li><a href="#introduction">Introduction</a></li>
-            <li><a href="#information-we-collect">Information We Collect</a></li>
-            <li><a href="#how-we-use-information">How We Use Information</a></li>
-            <li><a href="#order-processing">Order Processing</a></li>
-            <li><a href="#payments">Payments</a></li>
-            <li><a href="#shipping">Shipping and Delivery</a></li>
-            <li><a href="#whatsapp">WhatsApp Communication</a></li>
-            <li><a href="#marketing">Marketing Communications</a></li>
-            <li><a href="#cookies">Cookies and Tracking</a></li>
-            <li><a href="#analytics">Analytics and Advertising</a></li>
-            <li><a href="#third-party-services">Third-Party Services</a></li>
-            <li><a href="#retention">Data Retention</a></li>
-            <li><a href="#rights">User Rights</a></li>
-            <li><a href="#security">Data Security</a></li>
-            <li><a href="#children">Children's Privacy</a></li>
-            <li><a href="#changes">Changes</a></li>
-            <li><a href="#contact">Contact</a></li>
-          </ol>
-        </aside>
+      <footer class="privacy-footer">
+        <span
+          >&copy; <span id="year"></span>
+          <span data-config="businessName">VALOUR</span>. All rights
+          reserved.</span
+        >
+      </footer>
+    </div>
 
-        <article class="policy-card">
-          <section class="policy-section" id="introduction">
-            <h2>Introduction</h2>
-            <p>
-              This Privacy Policy applies to the website, ecommerce store, customer support channels, WhatsApp Business
-              communications, marketing activities, and related services operated by <span data-config="businessName">VALOUR</span>
-              in India. By visiting our website, placing an order, submitting your details, communicating with us, or
-              using our services, you agree to the collection and use of information as described in this Privacy Policy.
-            </p>
-            <p>
-              <span data-config="businessName">VALOUR</span> sells FMCG food products, including liquid spice cooking
-              bases, through a direct-to-consumer ecommerce model. We collect only the information reasonably required
-              to operate our store, process orders, deliver products, provide support, improve our website, prevent
-              misuse, and conduct lawful marketing.
-            </p>
-          </section>
+    <script>
+      (function () {
+        const config = window.PRIVACY_CONFIG || PRIVACY_CONFIG;
+        const clean = function (value) {
+          return typeof value === "string" ? value.trim() : "";
+        };
 
-          <section class="policy-section" id="information-we-collect">
-            <h2>Information We Collect</h2>
-            <p>We may collect the following categories of information directly from you, automatically from your device, or through service providers used to operate our ecommerce business.</p>
-            <h3>Information you provide</h3>
-            <ul>
-              <li>Name, mobile number, email address, shipping address, and billing information.</li>
-              <li>Order details, including products purchased, quantity, price, discounts, order status, delivery status, returns, refunds, and support history.</li>
-              <li>Information submitted through checkout forms, contact forms, WhatsApp messages, email support, feedback forms, surveys, offers, or promotions.</li>
-              <li>Any information you choose to provide when communicating with our customer support team.</li>
-            </ul>
-            <h3>Information collected automatically</h3>
-            <ul>
-              <li>Device and browser information, including device type, operating system, browser type, IP address, approximate location, language preferences, and referring pages.</li>
-              <li>Website usage data, including pages viewed, links clicked, time spent on pages, cart activity, checkout activity, campaign interactions, and other diagnostic data.</li>
-              <li>Cookie identifiers, advertising identifiers, analytics events, and similar online tracking signals.</li>
-            </ul>
-          </section>
-
-          <section class="policy-section" id="how-we-use-information">
-            <h2>How We Use Information</h2>
-            <p>We use personal information for legitimate ecommerce, customer service, legal, security, analytics, and marketing purposes, including to:</p>
-            <ul>
-              <li>Receive, confirm, process, ship, deliver, cancel, return, replace, or refund orders.</li>
-              <li>Send transactional updates such as order confirmation, payment status, shipping status, delivery updates, support responses, and service messages.</li>
-              <li>Process payments, verify transactions, prevent fraud, and maintain accurate financial and tax records.</li>
-              <li>Provide customer support through WhatsApp Business API, email, phone, or other support channels.</li>
-              <li>Improve our website, product assortment, checkout experience, delivery experience, customer service, advertising, and internal operations.</li>
-              <li>Measure website traffic, campaign performance, conversions, and customer journeys using analytics and advertising tools.</li>
-              <li>Send marketing messages, offers, product updates, and promotional communication where permitted by law or with your consent where required.</li>
-              <li>Protect our website, users, business, rights, and systems against misuse, fraud, security threats, illegal activity, or policy violations.</li>
-              <li>Comply with applicable laws, regulations, accounting obligations, tax requirements, lawful requests, and dispute resolution processes.</li>
-            </ul>
-          </section>
-
-          <section class="policy-section" id="order-processing">
-            <h2>Order Processing</h2>
-            <p>
-              When you place an order, we use your name, mobile number, email address, shipping address, billing
-              information, order details, and relevant transaction information to confirm your purchase, prepare your
-              order, issue invoices, coordinate delivery, provide updates, handle customer support, and manage returns,
-              replacements, cancellations, or refunds.
-            </p>
-            <p>
-              We may contact you by WhatsApp, SMS, phone, or email for transactional purposes related to your order,
-              including confirmation, payment status, shipping updates, failed delivery attempts, address clarifications,
-              and post-purchase support.
-            </p>
-          </section>
-
-          <section class="policy-section" id="payments">
-            <h2>Payments</h2>
-            <p>
-              Payments on our website are processed through Razorpay and its payment infrastructure. We may share
-              necessary transaction information with Razorpay for payment processing, transaction authentication,
-              fraud prevention, refunds, chargebacks, reconciliation, and compliance purposes.
-            </p>
-            <p class="notice">
-              <span data-config="businessName">VALOUR</span> does not store your full debit card, credit card, UPI,
-              net banking, wallet, or other sensitive payment instrument details on our systems. Payment card details
-              and sensitive payment credentials are processed securely through Razorpay in accordance with applicable
-              payment security standards and Razorpay's own policies.
-            </p>
-            <p>
-              We may receive limited payment status information, such as transaction ID, payment method type, amount,
-              payment success or failure status, refund status, and related reference numbers.
-            </p>
-          </section>
-
-          <section class="policy-section" id="shipping">
-            <h2>Shipping and Delivery</h2>
-            <p>
-              To fulfill orders, we may share your name, mobile number, email address, shipping address, order details,
-              package details, invoice information, and delivery instructions with Shiprocket and courier partners used
-              for logistics, pickup, tracking, delivery, non-delivery resolution, reverse pickup, returns, and related
-              customer communication.
-            </p>
-            <p>
-              Courier partners may contact you directly for delivery coordination, address confirmation, delivery
-              rescheduling, proof of delivery, cash collection where applicable, failed delivery attempts, or return
-              pickup coordination.
-            </p>
-          </section>
-
-          <section class="policy-section" id="whatsapp">
-            <h2>WhatsApp Communication</h2>
-            <p>
-              We may use WhatsApp Business API to send order-related updates, support messages, delivery notifications,
-              product information, feedback requests, and marketing communication where permitted. For this purpose, we
-              may share your mobile number, name, order details, message content, and communication status with Meta
-              Platforms and WhatsApp Business service providers involved in delivering these messages.
-            </p>
-            <p>
-              WhatsApp messages may include transactional messages such as order confirmation, payment updates, shipment
-              tracking, delivery updates, and customer support responses. Marketing messages on WhatsApp will be sent in
-              accordance with applicable consent and opt-out requirements.
-            </p>
-            <p>
-              You may opt out of promotional WhatsApp messages by following the unsubscribe or opt-out instructions in
-              the message, replying with an opt-out request where supported, or contacting us using the details in this
-              Privacy Policy. Even if you opt out of marketing messages, we may continue sending necessary transactional
-              or service-related communications.
-            </p>
-          </section>
-
-          <section class="policy-section" id="marketing">
-            <h2>Marketing Communications</h2>
-            <p>
-              We may use your name, email address, mobile number, order history, product preferences, website usage
-              data, and campaign interactions to send product updates, offers, launch announcements, reminders, surveys,
-              and other marketing communications through email, WhatsApp, SMS, phone, website notifications, or online
-              advertising platforms.
-            </p>
-            <p>
-              You can opt out of promotional communications at any time by using unsubscribe options where available or
-              by contacting us. Opting out of marketing does not affect transactional communications required to process
-              your orders or provide support.
-            </p>
-          </section>
-
-          <section class="policy-section" id="cookies">
-            <h2>Cookies and Tracking Technologies</h2>
-            <p>
-              Our website may use cookies, pixels, tags, scripts, SDKs, local storage, server logs, and similar
-              technologies to operate the website, remember preferences, secure sessions, analyze usage, improve
-              performance, personalize content, measure conversions, and deliver or evaluate advertising.
-            </p>
-            <p>These technologies may collect device and browser information, IP address, approximate location, pages viewed, events performed, referral source, cart and checkout interactions, and advertising identifiers.</p>
-            <p>
-              You can manage cookies through your browser settings. If you disable certain cookies, some parts of the
-              website, checkout, analytics, personalization, or advertising measurement may not function as intended.
-            </p>
-          </section>
-
-          <section class="policy-section" id="analytics">
-            <h2>Analytics and Advertising</h2>
-            <p>
-              We may use Google Analytics 4, Google Tag Manager, Google Ads, Meta Pixel, Meta Conversion API, Facebook
-              Ads, Instagram Ads, and similar analytics or advertising platforms to understand website usage, measure
-              ad performance, attribute conversions, build audiences, improve campaigns, and show more relevant ads.
-            </p>
-            <p>
-              For these purposes, we may share or make available website usage data, device and browser information,
-              cookie identifiers, hashed contact information where supported, purchase events, cart events, checkout
-              events, page view events, and conversion information with Google, Meta Platforms, and other advertising
-              or analytics partners.
-            </p>
-            <p>
-              These platforms may process information according to their own terms and privacy policies. Their tools may
-              connect your activity on our website with your activity on other websites, apps, or services, depending on
-              your account settings, consent choices, browser settings, and applicable law.
-            </p>
-          </section>
-
-          <section class="policy-section" id="third-party-services">
-            <h2>Third-Party Services</h2>
-            <p>We may share personal information with trusted service providers and partners only as reasonably required to operate our business, provide our services, or comply with law. These may include:</p>
-            <ul>
-              <li>Razorpay for payment processing, refunds, fraud prevention, transaction verification, and payment compliance.</li>
-              <li>Shiprocket and courier partners for order fulfillment, shipment tracking, delivery, return pickup, and logistics support.</li>
-              <li>Meta Platforms and WhatsApp Business service providers for WhatsApp communication, customer support, service messages, and permitted marketing communication.</li>
-              <li>Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Meta Conversion API, Facebook Ads, Instagram Ads, and other analytics or advertising platforms for website analytics, campaign measurement, conversion tracking, and marketing.</li>
-              <li>Email, hosting, database, security, customer support, accounting, legal, compliance, and technology providers that help us operate the website and business.</li>
-              <li>Government authorities, regulators, courts, law enforcement agencies, professional advisers, or other parties where disclosure is required or permitted by law.</li>
-            </ul>
-            <p>
-              We do not sell personal information as a standalone business. However, some advertising and analytics
-              technologies may be considered sharing of information for targeted advertising or measurement under
-              certain privacy laws.
-            </p>
-          </section>
-
-          <section class="policy-section" id="retention">
-            <h2>Data Retention</h2>
-            <p>
-              We retain personal information for as long as necessary to fulfill the purposes described in this Privacy
-              Policy, including order processing, delivery, customer support, accounting, tax, audit, fraud prevention,
-              legal compliance, dispute resolution, analytics, and legitimate business recordkeeping.
-            </p>
-            <p>
-              Order, invoice, payment, delivery, and support records may be retained for periods required under
-              applicable Indian laws, tax rules, accounting requirements, ecommerce obligations, limitation periods, and
-              internal compliance needs. When information is no longer required, we will delete, anonymize, or securely
-              restrict it in accordance with our operational and legal requirements.
-            </p>
-          </section>
-
-          <section class="policy-section" id="rights">
-            <h2>User Rights</h2>
-            <p>
-              Subject to applicable law, you may contact <span data-config="businessName">VALOUR</span> to exercise
-              privacy rights regarding your personal information, including requests to:
-            </p>
-            <ul>
-              <li>Access the personal information we hold about you.</li>
-              <li>Correct or update inaccurate or incomplete personal information.</li>
-              <li>Request deletion of your personal information, subject to legal, tax, fraud prevention, dispute, and operational retention requirements.</li>
-              <li>Withdraw consent for optional marketing communications where processing is based on consent.</li>
-              <li>Opt out of promotional communications through available unsubscribe or opt-out mechanisms.</li>
-            </ul>
-            <p>
-              To protect your privacy and security, we may verify your identity before responding to a request. We may
-              be unable to delete information that is required for completed transactions, legal compliance, tax records,
-              fraud prevention, security, or dispute resolution.
-            </p>
-          </section>
-
-          <section class="policy-section" id="security">
-            <h2>Data Security</h2>
-            <p>
-              We use reasonable technical, administrative, and organizational safeguards designed to protect personal
-              information against unauthorized access, disclosure, alteration, misuse, or loss. These safeguards may
-              include access controls, secure payment processing through Razorpay, limited internal access, system
-              monitoring, and vendor controls.
-            </p>
-            <p>
-              No website, internet transmission, storage system, or electronic communication method is completely
-              secure. You are responsible for using secure devices, protecting your account and communication channels,
-              and avoiding sharing sensitive information through unsecured means.
-            </p>
-          </section>
-
-          <section class="policy-section" id="children">
-            <h2>Children's Privacy</h2>
-            <p>
-              Our website and products are intended for general consumers and are not directed at children. We do not
-              knowingly collect personal information from children without appropriate consent from a parent or guardian
-              where required by applicable law. If you believe a child has provided us personal information without
-              proper consent, please contact us so we can review and take appropriate action.
-            </p>
-          </section>
-
-          <section class="policy-section" id="changes">
-            <h2>Changes to this Privacy Policy</h2>
-            <p>
-              We may update this Privacy Policy from time to time to reflect changes in our business, website,
-              technology, service providers, legal requirements, or privacy practices. The updated version will be
-              posted on this page with the effective date shown above where available.
-            </p>
-            <p>
-              Your continued use of our website or services after an updated Privacy Policy is posted means you
-              acknowledge the revised policy. We encourage you to review this page periodically.
-            </p>
-          </section>
-
-          <section class="policy-section" id="contact">
-            <h2>Contact Information</h2>
-            <p>
-              If you have questions about this Privacy Policy, our privacy practices, or want to access, correct, or
-              request deletion of your personal information, you may contact <span data-config="businessName">VALOUR</span>
-              using the details below.
-            </p>
-            <div class="contact-list" aria-label="Contact details">
-              <div class="contact-row" data-optional="supportEmail">
-                <strong>Email</strong>
-                <span data-config="supportEmail"></span>
-              </div>
-              <div class="contact-row" data-optional="supportPhone">
-                <strong>Phone</strong>
-                <span data-config="supportPhone"></span>
-              </div>
-              <div class="contact-row" data-optional="businessAddress">
-                <strong>Address</strong>
-                <span data-config="businessAddress"></span>
-              </div>
-              <div class="contact-row" data-optional="websiteUrl">
-                <strong>Website</strong>
-                <span data-config="websiteUrl"></span>
-              </div>
-            </div>
-            <p id="contactFallback">
-              Contact details for <span data-config="businessName">VALOUR</span> are available through the official
-              website and active customer support channels displayed on the store.
-            </p>
-          </section>
-        </article>
-      </div>
-    </main>
-
-    <footer class="privacy-footer">
-      <span>&copy; <span id="year"></span> <span data-config="businessName">VALOUR</span>. All rights reserved.</span>
-    </footer>
-  </div>
-
-  <script>
-    (function () {
-      const config = window.PRIVACY_CONFIG || PRIVACY_CONFIG;
-      const clean = function (value) {
-        return typeof value === "string" ? value.trim() : "";
-      };
-
-      document.querySelectorAll("[data-config]").forEach(function (node) {
-        const key = node.getAttribute("data-config");
-        const value = clean(config[key]);
-        const fallback = node.getAttribute("data-fallback") || node.textContent;
-        node.textContent = value || fallback;
-      });
-
-      document.querySelectorAll("[data-optional]").forEach(function (row) {
-        const key = row.getAttribute("data-optional");
-        if (!clean(config[key])) {
-          row.hidden = true;
-        }
-      });
-
-      const hasContactDetail = ["supportEmail", "supportPhone", "businessAddress", "websiteUrl"].some(function (key) {
-        return clean(config[key]);
-      });
-      const fallback = document.getElementById("contactFallback");
-      if (fallback && hasContactDetail) {
-        fallback.hidden = true;
-      }
-
-      const websiteUrl = clean(config.websiteUrl);
-      const businessName = clean(config.businessName) || "VALOUR";
-      document.title = "Privacy Policy | " + businessName;
-
-      const description = "Read " + businessName + "'s Privacy Policy for information about how we collect, use, share, protect, and retain customer data for orders, payments, shipping, WhatsApp communication, analytics, and advertising.";
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute("content", description);
-      }
-
-      document.querySelectorAll('meta[property="og:site_name"]').forEach(function (meta) {
-        meta.setAttribute("content", businessName);
-      });
-      document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach(function (meta) {
-        meta.setAttribute("content", "Privacy Policy | " + businessName);
-      });
-
-      const canonical = document.querySelector('link[rel="canonical"]');
-      if (websiteUrl) {
-        const normalized = websiteUrl.replace(/\/$/, "");
-        if (canonical) {
-          canonical.setAttribute("href", normalized + "/privacy-policy");
-        }
-        document.querySelectorAll('[data-config="websiteUrl"]').forEach(function (node) {
-          const link = document.createElement("a");
-          link.href = websiteUrl;
-          link.textContent = websiteUrl;
-          link.rel = "noopener";
-          node.textContent = "";
-          node.appendChild(link);
+        document.querySelectorAll("[data-config]").forEach(function (node) {
+          const key = node.getAttribute("data-config");
+          const value = clean(config[key]);
+          const fallback =
+            node.getAttribute("data-fallback") || node.textContent;
+          node.textContent = value || fallback;
         });
-      } else if (canonical) {
-        canonical.setAttribute("href", window.location.href.split("#")[0]);
-      }
 
-      const email = clean(config.supportEmail);
-      if (email) {
-        document.querySelectorAll('[data-config="supportEmail"]').forEach(function (node) {
-          const link = document.createElement("a");
-          link.href = "mailto:" + email;
-          link.textContent = email;
-          node.textContent = "";
-          node.appendChild(link);
+        document.querySelectorAll("[data-optional]").forEach(function (row) {
+          const key = row.getAttribute("data-optional");
+          if (!clean(config[key])) {
+            row.hidden = true;
+          }
         });
-      }
 
-      const year = document.getElementById("year");
-      if (year) {
-        year.textContent = new Date().getFullYear();
-      }
-    })();
-  </script>
-</body>
+        const hasContactDetail = [
+          "supportEmail",
+          "supportPhone",
+          "businessAddress",
+          "websiteUrl",
+        ].some(function (key) {
+          return clean(config[key]);
+        });
+        const fallback = document.getElementById("contactFallback");
+        if (fallback && hasContactDetail) {
+          fallback.hidden = true;
+        }
 
+        const websiteUrl = clean(config.websiteUrl);
+        const businessName = clean(config.businessName) || "VALOUR";
+        document.title = "Privacy Policy | " + businessName;
+
+        const description =
+          "Read " +
+          businessName +
+          "'s Privacy Policy for information about how we collect, use, share, protect, and retain customer data for orders, payments, shipping, WhatsApp communication, analytics, and advertising.";
+        const metaDescription = document.querySelector(
+          'meta[name="description"]',
+        );
+        if (metaDescription) {
+          metaDescription.setAttribute("content", description);
+        }
+
+        document
+          .querySelectorAll('meta[property="og:site_name"]')
+          .forEach(function (meta) {
+            meta.setAttribute("content", businessName);
+          });
+        document
+          .querySelectorAll(
+            'meta[property="og:title"], meta[name="twitter:title"]',
+          )
+          .forEach(function (meta) {
+            meta.setAttribute("content", "Privacy Policy | " + businessName);
+          });
+
+        const canonical = document.querySelector('link[rel="canonical"]');
+        if (websiteUrl) {
+          const normalized = websiteUrl.replace(/\/$/, "");
+          if (canonical) {
+            canonical.setAttribute("href", normalized + "/privacy-policy");
+          }
+          document
+            .querySelectorAll('[data-config="websiteUrl"]')
+            .forEach(function (node) {
+              const link = document.createElement("a");
+              link.href = websiteUrl;
+              link.textContent = websiteUrl;
+              link.rel = "noopener";
+              node.textContent = "";
+              node.appendChild(link);
+            });
+        } else if (canonical) {
+          canonical.setAttribute("href", window.location.href.split("#")[0]);
+        }
+
+        const email = clean(config.supportEmail);
+        if (email) {
+          document
+            .querySelectorAll('[data-config="supportEmail"]')
+            .forEach(function (node) {
+              const link = document.createElement("a");
+              link.href = "mailto:" + email;
+              link.textContent = email;
+              node.textContent = "";
+              node.appendChild(link);
+            });
+        }
+
+        const year = document.getElementById("year");
+        if (year) {
+          year.textContent = new Date().getFullYear();
+        }
+      })();
+    </script>
+  </body>
 </html>

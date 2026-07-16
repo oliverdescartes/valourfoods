@@ -3,10 +3,11 @@ const cors = require("cors");
 const path = require("path");
 const https = require("https");
 const crypto = require("crypto");
+const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 const { MongoClient, ObjectId } = require("mongodb");
 const Razorpay = require("razorpay");
-
+const GRAPH_VERSION = "v25.0";
 const app = express();
 app.use(cors());
 // app.use(
@@ -17,6 +18,7 @@ app.use(cors());
 //     ],
 //   })
 // );
+
 app.use(express.json());
 
 const axios = require("axios");
@@ -47,6 +49,40 @@ const razorpay = new Razorpay({
 });
 let db;
 const phoneQueues = new Map();
+const DEPENDENCY_RETRY_MS = 30000;
+let mongoReady = false;
+let wabaSubscribed = false;
+
+const PRODUCTS = {
+  velvety_butter: {
+    id: "velvety_butter",
+    name: "Velvety Butter",
+    recipeId: "butter_chicken_curry",
+    recipeName: "Butter Chicken Curry",
+    cookingType: "chicken",
+    primaryIngredient: "chicken",
+    videoEnvKey: "WHATSAPP_VELVETY_BUTTER_VIDEO_URL",
+    quantities: {
+      "250g": { label: "250g chicken" },
+      "500g": { label: "500g chicken" },
+      "1kg": { label: "1kg chicken" },
+    },
+  },
+  spicy_mustard: {
+    id: "spicy_mustard",
+    name: "Spicy Mustard",
+    recipeId: "spicy_mustard_fish_curry",
+    recipeName: "Spicy Mustard Fish Curry",
+    cookingType: "fish",
+    primaryIngredient: "fish",
+    videoEnvKey: "WHATSAPP_SPICY_MUSTARD_VIDEO_URL",
+    quantities: {
+      "250g": { label: "250g fish" },
+      "500g": { label: "500g fish" },
+      "1kg": { label: "1kg fish" },
+    },
+  },
+};
 
 function collections() {
   if (!db) {
@@ -69,7 +105,8 @@ async function connectDB() {
   await mongoClient.connect();
   db = mongoClient.db("valour_mvp");
 
-  const { users, sessions, messages, supportCases, orders } = collections();
+  const { users, sessions, messages, supportCases, orders, flowDefinitions } =
+    collections();
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
     sessions.createIndex({ user_id: 1, active: 1 }),
@@ -82,8 +119,28 @@ async function connectDB() {
       { unique: true, sparse: true },
     ),
     orders.createIndex({ phone: 1, createdAt: -1 }),
+    flowDefinitions.createIndex(
+      { product_id: 1, recipe_id: 1, quantity: 1, version: 1 },
+      {
+        unique: true,
+        partialFilterExpression: {
+          product_id: { $type: "string" },
+          recipe_id: { $type: "string" },
+          quantity: { $type: "string" },
+          version: { $type: "number" },
+        },
+      },
+    ),
+    flowDefinitions.createIndex({
+      product_id: 1,
+      recipe_id: 1,
+      quantity: 1,
+      status: 1,
+      version: -1,
+    }),
   ]);
 
+  mongoReady = true;
   console.log("MongoDB connected");
 }
 
@@ -175,8 +232,15 @@ function getFirstAction(text = "") {
     return "buy_now";
   }
   if (
+    lower === "4" ||
+    lower.includes("track") ||
+    lower.includes("order status")
+  ) {
+    return "track_order";
+  }
+  if (
     matchesAny(lower, [
-      "4",
+      "5",
       "help",
       "support",
       "customer care",
@@ -185,10 +249,6 @@ function getFirstAction(text = "") {
   ) {
     return "customer_care";
   }
-  if (lower.includes("track") || lower.includes("order status")) {
-    return "track_order";
-  }
-
   return lower ? "message" : null;
 }
 
@@ -216,6 +276,23 @@ function inferCookingType(text = "") {
   if (lower.includes("chicken")) return "chicken";
   if (lower.includes("paneer")) return "paneer";
   if (lower.includes("veg") || lower.includes("vegetable")) return "vegetables";
+
+  return null;
+}
+
+function inferProduct(text = "") {
+  const lower = normalizeText(text);
+
+  if (lower.includes("velvety butter") || lower.includes("butter chicken")) {
+    return "velvety_butter";
+  }
+  if (
+    lower.includes("spicy mustard") ||
+    lower.includes("mustard fish") ||
+    lower.includes("fish curry")
+  ) {
+    return "spicy_mustard";
+  }
 
   return null;
 }
@@ -338,20 +415,21 @@ function getLeadScoreDelta(text = "", action = "") {
   return score;
 }
 
-function buildCustomerSegment({ cookingType, painPoint }) {
-  const type = cookingType || "fish";
+function buildCustomerSegment({ productId, cookingType, painPoint }) {
+  const base = productId || cookingType || "unknown_product";
 
   return (
     {
-      ingredient_complexity: `${type}_complexity`,
-      taste_inconsistency: `${type}_consistency`,
-      time_consumption: `${type}_time`,
-      restaurant_style_desire: `${type}_restaurant`,
-    }[painPoint] || null
+      ingredient_complexity: `${base}_complexity`,
+      taste_inconsistency: `${base}_consistency`,
+      time_consumption: `${base}_time`,
+      restaurant_style_desire: `${base}_restaurant_style`,
+    }[painPoint] || `${base}_active_lead`
   );
 }
 
 function inferCustomerIntelligence(text = "", action = "") {
+  const productId = inferProduct(text);
   const cookingType = inferCookingType(text);
   const painPoint = inferPainPoint(text);
   const desiredOutcome = getDesiredOutcomeFromPainPoint(painPoint);
@@ -361,9 +439,10 @@ function inferCustomerIntelligence(text = "", action = "") {
       : action === "clicked_purchase"
         ? "high"
         : inferPurchaseIntent(text);
-  const segment = buildCustomerSegment({ cookingType, painPoint });
+  const segment = buildCustomerSegment({ productId, cookingType, painPoint });
 
   return compactSignalFields({
+    productId,
     cookingType,
     painPoint,
     desiredOutcome,
@@ -435,14 +514,16 @@ async function recordCompletedOrderIntelligence(order) {
   if (!phoneDigits) return;
 
   const intelligence = compactSignalFields({
-    cookingType: order.cookingType || "fish",
+    productId: order.productId || order.selected_product,
+    cookingType: order.cookingType,
     painPoint: order.painPoint,
     desiredOutcome: order.desiredOutcome,
     purchaseIntent: "completed",
     segment:
       order.segment ||
       buildCustomerSegment({
-        cookingType: order.cookingType || "fish",
+        productId: order.productId || order.selected_product,
+        cookingType: order.cookingType,
         painPoint: order.painPoint,
       }) ||
       "completed_order",
@@ -456,7 +537,6 @@ async function recordCompletedOrderIntelligence(order) {
     },
   );
 }
-
 function normalizeWhatsappRecipient(phone = "") {
   const digits = String(phone).replace(/\D/g, "");
 
@@ -467,13 +547,14 @@ function normalizeWhatsappRecipient(phone = "") {
 
 async function sendMessage(phone, body) {
   const recipient = normalizeWhatsappRecipient(phone);
+  console.log("WhatsApp message send attempt");
   console.log("WhatsApp text send attempt", {
     recipient,
     bodyLength: body.length,
   });
 
   const response = await axios.post(
-    `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
       to: recipient,
@@ -506,7 +587,7 @@ async function sendImageMessage(phone, imageUrl, caption) {
   });
 
   const response = await axios.post(
-    `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
       to: recipient,
@@ -526,6 +607,42 @@ async function sendImageMessage(phone, imageUrl, caption) {
   );
 
   console.log("WhatsApp image send accepted", {
+    recipient,
+    result: response.data,
+  });
+
+  return response.data;
+}
+
+async function sendVideoMessage(phone, videoUrl, caption) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  console.log("WhatsApp video send attempt", {
+    recipient,
+    videoUrl,
+    captionLength: caption.length,
+  });
+
+  const response = await axios.post(
+    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to: recipient,
+      type: "video",
+      video: {
+        link: videoUrl,
+        caption,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 10000,
+    },
+  );
+
+  console.log("WhatsApp video send accepted", {
     recipient,
     result: response.data,
   });
@@ -560,7 +677,7 @@ async function sendTemplateMessage(
   });
 
   const response = await axios.post(
-    `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
       to: recipient,
@@ -641,9 +758,13 @@ async function getOrCreateSession(userId) {
         user_id: userId,
         active: true,
         current_state: "idle",
+        selected_product: null,
+        selected_recipe: null,
         selected_quantity: null,
+        primary_ingredient: null,
         active_flow_id: null,
         active_flow: null,
+        active_flow_version: null,
         current_step_index: 0,
         last_flow_state: null,
         last_cooking_step_index: null,
@@ -661,6 +782,7 @@ async function getOrCreateSession(userId) {
         activationPreference: null,
         feedbackType: null,
         cookingType: null,
+        cooking_type: null,
         painPoint: null,
         desiredOutcome: null,
         purchaseIntent: null,
@@ -685,10 +807,16 @@ async function updateSession(sessionId, updates) {
 async function resetToIdle(sessionId) {
   await updateSession(sessionId, {
     current_state: "idle",
+    selected_product: null,
+    selected_recipe: null,
     selected_quantity: null,
+    primary_ingredient: null,
+    cookingType: null,
+    cooking_type: null,
     fishQuantity: null,
     active_flow_id: null,
     active_flow: null,
+    active_flow_version: null,
     current_step_index: 0,
     support_category: null,
     support_order_id: null,
@@ -724,9 +852,10 @@ async function sendMainMenu(phone) {
 Choose an option:
 
 1. Start guided cooking
-2. What is VALOUR?
+2. Explore VALOUR products
 3. Buy now
-4. Help with an order
+4. Track an order
+5. Customer care
 
 Reply MENU at any time.`,
   );
@@ -1199,6 +1328,13 @@ async function createSupportCase({ session, user, phone, details }) {
     campaign: session.campaign || null,
     firstAction: session.firstAction || null,
     fishQuantity: session.fishQuantity || session.selected_quantity || null,
+    product_id: session.selected_product || null,
+    recipe_id: session.selected_recipe || null,
+    selected_quantity: session.selected_quantity || null,
+    cooking_type: session.cookingType || null,
+    flow_id: session.active_flow_id || null,
+    flow_version: session.active_flow_version || null,
+    current_step_index: session.current_step_index ?? null,
     hesitationType: session.hesitationType || null,
     activationPreference: session.activationPreference || "customer_care",
     feedbackType: session.feedbackType || null,
@@ -1252,7 +1388,7 @@ function sanitizeReassuranceText(text = "") {
 async function reassuranceAI(userMessage) {
   try {
     const completion = await aiClient.chat.completions.create({
-      model: "openrouter/owl-alpha",
+      model: "openrouter/free",
       temperature: 0.1,
       max_tokens: 80,
       messages: [
@@ -1281,15 +1417,15 @@ Keep the answer under 25 words.`,
 }
 
 const BRAND_KNOWLEDGE = `
-VALOUR creates Liquid Spice — concentrated cooking bases that help people cook restaurant-style dishes at home without grinding, complicated preparation, or unnecessary waste.
-VALOUR is not powder masala, a ready-to-eat curry, or a meal replacement.
-Customers still cook the dish and add fish, chicken, paneer, or vegetables.
-MILKY MUSTARD is VALOUR's ready cooking base for Bengali-style mustard fish curry.
-It reduces mustard grinding, coconut preparation, measuring, and complicated spice preparation.
-The guided cooking service supports 250g, 500g, and 1kg fish quantities.
-To cook, choose your fish quantity and follow VALOUR's guided steps. The customer adds fish and basic kitchen staples like oil and water.
+VALOUR creates Liquid Spice cooking bases that simplify traditional curry preparation while the customer still cooks the final dish.
+VALOUR currently has two products.
+VELVETY BUTTER is VALOUR's cooking base for Butter Chicken Curry. The customer adds chicken and the basic ingredients specified by the verified cooking guide.
+SPICY MUSTARD is VALOUR's cooking base for Spicy Mustard Fish Curry. It reduces mustard grinding and complicated preparation. The customer adds fish and the basic ingredients specified by the verified cooking guide.
+Guided cooking supports 250g, 500g, and 1kg quantities for both products.
+VALOUR is not a ready-to-eat meal. Customers still cook the final curry.
+When a customer wants to cook, identify the product first: Velvety Butter for Butter Chicken Curry or Spicy Mustard for Spicy Mustard Fish Curry.
 Customers can get help with delivery, returns, refunds, damaged or missing items, product use, and cooking.
-Never claim an order status, ingredient, allergen, price, delivery date, return eligibility, refund approval, or policy that is not provided by the system.
+Never invent prices, delivery dates, order status, refund eligibility, ingredients, allergens, quantities, timings, or cooking instructions.
 `;
 
 function shouldTryBrandNLU(session, text) {
@@ -1338,7 +1474,13 @@ function shouldTryBrandNLU(session, text) {
   ];
   const brandTopics = [
     "valour",
-    "milky mustard",
+    "velvety butter",
+    "butter chicken",
+    "butter chicken curry",
+    "chicken",
+    "spicy mustard",
+    "mustard fish",
+    "spicy mustard fish curry",
     "mustard",
     "product",
     "spicy",
@@ -1348,6 +1490,7 @@ function shouldTryBrandNLU(session, text) {
     "allergen",
     "cook",
     "curry",
+    "liquid spice",
     "order",
     "delivery",
     "refund",
@@ -1380,8 +1523,19 @@ function shouldTryBrandNLU(session, text) {
 }
 
 async function getResumePrompt(session) {
+  if (session.current_state === "product_catalog") {
+    return "To continue, reply 1 for Velvety Butter, 2 for Spicy Mustard, or 3 to compare both.";
+  }
+  if (session.current_state === "product_details") {
+    return "To continue, reply 1 to start cooking, 2 to buy now, or 3 to go back.";
+  }
+  if (session.current_state === "product_selection") {
+    return "To continue, reply 1 for Velvety Butter or 2 for Spicy Mustard.";
+  }
+
   if (session.current_state === "awaiting_quantity") {
-    return "To continue, reply 1 for 250g, 2 for 500g, or 3 for 1kg.";
+    const product = PRODUCTS[session.selected_product];
+    return `You selected ${product?.name || "a VALOUR product"}. Reply 1 for 250g, 2 for 500g, or 3 for 1kg.`;
   }
 
   if (session.current_state === "product_exploration") {
@@ -1393,6 +1547,7 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "guided_cooking") {
+    const product = PRODUCTS[session.selected_product];
     const { flowDefinitions } = collections();
     const flow =
       session.active_flow ||
@@ -1402,7 +1557,7 @@ async function getResumePrompt(session) {
     const step = flow?.steps?.[session.current_step_index];
 
     if (step) {
-      return `You left at Step ${session.current_step_index + 1}/${flow.steps.length}. Reply REPEAT to see it again, NEXT when ready, BACK for the previous step, or MENU.`;
+      return `You are cooking ${product?.recipeName || "your recipe"}. You left at Step ${session.current_step_index + 1}/${flow.steps.length}. Reply REPEAT to see it again, NEXT when ready, BACK for the previous step, or MENU.`;
     }
 
     if (session.last_cooking_step_number && session.last_cooking_total_steps) {
@@ -1453,6 +1608,7 @@ function isValidBrandUnderstanding(result) {
       "show_menu",
       "handoff_support",
     ],
+    productId: ["velvety_butter", "spicy_mustard", null],
     cookingType: ["fish", "chicken", "paneer", "vegetables", null],
     painPoint: [
       "ingredient_complexity",
@@ -1476,6 +1632,7 @@ function isValidBrandUnderstanding(result) {
     allowed.scope.includes(result.scope) &&
     allowed.intent.includes(result.intent) &&
     allowed.flowAction.includes(result.flowAction) &&
+    allowed.productId.includes(result.productId ?? null) &&
     allowed.cookingType.includes(result.cookingType ?? null) &&
     allowed.painPoint.includes(result.painPoint ?? null) &&
     allowed.desiredOutcome.includes(result.desiredOutcome ?? null) &&
@@ -1494,12 +1651,14 @@ function getBrandUnderstandingIntelligence(result) {
   }
 
   return compactSignalFields({
+    productId: result.productId,
     cookingType: result.cookingType,
     painPoint: result.painPoint,
     desiredOutcome: result.desiredOutcome,
     purchaseIntent: result.purchaseIntent,
     segment: buildCustomerSegment({
-      cookingType: result.cookingType || "fish",
+      productId: result.productId,
+      cookingType: result.cookingType,
       painPoint: result.painPoint,
     }),
   });
@@ -1508,6 +1667,7 @@ function getBrandUnderstandingIntelligence(result) {
 async function answerBrandQuestion({ session, text, phone, userId }) {
   try {
     const customerContext = compactSignalFields({
+      productId: session.selected_product || session.productId,
       cookingType: session.cookingType,
       painPoint: session.painPoint,
       desiredOutcome: session.desiredOutcome,
@@ -1528,6 +1688,7 @@ Classify the user's message and respond as strict JSON:
   "scope":"brand"|"out_of_scope"|"uncertain",
   "intent":"product_info"|"cooking_help"|"ingredient_question"|"quantity_question"|"taste_question"|"time_question"|"price_question"|"delivery_question"|"buy_intent"|"support"|"flow_reply"|"unknown",
   "flowAction":"answer"|"start_cooking"|"continue_current_flow"|"show_menu"|"handoff_support",
+  "productId":"velvety_butter"|"spicy_mustard"|null,
   "cookingType":"fish"|"chicken"|"paneer"|"vegetables"|null,
   "painPoint":"ingredient_complexity"|"taste_inconsistency"|"time_consumption"|"restaurant_style_desire"|null,
   "desiredOutcome":"simpler_cooking"|"better_flavour"|"faster_preparation"|"consistent_results"|null,
@@ -1539,7 +1700,7 @@ Classify the user's message and respond as strict JSON:
 
 Rules:
 - Answer only questions about VALOUR, its products, cooking guidance, orders, delivery, returns, refunds, or customer care.
-- Make the core memory clear when relevant: VALOUR makes mustard fish easy.
+- Identify Velvety Butter with Butter Chicken Curry and Spicy Mustard with Spicy Mustard Fish Curry when relevant.
 - Do not behave like ChatGPT, an AI assistant, a chatbot, or a recipe encyclopedia.
 - If customer context contains a pain point, tailor the answer to it without mentioning segmentation.
 - Use only the verified brand knowledge below.
@@ -1617,6 +1778,246 @@ async function sendCookingScenarioQuestion(phone) {
 3. Cleaning up afterward
 4. Finding all ingredients`,
   );
+}
+
+async function sendProductSelection(phone) {
+  await sendMessage(
+    phone,
+    `What would you like to cook?
+
+1. Velvety Butter
+   Butter Chicken Curry
+
+2. Spicy Mustard
+   Spicy Mustard Fish Curry
+
+Reply with 1 or 2.
+Reply MENU to return.`,
+  );
+}
+
+async function sendProductCatalog(phone) {
+  await sendMessage(
+    phone,
+    `VALOUR helps you cook complete curries with less preparation.
+
+Choose a product:
+
+1. Velvety Butter
+   For Butter Chicken Curry
+
+2. Spicy Mustard
+   For Spicy Mustard Fish Curry
+
+3. Compare both
+
+Reply MENU to return.`,
+  );
+}
+
+async function sendProductDetails(phone, product) {
+  const description =
+    product.id === "velvety_butter"
+      ? "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy."
+      : "You still cook the fish and finish the dish. VALOUR reduces mustard grinding and complicated curry preparation.";
+
+  await sendMessage(
+    phone,
+    `${product.name}
+
+${product.name} is made for ${product.recipeName}.
+
+${description}
+
+1. Start cooking
+2. Buy now
+3. Back`,
+  );
+}
+
+async function handleProductCatalog({ session, text, phone }) {
+  const lower = normalizeText(text);
+  const product = parseProductSelection(text);
+
+  if (lower === "3" || lower.includes("compare")) {
+    await sendMessage(
+      phone,
+      `Velvety Butter creates a smooth, rich Butter Chicken Curry with balanced spices.
+
+Spicy Mustard creates a bold, authentic Mustard Fish Curry with fresh mustard flavour.
+
+Reply 1 for Velvety Butter, 2 for Spicy Mustard, or MENU.`,
+    );
+    return;
+  }
+
+  if (!product) {
+    await sendProductCatalog(phone);
+    return;
+  }
+
+  await updateSession(session._id, {
+    current_state: "product_details",
+    selected_product: product.id,
+    selected_recipe: product.recipeId,
+    primary_ingredient: product.primaryIngredient,
+    cookingType: product.cookingType,
+    cooking_type: product.cookingType,
+  });
+  await sendProductDetails(phone, product);
+}
+
+async function handleProductDetails({ session, text, phone, userId }) {
+  const lower = normalizeText(text);
+  const product = PRODUCTS[session.selected_product];
+
+  if (!product) {
+    await updateSession(session._id, { current_state: "product_catalog" });
+    await sendProductCatalog(phone);
+    return;
+  }
+
+  if (lower === "1" || lower.includes("start")) {
+    await updateSession(session._id, { current_state: "product_selection" });
+    await handleProductSelection({
+      session: { ...session, current_state: "product_selection" },
+      text: product.name,
+      phone,
+      userId,
+    });
+    return;
+  }
+  if (lower === "2" || lower.includes("buy")) {
+    await sendMessage(
+      phone,
+      "You can order here:\n\nhttps://liquidspice.in\n\nReply 3 to go back or MENU.",
+    );
+    return;
+  }
+  if (lower === "3" || lower.includes("back")) {
+    await updateSession(session._id, { current_state: "product_catalog" });
+    await sendProductCatalog(phone);
+    return;
+  }
+
+  await sendProductDetails(phone, product);
+}
+
+function parseProductSelection(text = "") {
+  const lower = normalizeText(text);
+
+  if (
+    lower === "1" ||
+    lower.includes("velvety butter") ||
+    lower.includes("butter chicken")
+  ) {
+    return PRODUCTS.velvety_butter;
+  }
+  if (
+    lower === "2" ||
+    lower.includes("spicy mustard") ||
+    lower.includes("mustard fish") ||
+    lower.includes("fish curry")
+  ) {
+    return PRODUCTS.spicy_mustard;
+  }
+
+  return null;
+}
+
+function getCookingIntroVideoUrl(product) {
+  return product ? process.env[product.videoEnvKey] || "" : "";
+}
+
+async function sendCookingIntro(phone, product) {
+  const videoUrl = getCookingIntroVideoUrl(product);
+
+  if (!videoUrl) {
+    console.warn(
+      `Cooking intro video was not sent because ${product?.videoEnvKey || "the product video URL"} is not configured.`,
+    );
+    return { sent: false, reason: "missing_video_url" };
+  }
+
+  try {
+    const caption =
+      product.id === "velvety_butter"
+        ? "Before you begin, watch how to use Velvety Butter."
+        : "Before you begin, watch how to use Spicy Mustard.";
+    const result = await sendVideoMessage(phone, videoUrl, caption);
+    return { sent: true, result };
+  } catch (err) {
+    console.error(
+      "WhatsApp cooking intro video failed",
+      err.response?.data || err.message,
+    );
+    return { sent: false, reason: "video_send_failed" };
+  }
+}
+
+async function sendQuantityQuestion(phone, product) {
+  await sendMessage(
+    phone,
+    `How much ${product?.primaryIngredient || "primary ingredient"} are you cooking?
+
+1. 250g
+2. 500g
+3. 1kg
+
+Reply MENU to return.`,
+  );
+}
+
+async function handleProductSelection({ session, text, phone, userId }) {
+  const product = parseProductSelection(text);
+
+  if (!product) {
+    await sendMessage(
+      phone,
+      `Please choose a VALOUR product:
+
+1. Velvety Butter — Butter Chicken Curry
+2. Spicy Mustard — Spicy Mustard Fish Curry`,
+    );
+    return;
+  }
+
+  const updates = {
+    current_state: "awaiting_quantity",
+    selected_product: product.id,
+    selected_recipe: product.recipeId,
+    primary_ingredient: product.primaryIngredient,
+    cookingType: product.cookingType,
+    cooking_type: product.cookingType,
+    selected_quantity: null,
+    fishQuantity: null,
+    current_step_index: 0,
+    active_flow_id: null,
+    active_flow: null,
+    active_flow_version: null,
+    segment: `${product.id}_cooking_intent`,
+  };
+
+  await updateSession(session._id, updates);
+  await updateUserSignals(userId, {
+    selectedProduct: product.id,
+    selectedRecipe: product.recipeId,
+    cookingType: product.cookingType,
+    activationPreference: "guided_cooking",
+    segment: `${product.id}_cooking_intent`,
+  });
+  await updateCustomerIntelligence({
+    userId,
+    sessionId: session._id,
+    intelligence: {
+      productId: product.id,
+      cookingType: product.cookingType,
+      segment: `${product.id}_cooking_intent`,
+    },
+  });
+
+  await sendCookingIntro(phone, product);
+  await sendQuantityQuestion(phone, product);
 }
 
 function getProductExplorationChoice(text = "") {
@@ -1850,11 +2251,17 @@ async function handleCookingScenario({ session, text, phone, userId }) {
 
 async function startCookingFlow({ session, phone, userId }) {
   await updateSession(session._id, {
-    current_state: "cooking_scenario",
+    current_state: "product_selection",
+    selected_product: null,
+    selected_recipe: null,
     selected_quantity: null,
+    primary_ingredient: null,
     fishQuantity: null,
+    cookingType: null,
+    cooking_type: null,
     active_flow_id: null,
     active_flow: null,
+    active_flow_version: null,
     current_step_index: 0,
     activationPreference: "guided_cooking",
     segment: "cooking_intent",
@@ -1866,15 +2273,9 @@ async function startCookingFlow({ session, phone, userId }) {
   await updateCustomerIntelligence({
     userId,
     sessionId: session._id,
-    intelligence: {
-      cookingType: "fish",
-      purchaseIntent: "medium",
-      segment: session.segment || "fish_guided_cooking",
-    },
     leadScoreDelta: getLeadScoreDelta("", "viewed_cooking_demo"),
   });
-
-  await sendCookingScenarioQuestion(phone);
+  await sendProductSelection(phone);
 }
 
 function parseQuantity(text) {
@@ -1889,67 +2290,89 @@ function parseQuantity(text) {
   return null;
 }
 
-function getFallbackCookingFlow(quantity) {
-  const portions = {
-    "250g": "250g fish",
-    "500g": "500g fish",
-    "1kg": "1kg fish",
-  };
-
-  if (!portions[quantity]) return null;
-
+function getVelvetyButterFallbackFlow(quantity) {
+  if (!PRODUCTS.velvety_butter.quantities[quantity]) return null;
   return {
-    _id: `fallback_milky_mustard_${quantity}`,
+    _id: `fallback_velvety_butter_${quantity}`,
+    product_id: "velvety_butter",
+    recipe_id: "butter_chicken_curry",
     quantity,
+    version: 1,
     steps: [
-      {
-        text: `Keep ${portions[quantity]} cleaned and ready. Keep oil and water nearby.`,
-      },
-      {
-        text: "Heat a pan with a little oil. Add the fish and lightly sear it so it holds shape.",
-      },
-      {
-        text: "Add MILKY MUSTARD and a little water. Stir gently so the Liquid Spice opens into the curry base.",
-      },
-      {
-        text: "Simmer until the fish is cooked and the gravy looks rich. Keep the heat calm; do not rush the mustard.",
-      },
-      {
-        text: "Taste once. Add a splash of water only if you want a lighter gravy. Serve hot.",
-      },
+      { text: `Keep ${quantity} chicken cleaned and ready.` },
+      { text: "Heat the pan and begin cooking the chicken." },
+      { text: "Add Velvety Butter according to the guide." },
+      { text: "Simmer until the chicken is completely cooked." },
+      { text: "Check the gravy consistency and serve hot." },
     ],
   };
+}
+
+function getSpicyMustardFallbackFlow(quantity) {
+  if (!PRODUCTS.spicy_mustard.quantities[quantity]) return null;
+  return {
+    _id: `fallback_spicy_mustard_${quantity}`,
+    product_id: "spicy_mustard",
+    recipe_id: "spicy_mustard_fish_curry",
+    quantity,
+    version: 1,
+    steps: [
+      { text: `Keep ${quantity} cleaned fish ready.` },
+      { text: "Lightly cook the fish according to the guide." },
+      { text: "Add Spicy Mustard and the required water." },
+      { text: "Simmer gently until the fish is cooked." },
+      { text: "Check the gravy consistency and serve hot." },
+    ],
+  };
+}
+
+function getFallbackCookingFlow({ productId, quantity }) {
+  if (productId === "velvety_butter") {
+    return getVelvetyButterFallbackFlow(quantity);
+  }
+  if (productId === "spicy_mustard") {
+    return getSpicyMustardFallbackFlow(quantity);
+  }
+  return null;
 }
 
 async function handleQuantity({ session, text, phone, userId }) {
   const quantity = parseQuantity(text);
 
   if (!quantity) {
-    await sendMessage(
-      phone,
-      `Please choose one quantity:
+    await sendQuantityQuestion(phone, PRODUCTS[session.selected_product]);
+    return;
+  }
 
-1. 250g
-2. 500g
-3. 1kg
-
-Reply MENU to go back.`,
-    );
+  if (!session.selected_product || !session.selected_recipe) {
+    await updateSession(session._id, { current_state: "product_selection" });
+    await sendProductSelection(phone);
     return;
   }
 
   const { flowDefinitions } = collections();
-  const savedFlow = await flowDefinitions.findOne({ quantity });
+  const savedFlow = await flowDefinitions.findOne(
+    {
+      product_id: session.selected_product,
+      recipe_id: session.selected_recipe,
+      quantity,
+      status: "published",
+    },
+    { sort: { version: -1 } },
+  );
   const flow =
     savedFlow && Array.isArray(savedFlow.steps) && savedFlow.steps.length > 0
       ? savedFlow
-      : getFallbackCookingFlow(quantity);
+      : getFallbackCookingFlow({
+          productId: session.selected_product,
+          quantity,
+        });
 
   if (!flow || !Array.isArray(flow.steps) || flow.steps.length === 0) {
-    await resetToIdle(session._id);
+    await updateSession(session._id, { current_state: "product_selection" });
     await sendMessage(
       phone,
-      "This cooking guide is unavailable right now. Reply MENU to try again.",
+      "This cooking guide is unavailable right now. Please choose another product or reply MENU.",
     );
     return;
   }
@@ -1957,17 +2380,22 @@ Reply MENU to go back.`,
   await updateSession(session._id, {
     current_state: "guided_cooking",
     selected_quantity: quantity,
-    fishQuantity: quantity,
+    fishQuantity:
+      session.selected_product === "spicy_mustard" ? quantity : null,
     active_flow_id: savedFlow?._id || null,
     active_flow: savedFlow ? null : flow,
+    active_flow_version: flow.version || 1,
     current_step_index: 0,
-    segment: "activated_cook",
+    segment: `${session.selected_product}_activated_cook`,
     ...getCookingProgressFields({ flow, stepIndex: 0 }),
   });
   await updateUserSignals(userId, {
-    fishQuantity: quantity,
+    selectedProduct: session.selected_product,
+    selectedRecipe: session.selected_recipe,
+    selectedQuantity: quantity,
+    cookingType: session.cookingType,
     activationPreference: "guided_cooking",
-    segment: "activated_cook",
+    segment: `${session.selected_product}_activated_cook`,
   });
 
   await sendCookingStep(phone, flow, 0);
@@ -1989,10 +2417,18 @@ You can also reply REPEAT, BACK, or MENU.`,
 
 async function completeCooking({ session, phone, userId, flow }) {
   const { cookingOutcomes } = collections();
+  const completedSegment = `${session.selected_product || "unknown_product"}_completed_cooking`;
 
   await cookingOutcomes.insertOne({
     user_id: userId,
     session_id: session._id,
+    product_id: session.selected_product,
+    recipe_id: session.selected_recipe,
+    cooking_type: session.cookingType,
+    primary_ingredient: session.primary_ingredient,
+    selected_quantity: session.selected_quantity,
+    flow_id: session.active_flow_id,
+    flow_version: session.active_flow_version,
     quantity: session.selected_quantity,
     fishQuantity: session.fishQuantity || session.selected_quantity,
     source: session.source || null,
@@ -2006,18 +2442,18 @@ async function completeCooking({ session, phone, userId, flow }) {
     desiredOutcome: session.desiredOutcome || null,
     purchaseIntent: session.purchaseIntent || null,
     leadScore: session.leadScore || 0,
-    segment: "completed_cooking",
+    segment: completedSegment,
     outcome: "completed",
     created_at: new Date(),
   });
   await updateUserSignals(userId, {
-    segment: "completed_cooking",
+    segment: completedSegment,
     fishQuantity: session.fishQuantity || session.selected_quantity,
   });
 
   await updateSession(session._id, {
     current_state: "post_cook_feedback",
-    segment: "completed_cooking",
+    segment: completedSegment,
     ...getCookingProgressFields({
       state: "post_cook_feedback",
       flow,
@@ -2025,17 +2461,29 @@ async function completeCooking({ session, phone, userId, flow }) {
     }),
   });
 
-  await sendMessage(
-    phone,
-    `Cooking complete.
+  await sendMessage(phone, getFeedbackPrompt(session.selected_product));
+}
 
-How did your curry feel?
+function getFeedbackPrompt(productId) {
+  if (productId === "velvety_butter") {
+    return `Cooking complete.
+
+How did your Butter Chicken turn out?
 
 1. Loved it
-2. Too strong
+2. Too rich or strong
 3. Too mild
-4. Need help`,
-  );
+4. Need help`;
+  }
+
+  return `Cooking complete.
+
+How did your Spicy Mustard Fish Curry turn out?
+
+1. Loved it
+2. Mustard flavour too strong
+3. Too mild
+4. Need help`;
 }
 
 async function handleGuidedCooking({ session, text, phone, userId }) {
@@ -2142,10 +2590,20 @@ async function recordPostCookFeedback({ session, userId, feedbackType }) {
   const { cookingOutcomes } = collections();
 
   await cookingOutcomes.updateOne(
-    { session_id: session._id },
+    {
+      session_id: session._id,
+      product_id: session.selected_product,
+      selected_quantity: session.selected_quantity,
+      $or: [
+        { feedbackType: null },
+        { feedback_type: null },
+        { feedbackType: { $exists: false }, feedback_type: { $exists: false } },
+      ],
+    },
     {
       $set: {
         feedbackType,
+        feedback_type: feedbackType,
         segment:
           feedbackType === "need_help"
             ? "needs_cooking_help"
@@ -2188,7 +2646,7 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
     await recordPostCookFeedback({ session, userId, feedbackType });
     await sendMessage(
       phone,
-      `Next time, use slightly less VALOUR or a little more water.
+      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.
 
 Reply MENU to return.`,
     );
@@ -2200,7 +2658,7 @@ Reply MENU to return.`,
     await recordPostCookFeedback({ session, userId, feedbackType });
     await sendMessage(
       phone,
-      `Next time, use slightly more VALOUR or a little less water.
+      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.
 
 Reply MENU to return.`,
     );
@@ -2297,6 +2755,61 @@ async function processIncomingMessage(message) {
     return;
   }
 
+  if (activeSession.current_state === "product_selection") {
+    await handleProductSelection({
+      session: activeSession,
+      text,
+      phone,
+      userId: user._id,
+    });
+    return;
+  }
+
+  if (activeSession.current_state === "product_catalog") {
+    await handleProductCatalog({ session: activeSession, text, phone });
+    return;
+  }
+
+  if (activeSession.current_state === "product_details") {
+    await handleProductDetails({
+      session: activeSession,
+      text,
+      phone,
+      userId: user._id,
+    });
+    return;
+  }
+
+  if (activeSession.current_state === "awaiting_quantity") {
+    await handleQuantity({
+      session: activeSession,
+      text,
+      phone,
+      userId: user._id,
+    });
+    return;
+  }
+
+  if (activeSession.current_state === "guided_cooking") {
+    await handleGuidedCooking({
+      session: activeSession,
+      text,
+      phone,
+      userId: user._id,
+    });
+    return;
+  }
+
+  if (activeSession.current_state === "post_cook_feedback") {
+    await handlePostCookFeedback({
+      session: activeSession,
+      text,
+      phone,
+      userId: user._id,
+    });
+    return;
+  }
+
   if (activeSession.current_state === "idle" && isStartCookingIntent(lower)) {
     await startCookingFlow({ session: activeSession, phone, userId: user._id });
     return;
@@ -2312,18 +2825,6 @@ async function processIncomingMessage(message) {
     });
 
     if (answered) {
-      if (
-        activeSession.current_state === "idle" &&
-        inferredIntelligence.purchaseIntent !== "high"
-      ) {
-        await updateSession(session._id, {
-          current_state: "cooking_scenario",
-          cookingType: activeSession.cookingType || "fish",
-          purchaseIntent: inferredIntelligence.purchaseIntent || "medium",
-          segment: activeSession.segment || "education_intent",
-        });
-        await sendCookingScenarioQuestion(phone);
-      }
       return;
     }
   }
@@ -2413,37 +2914,6 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  // State-specific routing must happen before interpreting numeric menu choices.
-  if (activeSession.current_state === "awaiting_quantity") {
-    await handleQuantity({
-      session: activeSession,
-      text,
-      phone,
-      userId: user._id,
-    });
-    return;
-  }
-
-  if (activeSession.current_state === "guided_cooking") {
-    await handleGuidedCooking({
-      session: activeSession,
-      text,
-      phone,
-      userId: user._id,
-    });
-    return;
-  }
-
-  if (activeSession.current_state === "post_cook_feedback") {
-    await handlePostCookFeedback({
-      session: activeSession,
-      text,
-      phone,
-      userId: user._id,
-    });
-    return;
-  }
-
   if (isStartCookingIntent(lower)) {
     await startCookingFlow({ session: activeSession, phone, userId: user._id });
     return;
@@ -2452,26 +2922,14 @@ async function processIncomingMessage(message) {
   if (matchesAny(lower, ["2", "what is valour", "what is milky mustard"])) {
     await updateSession(session._id, {
       activationPreference: "learn_about_valour",
-      current_state: "product_exploration",
+      current_state: "product_catalog",
       segment: "education_intent",
     });
     await updateUserSignals(user._id, {
       activationPreference: "learn_about_valour",
       segment: "education_intent",
     });
-    await sendMessage(
-      phone,
-      `VALOUR creates Liquid Spice - concentrated cooking bases for restaurant-style dishes at home.
-
-Milky Mustard helps you cook rich mustard fish curry without grinding, complicated prep, or unnecessary waste.
-
-What interests you most?
-
-1. Simpler cooking
-2. Better flavour
-3. Faster preparation
-4. Less mess`,
-    );
+    await sendProductCatalog(phone);
     return;
   }
 
@@ -2498,16 +2956,25 @@ What interests you most?
       phone,
       `You can order here:
 
-https://yourwebsite.com
+https://liquidspice.in
 
 Reply MENU to return.`,
     );
     return;
   }
 
+  if (lower === "4") {
+    await startOrderTrackingFlow({ session: activeSession, phone });
+    await updateUserSignals(user._id, {
+      activationPreference: "track_order",
+      segment: "tracking_intent",
+    });
+    return;
+  }
+
   if (
     matchesAny(lower, [
-      "4",
+      "5",
       "help",
       "support",
       "customer care",
@@ -2559,11 +3026,84 @@ function enqueueMessage(message) {
   phoneQueues.set(phone, next);
 }
 
+const WABA_ID = process.env.WABA_ID;
+const ACCESS_TOKEN = process.env.AUTH_TOKEN;
+
+async function subscribeWaba() {
+  if (!WABA_ID || !ACCESS_TOKEN) {
+    throw new Error("Missing WABA_ID or AUTH_TOKEN in environment variables.");
+  }
+
+  try {
+    const subscribeUrl = `https://graph.facebook.com/${GRAPH_VERSION}/${WABA_ID}/subscribed_apps`;
+    console.log("Subscribing WABA with URL:", subscribeUrl);
+    const subscribeRes = await axios.post(
+      subscribeUrl,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        },
+      },
+    );
+
+    console.log("Subscribed WABA:", subscribeRes.data);
+
+    const verifyRes = await axios.get(subscribeUrl, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+      },
+    });
+
+    console.log("Current subscribed apps:");
+    console.dir(verifyRes.data, { depth: null });
+    wabaSubscribed = true;
+  } catch (error) {
+    console.error("Failed to subscribe WABA.");
+
+    if (error.response) {
+      console.error(error.response.data);
+    } else {
+      console.error(error.message);
+    }
+
+    throw error;
+  }
+}
+
+function retryBackgroundTask(name, task, isReady) {
+  const runTask = async () => {
+    if (isReady()) return;
+
+    try {
+      await task();
+    } catch (err) {
+      console.error(
+        `${name} initialization failed; retrying in ${DEPENDENCY_RETRY_MS / 1000} seconds.`,
+        err.response?.data || err.message,
+      );
+      setTimeout(runTask, DEPENDENCY_RETRY_MS);
+    }
+  };
+
+  void runTask();
+}
+
+function initializeBackgroundServices() {
+  retryBackgroundTask("MongoDB", connectDB, () => mongoReady);
+  retryBackgroundTask(
+    "WhatsApp WABA subscription",
+    subscribeWaba,
+    () => wabaSubscribed,
+  );
+}
+
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
   console.log("Webhook verification attempt", { mode, token });
+
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
     return res.status(200).send(challenge);
   }
@@ -2575,9 +3115,16 @@ app.post("/webhook", (req, res) => {
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
   const message = value?.messages?.[0];
   const status = value?.statuses?.[0];
-
+  console.log("=========== POST RECEIVED ===========");
+  console.log("Webhook path:", req.originalUrl);
+  console.dir(req.body, { depth: null });
+  console.log("=====================================");
   // Acknowledge Meta immediately so slow downstream work does not cause retries.
   res.sendStatus(200);
+  console.log("WhatsApp text send accepted", {
+    recipient: "919233054806",
+    result: message ? "message" : status ? "status" : "unknown",
+  });
 
   if (status) {
     console.dir(
@@ -2594,7 +3141,7 @@ app.post("/webhook", (req, res) => {
       { depth: null },
     );
   }
-
+  console.log(message);
   if (message) {
     console.log("WhatsApp inbound message webhook", {
       from: message.from,
@@ -2606,7 +3153,11 @@ app.post("/webhook", (req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, database: Boolean(db) });
+  res.json({
+    ok: true,
+    database: mongoReady,
+    whatsappSubscription: wabaSubscribed,
+  });
 });
 
 // ---------------end-------------------
@@ -3666,7 +4217,7 @@ app.use((req, res) => {
 // START SERVER
 // ======================
 
-async function startServer() {
+function startServer() {
   const missing = [...REQUIRED_ENV, ...REQUIRED_RAZORPAY_ENV].filter(
     (name) => !process.env[name],
   );
@@ -3677,22 +4228,24 @@ async function startServer() {
     );
   }
 
-  await connectDB();
-
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);
+    initializeBackgroundServices();
   });
 }
 
 if (require.main === module) {
-  startServer().catch((err) => {
+  try {
+    startServer();
+  } catch (err) {
     console.error("Failed to start server", err);
     process.exitCode = 1;
-  });
+  }
 }
 
 module.exports = {
   _test: {
+    PRODUCTS,
     buildCustomerSegment,
     getCookingScenarioChoice,
     getDesiredOutcomeFromPainPoint,
@@ -3701,12 +4254,15 @@ module.exports = {
     getLeadScoreDelta,
     getProductExplorationChoice,
     inferCustomerIntelligence,
+    inferProduct,
     inferPainPoint,
     inferPurchaseIntent,
     getBrandUnderstandingIntelligence,
     isStartCookingIntent,
     isValidBrandUnderstanding,
     parseQuantity,
+    parseProductSelection,
+    getFeedbackPrompt,
     sanitizeReassuranceText,
     shouldTryBrandNLU,
   },
