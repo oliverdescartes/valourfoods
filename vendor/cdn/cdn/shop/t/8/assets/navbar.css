@@ -6,25 +6,39 @@
   overflow: hidden;
   position: relative;
   z-index: 99999;
+  touch-action: pan-y;
 }
 
 .announcement-track {
   display: flex;
-  white-space: nowrap;
-  animation: scroll 20s linear infinite;
+  transition: transform 450ms ease;
+  will-change: transform;
 }
 
 .announcement-text {
+  flex: 0 0 100%;
+  justify-content: center;
+  box-sizing: border-box;
   padding: 10px 40px;
   opacity: 0.9;
+  text-align: center;
+  white-space: nowrap;
 }
 
-@keyframes scroll {
-  from {
-    transform: translateX(0);
+.announcement-track.is-dragging {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-track {
+    transition: none;
   }
-  to {
-    transform: translateX(-50%);
+}
+
+@media (max-width: 480px) {
+  .announcement-text {
+    padding-inline: 12px;
+    white-space: normal;
   }
 }
 

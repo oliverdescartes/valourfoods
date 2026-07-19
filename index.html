@@ -147,6 +147,17 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     text-wrap: balance;
     overflow-wrap: break-word;
   }
+
+  .valour-hero__title-accent {
+    display: block;
+    margin-top: 0.4em;
+   color: #ffdb8c;
+    font-size: 0.38em;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
   .loader-logo::after {
     content: "";
     position: absolute;
@@ -1732,6 +1743,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       flex-direction: column;
     }
 
+    .slider {
+      touch-action: pan-y;
+    }
+
     .left {
       flex-direction: column;
     }
@@ -1756,6 +1771,41 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       flex: 0 0 auto;
       scroll-snap-align: start;
     }
+
+    .thumbnail-strip-wrap {
+      position: relative;
+      width: min(78%, 280px);
+      margin-inline: auto;
+    }
+
+    .product_slide .thumbnail-strip-wrap .thumbnails {
+      width: 100%;
+      margin-inline: 0;
+    }
+
+    .thumbnail-more-indicator {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      right: -0.75rem;
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      border-radius: 50%;
+      background: #831a1a;
+      color: #fff;
+      font-size: 1.4rem;
+      line-height: 1;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+      transform: translateY(-50%);
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .thumbnail-more-indicator[hidden] {
+      display: none;
+    }
   }
 
 
@@ -1766,10 +1816,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* NAVBAR */
 .navbar {
     width: 100%;
-    position: absolute;
     left: 0;
     z-index: 99999;
-    background: linear-gradient(to bottom, rgb(229 207 194 / 90%), /* darker at top */ rgb(255 253 249 / 4%) /* fully transparent */);
+    /* background: linear-gradient(to bottom, rgb(229 207 194 / 90%), rgb(255 253 249 / 53%)); */
+    background:white;
     color: white;
     transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
@@ -1785,7 +1835,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* CONTAINER */
   .nav-container {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: clamp(10px, 3vw, 28px);
     position: relative;
@@ -1802,8 +1852,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     position: static;
     left: auto;
     transform: none;
-    grid-column: 2;
-    justify-self: center;
+    grid-column: 1;
+    justify-self: start;
     display: flex;
     gap: 1px;
     font-size: 20px;
@@ -1811,16 +1861,38 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     font-weight: 600;
     color: #2a2a2a;
     font-family: 'Times New Roman', serif;
-    margin-left: -19px;
+    margin-left: 0;
   }
 
   .nav-logo img {
     display: block;
     width: clamp(100px, 10vw, 145px);
-    height: auto;
+    height: auto;   
+
   }
 
-  .nav-shop {
+  .navbar .nav-logo__sticky {
+    display: none;
+  }
+
+  .navbar.is-sticky .nav-logo__default {
+    display: none;
+  }
+
+  .navbar.is-sticky .nav-logo__sticky {
+    display: block;
+  }
+
+  .navbar.is-sticky .nav-shop,
+  .navbar.is-sticky .nav-right span {
+    color: #000;
+  }
+  .navbar.is-sticky .nav-shop{
+
+    border: 1px solid rgba(0, 0, 0, 0.59);
+  }
+
+.nav-shop {
     position: static;
     grid-column: 1;
     justify-self: start;
@@ -1829,9 +1901,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     justify-content: center;
     min-height: 34px;
     padding: 0 16px;
-    border: 1px solid rgba(42, 42, 42, 0.34);
+    border: 1px solid rgb(255 255 255 / 59%);
     border-radius: 999px;
-    color: #2a2a2a;
+    color: #ebebeb;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
     font-size: 12px;
     line-height: 1;
@@ -1840,7 +1912,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     text-transform: uppercase;
     white-space: nowrap;
     transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
-  }
+}
 
   .nav-shop:hover {
     background: #2a2a2a;
@@ -1850,11 +1922,15 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   /* RIGHT ICONS */
   .nav-right {
-    grid-column: 3;
+    grid-column: 2;
     justify-self: end;
     display: flex;
     gap: 20px;
     position: static;
+  }
+
+  .nav-right span {
+    color: black;
   }
 
   @media (max-width: 768px) {
@@ -1878,7 +1954,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   @media (max-width: 420px) {
     .nav-container {
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       padding: 0 12px;
     }
 
@@ -3555,7 +3631,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .footer .nav-logo img {
-    width: clamp(160px, 20vw, 260px);
+    width: clamp(220px, 20vw, 260px);
   }
 
   .footer-kicker {
@@ -4076,7 +4152,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       font-size: clamp(45px, 14vw, 28px);
       line-height: 1.2;
     }
-
+.nav-logo img{
+  margin-left: 0;
+}
 
     .product_slide .cta img {
       width: 25px;
@@ -4174,7 +4252,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
     .product-specs span {
       min-height: 34px;
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .price {
@@ -4339,6 +4417,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     .slider {
         width: 100%;
     }
+        .nav-logo img {
+        width: 140px;
+    }
     .valour-whatsapp-support__bubble {
       max-width: min(210px, calc(100vw - 96px));
       padding: 12px 34px 12px 14px;
@@ -4361,7 +4442,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   .valour-hero {
     --hero-background: #831a1a;
-    --hero-foreground: #fff8ef;
+    --hero-foreground: white;
     --hero-space: clamp(1.25rem, 4vw, 2rem);
     position: relative;
     min-height: 100vh;
@@ -4387,7 +4468,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   .valour-hero__header {
     width: min(100%, 43rem);
     text-align: center;
-    padding-top: clamp(3rem, 9vh, 7rem);
+    padding-top: clamp(3rem, 14vh, 7rem);
   }
 
   .valour-hero .container_slider {
@@ -4536,16 +4617,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   <main id="main-content" class="main-content-container" style="display: none; background: #831a1a;">
 
     <!-- ===== ANNOUNCEMENT BAR ===== -->
-    <div class="announcement-bar">
-      <div class="announcement-track" id="track-xf">
-        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
-        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
-        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
-        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
-      </div>
 
-
-    </div>
 
     <!-- ===== NAVBAR ===== -->
     <div class="navbar">
@@ -4562,9 +4634,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
         </div> -->
 
         <!-- LOGO -->
-        <a class="nav-shop" href="#shop">Shop now</a>
         <a class="nav-logo" href="/" aria-label="VALOUR home">
-          <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour">
+          <img class="nav-logo__default" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour">
+          <img class="nav-logo__sticky" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="" aria-hidden="true">
         </a>
         <!-- RIGHT -->
         <div class="nav-right">
@@ -4579,6 +4651,14 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       </div>
 
       <!-- MOBILE MENU -->
+
+    </div>
+    <div class="announcement-bar" role="region" aria-label="Store announcements">
+      <div class="announcement-track" id="track-xf" aria-live="polite">
+        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
+        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
+      </div>
+
 
     </div>
     <div class="cart-add-toast" data-cart-toast aria-live="polite">
@@ -4621,7 +4701,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     <section class="valour-hero" aria-labelledby="valour-hero-title">
       <div class="valour-hero__inner">
         <header class="valour-hero__header">
-          <h1 class="valour-hero__title" id="valour-hero-title">Cook what you usually order.</h1>
+          <h1 class="valour-hero__title" id="valour-hero-title">
+            <span class="valour-hero__title-main">Cook what you usually order,</span>
+            <span class="valour-hero__title-accent">With Liquid Spice</span>
+          </h1>
           <a class="valour-hero__scroll-cue" href="#looks-tastes-section" aria-label="See how Valour works">
             <span>See how</span>
             <span class="valour-hero__scroll-line" aria-hidden="true"></span>
@@ -4660,7 +4743,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           </div>
         </section>
 
-       <div class="container_slider" data-autoplay="false">
+       <div class="container_slider">
           <div class="product-tabs" role="tablist" aria-label="Choose a product">
             <button class="product-tab active" type="button" role="tab" aria-selected="true" onclick="goToSlide(0)">Velvety Butter Chicken</button>
             <button class="product-tab" type="button" role="tab" aria-selected="false" onclick="goToSlide(1)">Mithila Fish Curry</button>
@@ -4688,7 +4771,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                     <img src="vendor/cdn/cdn/shop/files/imagetab2.png" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
 
                     <img src="vendor/cdn/cdn/shop/files/image_2_prod.png" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="lazy" decoding="async">
-                    
+                                        <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.png" alt="Coconut mustard fish cooked with Valour Milky Mustard" loading="lazy" decoding="async">
+
                   </div>
                 </div>
 
@@ -5115,7 +5199,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- LEFT -->
                 <div class="footer-left">
                   <div class="nav-logo">
-                    <img src="vendor/cdn/cdn/shop/files/valourblacklogo.webp" alt="Valour" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour" loading="lazy" decoding="async">
                   </div>
 
                   <p class="footer-kicker">CAREFULLY PREPARED FOR EVERYDAY COOKING</p>
@@ -5431,10 +5515,35 @@ Prepare less.</h2>
 
     document.querySelectorAll('.product_slide .left').forEach((gallery) => {
       const thumbnails = Array.from(gallery.querySelectorAll('.thumbnails img'));
+      const thumbnailStrip = gallery.querySelector('.thumbnails');
       const mainImage = gallery.querySelector('.main-image');
       const originalImage = mainImage ? mainImage.querySelector('img') : null;
 
       if (!thumbnails.length || !mainImage || !originalImage) return;
+
+      const thumbnailWrap = document.createElement('div');
+      thumbnailWrap.className = 'thumbnail-strip-wrap';
+      thumbnailStrip.before(thumbnailWrap);
+      thumbnailWrap.appendChild(thumbnailStrip);
+
+      const moreIndicator = document.createElement('button');
+      moreIndicator.className = 'thumbnail-more-indicator';
+      moreIndicator.type = 'button';
+      moreIndicator.setAttribute('aria-label', 'Show more product images');
+      moreIndicator.innerHTML = '&#8250;';
+      thumbnailWrap.appendChild(moreIndicator);
+
+      function updateThumbnailIndicator() {
+        const hasMore = thumbnailStrip.scrollLeft + thumbnailStrip.clientWidth < thumbnailStrip.scrollWidth - 2;
+        moreIndicator.hidden = !hasMore || !window.matchMedia('(max-width: 900px)').matches;
+      }
+
+      moreIndicator.addEventListener('click', () => {
+        thumbnailStrip.scrollBy({ left: thumbnailStrip.clientWidth * 0.75, behavior: 'smooth' });
+      });
+      thumbnailStrip.addEventListener('scroll', updateThumbnailIndicator, { passive: true });
+      window.addEventListener('resize', updateThumbnailIndicator, { passive: true });
+      requestAnimationFrame(updateThumbnailIndicator);
 
       let activeIndex = Math.max(0, thumbnails.findIndex((thumb) => thumb.classList.contains('active')));
       let startX = 0;
@@ -5463,6 +5572,28 @@ Prepare less.</h2>
         thumbnails.forEach((thumb, thumbIndex) => {
           thumb.classList.toggle('active', thumbIndex === activeIndex);
         });
+
+        const activeThumbnail = thumbnails[activeIndex];
+        if (thumbnailStrip && activeThumbnail && thumbnailStrip.scrollWidth > thumbnailStrip.clientWidth) {
+          const stripRect = thumbnailStrip.getBoundingClientRect();
+          const thumbnailRect = activeThumbnail.getBoundingClientRect();
+          const thumbnailLeft = thumbnailRect.left - stripRect.left + thumbnailStrip.scrollLeft;
+          const thumbnailRight = thumbnailLeft + activeThumbnail.offsetWidth;
+          const visibleLeft = thumbnailStrip.scrollLeft;
+          const visibleRight = visibleLeft + thumbnailStrip.clientWidth;
+
+          if (thumbnailLeft < visibleLeft) {
+            thumbnailStrip.scrollTo({
+              left: thumbnailLeft,
+              behavior: animate ? 'smooth' : 'auto'
+            });
+          } else if (thumbnailRight > visibleRight) {
+            thumbnailStrip.scrollTo({
+              left: thumbnailRight - thumbnailStrip.clientWidth,
+              behavior: animate ? 'smooth' : 'auto'
+            });
+          }
+        }
 
         track.classList.toggle('is-dragging', !animate);
         track.style.transform = `translateX(-${activeIndex * 100}%)`;
@@ -5603,7 +5734,7 @@ Prepare less.</h2>
     const productTabs = document.querySelectorAll(".container_slider .product-tab");
     const sliderInteractionArea = document.querySelector(".container_slider");
 
-    let autoSlideInterval = null;
+    let autoSlideTimer = null;
     let sliderIsBeingPressed = false;
     let sliderIsInView = false;
     const intervalTime = 4000;
@@ -5643,17 +5774,18 @@ Prepare less.</h2>
 
       if (sliderIsBeingPressed || !sliderIsInView || document.hidden || slides.length < 2) return;
 
-      autoSlideInterval = setInterval(() => {
+      autoSlideTimer = setTimeout(() => {
         const next = (currentSlide + 1) % slides.length;
         changeSlide(next);
+        startAutoSlide();
       }, intervalTime);
     }
 
     /* STOP */
     function stopAutoSlide() {
-      if (autoSlideInterval) {
-        clearInterval(autoSlideInterval);
-        autoSlideInterval = null;
+      if (autoSlideTimer) {
+        clearTimeout(autoSlideTimer);
+        autoSlideTimer = null;
       }
     }
 
@@ -5665,6 +5797,7 @@ Prepare less.</h2>
     function resumeAutoSlide() {
       if (!sliderIsBeingPressed) return;
       sliderIsBeingPressed = false;
+      // Start a completely fresh countdown after the user releases.
       startAutoSlide();
     }
 
@@ -5697,6 +5830,53 @@ Prepare less.</h2>
     sliderInteractionArea?.addEventListener("pointerdown", pauseAutoSlide, { passive: true });
     window.addEventListener("pointerup", resumeAutoSlide, { passive: true });
     window.addEventListener("pointercancel", resumeAutoSlide, { passive: true });
+
+    /* Swipe between products on touch devices without hijacking inner controls. */
+    if (slider) {
+      let productSwipeStartX = 0;
+      let productSwipeStartY = 0;
+      let productSwipeEnabled = false;
+      const swipeExclusions = ".main-image, .thumbnails, a, button, input, select, textarea";
+
+      slider.addEventListener("touchstart", (event) => {
+        const touch = event.touches[0];
+        productSwipeEnabled = window.matchMedia("(max-width: 900px)").matches
+          && !event.target.closest(swipeExclusions);
+
+        if (!productSwipeEnabled || !touch) return;
+        productSwipeStartX = touch.clientX;
+        productSwipeStartY = touch.clientY;
+        pauseAutoSlide();
+      }, { passive: true });
+
+      slider.addEventListener("touchend", (event) => {
+        if (!productSwipeEnabled) return;
+        productSwipeEnabled = false;
+
+        const touch = event.changedTouches[0];
+        if (!touch) {
+          resumeAutoSlide();
+          return;
+        }
+
+        const deltaX = touch.clientX - productSwipeStartX;
+        const deltaY = touch.clientY - productSwipeStartY;
+
+        if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+          const nextSlide = deltaX < 0
+            ? (currentSlide + 1) % slides.length
+            : (currentSlide - 1 + slides.length) % slides.length;
+          changeSlide(nextSlide);
+        }
+
+        resumeAutoSlide();
+      }, { passive: true });
+
+      slider.addEventListener("touchcancel", () => {
+        productSwipeEnabled = false;
+        resumeAutoSlide();
+      }, { passive: true });
+    }
 
 
 
@@ -6406,6 +6586,84 @@ function initValourWhatsappSupport() {
 }
 
 window.addEventListener("load", initValourWhatsappSupport);
+
+function initAnnouncementCarousel() {
+  const bar = document.querySelector(".announcement-bar");
+  const track = document.getElementById("track-xf");
+  const slides = Array.from(track?.querySelectorAll(".announcement-text") || []);
+  if (!bar || !track || slides.length < 2) return;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let activeIndex = 0;
+  let autoplayTimer;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+
+  function showSlide(index) {
+    activeIndex = (index + slides.length) % slides.length;
+    track.style.transform = `translateX(-${activeIndex * 100}%)`;
+    slides.forEach((slide, slideIndex) => {
+      slide.setAttribute("aria-hidden", slideIndex === activeIndex ? "false" : "true");
+    });
+  }
+
+  function stopAutoplay() {
+    window.clearInterval(autoplayTimer);
+  }
+
+  function startAutoplay() {
+    stopAutoplay();
+    if (!reduceMotion) {
+      autoplayTimer = window.setInterval(() => showSlide(activeIndex + 1), 4000);
+    }
+  }
+
+  bar.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    isDragging = true;
+    startX = currentX = event.clientX;
+    track.classList.add("is-dragging");
+    bar.setPointerCapture(event.pointerId);
+    stopAutoplay();
+  });
+
+  bar.addEventListener("pointermove", (event) => {
+    if (!isDragging) return;
+    currentX = event.clientX;
+    const dragPercent = ((currentX - startX) / Math.max(bar.clientWidth, 1)) * 100;
+    track.style.transform = `translateX(calc(-${activeIndex * 100}% + ${dragPercent}%))`;
+  });
+
+  function finishDrag(event) {
+    if (!isDragging) return;
+    const distance = currentX - startX;
+    isDragging = false;
+    track.classList.remove("is-dragging");
+
+    if (Math.abs(distance) > Math.min(70, bar.clientWidth * 0.2)) {
+      showSlide(activeIndex + (distance < 0 ? 1 : -1));
+    } else {
+      showSlide(activeIndex);
+    }
+
+    if (bar.hasPointerCapture(event.pointerId)) bar.releasePointerCapture(event.pointerId);
+    startAutoplay();
+  }
+
+  bar.addEventListener("pointerup", finishDrag);
+  bar.addEventListener("pointercancel", finishDrag);
+  bar.addEventListener("mouseenter", stopAutoplay);
+  bar.addEventListener("mouseleave", startAutoplay);
+  document.addEventListener("visibilitychange", () => {
+    document.hidden ? stopAutoplay() : startAutoplay();
+  });
+
+  showSlide(0);
+  startAutoplay();
+}
+
+window.addEventListener("load", initAnnouncementCarousel);
   </script>
 
 </body>
