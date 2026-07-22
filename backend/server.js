@@ -7,6 +7,19 @@ const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 const { MongoClient, ObjectId } = require("mongodb");
 const Razorpay = require("razorpay");
+const { calculateQuote, normaliseCartItems } = require("./pricing");
+const {
+  PRODUCT_CATALOG,
+  parseProduct: parseOrderProduct,
+  parseQuantity: parseOrderQuantity,
+  parseOrderItems,
+  calculateTotals: calculateWhatsappTotals,
+  formatCart: formatWhatsappCart,
+  parseDeliveryDetails,
+  validateDeliveryDetails,
+  wantsChatNumber,
+  normalizeIndianPhone: normalizeShippingPhone,
+} = require("./whatsapp-order");
 const GRAPH_VERSION = "v25.0";
 const app = express();
 app.use(cors());
@@ -19,7 +32,13 @@ app.use(cors());
 //   })
 // );
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buffer) => {
+      req.rawBody = buffer;
+    },
+  }),
+);
 
 const axios = require("axios");
 
@@ -96,6 +115,9 @@ function collections() {
     cookingOutcomes: db.collection("cooking_outcomes"),
     supportCases: db.collection("support_cases"),
     orders: db.collection("orders"),
+    paymentAttempts: db.collection("payment_attempts"),
+    products: db.collection("products"),
+    pricingRules: db.collection("pricing_rules"),
     flowDefinitions: db.collection("flow_definitions"),
     hesitationRecovery: db.collection("hesitation_recovery"),
   };
@@ -105,7 +127,7 @@ async function connectDB() {
   await mongoClient.connect();
   db = mongoClient.db("valour_mvp");
 
-  const { users, sessions, messages, supportCases, orders, flowDefinitions } =
+  const { users, sessions, messages, supportCases, orders, paymentAttempts, products, flowDefinitions } =
     collections();
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
@@ -119,6 +141,8 @@ async function connectDB() {
       { unique: true, sparse: true },
     ),
     orders.createIndex({ phone: 1, createdAt: -1 }),
+    paymentAttempts.createIndex({ razorpayOrderId: 1 }, { unique: true }),
+    products.createIndex({ sku: 1 }, { unique: true }),
     flowDefinitions.createIndex(
       { product_id: 1, recipe_id: 1, quantity: 1, version: 1 },
       {
@@ -786,6 +810,12 @@ async function getOrCreateSession(userId) {
         painPoint: null,
         desiredOutcome: null,
         purchaseIntent: null,
+        order_cart: [],
+        order_draft: null,
+        order_otp_hash: null,
+        order_otp_phone: null,
+        order_otp_chat: null,
+        order_otp_expires_at: null,
         leadScore: 0,
         segment: "new_lead",
         started_at: new Date(),
@@ -823,6 +853,12 @@ async function resetToIdle(sessionId) {
     hesitationType: null,
     feedbackType: null,
     purchaseIntent: null,
+    order_cart: [],
+    order_draft: null,
+    order_otp_hash: null,
+    order_otp_phone: null,
+    order_otp_chat: null,
+    order_otp_expires_at: null,
   });
 }
 
@@ -996,7 +1032,11 @@ function getWhatsappOrderRecipients(order) {
     process.env.DEFAULT_WHATSAPP_ORDER_PHONE,
   );
 
-  return [defaultRecipient, normalizeWhatsappRecipient(order.phone)].filter(
+  return [
+    defaultRecipient,
+    normalizeWhatsappRecipient(order.phone),
+    normalizeWhatsappRecipient(order.whatsappPhone),
+  ].filter(
     (recipient, index, recipients) => {
       return recipient && recipients.indexOf(recipient) === index;
     },
@@ -1014,6 +1054,19 @@ Total: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}
 Items: ${formatProductsForWhatsapp(order.products)}
 
 We will share dispatch and tracking updates on WhatsApp.`;
+}
+
+function formatPaymentFailureMessage(order, reason = "") {
+  const reference = order.orderNumber || order.paymentLinkReference || order.razorpayOrderId || "your order";
+  const reasonLine = reason ? `\nReason: ${String(reason).slice(0, 180)}` : "";
+  return `Your VALOUR payment was not successful.\n\nOrder: ${reference}\nAmount: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}${reasonLine}\n\nNo order has been confirmed. You can retry the payment or reply MENU for help.`;
+}
+
+async function sendPaymentFailureWhatsapp(order, reason) {
+  const recipients = getWhatsappOrderRecipients(order);
+  await Promise.allSettled(
+    recipients.map((recipient) => sendMessage(recipient, formatPaymentFailureMessage(order, reason))),
+  );
 }
 
 function getOrderTemplateParams(order) {
@@ -1888,10 +1941,7 @@ async function handleProductDetails({ session, text, phone, userId }) {
     return;
   }
   if (lower === "2" || lower.includes("buy")) {
-    await sendMessage(
-      phone,
-      "You can order here:\n\nhttps://liquidspice.in\n\nReply 3 to go back or MENU.",
-    );
+    await startWhatsappOrder({ session, phone });
     return;
   }
   if (lower === "3" || lower.includes("back")) {
@@ -2684,10 +2734,300 @@ Reply MENU to return.`,
   await sendMessage(phone, "Please reply 1, 2, 3, or 4.");
 }
 
+async function startWhatsappOrder({ session, phone }) {
+  await updateSession(session._id, {
+    current_state: "order_product",
+    order_cart: [],
+    order_draft: {},
+    activationPreference: "buy_now",
+    purchaseIntent: "high",
+    segment: "whatsapp_buyer",
+  });
+  await sendMessage(
+    phone,
+    `Order VALOUR on WhatsApp\n\n1. Velvety Butter Chicken - Rs. 350 (520 ml)\n2. Mithila Fish Curry - Rs. 350 (520 ml)\n\nReply 1 or 2. Reply CANCEL at any time.`,
+  );
+}
+
+async function handleOrderProduct({ session, text, phone }) {
+  const requestedItems = parseOrderItems(text);
+  if (requestedItems.length) {
+    await updateSession(session._id, {
+      current_state: "order_add_more",
+      order_cart: requestedItems,
+      selected_product: null,
+      activationPreference: "buy_now",
+      purchaseIntent: "high",
+      segment: "whatsapp_buyer",
+    });
+    await sendMessage(
+      phone,
+      `I found these products and quantities:\n\n${formatWhatsappCart(requestedItems)}\n\nAdd another product? Reply YES or NO to checkout.`,
+    );
+    return;
+  }
+  const product = parseOrderProduct(text);
+  if (!product) {
+    await sendMessage(phone, "Please reply 1 for Velvety Butter Chicken or 2 for Mithila Fish Curry.");
+    return;
+  }
+  await updateSession(session._id, {
+    current_state: "order_quantity",
+    selected_product: product.id,
+  });
+  await sendMessage(phone, `How many ${product.name} bottles would you like? Reply with 1 to 10.`);
+}
+
+async function handleOrderQuantity({ session, text, phone }) {
+  const quantity = parseOrderQuantity(text);
+  const product = PRODUCT_CATALOG[session.selected_product];
+  if (!quantity || !product) {
+    await sendMessage(phone, "Please enter a quantity from 1 to 10.");
+    return;
+  }
+  const cart = Array.isArray(session.order_cart) ? [...session.order_cart] : [];
+  const existing = cart.find((line) => line.id === product.id);
+  if (existing && existing.quantity + quantity > 10) {
+    await sendMessage(phone, "You can order up to 10 bottles of each product in one WhatsApp order.");
+    return;
+  }
+  if (existing) existing.quantity += quantity;
+  else cart.push({ ...product, aliases: undefined, quantity });
+  await updateSession(session._id, {
+    current_state: "order_add_more",
+    order_cart: cart,
+    selected_product: null,
+  });
+  await sendMessage(phone, `${formatWhatsappCart(cart)}\n\nAdd another product? Reply YES or NO.`);
+}
+
+async function handleOrderAddMore({ session, text, phone }) {
+  const lower = normalizeText(text);
+  if (matchesAny(lower, ["yes", "y", "add", "add more"])) {
+    await updateSession(session._id, { current_state: "order_product" });
+    await sendMessage(phone, "Choose another product:\n\n1. Velvety Butter Chicken\n2. Mithila Fish Curry");
+    return;
+  }
+  if (!matchesAny(lower, ["no", "n", "checkout", "pay", "done"])) {
+    await sendMessage(phone, "Reply YES to add another product or NO to checkout.");
+    return;
+  }
+  await updateSession(session._id, { current_state: "order_delivery" });
+  await sendMessage(
+    phone,
+    `Please send all delivery details in ONE message, in this order:\n\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street\n\nYou may include labels, but you do not need to copy this exact format. Locality means your area name, for example Badhaghat.`,
+  );
+}
+
+async function createWhatsappPaymentLink({ session, phone }) {
+  assertRazorpayConfig();
+  const cart = session.order_cart || [];
+  const draft = session.order_draft || {};
+  const totals = calculateWhatsappTotals(cart);
+  const reference = `WA-${Date.now()}-${String(phone).slice(-4)}`;
+  const paymentLink = await razorpay.paymentLink.create({
+    amount: toPaise(totals.total),
+    currency: "INR",
+    accept_partial: false,
+    reference_id: reference,
+    description: `VALOUR WhatsApp order ${reference}`,
+    customer: {
+      name: draft.customerName,
+      contact: `+91${draft.phone}`,
+      email: draft.email || `whatsapp-${String(phone).replace(/\D/g, "")}@liquidspice.in`,
+    },
+    notify: { sms: false, email: false },
+    reminder_enable: true,
+    notes: { channel: "whatsapp", phone: String(phone) },
+  });
+
+  const order = {
+    orderNumber: reference,
+    customerName: draft.customerName,
+    phone: draft.phone,
+    whatsappPhone: String(phone),
+    email: draft.email || "",
+    address: draft.address,
+    city: draft.city,
+    state: draft.state,
+    pincode: draft.pincode,
+    products: cart,
+    subtotal: totals.subtotal,
+    shippingCharge: totals.shipping,
+    totalAmount: totals.total,
+    paymentMethod: "payment_link",
+    paymentMethodLabel: "Razorpay payment link",
+    paymentStatus: "pending",
+    shippingStatus: "Awaiting payment",
+    razorpayOrderId: paymentLink.id,
+    razorpayPaymentLinkId: paymentLink.id,
+    paymentLinkReference: reference,
+    channel: "whatsapp",
+    createdAt: new Date(),
+  };
+  await collections().orders.insertOne(order);
+  await updateSession(session._id, {
+    current_state: "order_awaiting_payment",
+    order_draft: { ...draft, paymentLinkId: paymentLink.id, orderNumber: reference },
+  });
+  await sendMessage(
+    phone,
+    `Order ${reference}\n\n${formatWhatsappCart(cart)}\n\nPay securely here:\n${paymentLink.short_url}\n\nYou can pay by UPI, card, net banking, or wallet. We will confirm your order here after payment.`,
+  );
+}
+
+function hashOrderOtp(code) {
+  return crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(String(code))
+    .digest("hex");
+}
+
+function getChatShippingPhone(phone) {
+  return normalizeShippingPhone(phone);
+}
+
+async function sendOrderReview(phone, session, draft) {
+  await sendMessage(
+    phone,
+    `${formatWhatsappCart(session.order_cart)}\n\nBilling and shipping details:\n${draft.customerName}\nPhone: +91 ${draft.phone}\nLocality: ${draft.locality}\n${draft.addressLine ? `House/Street: ${draft.addressLine}\n` : ""}City: ${draft.city}\nState: ${draft.state}\nPincode: ${draft.pincode}\n\nReply PAY to create your secure payment link, or CANCEL.`,
+  );
+}
+
+async function verifyPendingOrderOtp(phone, text) {
+  if (!/^\d{6}$/.test(String(text || "").trim())) return false;
+  const shippingPhone = normalizeShippingPhone(phone);
+  if (!shippingPhone) return false;
+  const { sessions } = collections();
+  const pending = await sessions.findOne({
+    current_state: "order_phone_otp",
+    order_otp_chat: shippingPhone,
+    order_otp_expires_at: { $gt: new Date() },
+  });
+  if (!pending || pending.order_otp_hash !== hashOrderOtp(String(text).trim())) {
+    if (pending) await sendMessage(phone, "That OTP is incorrect. Please check the six-digit code and try again.");
+    return Boolean(pending);
+  }
+
+  const draft = { ...(pending.order_draft || {}), phone: pending.order_otp_phone };
+  await updateSession(pending._id, {
+    current_state: "order_confirm",
+    order_draft: draft,
+    order_otp_hash: null,
+    order_otp_phone: null,
+    order_otp_chat: null,
+    order_otp_expires_at: null,
+  });
+  await sendMessage(phone, "Phone number verified successfully.");
+  await sendOrderReview(phone, pending, draft);
+  return true;
+}
+
+async function handleLinkedVerifiedOrder(phone, text) {
+  if (!matchesAny(normalizeText(text), ["pay", "confirm", "yes", "proceed"])) return false;
+  const shippingPhone = normalizeShippingPhone(phone);
+  if (!shippingPhone) return false;
+  const session = await collections().sessions.findOne({
+    current_state: "order_confirm",
+    "order_draft.phone": shippingPhone,
+  });
+  if (!session) return false;
+  try {
+    await createWhatsappPaymentLink({ session, phone });
+  } catch (err) {
+    console.error("Linked WhatsApp payment link creation failed", err.response?.data || err.message);
+    await sendMessage(phone, "We could not create the payment link right now. Please try PAY again in a moment.");
+  }
+  return true;
+}
+
+async function handleWhatsappOrderState({ session, text, phone }) {
+  const value = String(text || "").trim();
+  if (session.current_state === "order_product") return handleOrderProduct({ session, text, phone });
+  if (session.current_state === "order_quantity") return handleOrderQuantity({ session, text, phone });
+  if (session.current_state === "order_add_more") return handleOrderAddMore({ session, text, phone });
+  if (session.current_state === "order_delivery") {
+    const details = parseDeliveryDetails(value);
+    const validation = validateDeliveryDetails(details);
+    if (!validation.valid) {
+      return sendMessage(
+        phone,
+        `Some delivery details are missing or invalid:\n- ${validation.errors.join("\n- ")}\n\nPlease send all six details again in ONE message and in this order:\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street\n\nLabels are optional.`,
+      );
+    }
+    const address = [details.addressLine, details.locality].filter(Boolean).join(", ");
+    const draft = {
+      customerName: details.customerName,
+      locality: details.locality,
+      addressLine: details.addressLine,
+      address,
+      city: details.city,
+      state: details.state,
+      pincode: details.pincode,
+    };
+    await updateSession(session._id, { current_state: "order_phone", order_draft: draft });
+    return sendMessage(
+      phone,
+      `Which mobile number should the courier use?\n\nReply USE THIS NUMBER to use your current WhatsApp number, or type a 10-digit Indian mobile number. A number you type will be verified by OTP on WhatsApp.`,
+    );
+  }
+  if (session.current_state === "order_phone") {
+    if (wantsChatNumber(value)) {
+      const shippingPhone = getChatShippingPhone(phone);
+      if (!shippingPhone) return sendMessage(phone, "We could not read your WhatsApp number. Please enter a valid 10-digit Indian mobile number.");
+      const draft = { ...(session.order_draft || {}), phone: shippingPhone };
+      await updateSession(session._id, { current_state: "order_confirm", order_draft: draft });
+      return sendOrderReview(phone, session, draft);
+    }
+
+    const shippingPhone = normalizeShippingPhone(value);
+    if (!shippingPhone) {
+      return sendMessage(phone, "Please enter a valid 10-digit Indian mobile number beginning with 6, 7, 8, or 9, or reply USE THIS NUMBER.");
+    }
+    const otp = String(crypto.randomInt(100000, 1000000));
+    const otpRecipient = String(phone);
+    try {
+      await sendMessage(otpRecipient, `Your VALOUR shipping phone verification code is ${otp}. It expires in 5 minutes. Do not share this code.`);
+    } catch (err) {
+      console.error("Shipping phone OTP send failed", err.response?.data || err.message);
+      return sendMessage(phone, "We could not send an OTP to that number. Check that it is on WhatsApp, enter it again, or reply USE THIS NUMBER.");
+    }
+    await updateSession(session._id, {
+      current_state: "order_phone_otp",
+      order_otp_hash: hashOrderOtp(otp),
+      order_otp_phone: shippingPhone,
+      order_otp_chat: getChatShippingPhone(phone),
+      order_otp_expires_at: new Date(Date.now() + 5 * 60 * 1000),
+    });
+    return sendMessage(phone, `We sent a six-digit OTP in this WhatsApp chat to verify the shipping number +91 ${shippingPhone}. Reply with it within 5 minutes.`);
+  }
+  if (session.current_state === "order_phone_otp") {
+    if (session.order_otp_expires_at && new Date(session.order_otp_expires_at) <= new Date()) {
+      await updateSession(session._id, { current_state: "order_phone", order_otp_hash: null, order_otp_phone: null, order_otp_chat: null, order_otp_expires_at: null });
+      return sendMessage(phone, "That OTP has expired. Enter the shipping mobile number again to receive a new code, or reply USE THIS NUMBER.");
+    }
+    return sendMessage(phone, `Please reply with the OTP sent in this chat to verify +91 ${session.order_otp_phone}. If you need to change the number, reply CANCEL and begin again.`);
+  }
+  if (session.current_state === "order_confirm") {
+    if (!matchesAny(normalizeText(value), ["pay", "confirm", "yes", "proceed"])) return sendMessage(phone, "Reply PAY to confirm and receive the secure payment link, or CANCEL.");
+    try {
+      return await createWhatsappPaymentLink({ session, phone });
+    } catch (err) {
+      console.error("WhatsApp payment link creation failed", err.response?.data || err.message);
+      return sendMessage(phone, "We could not create the payment link right now. Please try PAY again in a moment or reply MENU for help.");
+    }
+  }
+  if (session.current_state === "order_awaiting_payment") {
+    return sendMessage(phone, `Your order is awaiting payment. Use the link sent above, or reply CANCEL to start again.`);
+  }
+  return null;
+}
+
 async function processIncomingMessage(message) {
   const phone = message.from;
   const text = message.text?.body?.trim() || "";
   const lower = normalizeText(text);
+  const directOrderItems = parseOrderItems(text);
   const messageSignals = getMessageSignals(message);
   const firstAction = getFirstAction(text);
 
@@ -2749,9 +3089,39 @@ async function processIncomingMessage(message) {
     return;
   }
 
+  if (await verifyPendingOrderOtp(phone, text)) return;
+  if (await handleLinkedVerifiedOrder(phone, text)) return;
+
   if (matchesAny(lower, ["menu", "restart", "start over", "stop", "cancel"])) {
     await resetToIdle(session._id);
     await sendMainMenu(phone);
+    return;
+  }
+
+  if (activeSession.current_state.startsWith("order_")) {
+    await handleWhatsappOrderState({ session: activeSession, text, phone });
+    return;
+  }
+
+  if (directOrderItems.length) {
+    await updateSession(session._id, {
+      current_state: "order_add_more",
+      order_cart: directOrderItems,
+      order_draft: {},
+      selected_product: null,
+      activationPreference: "buy_now",
+      purchaseIntent: "high",
+      segment: "whatsapp_buyer",
+    });
+    await updateUserSignals(user._id, {
+      activationPreference: "buy_now",
+      purchaseIntent: "high",
+      segment: "whatsapp_buyer",
+    });
+    await sendMessage(
+      phone,
+      `I found these products and quantities:\n\n${formatWhatsappCart(directOrderItems)}\n\nAdd another product? Reply YES or NO to checkout.`,
+    );
     return;
   }
 
@@ -2952,14 +3322,7 @@ async function processIncomingMessage(message) {
       },
       leadScoreDelta: getLeadScoreDelta("", "clicked_purchase"),
     });
-    await sendMessage(
-      phone,
-      `You can order here:
-
-https://liquidspice.in
-
-Reply MENU to return.`,
-    );
+    await startWhatsappOrder({ session: activeSession, phone });
     return;
   }
 
@@ -3158,6 +3521,110 @@ app.get("/health", (_req, res) => {
     database: mongoReady,
     whatsappSubscription: wabaSubscribed,
   });
+});
+
+function verifyRazorpayWebhook(req) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const signature = String(req.get("x-razorpay-signature") || "");
+  if (!secret || !signature || !req.rawBody) return false;
+  const expected = crypto.createHmac("sha256", secret).update(req.rawBody).digest("hex");
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const receivedBuffer = Buffer.from(signature, "hex");
+  return expectedBuffer.length === receivedBuffer.length && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+app.post("/api/payment/webhook", async (req, res) => {
+  if (!verifyRazorpayWebhook(req)) {
+    return res.status(401).json({ ok: false, error: "Invalid webhook signature" });
+  }
+
+  try {
+    const event = req.body?.event;
+    const link = req.body?.payload?.payment_link?.entity || {};
+    const payment = req.body?.payload?.payment?.entity || {};
+    const { orders, paymentAttempts } = collections();
+
+    if (event === "payment.failed") {
+      const reason = payment.error_description || payment.error_reason || payment.error_code || "Payment was declined";
+      let failedOrder = null;
+      if (payment.order_id) {
+        failedOrder = await paymentAttempts.findOneAndUpdate(
+          { razorpayOrderId: payment.order_id, failureNotifiedAt: null },
+          { $set: { paymentStatus: "failed", paymentFailureReason: reason, failureNotifiedAt: new Date(), updatedAt: new Date() } },
+          { returnDocument: "after" },
+        );
+      }
+      const paymentLinkId = link.id || payment.payment_link_id || payment.notes?.payment_link_id;
+      if (!failedOrder && paymentLinkId) {
+        failedOrder = await orders.findOneAndUpdate(
+          { razorpayPaymentLinkId: paymentLinkId, failureNotifiedAt: { $exists: false }, paymentStatus: { $ne: "paid" } },
+          { $set: { paymentStatus: "failed", paymentFailureReason: reason, failureNotifiedAt: new Date(), updatedAt: new Date() } },
+          { returnDocument: "after" },
+        );
+      }
+      res.json({ ok: true, matched: Boolean(failedOrder) });
+      if (failedOrder) void sendPaymentFailureWhatsapp(failedOrder, reason);
+      return;
+    }
+
+    if (event === "payment.captured" && payment.order_id) {
+      const paidAttempt = await paymentAttempts.findOneAndUpdate(
+        { razorpayOrderId: payment.order_id, successNotifiedAt: { $exists: false } },
+        { $set: { paymentStatus: "paid", razorpayPaymentId: payment.id, successNotifiedAt: new Date(), updatedAt: new Date() } },
+        { returnDocument: "after" },
+      );
+      res.json({ ok: true, matched: Boolean(paidAttempt) });
+      if (paidAttempt) void sendOrderConfirmationWhatsapp(paidAttempt);
+      return;
+    }
+
+    // Acknowledge unrelated Razorpay events without changing an order.
+    if (event !== "payment_link.paid") return res.json({ ok: true });
+
+    const result = await orders.findOneAndUpdate(
+      { razorpayPaymentLinkId: link.id, paymentStatus: { $ne: "paid" } },
+      {
+        $set: {
+          paymentStatus: "paid",
+          shippingStatus: "Order confirmed",
+          razorpayPaymentId: payment.id,
+          paymentMethod: payment.method || "online",
+          paymentMethodLabel: payment.method || "Online payment",
+          paidAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after" },
+    );
+
+    if (!result) {
+      const existing = await orders.findOne({ razorpayPaymentLinkId: link.id });
+      return existing
+        ? res.json({ ok: true, duplicate: true })
+        : res.status(404).json({ ok: false, error: "Order not found" });
+    }
+
+    res.json({ ok: true });
+    const order = result;
+    void collections().sessions.updateMany(
+      { "order_draft.paymentLinkId": link.id },
+      { $set: { current_state: "idle", order_cart: [], order_draft: null, updated_at: new Date() } },
+    );
+    void recordCompletedOrderIntelligence(order).catch((err) =>
+      console.error("WhatsApp order intelligence update failed", err.message),
+    );
+    void sendOrderConfirmationWhatsapp(order).catch((err) =>
+      console.error("WhatsApp paid confirmation failed", err.response?.data || err.message),
+    );
+    if (canCreateRealShiprocketOrders()) {
+      void createShiprocketShipmentForOrder(order).catch((err) =>
+        console.error("WhatsApp Shiprocket order failed", err.response?.data || err.message),
+      );
+    }
+  } catch (err) {
+    console.error("Razorpay payment webhook failed", err.response?.data || err.message);
+    if (!res.headersSent) res.status(500).json({ ok: false, error: "Webhook processing failed" });
+  }
 });
 
 // ---------------end-------------------
@@ -3757,6 +4224,61 @@ function validateOrderPayload(order) {
   return null;
 }
 
+function quoteToOrderFields(quote) {
+  const fromPaise = (value) => Number((value / 100).toFixed(2));
+  return {
+    products: quote.items.map((item) => ({
+      id: item.sku,
+      sku: item.sku,
+      name: item.name,
+      size: item.size,
+      price: fromPaise(item.unitPricePaise),
+      quantity: item.quantity,
+    })),
+    subtotal: fromPaise(quote.subtotalPaise),
+    discountAmount: fromPaise(quote.discountPaise),
+    shippingCharge: fromPaise(quote.shippingPaise),
+    taxAmount: fromPaise(quote.taxPaise),
+    totalAmount: fromPaise(quote.totalPaise),
+    currency: quote.currency,
+    couponCode: quote.couponCode,
+    pricingSnapshot: quote,
+  };
+}
+
+async function buildAuthoritativeQuote({ items, pincode, couponCode }) {
+  const requestedItems = normaliseCartItems(items);
+  const { products, pricingRules } = collections();
+  const [catalogue, rules] = await Promise.all([
+    products.find({ sku: { $in: requestedItems.map((item) => item.sku) }, active: true }).toArray(),
+    pricingRules.findOne({ _id: "checkout" }),
+  ]);
+  if (!rules) throw new Error("Checkout pricing rules have not been configured");
+
+  let shippingPaise;
+  let courierQuote = null;
+  if (/^\d{6}$/.test(String(pincode || ""))) {
+    try {
+      const couriers = await getShiprocketCouriers({ deliveryPostcode: Number(pincode) });
+      courierQuote = couriers.length ? getBest(couriers) : null;
+      if (courierQuote && Number.isFinite(Number(courierQuote.price))) {
+        shippingPaise = Math.max(0, Math.round(Number(courierQuote.price) * 100));
+      }
+    } catch (error) {
+      console.error("Server shipping quote failed; using configured MongoDB rate", error.message);
+    }
+  }
+
+  const quote = calculateQuote({
+    requestedItems,
+    products: catalogue,
+    rules,
+    couponCode,
+    shippingPaise,
+  });
+  return { ...quote, courierQuote, pricingRulesId: rules._id, pricedAt: new Date() };
+}
+
 function verifyRazorpaySignature({
   razorpayOrderId,
   razorpayPaymentId,
@@ -3833,34 +4355,59 @@ app.get("/api/delivery-options", async (req, res) => {
   }
 });
 
+app.post("/api/checkout/quote", async (req, res) => {
+  try {
+    const pincode = String(req.body.pincode || "").trim();
+    if (pincode && !/^\d{6}$/.test(pincode)) {
+      return res.status(400).json({ ok: false, error: "Valid pincode is required" });
+    }
+    const quote = await buildAuthoritativeQuote({
+      items: req.body.items,
+      pincode,
+      couponCode: req.body.couponCode,
+    });
+    res.json({ ok: true, quote });
+  } catch (error) {
+    const status = /unavailable|requires|quantity|required|configured/i.test(error.message) ? 400 : 500;
+    res.status(status).json({ ok: false, error: status === 400 ? error.message : "Unable to calculate checkout" });
+  }
+});
+
 app.post("/api/payment/create-order", async (req, res) => {
   try {
     assertRazorpayConfig();
-
-    const amountInPaise = toPaise(req.body.amount);
-    const currency = String(req.body.currency || "INR").toUpperCase();
-
-    if (!amountInPaise) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "Valid checkout amount is required" });
+    const rawOrder = req.body.order || {};
+    const customerOrder = normalizeOrderPayload(rawOrder);
+    const quote = await buildAuthoritativeQuote({
+      items: rawOrder.products,
+      pincode: customerOrder.pincode,
+      couponCode: rawOrder.coupon,
+    });
+    const websiteOrder = { ...customerOrder, ...quoteToOrderFields(quote) };
+    const validationError = validateOrderPayload(websiteOrder);
+    if (validationError) {
+      return res.status(400).json({ ok: false, error: validationError });
     }
 
-    if (currency !== "INR") {
-      return res
-        .status(400)
-        .json({ ok: false, error: "Only INR payments are supported" });
-    }
-
-    // Create order step: create a short-lived Razorpay order for the custom checkout total.
+    // Only the amount calculated from MongoDB products/rules is sent to Razorpay.
     const razorpayOrder = await razorpay.orders.create({
-      amount: amountInPaise,
-      currency,
+      amount: quote.totalPaise,
+      currency: quote.currency,
       receipt: `valour_${Date.now()}`,
       notes: {
         channel: "custom_checkout",
         environment: "test",
       },
+    });
+
+    await collections().paymentAttempts.insertOne({
+      ...websiteOrder,
+      razorpayOrderId: razorpayOrder.id,
+      orderNumber: `WEB-${Date.now()}`,
+      channel: "website",
+      paymentStatus: "pending",
+      failureNotifiedAt: null,
+      createdAt: new Date(),
     });
 
     res.json({
@@ -3869,6 +4416,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       key_id: getRazorpayKeyId(),
+      quote,
     });
   } catch (err) {
     console.error(
@@ -3881,6 +4429,26 @@ app.post("/api/payment/create-order", async (req, res) => {
   }
 });
 
+app.post("/api/payment/client-failure", async (req, res) => {
+  const razorpayOrderId = String(req.body.razorpay_order_id || "").trim();
+  const reason = String(req.body.reason || "Payment was cancelled or could not be completed").slice(0, 180);
+  if (!/^order_[A-Za-z0-9]+$/.test(razorpayOrderId)) {
+    return res.status(400).json({ ok: false, error: "Valid Razorpay order ID is required" });
+  }
+  try {
+    const attempt = await collections().paymentAttempts.findOneAndUpdate(
+      { razorpayOrderId, failureNotifiedAt: null, paymentStatus: { $ne: "paid" } },
+      { $set: { paymentStatus: "failed", paymentFailureReason: reason, failureNotifiedAt: new Date(), updatedAt: new Date() } },
+      { returnDocument: "after" },
+    );
+    res.json({ ok: true, notified: Boolean(attempt) });
+    if (attempt) void sendPaymentFailureWhatsapp(attempt, reason);
+  } catch (err) {
+    console.error("Client payment failure notification failed", err.message);
+    res.status(500).json({ ok: false, error: "Unable to record payment failure" });
+  }
+});
+
 app.post("/api/payment/verify", async (req, res) => {
   try {
     assertRazorpayConfig();
@@ -3889,7 +4457,6 @@ app.post("/api/payment/verify", async (req, res) => {
       razorpay_payment_id: razorpayPaymentId,
       razorpay_order_id: razorpayOrderId,
       razorpay_signature: razorpaySignature,
-      order: rawOrder,
     } = req.body;
 
     if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
@@ -3910,40 +4477,38 @@ app.post("/api/payment/verify", async (req, res) => {
         .json({ ok: false, error: "Payment signature verification failed" });
     }
 
-    const order = normalizeOrderPayload(rawOrder);
-    const validationError = validateOrderPayload(order);
-
-    if (validationError) {
-      return res.status(400).json({ ok: false, error: validationError });
+    const { orders, paymentAttempts } = collections();
+    const order = await paymentAttempts.findOne({ razorpayOrderId });
+    if (!order) {
+      return res.status(404).json({ ok: false, error: "Pending order not found" });
     }
 
-    const razorpayOrder = await razorpay.orders.fetch(razorpayOrderId);
-    const expectedAmount = toPaise(order.totalAmount);
+    const [razorpayOrder, razorpayPayment] = await Promise.all([
+      razorpay.orders.fetch(razorpayOrderId),
+      razorpay.payments.fetch(razorpayPaymentId),
+    ]);
+    const expectedAmount = order.pricingSnapshot?.totalPaise;
 
     if (
       razorpayOrder.currency !== "INR" ||
-      Number(razorpayOrder.amount) !== expectedAmount
+      Number(razorpayOrder.amount) !== expectedAmount ||
+      razorpayPayment.order_id !== razorpayOrderId ||
+      Number(razorpayPayment.amount) !== expectedAmount ||
+      razorpayPayment.currency !== "INR" ||
+      !["authorized", "captured"].includes(razorpayPayment.status)
     ) {
       return res
         .status(400)
         .json({ ok: false, error: "Payment amount mismatch" });
     }
 
-    const { orders } = collections();
-
-    // Database save step: save the order only after the Razorpay signature is valid.
+    // Use the immutable server-priced payment attempt, never the browser payload.
     const savedOrder = {
       ...order,
       paymentMethod:
-        rawOrder?.payment?.method ||
-        rawOrder?.paymentMethod ||
-        order.paymentMethod ||
-        "upi",
+        razorpayPayment.method || order.paymentMethod || "online",
       paymentMethodLabel:
-        rawOrder?.payment?.label ||
-        rawOrder?.paymentMethodLabel ||
-        order.paymentMethodLabel ||
-        "UPI",
+        razorpayPayment.method || order.paymentMethodLabel || "Online payment",
       purchaseIntent: "completed",
       leadScore:
         (Number(order.leadScore) || 0) +
@@ -3964,7 +4529,21 @@ app.post("/api/payment/verify", async (req, res) => {
       createdAt: new Date(),
     };
 
+    delete savedOrder._id;
+
     const result = await orders.insertOne(savedOrder);
+    await paymentAttempts.updateOne(
+      { razorpayOrderId },
+      {
+        $set: {
+          paymentStatus: "paid",
+          razorpayPaymentId,
+          completedOrderId: result.insertedId,
+          paidAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    );
     await recordCompletedOrderIntelligence(savedOrder);
     const orderNumber = formatOrderNumber(result.insertedId);
     const orderForResponse = {
@@ -4071,9 +4650,15 @@ app.post("/api/payment/verify", async (req, res) => {
 
     let whatsappConfirmation = { sent: false, reason: "not_attempted" };
     try {
-      // WhatsApp order message step: send a media confirmation after payment and DB save.
-      whatsappConfirmation =
-        await sendOrderConfirmationWhatsapp(orderForResponse);
+      // Claim the notification once so browser verification and Razorpay webhooks cannot duplicate it.
+      const notificationClaim = await collections().paymentAttempts.findOneAndUpdate(
+        { razorpayOrderId, successNotifiedAt: { $exists: false } },
+        { $set: { paymentStatus: "paid", razorpayPaymentId, successNotifiedAt: new Date(), updatedAt: new Date() } },
+        { returnDocument: "after" },
+      );
+      whatsappConfirmation = notificationClaim
+        ? await sendOrderConfirmationWhatsapp(orderForResponse)
+        : { sent: false, reason: "already_notified" };
       console.log("WhatsApp order confirmation sent", whatsappConfirmation);
     } catch (whatsappErr) {
       whatsappConfirmation = { sent: false, reason: "send_failed" };

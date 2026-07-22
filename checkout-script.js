@@ -66,6 +66,8 @@ const state = {
   },
   deliveryQuote: null,
   deliveryRequestId: 0,
+  pricingRequestId: 0,
+  pricingTimer: null,
   step: CHECKOUT_STEPS.CART,
   paymentMethod: "upi",
 };
@@ -463,6 +465,47 @@ function calculateTotals() {
   state.totals = { subtotal, shipping, discount, tax, total };
 }
 
+async function refreshServerPricing() {
+  if (!state.cart.length) return;
+  const requestId = ++state.pricingRequestId;
+  try {
+    const result = await postJSON(`${API_BASE}/api/checkout/quote`, {
+      items: state.cart.map((item) => ({
+        sku: item.id,
+        quantity: item.quantity,
+      })),
+      pincode: /^\d{6}$/.test(getPincode()) ? getPincode() : "",
+      couponCode: state.coupon,
+    });
+    if (requestId !== state.pricingRequestId) return;
+    const quote = result.quote;
+    state.cart = quote.items.map((line) => ({
+      ...(state.cart.find((item) => item.id === line.sku) || {}),
+      id: line.sku,
+      name: line.name,
+      size: line.size,
+      price: line.unitPricePaise / 100,
+      quantity: line.quantity,
+    }));
+    state.totals = {
+      subtotal: quote.subtotalPaise / 100,
+      discount: quote.discountPaise / 100,
+      shipping: quote.shippingPaise / 100,
+      tax: quote.taxPaise / 100,
+      total: quote.totalPaise / 100,
+    };
+    renderCart();
+    renderSummary();
+  } catch (error) {
+    console.error("Server pricing unavailable", error);
+  }
+}
+
+function scheduleServerPricing() {
+  window.clearTimeout(state.pricingTimer);
+  state.pricingTimer = window.setTimeout(refreshServerPricing, 150);
+}
+
 function itemCount() {
   return state.cart.reduce((sum, item) => sum + item.quantity, 0);
 }
@@ -622,6 +665,7 @@ function renderAll() {
   renderCart();
   renderSummary();
   saveState();
+  scheduleServerPricing();
 }
 
 function updateQuantity(id, direction) {
@@ -867,6 +911,7 @@ async function updateDeliveryEstimate() {
 
   setTextAll("[data-delivery-window]", deliveryText);
   renderSummary();
+  scheduleServerPricing();
 }
 
 function setLoading(button, loading) {
@@ -1086,10 +1131,7 @@ async function startRazorpayPayment({ razorpayOrder, orderPayload }) {
           // Signature verification step: backend validates Razorpay's HMAC before saving the order.
           const verifiedOrder = await postJSON(
             `${API_BASE}/api/payment/verify`,
-            {
-              ...paymentResponse,
-              order: orderPayload,
-            },
+            paymentResponse,
           );
           resolve(verifiedOrder);
         } catch (error) {
@@ -1152,18 +1194,37 @@ async function placeOrder(event) {
     payment_method: getPaymentMethodLabel(),
   });
 
+  let razorpayOrder = null;
   try {
     renderSummary();
     const orderPayload = buildOrderPayload();
 
     // Create order step: backend creates the Razorpay order for the final payable total.
-    const razorpayOrder = await postJSON(
-      `${API_BASE}/api/payment/create-order`,
-      {
-        amount: state.totals.total,
-        currency: "INR",
-      },
-    );
+    razorpayOrder = await postJSON(`${API_BASE}/api/payment/create-order`, {
+      order: orderPayload,
+    });
+
+    // Replace all browser estimates with the authoritative MongoDB-backed quote.
+    if (razorpayOrder.quote) {
+      const quote = razorpayOrder.quote;
+      state.cart = quote.items.map((line) => ({
+        ...(state.cart.find((item) => item.id === line.sku) || {}),
+        id: line.sku,
+        name: line.name,
+        size: line.size,
+        price: line.unitPricePaise / 100,
+        quantity: line.quantity,
+      }));
+      state.totals = {
+        subtotal: quote.subtotalPaise / 100,
+        discount: quote.discountPaise / 100,
+        shipping: quote.shippingPaise / 100,
+        tax: quote.taxPaise / 100,
+        total: quote.totalPaise / 100,
+      };
+      renderCart();
+      renderSummary();
+    }
 
     const verifiedOrder = await startRazorpayPayment({
       razorpayOrder,
@@ -1196,6 +1257,17 @@ async function placeOrder(event) {
     window.location.href = "order-success.html";
   } catch (error) {
     console.error("Payment failed", error);
+    if (razorpayOrder?.order_id) {
+      void postJSON(`${API_BASE}/api/payment/client-failure`, {
+        razorpay_order_id: razorpayOrder.order_id,
+        reason: error.message || "Payment failed",
+      }).catch((notificationError) =>
+        console.error(
+          "Unable to send WhatsApp payment failure notice",
+          notificationError,
+        ),
+      );
+    }
     trackEvent("valour_payment_failed", {
       value: state.totals.total,
       currency: "INR",
