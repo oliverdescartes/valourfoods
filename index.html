@@ -1058,9 +1058,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     margin: auto;
     margin-top: 49px;
     box-shadow: -4px 9px 20px 0 rgba(0, 0, 0, 0.19);
-
-
-
+    min-height: 560px;
+    align-items: stretch;
   }
 
   .slider-nav {
@@ -1100,18 +1099,22 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   .product_slide .left {
     display: flex;
     gap: 20px;
-    flex: 1;
+    flex: 1.3;
+    min-width: 0;
+    align-items: stretch;
   }
 
   .thumbnails {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex-shrink: 0;
+    width: max-content;
   }
 
   .thumbnails img {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
     border-radius: 10px;
     object-fit: cover;
     cursor: pointer;
@@ -1126,7 +1129,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   /* Main image */
   .main-image img {
-    width: 500px;
+    width: 100%;
+    max-width: 560px;
     height: auto;
     object-fit: cover;
     opacity: 1;
@@ -1197,24 +1201,74 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   /* RIGHT SIDE */
   .product_slide .right {
-    flex: 1;
+    flex: 0.95;
     display: flex;
     flex-direction: column;
     gap: 0;
-    max-width: 430px;
     box-sizing: border-box;
-    padding: 45px;
+    padding: clamp(36px, 3vw, 48px);
+    border-radius: 0 20px 20px 0;
+    justify-content: space-between;
+  }
+
+  /* Desktop gallery: keep the thumbnail rail directly beneath the hero image. */
+  @media (min-width: 901px) {
+    .product_slide .left {
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 28px 0 28px 28px;
+      box-sizing: border-box;
+    }
+
+    .product_slide .main-image {
+      width: 100%;
+      min-height: 0;
+    }
+
+    .product_slide .thumbnail-strip-wrap {
+      width: 100%;
+    }
+
+    .product_slide .thumbnails {
+      width: 100%;
+      flex-direction: row;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .product_slide .thumbnails img {
+      width: 82px;
+      height: 82px;
+      flex: 0 0 82px;
+    }
+
+    .product_slide .thumbnail-more-indicator {
+      display: none;
+    }
   }
 
   .brand {
-    margin: 0 0 12px;
-    color: #ffffff;
+    margin: 0 0 46px;
+    color: #f7d46c;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
     font-weight: 800;
-    letter-spacing: 0;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
+    position: relative;
+  }
+
+  .brand::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 31px;
+    width: 50px;
+    height: 2px;
+    border-radius: 2px;
+    background: #f7d46c;
   }
 
   /* TITLE + PRICE */
@@ -1227,41 +1281,42 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     margin: 0;
     color: #f9e7d1;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(30px, 4vw, 42px);
-    line-height: 0.98;
-    font-weight: 800;
+    font-size: clamp(42px, 4.7vw, 68px);
+    line-height: 1.02;
+    font-weight: 700;
     letter-spacing: 0;
   }
 
   .product-kicker {
-    margin: 16px 0 0;
+    margin: 24px 0 0;
     color: #ffffff;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.45;
-    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.55;
+    font-weight: 400;
   }
 
   .cooking-steps {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 13px 0 0;
+    gap: 14px;
+    margin: 22px 0 0;
   }
 
   .cooking-steps span {
     color: #f7d46c;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 13px;
+    font-size: 16px;
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0.16em;
   }
 
   .cooking-steps i {
-    width: 18px;
-    height: 1px;
-    background: rgba(247, 212, 108, 0.65);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #f7d46c;
   }
 
   .product-video-link {
@@ -1294,32 +1349,65 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin: 18px 0 0;
+    margin: 25px 0 0;
   }
 
   .product-specs span {
     display: inline-flex;
-    min-height: 34px;
+    min-height: 42px;
     align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(249, 231, 209, 0.38);
+    justify-content: flex-start;
+    border: 1px solid #d5ad35;
     border-radius: 999px;
     color: #ffffff;
     font-family:Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    padding: 0 13px;
-    text-transform: uppercase;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 400;
+    letter-spacing: 0;
+    padding: 0 17px;
+    text-transform: none;
+  }
+
+  .serves-icon {
+    position: relative;
+    width: 24px;
+    height: 20px;
+    flex: 0 0 24px;
+    margin-right: 12px;
+  }
+
+  .serves-icon::before,
+  .serves-icon::after {
+    content: "";
+    position: absolute;
+    border: 1.5px solid #f7d46c;
+  }
+
+  .serves-icon::before {
+    top: 0;
+    left: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    box-shadow: -7px 3px 0 -1px #831a1a, -7px 3px 0 0 #f7d46c,
+                7px 3px 0 -1px #831a1a, 7px 3px 0 0 #f7d46c;
+  }
+
+  .serves-icon::after {
+    left: 5px;
+    bottom: 0;
+    width: 14px;
+    height: 8px;
+    border-radius: 9px 9px 4px 4px;
   }
 
   .price {
     display: block;
-    margin-top: 30px;
+    margin-top: 32px;
     color: #ffffff;
     font-family:Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: 22px;
+    font-size: 48px;
     line-height: 1;
     font-weight: 800;
   }
@@ -1743,6 +1831,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       flex-direction: column;
     }
 
+    .product_slide .right {
+      border-radius: 0 0 20px 20px;
+    }
+
     .slider {
       touch-action: pan-y;
     }
@@ -1776,6 +1868,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       position: relative;
       width: min(78%, 280px);
       margin-inline: auto;
+      margin-top: 16px;
     }
 
     .product_slide .thumbnail-strip-wrap .thumbnails {
@@ -2077,6 +2170,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     padding-top: 120px;
     padding-bottom: 200px;
     background: #831a1a;
+    width: min(1180px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(20px, 4vw, 48px);
+    padding-right: clamp(20px, 4vw, 48px);
+    box-sizing: border-box;
   }
 
   .raw-ready-section {
@@ -2433,7 +2532,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   .slider {
     position: relative;
-    width: 64%;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    box-sizing: border-box;
   }
 
   /* STACK SLIDES ON TOP */
@@ -4226,35 +4328,35 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
 
     .brand {
-      margin-bottom: 12px;
-      font-size: 13px;
+      margin-bottom: 46px;
+      font-size: 14px;
     }
 
     .title-price h1,
     .title-price h2 {
-      font-size: 30px;
-      line-height: 0.98;
+      font-size: 40px;
+      line-height: 1.02;
     }
 
     .product_slide .right .product-kicker {
-      margin-top: 16px;
+      margin-top: 24px;
       color: #ffffff;
       font-size: 14px;
-      line-height: 1.45;
+      line-height: 1.55;
     }
 
     .product-specs {
-      margin-top: 18px;
+      margin-top: 25px;
     }
 
     .product-specs span {
-      min-height: 34px;
-      font-size: 11px;
+      min-height: 42px;
+      font-size: 14px;
     }
 
     .price {
-      margin-top: 30px;
-      font-size: 22px;
+      margin-top: 32px;
+      font-size: 28px;
     }
 
     .product-actions {
@@ -4466,6 +4568,34 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     width: min(100%, 43rem);
     text-align: center;
     padding-top: clamp(3rem, 14vh, 7rem);
+    isolation: isolate;
+  }
+
+  .valour-hero__title {
+    opacity: 0;
+    animation: valour-hero-title-settle 900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+  }
+
+  .valour-hero__title-main,
+  .valour-hero__title-accent {
+    will-change: transform, opacity, clip-path, filter;
+  }
+
+  .valour-hero__title-main {
+    display: block;
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.65em) scale(0.985);
+    filter: blur(8px);
+    animation: valour-hero-main-reveal 1.15s cubic-bezier(0.16, 1, 0.3, 1) 180ms forwards;
+  }
+
+  .valour-hero__title-accent {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-1.1rem);
+    filter: blur(5px);
+    animation: valour-hero-accent-reveal 1s cubic-bezier(0.22, 1, 0.36, 1) 720ms forwards;
   }
 
   .valour-hero .container_slider {
@@ -4493,12 +4623,18 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
+    opacity: 0;
+    transform: translateY(1rem);
+    animation: valour-hero-cue-reveal 800ms cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
   }
 
   .valour-hero__scroll-cue > span:first-child {
     padding-bottom: 0.28rem;
     border-bottom: 1px solid rgba(255, 248, 239, 0.72);
     transition: letter-spacing 220ms ease, border-color 220ms ease;
+    opacity: 1;
+    letter-spacing: 0.2em;
+    animation: valour-hero-cue-label 700ms cubic-bezier(0.22, 1, 0.36, 1) 1.45s backwards;
   }
 
   .valour-hero__scroll-cue:hover > span:first-child {
@@ -4516,8 +4652,10 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     height: clamp(1.6rem, 4svh, 2.4rem);
     background: currentColor;
     opacity: 0.55;
-    transform-origin: top;
+    transform: scaleY(1);
+    transform-origin: top center;
     transition: transform 220ms ease, opacity 220ms ease;
+    animation: valour-hero-line-grow 650ms cubic-bezier(0.22, 1, 0.36, 1) 1.72s backwards;
   }
 
   .valour-hero__scroll-icon {
@@ -4537,7 +4675,67 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     margin-top: -0.55rem;
     font-size: 1.25rem;
     font-variation-settings: "wght" 300;
-    animation: valour-scroll-cue 1.8s ease-in-out infinite;
+    opacity: 0;
+    animation:
+      valour-hero-icon-reveal 500ms ease-out 2.05s forwards,
+      valour-scroll-cue 1.8s ease-in-out 2.45s infinite;
+  }
+
+  @keyframes valour-hero-title-settle {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes valour-hero-main-reveal {
+    from {
+      opacity: 0;
+      clip-path: inset(0 0 100% 0);
+      transform: translateY(0.65em) scale(0.985);
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes valour-hero-accent-reveal {
+    from {
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+      transform: translateX(-1.1rem);
+      filter: blur(5px);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+      transform: translateX(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes valour-hero-cue-reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes valour-hero-cue-label {
+    from {
+      opacity: 0;
+      letter-spacing: 0.34em;
+    }
+  }
+
+  @keyframes valour-hero-line-grow {
+    from { transform: scaleY(0); }
+  }
+
+  @keyframes valour-hero-icon-reveal {
+    to { opacity: 1; }
   }
 
   @keyframes valour-scroll-cue {
@@ -4546,8 +4744,22 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .valour-hero__title,
+    .valour-hero__title-main,
+    .valour-hero__title-accent,
+    .valour-hero__scroll-cue,
+    .valour-hero__scroll-cue > span:first-child,
+    .valour-hero__scroll-line,
     .valour-hero__scroll-icon {
       animation: none;
+      opacity: 1;
+      clip-path: none;
+      filter: none;
+      transform: none;
+    }
+
+    .valour-hero__scroll-cue > span:first-child {
+      letter-spacing: 0.2em;
     }
   }
 
@@ -4594,7 +4806,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   <link href="vendor/cdn/cdn/shop/t/8/assets/login-logo.css?v=36613430775416838161755792980" rel="stylesheet"
     type="text/css" media="all" />
-  <!-- Loading Phase -->
+  <!-- Loading Phase (temporarily disabled)
   <div id="loading-phase" class="loading-phase-container">
 
     <div>
@@ -4608,10 +4820,11 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     </div>
 
   </div>
+  -->
 
 
-  <!-- Main Content (Hidden initially) -->
-  <main id="main-content" class="main-content-container" style="display: none; background: #831a1a;">
+  <!-- Main Content -->
+  <main id="main-content" class="main-content-container" style="display: block; background: #831a1a;">
 
     <!-- ===== ANNOUNCEMENT BAR ===== -->
 
@@ -4776,16 +4989,16 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 <!-- RIGHT SECTION -->
                 <div class="right">
 
-                  <p class="brand">LIQUID SPICE</p>
+                  <p class="brand">VALOUR LIQUID SPICE</p>
 
                   <div class="title-price">
                     <h2>Velvety Butter Chicken</h2>
-                    <p class="product-kicker">Add chicken and make restaurant style Butler chicken at home in 3 Simple steps.</p>
+                    <p class="product-kicker">Make restaurant-style Butter Chicken at home.<br>Just add chicken.</p>
                     <div class="cooking-steps" aria-label="Three simple cooking steps">
                       <span>FRY</span><i aria-hidden="true"></i><span>POUR</span><i aria-hidden="true"></i><span>SIMMER</span>
                     </div>
                     <div class="product-specs" aria-label="Product details">
-                      <span>one jar cooks 1kg chicken</span>
+                      <span><i class="serves-icon" aria-hidden="true"></i>Makes 1 kg chicken&nbsp;&middot;&nbsp; Serves 6&ndash;8</span>
                     </div>
                     <span class="price">&#8377;350.00</span>
                   </div>
@@ -4820,9 +5033,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                       type="button"
                       data-product-id="milky-mustard-520"
                       data-product-name="Velvety Butter Chicken"
-                      data-product-descriptor="Make coconut mustard fish without grinding mustard, coconut, or spices."
+                      data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
-                      data-product-serves="Makes 1 kg fish"
+                      data-product-serves="Makes 1 kg chicken · Serves 6–8"
                       data-product-price="350"
                       data-product-compare-at="425"
                       data-product-image="assets/images/velvey_buttermain.png"
@@ -4832,9 +5045,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                       type="button"
                       data-product-id="milky-mustard-520"
                       data-product-name="Velvety Butter Chicken"
-                      data-product-descriptor="Make coconut mustard fish without grinding mustard, coconut, or spices."
+                      data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
-                      data-product-serves="Makes 1 kg fish"
+                      data-product-serves="Makes 1 kg chicken · Serves 6–8"
                       data-product-price="350"
                       data-product-compare-at="425"
                       data-product-image="assets/images/velvey_buttermain.png"
@@ -4913,7 +5126,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                 </div>
 
                 <div class="right">
-                  <p class="brand">LIQUID SPICE</p>
+                  <p class="brand">VALOUR LIQUID SPICE</p>
                   <div class="title-price">
                     <h2>Mithila Fish Curry</h2>
                   <p class="product-kicker">Cook a deeply flavoured Mithila-style fish curry with less preparation.</p>
@@ -4921,7 +5134,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                     <span>FRY</span><i aria-hidden="true"></i><span>POUR</span><i aria-hidden="true"></i><span>SIMMER</span>
                   </div>
                   <div class="product-specs" aria-label="Product details">
-                    <span>one jar cooks 1kg chicken</span>
+                      <span><i class="serves-icon" aria-hidden="true"></i>Makes 1 kg Fish curry&nbsp;&middot;&nbsp; Serves 6&ndash;8</span>
                   </div>
                     <span class="price">&#8377;350.00</span>
                   </div>
