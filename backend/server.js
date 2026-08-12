@@ -40,6 +40,15 @@ app.use(
   }),
 );
 
+app.get('/webhook/gupshup', (req, res) => {
+  res.status(200).send('Gupshup webhook active');
+});
+
+app.post('/webhook/gupshup', (req, res) => {
+  console.log('Gupshup webhook:', JSON.stringify(req.body, null, 2));
+  res.sendStatus(200);
+});
+
 const axios = require("axios");
 
 const OpenAI = require("openai");
