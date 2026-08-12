@@ -352,6 +352,69 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     height: 100%;
     object-fit: cover;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.45s ease;
+  }
+
+  .cf-card::before,
+  .cf-card::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+
+  .cf-card::before {
+    inset: 0;
+    z-index: 2;
+    background:
+      linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.32) 45%, transparent 65%),
+      linear-gradient(145deg, #4b4b4b, #777 48%, #4a4a4a);
+    background-size: 220% 100%, 100% 100%;
+    animation: cf-loading-shimmer 1.35s ease-in-out infinite;
+  }
+
+  .cf-card::after {
+    top: 50%;
+    left: 50%;
+    z-index: 3;
+    width: clamp(30px, 3vw, 42px);
+    aspect-ratio: 1;
+    border: 3px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: cf-loading-spin 0.8s linear infinite;
+  }
+
+  .cf-card:not(.cf-video-ready) video {
+    opacity: 0;
+  }
+
+  .cf-card.cf-video-ready::before,
+  .cf-card.cf-video-ready::after {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  @keyframes cf-loading-shimmer {
+    from { background-position: 130% 0, 0 0; }
+    to { background-position: -130% 0, 0 0; }
+  }
+
+  @keyframes cf-loading-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cf-card::before,
+    .cf-card::after {
+      animation: none;
+    }
+
+    .cf-card::after {
+      transform: translate(-50%, -50%);
+    }
   }
 
 
@@ -5413,7 +5476,22 @@ Prepare less.</h2>
     /* 🎬 OPEN POPUP */
     document.querySelectorAll('.cf-card video').forEach((video) => {
 
-      video.parentElement.addEventListener('click', () => {
+      const card = video.parentElement;
+      const showVideo = () => card.classList.add('cf-video-ready');
+      const showLoader = () => card.classList.remove('cf-video-ready');
+
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        showVideo();
+      } else {
+        video.addEventListener('loadeddata', showVideo, { once: true });
+        video.addEventListener('canplay', showVideo, { once: true });
+      }
+
+      video.addEventListener('waiting', showLoader);
+      video.addEventListener('stalled', showLoader);
+      video.addEventListener('playing', showVideo);
+
+      card.addEventListener('click', () => {
 
         const source = video.querySelector('source')?.src || video.src;
 
