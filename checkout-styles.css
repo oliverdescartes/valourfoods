@@ -769,22 +769,11 @@ img {
   box-shadow: var(--shadow-soft);
 }
 
-.shipping-card {
-  border: 1px solid rgba(131, 26, 26, 0.13);
-  border-radius: 24px;
-  background: rgba(255, 250, 243, 0.84);
-  box-shadow: var(--shadow-soft);
-  padding: 20px;
+.payment-card-heading {
   margin-bottom: 14px;
 }
 
-.payment-card-heading,
-.shipping-card-heading {
-  margin-bottom: 14px;
-}
-
-.payment-card h2,
-.shipping-card h2 {
+.payment-card h2 {
   margin: 0;
   color: var(--deep);
   font-family: Georgia, "Times New Roman", serif;
@@ -880,76 +869,6 @@ img {
 }
 
 .payment-method-note {
-  margin: 14px 0 0;
-  border: 1px solid rgba(154, 107, 31, 0.22);
-  border-radius: 14px;
-  background: rgba(247, 212, 108, 0.14);
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-  padding: 12px 14px;
-}
-
-.shipping-status-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.shipping-status-grid article {
-  display: flex;
-  gap: 12px;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(255, 248, 239, 0.72);
-  padding: 14px;
-}
-
-.shipping-status-icon {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(247, 212, 108, 0.2);
-  color: var(--deep);
-}
-
-.shipping-status-icon svg {
-  width: 23px;
-  height: 23px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.shipping-status-grid span,
-.shipping-status-grid strong {
-  display: block;
-}
-
-.shipping-status-grid article > div {
-  min-width: 0;
-}
-
-.shipping-status-grid span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.shipping-status-grid strong {
-  margin-top: 5px;
-  color: var(--deep);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.shipping-method-note {
   margin: 14px 0 0;
   border: 1px solid rgba(154, 107, 31, 0.22);
   border-radius: 14px;
@@ -1708,7 +1627,6 @@ img {
   .delivery-grid,
   .form-grid,
   .payment-options,
-  .shipping-status-grid,
   .trust-strip {
     grid-template-columns: 1fr;
   }

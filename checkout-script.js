@@ -64,8 +64,6 @@ const state = {
     tax: 0,
     total: 0,
   },
-  deliveryQuote: null,
-  deliveryRequestId: 0,
   pricingRequestId: 0,
   pricingTimer: null,
   step: CHECKOUT_STEPS.CART,
@@ -121,9 +119,6 @@ const dom = {
   successDelivery: document.querySelector("[data-success-delivery]"),
   successPayment: document.querySelector("[data-success-payment]"),
   successTotal: document.querySelector("[data-success-total]"),
-  shippingCourier: document.querySelector("[data-shipping-courier]"),
-  shippingWindow: document.querySelector("[data-shipping-window]"),
-  shippingMode: document.querySelector("[data-shipping-mode]"),
   otpModal: document.querySelector("[data-otp-modal]"),
   otpForm: document.querySelector("[data-otp-form]"),
   otpInput: document.querySelector("[data-otp-input]"),
@@ -399,7 +394,6 @@ function buildOrderPayload() {
       estimate:
         document.querySelector("[data-delivery-window]")?.textContent ||
         "Delivery estimate will be shared soon",
-      quote: state.deliveryQuote,
     },
   };
 }
@@ -426,12 +420,6 @@ function getSubtotal() {
 function calculateShipping(subtotal, pincode = "") {
   if (!subtotal) return 0;
   if (subtotal >= 799) return 0;
-  if (
-    state.deliveryQuote &&
-    Number.isFinite(Number(state.deliveryQuote.price))
-  ) {
-    return Math.round(Number(state.deliveryQuote.price));
-  }
   if (/^78/.test(pincode)) return 35;
   return 65;
 }
@@ -604,27 +592,8 @@ function renderSummary() {
 
   updateProgress();
   renderCouponState();
-  renderShippingPreview();
   setOrderButtonLabels();
   updateFloatingSubtotalBar();
-}
-
-function renderShippingPreview() {
-  if (!dom.shippingCourier || !dom.shippingWindow || !dom.shippingMode) return;
-
-  const pincode = getPincode();
-  const hasPincode = /^\d{6}$/.test(pincode);
-  const quote = state.deliveryQuote;
-  const deliveryText =
-    document.querySelector("[data-delivery-window]")?.textContent ||
-    "Enter pincode for estimate";
-
-  dom.shippingCourier.textContent =
-    quote?.name || (hasPincode ? "Shiprocket test courier" : "Enter pincode");
-  dom.shippingWindow.textContent = deliveryText;
-  dom.shippingMode.textContent = quote?.testMode
-    ? "Testing only"
-    : "Quote only";
 }
 
 function updateProgress() {
@@ -857,57 +826,11 @@ function getFallbackDeliveryEstimate(pincode) {
   return getDeliveryEstimateText(5, 8);
 }
 
-function parseDeliveryDays(days) {
-  const matches = String(days || "").match(/\d+/g);
-  if (!matches || matches.length === 0) return null;
-
-  const min = Number(matches[0]);
-  const max = Number(matches[matches.length - 1]);
-
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-
-  return { min, max: Math.max(min, max) };
-}
-
-async function updateDeliveryEstimate() {
+function updateDeliveryEstimate() {
   const pincode = getPincode();
-  let deliveryText = "Enter pincode for estimate";
-
-  if (!/^\d{6}$/.test(pincode)) {
-    state.deliveryQuote = null;
-    setTextAll("[data-delivery-window]", deliveryText);
-    renderSummary();
-    return;
-  }
-
-  const requestId = state.deliveryRequestId + 1;
-  state.deliveryRequestId = requestId;
-  deliveryText = "Checking delivery options...";
-  setTextAll("[data-delivery-window]", deliveryText);
-
-  try {
-    const response = await fetch(
-      `${API_BASE}/api/delivery-options?pincode=${encodeURIComponent(pincode)}`,
-    );
-    const data = await response.json();
-
-    if (requestId !== state.deliveryRequestId) return;
-
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || "Delivery options unavailable");
-    }
-
-    state.deliveryQuote = data.best || data.cheapest || null;
-    const days = parseDeliveryDays(state.deliveryQuote?.delivery_days);
-    deliveryText = days
-      ? getDeliveryEstimateText(days.min, days.max)
-      : getFallbackDeliveryEstimate(pincode);
-  } catch (error) {
-    if (requestId !== state.deliveryRequestId) return;
-
-    state.deliveryQuote = null;
-    deliveryText = getFallbackDeliveryEstimate(pincode);
-  }
+  const deliveryText = /^\d{6}$/.test(pincode)
+    ? getFallbackDeliveryEstimate(pincode)
+    : "Enter pincode for estimate";
 
   setTextAll("[data-delivery-window]", deliveryText);
   renderSummary();

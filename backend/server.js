@@ -40,16 +40,6 @@ app.use(
   }),
 );
 
-app.get("/webhook/gupshup", (req, res) => {
-  res.status(200).send("Gupshup webhook active");
-  console.log("attempted gupshup");
-});
-
-app.post("/webhook/gupshup", (req, res) => {
-  console.log("Gupshup webhook:", JSON.stringify(req.body, null, 2));
-  res.sendStatus(200);
-});
-
 const axios = require("axios");
 
 const OpenAI = require("openai");
@@ -63,7 +53,6 @@ const REQUIRED_ENV = [
   "AUTH_TOKEN",
 ];
 const REQUIRED_RAZORPAY_ENV = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
-const REQUIRED_SHIPROCKET_ENV = ["SHIPROCKET_EMAIL", "SHIPROCKET_PASSWORD"];
 
 const mongoClient = new MongoClient(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 10000,
@@ -3594,7 +3583,15 @@ app.get("/webhook", (req, res) => {
 
   return res.sendStatus(403);
 });
+app.get("/webhook/gupshup", (req, res) => {
+  res.status(200).send("Gupshup webhook active");
+  console.log("attempted gupshup");
+});
 
+app.post("/webhook/gupshup", (req, res) => {
+  console.log("Gupshup webhook:", JSON.stringify(req.body, null, 2));
+  res.sendStatus(200);
+});
 app.post("/webhook", (req, res) => {
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
   const message = value?.messages?.[0];
@@ -3788,14 +3785,6 @@ app.post("/api/payment/webhook", async (req, res) => {
         err.response?.data || err.message,
       ),
     );
-    if (canCreateRealShiprocketOrders()) {
-      void createShiprocketShipmentForOrder(order).catch((err) =>
-        console.error(
-          "WhatsApp Shiprocket order failed",
-          err.response?.data || err.message,
-        ),
-      );
-    }
   } catch (err) {
     console.error(
       "Razorpay payment webhook failed",
@@ -3807,345 +3796,6 @@ app.post("/api/payment/webhook", async (req, res) => {
 });
 
 // ---------------end-------------------
-
-// ===== DELHIVERY CONFIG =====
-const DELHIVERY_TOKEN = "4d4127ef7554bf701307e208fc35d9feb15648de";
-const DEFAULT_PICKUP_POSTCODE = 799003;
-const DEFAULT_DELIVERY_POSTCODE = 799155;
-
-function getMinDays(daysStr) {
-  if (!daysStr) return Infinity;
-  const match = daysStr.toString().match(/\d+/);
-  return match ? parseInt(match[0]) : Infinity;
-}
-
-function formatShiprocketCourier(c) {
-  return {
-    source: "Shiprocket",
-    name: c.courier_name,
-    price: c.rate,
-    delivery_days: c.estimated_delivery_days,
-    min_days: getMinDays(c.estimated_delivery_days),
-  };
-}
-
-function getCheapest(list) {
-  return list.reduce((min, c) => (c.price < min.price ? c : min));
-}
-
-function getFastest(list) {
-  return list.reduce((fast, c) => (c.min_days < fast.min_days ? c : fast));
-}
-
-function getBest(list) {
-  return [...list].sort((a, b) => {
-    if (a.min_days !== b.min_days) return a.min_days - b.min_days;
-    return a.price - b.price;
-  })[0];
-}
-
-// ============================
-// SHIPROCKET
-// ============================
-
-const SHIPROCKET_API_BASE_URL =
-  process.env.SHIPROCKET_API_BASE_URL ||
-  "https://apiv2.shiprocket.in/v1/external";
-const SHIPROCKET_AUTH_LOGIN_URL = `${SHIPROCKET_API_BASE_URL}/auth/login`;
-const SHIPROCKET_COURIER_SERVICEABILITY_URL = `${SHIPROCKET_API_BASE_URL}/courier/serviceability/`;
-const SHIPROCKET_CREATE_ORDER_URL = `${SHIPROCKET_API_BASE_URL}/orders/create/adhoc`;
-
-function envNumber(name, fallback) {
-  const value = Number(process.env[name]);
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function getShiprocketCredentials() {
-  const missing = REQUIRED_SHIPROCKET_ENV.filter((name) => !process.env[name]);
-
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing Shiprocket environment variables: ${missing.join(", ")}`,
-    );
-  }
-
-  return {
-    email: process.env.SHIPROCKET_EMAIL,
-    password: process.env.SHIPROCKET_PASSWORD,
-  };
-}
-
-function isShiprocketTestMode() {
-  return process.env.SHIPROCKET_TEST_MODE !== "false";
-}
-
-function canCreateRealShiprocketOrders() {
-  return (
-    !isShiprocketTestMode() &&
-    process.env.SHIPROCKET_CREATE_REAL_ORDERS === "true"
-  );
-}
-
-async function getShiprocketToken() {
-  const { email, password } = getShiprocketCredentials();
-
-  const login = await axios.post(
-    SHIPROCKET_AUTH_LOGIN_URL,
-    { email, password },
-    {
-      headers: { "Content-Type": "application/json" },
-      timeout: 7000,
-    },
-  );
-
-  if (!login.data?.token) {
-    throw new Error("Shiprocket login did not return a token");
-  }
-
-  return login.data.token;
-}
-
-async function getShiprocketCouriers(options = {}) {
-  try {
-    if (isShiprocketTestMode()) {
-      const deliveryPostcode = String(
-        options.deliveryPostcode ||
-          envNumber("SHIPROCKET_DELIVERY_POSTCODE", DEFAULT_DELIVERY_POSTCODE),
-      );
-      const mock = getMockShiprocketCourier(deliveryPostcode);
-      console.log("Shiprocket test mode serviceability", {
-        deliveryPostcode,
-        mock,
-      });
-      return [mock];
-    }
-
-    const token = await getShiprocketToken();
-    const pickupPostcode =
-      options.pickupPostcode ||
-      envNumber("SHIPROCKET_PICKUP_POSTCODE", DEFAULT_PICKUP_POSTCODE);
-    const deliveryPostcode =
-      options.deliveryPostcode ||
-      envNumber("SHIPROCKET_DELIVERY_POSTCODE", DEFAULT_DELIVERY_POSTCODE);
-
-    const res = await axios.get(SHIPROCKET_COURIER_SERVICEABILITY_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      params: {
-        pickup_postcode: pickupPostcode,
-        delivery_postcode: deliveryPostcode,
-        cod: envNumber("SHIPROCKET_COD", 0),
-        weight: envNumber("SHIPROCKET_WEIGHT_KG", 1),
-        length: envNumber("SHIPROCKET_LENGTH_CM", 20),
-        breadth: envNumber("SHIPROCKET_BREADTH_CM", 11),
-        height: envNumber("SHIPROCKET_HEIGHT_CM", 15),
-        declared_value: envNumber("SHIPROCKET_DECLARED_VALUE", 50),
-        is_return: envNumber("SHIPROCKET_IS_RETURN", 0),
-      },
-      timeout: 7000,
-    });
-
-    const raw = res.data?.data?.available_courier_companies;
-
-    if (!raw || raw.length === 0) {
-      console.log("Shiprocket returned no courier options", {
-        pickupPostcode,
-        deliveryPostcode,
-      });
-      return [];
-    }
-
-    return raw.map(formatShiprocketCourier);
-  } catch (err) {
-    console.error("Shiprocket Error:", err.response?.data || err.message);
-    return [];
-  }
-}
-
-function getMockShiprocketCourier(deliveryPostcode = "") {
-  const prefix = Number(String(deliveryPostcode).slice(0, 2));
-  let deliveryDays = "5-7";
-  let price = 65;
-
-  if (prefix >= 70 && prefix <= 79) {
-    deliveryDays = "2-4";
-    price = 35;
-  } else if (prefix >= 10 && prefix <= 59) {
-    deliveryDays = "4-6";
-    price = 55;
-  }
-
-  return {
-    source: "Shiprocket",
-    name: "Shiprocket Test Courier",
-    price,
-    delivery_days: deliveryDays,
-    min_days: getMinDays(deliveryDays),
-    testMode: true,
-  };
-}
-
-function addBusinessDaysFromToday(days) {
-  const date = new Date();
-  let remaining = Number(days) || 0;
-
-  while (remaining > 0) {
-    date.setDate(date.getDate() + 1);
-    const day = date.getDay();
-    if (day !== 0 && day !== 6) remaining -= 1;
-  }
-
-  return date;
-}
-
-function formatShiprocketDate(date) {
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function buildEstimatedDeliveryWindow(courier) {
-  const days = String(courier?.delivery_days || "").match(/\d+/g);
-  const minDays = days?.[0] ? Number(days[0]) : 4;
-  const maxDays = days?.length ? Number(days[days.length - 1]) : minDays + 2;
-
-  return `${formatShiprocketDate(addBusinessDaysFromToday(minDays))} - ${formatShiprocketDate(addBusinessDaysFromToday(Math.max(minDays, maxDays)))}`;
-}
-
-function getOrderWeightKg(products = []) {
-  const units = products.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0),
-    0,
-  );
-  const weight = units * envNumber("SHIPROCKET_WEIGHT_PER_ITEM_KG", 0.6);
-  return Math.max(Number(weight.toFixed(2)), 0.5);
-}
-
-function buildShiprocketOrderPayload(order) {
-  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
-  const names = String(order.customerName || "Valour Customer")
-    .trim()
-    .split(/\s+/);
-  const firstName = names.shift() || "Valour";
-  const lastName = names.join(" ") || "Customer";
-  const now = new Date();
-
-  return {
-    order_id: orderNumber,
-    order_date: now.toISOString().slice(0, 10),
-    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
-    channel_id: process.env.SHIPROCKET_CHANNEL_ID || "",
-    comment: "VALOUR test checkout order",
-    billing_customer_name: firstName,
-    billing_last_name: lastName,
-    billing_address: order.address,
-    billing_city: order.city,
-    billing_pincode: order.pincode,
-    billing_state: order.state,
-    billing_country: "India",
-    billing_email: order.email,
-    billing_phone: order.phone,
-    shipping_is_billing: true,
-    order_items: order.products.map((item) => ({
-      name: item.name,
-      sku: item.id || item.name.toLowerCase().replace(/\s+/g, "-"),
-      units: item.quantity,
-      selling_price: item.price,
-      discount: "",
-      tax: "",
-      hsn: "",
-    })),
-    payment_method: "Prepaid",
-    shipping_charges: order.shippingCharge || 0,
-    giftwrap_charges: 0,
-    transaction_charges: 0,
-    total_discount: 0,
-    sub_total: order.subtotal || order.totalAmount,
-    length: envNumber("SHIPROCKET_LENGTH_CM", 20),
-    breadth: envNumber("SHIPROCKET_BREADTH_CM", 11),
-    height: envNumber("SHIPROCKET_HEIGHT_CM", 15),
-    weight: getOrderWeightKg(order.products),
-  };
-}
-
-async function createShiprocketShipmentForOrder(order) {
-  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
-  const courierOptions = await getShiprocketCouriers({
-    deliveryPostcode: Number(order.pincode),
-  });
-  const selectedCourier = courierOptions.length
-    ? getBest(courierOptions)
-    : null;
-  const estimatedDelivery = buildEstimatedDeliveryWindow(selectedCourier);
-
-  if (!canCreateRealShiprocketOrders()) {
-    const timestamp = Date.now();
-    const mockShipment = {
-      provider: "Shiprocket",
-      mode: "test",
-      status: "Test shipment created",
-      shiprocketOrderId: `test_sr_${timestamp}`,
-      shiprocketShipmentId: `test_sh_${timestamp}`,
-      awbCode: `TESTAWB${String(timestamp).slice(-8)}`,
-      trackingNumber: `TESTAWB${String(timestamp).slice(-8)}`,
-      trackingUrl: `https://shiprocket.co/tracking/TESTAWB${String(timestamp).slice(-8)}`,
-      courierName: selectedCourier?.name || "Shiprocket Test Courier",
-      estimatedDelivery,
-      deliveryDays: selectedCourier?.delivery_days || "4-6",
-      shippingCharge: selectedCourier?.price ?? order.shippingCharge,
-      createdAt: new Date(),
-    };
-
-    console.log("Shiprocket test-mode shipment created", {
-      orderNumber,
-      mockShipment,
-    });
-    return mockShipment;
-  }
-
-  const token = await getShiprocketToken();
-  const payload = buildShiprocketOrderPayload(order);
-
-  console.log("Shiprocket real order create attempt", {
-    orderNumber,
-    pickupLocation: payload.pickup_location,
-    pincode: payload.billing_pincode,
-    items: payload.order_items.length,
-  });
-
-  const response = await axios.post(SHIPROCKET_CREATE_ORDER_URL, payload, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    timeout: 12000,
-  });
-
-  console.log("Shiprocket real order create accepted", response.data);
-
-  return {
-    provider: "Shiprocket",
-    mode: "real",
-    status: response.data?.status || "Shiprocket order created",
-    shiprocketOrderId: response.data?.order_id || null,
-    shiprocketShipmentId: response.data?.shipment_id || null,
-    awbCode: response.data?.awb_code || null,
-    trackingNumber: response.data?.awb_code || null,
-    trackingUrl: response.data?.awb_code
-      ? `https://shiprocket.co/tracking/${response.data.awb_code}`
-      : null,
-    courierName: selectedCourier?.name || null,
-    estimatedDelivery,
-    deliveryDays: selectedCourier?.delivery_days || null,
-    shippingCharge: selectedCourier?.price ?? order.shippingCharge,
-    rawResponse: response.data,
-    createdAt: new Date(),
-  };
-}
 
 // ============================
 // DELHIVERY SERVICEABILITY
@@ -4268,15 +3918,11 @@ async function run() {
   try {
     console.log("🔄 Fetching courier options...\n");
 
-    const [shiprocket, delhiveryList] = await Promise.all([
-      getShiprocketCouriers(),
-      getDelhiveryOptions(),
-    ]);
+    const delhiveryList = await getDelhiveryOptions();
 
-    // console.log("\n📦 Shiprocket:", shiprocket);
     // console.log("📦 Delhivery:", delhiveryList);
 
-    let allOptions = [...shiprocket, ...delhiveryList];
+    const allOptions = [...delhiveryList];
 
     if (allOptions.length === 0) {
       console.log("❌ No delivery options available");
@@ -4440,38 +4086,14 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode }) {
   if (!rules)
     throw new Error("Checkout pricing rules have not been configured");
 
-  let shippingPaise;
-  let courierQuote = null;
-  if (/^\d{6}$/.test(String(pincode || ""))) {
-    try {
-      const couriers = await getShiprocketCouriers({
-        deliveryPostcode: Number(pincode),
-      });
-      courierQuote = couriers.length ? getBest(couriers) : null;
-      if (courierQuote && Number.isFinite(Number(courierQuote.price))) {
-        shippingPaise = Math.max(
-          0,
-          Math.round(Number(courierQuote.price) * 100),
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Server shipping quote failed; using configured MongoDB rate",
-        error.message,
-      );
-    }
-  }
-
   const quote = calculateQuote({
     requestedItems,
     products: catalogue,
     rules,
     couponCode,
-    shippingPaise,
   });
   return {
     ...quote,
-    courierQuote,
     pricingRulesId: rules._id,
     pricedAt: new Date(),
   };
@@ -4511,47 +4133,6 @@ function verifyRazorpaySignature({
 
 app.use("/auth", require("./routes/auth"));
 app.use("/user", require("./routes/user"));
-
-app.get("/api/delivery-options", async (req, res) => {
-  const pincode = String(req.query.pincode || "").trim();
-
-  if (!/^\d{6}$/.test(pincode)) {
-    return res
-      .status(400)
-      .json({ ok: false, error: "Valid pincode is required" });
-  }
-
-  try {
-    const shiprocket = await getShiprocketCouriers({
-      deliveryPostcode: Number(pincode),
-    });
-    const delhiveryList = isShiprocketTestMode()
-      ? []
-      : await getDelhiveryOptions();
-    const allOptions = [...shiprocket, ...delhiveryList];
-
-    if (!allOptions.length) {
-      return res.json({
-        ok: true,
-        options: [],
-        cheapest: null,
-        fastest: null,
-        best: null,
-      });
-    }
-
-    res.json({
-      ok: true,
-      options: allOptions,
-      cheapest: getCheapest(allOptions),
-      fastest: getFastest(allOptions),
-      best: getBest(allOptions),
-    });
-  } catch (err) {
-    console.error("Delivery options failed", err.response?.data || err.message);
-    res.status(500).json({ ok: false, error: "Delivery options unavailable" });
-  }
-});
 
 app.post("/api/checkout/quote", async (req, res) => {
   try {
@@ -4746,11 +4327,6 @@ app.post("/api/payment/verify", async (req, res) => {
       trackingNumber: null,
       trackingUrl: null,
       estimatedDelivery: null,
-      shipping: {
-        provider: "Shiprocket",
-        mode: isShiprocketTestMode() ? "test" : "pending",
-        status: "Pending",
-      },
       createdAt: new Date(),
     };
 
@@ -4800,79 +4376,6 @@ app.post("/api/payment/verify", async (req, res) => {
       modifiedCount: orderNumberUpdate.modifiedCount,
     });
 
-    let shippingResult = {
-      provider: "Shiprocket",
-      mode: isShiprocketTestMode() ? "test" : "not_created",
-      status: "Not created",
-      error: null,
-    };
-
-    try {
-      shippingResult = await createShiprocketShipmentForOrder(orderForResponse);
-      const shippingUpdates = {
-        shipping: shippingResult,
-        shippingStatus: shippingResult.status,
-        courierName: shippingResult.courierName,
-        trackingNumber: shippingResult.trackingNumber,
-        trackingUrl: shippingResult.trackingUrl,
-        awbCode: shippingResult.awbCode,
-        estimatedDelivery: shippingResult.estimatedDelivery,
-        updatedAt: new Date(),
-      };
-
-      console.log("Shiprocket shipping result for order", {
-        orderId: result.insertedId.toString(),
-        orderNumber,
-        shippingResult,
-        shippingUpdates,
-      });
-
-      const shippingUpdateResult = await orders.updateOne(
-        { _id: result.insertedId },
-        { $set: shippingUpdates },
-      );
-
-      console.log("Shiprocket shipping data stored", {
-        orderId: result.insertedId.toString(),
-        orderNumber,
-        matchedCount: shippingUpdateResult.matchedCount,
-        modifiedCount: shippingUpdateResult.modifiedCount,
-        shippingUpdates,
-      });
-
-      Object.assign(orderForResponse, shippingUpdates);
-    } catch (shippingErr) {
-      shippingResult = {
-        provider: "Shiprocket",
-        mode: isShiprocketTestMode() ? "test" : "real",
-        status: "Shipping setup failed",
-        error: shippingErr.response?.data || shippingErr.message,
-      };
-
-      await orders.updateOne(
-        { _id: result.insertedId },
-        {
-          $set: {
-            shipping: shippingResult,
-            shippingStatus: "Shipping setup failed",
-            courierName: null,
-            trackingNumber: null,
-            trackingUrl: null,
-            awbCode: null,
-            estimatedDelivery: null,
-            updatedAt: new Date(),
-          },
-        },
-      );
-
-      Object.assign(orderForResponse, {
-        shipping: shippingResult,
-        shippingStatus: "Shipping setup failed",
-      });
-
-      console.error("Shiprocket order setup failed", shippingResult.error);
-    }
-
     let whatsappConfirmation = { sent: false, reason: "not_attempted" };
     try {
       // Claim the notification once so browser verification and Razorpay webhooks cannot duplicate it.
@@ -4905,7 +4408,6 @@ app.post("/api/payment/verify", async (req, res) => {
       ok: true,
       orderId: result.insertedId.toString(),
       paymentStatus: savedOrder.paymentStatus,
-      shipping: shippingResult,
       whatsappConfirmation,
       order: { ...orderForResponse, _id: result.insertedId.toString() },
     });
