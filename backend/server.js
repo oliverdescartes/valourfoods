@@ -49,8 +49,9 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "valour123";
 const REQUIRED_ENV = [
   "MONGO_URI",
   "OPENROUTER_API_KEY",
-  "PHONE_NUMBER_ID",
-  "AUTH_TOKEN",
+  "GUPSHUP_API_KEY",
+  "GUPSHUP_APP_NAME",
+  "GUPSHUP_SOURCE_NUMBER",
 ];
 const REQUIRED_RAZORPAY_ENV = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
 
@@ -576,109 +577,173 @@ function normalizeWhatsappRecipient(phone = "") {
   return digits;
 }
 
+const GUPSHUP_MESSAGE_URL = "https://api.gupshup.io/wa/api/v1/msg";
+const GUPSHUP_TEMPLATE_URL = "https://api.gupshup.io/wa/api/v1/template/msg";
+
+function buildGupshupForm(recipient, fields = {}) {
+  const form = new URLSearchParams({
+    channel: "whatsapp",
+    source: process.env.GUPSHUP_SOURCE_NUMBER,
+    destination: recipient,
+    "src.name": process.env.GUPSHUP_APP_NAME,
+  });
+
+  Object.entries(fields).forEach(([key, value]) => {
+    form.set(key, typeof value === "string" ? value : JSON.stringify(value));
+  });
+
+  return form;
+}
+
+function getGupshupTemplateId(templateName, languageCode) {
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName)) return templateName;
+
+  let templateIds = {};
+  if (process.env.GUPSHUP_TEMPLATE_IDS) {
+    try {
+      templateIds = JSON.parse(process.env.GUPSHUP_TEMPLATE_IDS);
+    } catch (err) {
+      throw new Error(`Invalid GUPSHUP_TEMPLATE_IDS JSON: ${err.message}`);
+    }
+  }
+
+  const envKey = `GUPSHUP_TEMPLATE_ID_${templateName}`
+    .toUpperCase()
+    .replace(/[^A-Z0-9_]/g, "_");
+  const templateId =
+    templateIds[`${templateName}:${languageCode}`] ||
+    templateIds[templateName] ||
+    process.env[envKey];
+
+  if (!templateId) {
+    throw new Error(
+      `Missing Gupshup template ID mapping for ${templateName} (${languageCode})`,
+    );
+  }
+
+  return templateId;
+}
+
 async function sendMessage(phone, body) {
   const recipient = normalizeWhatsappRecipient(phone);
-  console.log("WhatsApp message send attempt");
-  console.log("WhatsApp text send attempt", {
+  console.log("Gupshup WhatsApp text send attempt", {
     recipient,
     bodyLength: body.length,
   });
 
-  const response = await axios.post(
-    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: recipient,
-      type: "text",
-      text: { body },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
-        "Content-Type": "application/json",
+  try {
+    const response = await axios.post(
+      GUPSHUP_MESSAGE_URL,
+      buildGupshupForm(recipient, {
+        message: { type: "text", text: body },
+      }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
       },
-      timeout: 10000,
-    },
-  );
+    );
 
-  console.log("WhatsApp text send accepted", {
-    recipient,
-    result: response.data,
-  });
+    console.log("Gupshup WhatsApp text send accepted", {
+      recipient,
+      result: response.data,
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp text send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
 }
 
 async function sendImageMessage(phone, imageUrl, caption) {
   const recipient = normalizeWhatsappRecipient(phone);
-  console.log("WhatsApp image send attempt", {
+  console.log("Gupshup WhatsApp image send attempt", {
     recipient,
     imageUrl,
     captionLength: caption.length,
   });
 
-  const response = await axios.post(
-    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: recipient,
-      type: "image",
-      image: {
-        link: imageUrl,
-        caption,
+  try {
+    const response = await axios.post(
+      GUPSHUP_MESSAGE_URL,
+      buildGupshupForm(recipient, {
+        message: {
+          type: "image",
+          originalUrl: imageUrl,
+          previewUrl: imageUrl,
+          caption,
+        },
+      }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
       },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 10000,
-    },
-  );
+    );
 
-  console.log("WhatsApp image send accepted", {
-    recipient,
-    result: response.data,
-  });
+    console.log("Gupshup WhatsApp image send accepted", {
+      recipient,
+      result: response.data,
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp image send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
 }
 
 async function sendVideoMessage(phone, videoUrl, caption) {
   const recipient = normalizeWhatsappRecipient(phone);
-  console.log("WhatsApp video send attempt", {
+  console.log("Gupshup WhatsApp video send attempt", {
     recipient,
     videoUrl,
     captionLength: caption.length,
   });
 
-  const response = await axios.post(
-    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: recipient,
-      type: "video",
-      video: {
-        link: videoUrl,
-        caption,
+  try {
+    const response = await axios.post(
+      GUPSHUP_MESSAGE_URL,
+      buildGupshupForm(recipient, {
+        message: {
+          type: "video",
+          url: videoUrl,
+          caption,
+        },
+      }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
       },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 10000,
-    },
-  );
+    );
 
-  console.log("WhatsApp video send accepted", {
-    recipient,
-    result: response.data,
-  });
+    console.log("Gupshup WhatsApp video send accepted", {
+      recipient,
+      result: response.data,
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp video send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
 }
 
 async function sendTemplateMessage(
@@ -688,52 +753,47 @@ async function sendTemplateMessage(
   bodyParams,
 ) {
   const recipient = normalizeWhatsappRecipient(phone);
-  const components = bodyParams.length
-    ? [
-        {
-          type: "body",
-          parameters: bodyParams.map((param) => ({
-            type: "text",
-            text: String(param),
-          })),
-        },
-      ]
-    : [];
+  const templateId = getGupshupTemplateId(templateName, languageCode);
 
-  console.log("WhatsApp template send attempt", {
+  console.log("Gupshup WhatsApp template send attempt", {
     recipient,
     templateName,
     languageCode,
-    bodyParams,
+    parameterCount: bodyParams.length,
   });
 
-  const response = await axios.post(
-    `https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    {
-      messaging_product: "whatsapp",
-      to: recipient,
-      type: "template",
-      template: {
-        name: templateName,
-        language: { code: languageCode },
-        ...(components.length ? { components } : {}),
+  try {
+    const response = await axios.post(
+      GUPSHUP_TEMPLATE_URL,
+      buildGupshupForm(recipient, {
+        template: {
+          id: templateId,
+          params: bodyParams.map(String),
+        },
+      }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
       },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 10000,
-    },
-  );
+    );
 
-  console.log("WhatsApp template send accepted", {
-    recipient,
-    result: response.data,
-  });
+    console.log("Gupshup WhatsApp template send accepted", {
+      recipient,
+      templateName,
+      result: response.data,
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp template send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
 }
 
 async function saveInboundMessage({
@@ -3564,11 +3624,21 @@ function retryBackgroundTask(name, task, isReady) {
 
 function initializeBackgroundServices() {
   retryBackgroundTask("MongoDB", connectDB, () => mongoReady);
-  retryBackgroundTask(
-    "WhatsApp WABA subscription",
-    subscribeWaba,
-    () => wabaSubscribed,
-  );
+  if (
+    process.env.ENABLE_META_WABA_SUBSCRIPTION === "true" &&
+    WABA_ID &&
+    ACCESS_TOKEN
+  ) {
+    retryBackgroundTask(
+      "WhatsApp WABA subscription",
+      subscribeWaba,
+      () => wabaSubscribed,
+    );
+  } else {
+    console.log(
+      "Direct Meta WABA subscription disabled; Gupshup WhatsApp transport is active. Set ENABLE_META_WABA_SUBSCRIPTION=true with WABA_ID and AUTH_TOKEN to enable the Meta fallback.",
+    );
+  }
 }
 
 app.get("/webhook", (req, res) => {
@@ -3590,7 +3660,38 @@ app.get("/webhook/gupshup", (req, res) => {
 
 app.post("/webhook/gupshup", (req, res) => {
   console.log("Gupshup webhook:", JSON.stringify(req.body, null, 2));
+
+  // Acknowledge Gupshup immediately so downstream work does not cause retries.
   res.sendStatus(200);
+
+  const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+  const message = value?.messages?.[0];
+  const status = value?.statuses?.[0];
+
+  if (status) {
+    console.dir(
+      {
+        event: "Gupshup WhatsApp delivery status webhook",
+        id: status.id,
+        recipientId: status.recipient_id,
+        status: status.status,
+        timestamp: status.timestamp,
+        errors: status.errors,
+        conversation: status.conversation,
+        pricing: status.pricing,
+      },
+      { depth: null },
+    );
+  }
+
+  if (message) {
+    console.log("Gupshup WhatsApp inbound message webhook", {
+      from: message.from,
+      id: message.id,
+      type: message.type,
+    });
+    enqueueMessage(message);
+  }
 });
 app.post("/webhook", (req, res) => {
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
@@ -3638,6 +3739,12 @@ app.get("/health", (_req, res) => {
     ok: true,
     database: mongoReady,
     whatsappSubscription: wabaSubscribed,
+    whatsappTransport: "gupshup",
+    gupshupConfigured: Boolean(
+      process.env.GUPSHUP_API_KEY &&
+      process.env.GUPSHUP_APP_NAME &&
+      process.env.GUPSHUP_SOURCE_NUMBER,
+    ),
   });
 });
 
@@ -4545,6 +4652,12 @@ function startServer() {
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(", ")}`,
+    );
+  }
+
+  if (!/^\d+$/.test(process.env.GUPSHUP_SOURCE_NUMBER)) {
+    throw new Error(
+      "GUPSHUP_SOURCE_NUMBER must use international digits-only format",
     );
   }
 
