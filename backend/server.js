@@ -5433,28 +5433,28 @@ app.delete("/api/admin/coupons/assign/:phone/:code", async (req, res) => {
 });
 
 app.post("/api/temporary-cart-confirmation", async (req, res) => {
+  console.log("[WHATSAPP][TEMP_REQUEST_RECEIVED]", {
+    source: "checkout_cart_continue",
+    suppliedRecipient: maskWhatsappPhone(req.body.phone),
+    itemCount: Array.isArray(req.body.items) ? req.body.items.length : 0,
+  });
   if (process.env.ENABLE_TEMP_CART_CONFIRMATION !== "true") {
     return res.status(404).json({ ok: false, error: "Temporary confirmation trigger is disabled" });
   }
   if (!mongoReady) {
     return res.status(503).json({ ok: false, error: "Database is connecting" });
   }
-  const phone = normalizeWhatsappRecipient(req.body.phone);
+  const phone = normalizeWhatsappRecipient(
+    req.body.phone || process.env.DEFAULT_WHATSAPP_ORDER_PHONE,
+  );
   const rawItems = Array.isArray(req.body.items) ? req.body.items : [];
   if (!phone || !rawItems.length) {
-    return res.status(400).json({ ok: false, error: "Verified phone and cart items are required" });
+    return res.status(400).json({ ok: false, error: "Test recipient and cart items are required" });
   }
   try {
     const customer = await collections().users.findOne({
       phone: { $regex: `${phone.slice(-10)}$` },
     });
-    if (!customer) {
-      console.warn("[WHATSAPP][TEMP_TRIGGER_REJECTED]", {
-        recipient: maskWhatsappPhone(phone),
-        reason: "verified_customer_not_found",
-      });
-      return res.status(400).json({ ok: false, error: "Verify your phone before requesting WhatsApp confirmation" });
-    }
     const recent = await collections().messageJobs.findOne({
       phone,
       trigger: "temporary_cart_confirmation",
@@ -5505,7 +5505,7 @@ app.post("/api/temporary-cart-confirmation", async (req, res) => {
     await collections().messageJobs.insertOne({
       jobKey: `temporary_cart_confirmation:${phone}:${Date.now()}`,
       phone,
-      customerId: customer._id,
+      customerId: customer?._id || null,
       orderId: temporaryOrder._id,
       orderReference: String(temporaryOrder._id),
       templateName,

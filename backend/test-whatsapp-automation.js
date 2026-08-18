@@ -108,5 +108,4 @@ assert.throws(
   () => _test.getWhatsappTemplateMediaConfig(JSON.stringify({ bad: { type: "image", url: "http://localhost/a.jpg" } })),
   /must be a public HTTPS URL/,
 );
-
 console.log("WhatsApp automation unit tests passed");

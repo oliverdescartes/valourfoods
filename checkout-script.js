@@ -307,10 +307,10 @@ function reportCheckoutDetailsSubmitted() {
 
 async function triggerTemporaryCartConfirmation() {
   const user = getStoredUser();
-  if (!user?.phone || !state.cart.length) return;
+  if (!state.cart.length) return;
   try {
     const result = await postJSON(`${API_BASE}/api/temporary-cart-confirmation`, {
-      phone: user.phone,
+      phone: user?.phone || "",
       items: state.cart.map((item) => ({ id: item.id, quantity: item.quantity })),
     });
     if (result.submitted) showToast("Temporary WhatsApp confirmation submitted.");
