@@ -25,3 +25,42 @@ The single delivery message requires six values in order: name, locality/area, c
 After the address passes validation, the customer chooses the courier phone number. `USE THIS NUMBER` uses the current WhatsApp number immediately. A separately entered Indian mobile number is validated, then a six-digit OTP is sent in the current WhatsApp chat. The code expires after five minutes, and the supplied number is added to billing and shipping details only after the customer returns that code in the same chat.
 
 Run `npm test` from `backend` for the catalog, quantity, shipping, and cart-total checks.
+
+## Automated template jobs
+
+Approved template messages are stored in MongoDB's `message_jobs` collection and
+sent by a worker that polls once per minute. Jobs survive server restarts and use
+a unique `jobKey` to prevent duplicate sends. The worker validates template
+parameters, current payment/delivery state, open serious support cases, quiet
+hours (09:00-20:00 IST), and marketing frequency limits before sending through
+the existing Gupshup transport. It does not use a custom consent field or check.
+
+Configure the template names in `.env` using the variables listed in
+`.env.example`, and map those names to approved Gupshup template IDs through
+`GUPSHUP_TEMPLATE_IDS`.
+
+Website checkout abandonment is inferred reliably: `/api/payment/create-order`
+creates a reminder job for 60 minutes later, and successful payment cancels it.
+No tab-close tracker, Meta Pixel, Google Analytics, or WebSocket is required.
+The checkout review step also posts an idempotent first-party event to
+`POST /api/customer-events`; this covers customers who leave before Razorpay is
+opened. The same endpoint accepts `product_viewed`, `product_explored`, and
+`recipe_video_clicked` when the storefront later wires those interactions.
+
+For self-delivery, call the existing endpoint with an admin token:
+
+```http
+POST /api/orders/VALOUR-123ABC/shipping-status
+x-admin-token: YOUR_ORDER_ADMIN_TOKEN
+Content-Type: application/json
+
+{
+  "shippingStatus": "Delivered",
+  "deliveredBy": "staff-name"
+}
+```
+
+This stores `deliveredAt`, `deliveredBy`, and `deliverySource: "internal"`, then
+schedules the ready-to-cook message for two hours later and the reorder reminder
+for seven days later. Replies such as `Tomorrow`, `This weekend`, and
+`Remind me later` create cooking-reminder jobs; starting cooking cancels them.

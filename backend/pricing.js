@@ -41,14 +41,18 @@ function calculateQuote({ requestedItems, products, rules, couponCode = "", ship
   const lines = items.map(({ sku, quantity }) => {
     const product = productsBySku.get(sku);
     if (!product || product.active !== true) throw new Error(`Product is unavailable: ${sku}`);
-    const unitPricePaise = asPaise(product.pricePaise, `price for ${sku}`);
+    const compareAtPaise = asPaise(
+      product.compareAtPaise ?? product.pricePaise,
+      `compare-at price for ${sku}`,
+    );
     return {
       sku,
       name: String(product.name),
       size: String(product.size || ""),
       quantity,
-      unitPricePaise,
-      lineTotalPaise: unitPricePaise * quantity,
+      unitPricePaise: compareAtPaise,
+      compareAtPaise,
+      lineTotalPaise: compareAtPaise * quantity,
       weightKg: Number(product.weightKg) || 0,
     };
   });
@@ -71,11 +75,7 @@ function calculateQuote({ requestedItems, products, rules, couponCode = "", ship
   const resolvedShippingPaise = discountedSubtotalPaise >= freeThreshold
     ? 0
     : asPaise(shippingPaise ?? rules.defaultShippingPaise, "shipping price");
-  const taxRateBps = asPaise(rules.taxRateBps || 0, "tax rate");
-  const taxPaise = rules.taxInclusive
-    ? 0
-    : Math.round(discountedSubtotalPaise * taxRateBps / 10000);
-  const totalPaise = discountedSubtotalPaise + resolvedShippingPaise + taxPaise;
+  const totalPaise = discountedSubtotalPaise + resolvedShippingPaise;
 
   return {
     currency: "INR",
@@ -84,7 +84,7 @@ function calculateQuote({ requestedItems, products, rules, couponCode = "", ship
     subtotalPaise,
     discountPaise,
     shippingPaise: resolvedShippingPaise,
-    taxPaise,
+    taxPaise: 0,
     totalPaise,
   };
 }

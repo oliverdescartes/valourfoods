@@ -1,12 +1,16 @@
 const STORAGE_KEY = "valour_checkout_cart";
 const COUPON_KEY = "valour_checkout_coupon";
 const DRAFT_KEY = "valour_checkout_address";
+const CUSTOMER_DETAILS_KEY = "valour_customer_shipping_details";
 const USER_KEY = "user";
+const USED_COUPONS_KEY = "valour_used_universal_coupons";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const OTP_VALIDITY_MS = 5 * 60 * 1000;
 const DEMO_OTP_CODE = "123456";
-const API_BASE = "https://api.liquidspice.in";
+// The Express app serves both the storefront and API. Keeping requests on the
+// current origin avoids stale deployment-domain mappings and works locally too.
+const API_BASE = window.location.origin;
 
 const CHECKOUT_STEPS = {
   CART: "cart",
@@ -18,41 +22,18 @@ const CHECKOUT_STEPS = {
 const sampleCart = [
   {
     id: "velvety-butter-520",
-    name: "Velvety Butter Liquid Spice",
-    descriptor:
-      "Coconut mustard cooking base for fish, chicken, and vegetables.",
+    name: "Velvety Butter Chicken",
+    descriptor: "Make restaurant-style Butter Chicken at home. Just add chicken.",
     size: "520 ml",
     serves: "Makes up to 1 kg",
     price: 350,
-    compareAt: 425,
-    image: "assets/images/velvey_buttermain.png",
+    compareAt: 350,
+    image: "vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp",
     quantity: 1,
   },
 ];
 
-const coupons = {
-  WELCOME10: {
-    label: "WELCOME10",
-    type: "percent",
-    value: 10,
-    minSubtotal: 0,
-    message: "WELCOME10 applied. A measured welcome from Valour.",
-  },
-  FIRSTORDER: {
-    label: "FIRSTORDER",
-    type: "fixed",
-    value: 75,
-    minSubtotal: 499,
-    message: "FIRSTORDER applied. Rs. 75 has been removed from your total.",
-  },
-  VALOURVIP: {
-    label: "VALOURVIP",
-    type: "percent",
-    value: 15,
-    minSubtotal: 799,
-    message: "VALOURVIP applied. Your kitchen has taste.",
-  },
-};
+const coupons = {};
 
 const state = {
   cart: [],
@@ -61,7 +42,6 @@ const state = {
     subtotal: 0,
     shipping: 0,
     discount: 0,
-    tax: 0,
     total: 0,
   },
   pricingRequestId: 0,
@@ -100,6 +80,10 @@ const dom = {
   couponInput: document.querySelector("[data-coupon-input]"),
   couponMessage: document.querySelector("[data-coupon-message]"),
   couponRow: document.querySelector(".coupon-input-row"),
+  availableCoupons: document.querySelector("[data-available-coupons]"),
+  usedCoupons: document.querySelector("[data-used-coupons]"),
+  couponAvailability: document.querySelector("[data-coupon-availability]"),
+  couponAvailabilityText: document.querySelector("[data-coupon-availability-text]"),
   mobileBarLabel: document.querySelector("[data-mobile-bar-label]"),
   mobileTotal: document.querySelector("[data-mobile-total]"),
   floatingStepButton: document.querySelector("[data-floating-step-button]"),
@@ -180,10 +164,15 @@ function updateFloatingSubtotalBar() {
     return;
 
   const isReviewStep = state.step === CHECKOUT_STEPS.REVIEW;
-  dom.mobileBarLabel.textContent = isReviewStep ? "Total" : "Subtotal";
+  const cartNetSubtotal = Math.max(state.totals.subtotal - state.totals.discount, 0);
+  dom.mobileBarLabel.textContent = isReviewStep
+    ? "Total"
+    : state.totals.discount
+      ? "Net subtotal"
+      : "Subtotal";
   dom.mobileTotal.textContent = isReviewStep
     ? money(state.totals.total)
-    : money(state.totals.subtotal);
+    : money(cartNetSubtotal);
   dom.floatingStepButton.textContent =
     isReviewStep && hasVerifiedUser() ? "Place order" : "Continue";
 }
@@ -197,6 +186,31 @@ function setCheckoutStep(step) {
 
   renderCheckoutStage();
   updateProgress();
+}
+
+function navigateToProgressStep(progressStep) {
+  const destinations = {
+    cart: { step: CHECKOUT_STEPS.CART, element: dom.cartPanel },
+    details: { step: CHECKOUT_STEPS.DETAILS, element: dom.form },
+    payment: {
+      step: CHECKOUT_STEPS.REVIEW,
+      element: dom.mobileSummaryPanel,
+    },
+  };
+  const destination = destinations[progressStep];
+  if (!destination) return;
+
+  if (!state.cart.length && destination.step !== CHECKOUT_STEPS.CART) {
+    showToast("Add an item before continuing.", "error");
+    setCheckoutStep(CHECKOUT_STEPS.CART);
+    return;
+  }
+
+  setCheckoutStep(destination.step);
+  window.requestAnimationFrame(() => {
+    destination.element?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  trackEvent("valour_checkout_progress_click", { step: progressStep });
 }
 
 function renderCheckoutStage() {
@@ -258,7 +272,6 @@ function showToast(message, type = "success") {
 }
 
 async function postJSON(url, payload) {
-  console.log(`POST ${url}`, "hey there!!!!");
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -271,6 +284,114 @@ async function postJSON(url, payload) {
   }
 
   return data;
+}
+
+function reportCheckoutDetailsSubmitted() {
+  const values = getFormValues();
+  if (!values.phone) return;
+  const eventKey = "valour_checkout_event_id";
+  let eventId = sessionStorage.getItem(eventKey);
+  if (!eventId) {
+    eventId = window.crypto?.randomUUID?.() || `checkout-${Date.now()}`;
+    sessionStorage.setItem(eventKey, eventId);
+  }
+  void postJSON(`${API_BASE}/api/customer-events`, {
+    eventId,
+    event: "checkout_details_submitted",
+    phone: values.phone,
+    cartId: eventId,
+    productName: state.cart.map((item) => item.name).join(", "),
+    orderValue: money(state.totals.total),
+  }).catch((error) => console.warn("Unable to record checkout event", error.message));
+}
+
+async function loadUserCoupons() {
+  const user = getStoredUser();
+  dom.couponAvailability?.classList.remove("is-empty", "is-error");
+  if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Finding your offers...";
+  try {
+    const universalUrl = user?.phone
+      ? `${API_BASE}/api/coupons/universal?phone=${encodeURIComponent(user.phone)}`
+      : `${API_BASE}/api/coupons/universal`;
+    const universalRequest = fetch(universalUrl);
+    const assignedRequest = user?.phone
+      ? fetch(`${API_BASE}/api/coupons/mine?phone=${encodeURIComponent(user.phone)}`)
+      : Promise.resolve(null);
+    const [universalResponse, assignedResponse] = await Promise.all([universalRequest, assignedRequest]);
+    const universalData = await universalResponse.json().catch(() => ({}));
+    if (!universalResponse.ok || universalData.ok === false) throw new Error(universalData.error || "Unable to load coupons");
+    const assignedData = assignedResponse ? await assignedResponse.json().catch(() => ({})) : { coupons: [] };
+    if (assignedResponse && (!assignedResponse.ok || assignedData.ok === false)) {
+      throw new Error(assignedData.error || "Unable to load your coupons");
+    }
+
+    const phoneKey = String(user?.phone || "").replace(/\D/g, "").slice(-10);
+    const locallyUsed = user ? readJSON(USED_COUPONS_KEY, {})[phoneKey] || [] : [];
+    const universal = universalData.coupons
+      .filter((item) => !user || !locallyUsed.includes(item.code))
+      .map((item) => ({
+        ...item,
+        status: "available",
+        active: true,
+        value: item.type === "fixed" ? item.valuePaise : item.value,
+        scope: "universal",
+      }));
+    const assigned = assignedData.coupons || [];
+    const available = [
+      ...universal,
+      ...assigned.filter((item) => item.status === "available" && item.active).map((item) => ({ ...item, scope: "assigned" })),
+    ].filter((item, index, list) => list.findIndex((candidate) => candidate.code === item.code) === index);
+    const universalUsed = (universalData.used || []).map((item) => ({ ...item, status: "used" }));
+    const used = [...assigned.filter((item) => item.status === "used"), ...universalUsed]
+      .filter((item, index, list) => list.findIndex((candidate) => candidate.code === item.code) === index);
+    if (user && universalUsed.length) {
+      const usedByPhone = readJSON(USED_COUPONS_KEY, {});
+      usedByPhone[phoneKey] = [...new Set([...(usedByPhone[phoneKey] || []), ...universalUsed.map((item) => item.code)])];
+      localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
+    }
+    if (dom.couponAvailabilityText) {
+      dom.couponAvailabilityText.textContent = available.length === 1
+        ? "1 coupon available"
+        : `${available.length} coupons available`;
+    }
+    dom.couponAvailability?.classList.toggle("is-empty", available.length === 0);
+    Object.keys(coupons).forEach((code) => delete coupons[code]);
+    available.forEach((item) => {
+      coupons[item.code] = {
+        label: item.code,
+        type: item.type,
+        value: item.type === "fixed" ? item.value / 100 : item.value,
+        minSubtotal: item.minSubtotalPaise / 100,
+        message: `${item.code} applied successfully.`,
+        scope: item.scope,
+      };
+    });
+    dom.availableCoupons.innerHTML = available.length
+      ? available.map((item) => {
+          const benefit = item.type === "fixed" ? `${money(item.value / 100)} off` : `${item.value}% off`;
+          const minimum = item.minSubtotalPaise ? ` above ${money(item.minSubtotalPaise / 100)}` : "";
+          return `<button class="coupon-chip" type="button" data-coupon="${item.code}"><strong>${item.code}</strong><span>${benefit}${minimum}</span></button>`;
+        }).join("")
+      : "<p>You have no unused coupons right now.</p>";
+    dom.usedCoupons.hidden = used.length === 0;
+    dom.usedCoupons.innerHTML = used.length
+      ? `<p class="field-message">Used coupons: ${used.map((item) => item.code).join(", ")}</p>`
+      : "";
+    renderCouponState();
+  } catch (error) {
+    dom.availableCoupons.innerHTML = `<p>${error.message}</p>`;
+    dom.couponAvailability?.classList.add("is-error");
+    if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Offers unavailable";
+  }
+}
+
+function rememberUsedUniversalCoupon(code) {
+  const user = getStoredUser();
+  if (!user?.phone || coupons[code]?.scope !== "universal") return;
+  const phoneKey = String(user.phone).replace(/\D/g, "").slice(-10);
+  const usedByPhone = readJSON(USED_COUPONS_KEY, {});
+  usedByPhone[phoneKey] = [...new Set([...(usedByPhone[phoneKey] || []), code])];
+  localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
 }
 
 function loadRazorpayCheckout() {
@@ -414,7 +535,10 @@ function redirectToPaymentFailed(message) {
 }
 
 function getSubtotal() {
-  return state.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return state.cart.reduce(
+    (sum, item) => sum + (item.compareAt || item.price) * item.quantity,
+    0,
+  );
 }
 
 function calculateShipping(subtotal, pincode = "") {
@@ -446,11 +570,10 @@ function calculateTotals() {
   const subtotal = getSubtotal();
   const discount = calculateDiscount(subtotal);
   const shipping = calculateShipping(subtotal - discount, getPincode());
-  const taxable = Math.max(subtotal - discount, 0);
-  const tax = Math.round(taxable * 0.05);
-  const total = Math.max(taxable + shipping + tax, 0);
+  const discountedSubtotal = Math.max(subtotal - discount, 0);
+  const total = Math.max(discountedSubtotal + shipping, 0);
 
-  state.totals = { subtotal, shipping, discount, tax, total };
+  state.totals = { subtotal, discount, shipping, total };
 }
 
 async function refreshServerPricing() {
@@ -464,6 +587,7 @@ async function refreshServerPricing() {
       })),
       pincode: /^\d{6}$/.test(getPincode()) ? getPincode() : "",
       couponCode: state.coupon,
+      phone: getStoredUser()?.phone || "",
     });
     if (requestId !== state.pricingRequestId) return;
     const quote = result.quote;
@@ -473,13 +597,13 @@ async function refreshServerPricing() {
       name: line.name,
       size: line.size,
       price: line.unitPricePaise / 100,
+      compareAt: (line.compareAtPaise ?? line.unitPricePaise) / 100,
       quantity: line.quantity,
     }));
     state.totals = {
       subtotal: quote.subtotalPaise / 100,
       discount: quote.discountPaise / 100,
       shipping: quote.shippingPaise / 100,
-      tax: quote.taxPaise / 100,
       total: quote.totalPaise / 100,
     };
     renderCart();
@@ -505,10 +629,16 @@ function setTextAll(selector, text) {
 }
 
 function renderCart() {
+  calculateTotals();
   dom.cartItems.innerHTML = "";
 
   state.cart.forEach((item) => {
-    const savings = Math.max((item.compareAt - item.price) * item.quantity, 0);
+    const originalPrice = item.compareAt || item.price;
+    const originalLineTotal = originalPrice * item.quantity;
+    const lineDiscount = state.totals.subtotal > 0
+      ? state.totals.discount * (originalLineTotal / state.totals.subtotal)
+      : 0;
+    const netLineTotal = Math.max(originalLineTotal - lineDiscount, 0);
     const article = document.createElement("article");
     article.className = "cart-item";
     article.dataset.itemId = item.id;
@@ -522,13 +652,13 @@ function renderCart() {
         <div class="product-meta">
           <span>${item.size}</span>
           <span>${item.serves}</span>
-          ${savings ? `<span class="savings-pill">You save ${money(savings)}</span>` : ""}
         </div>
-      </div>
-      <div class="item-controls">
-        <div class="item-price">
-          <strong>${money(item.price * item.quantity)}</strong>
-          ${item.compareAt ? `<s>${money(item.compareAt * item.quantity)}</s>` : ""}
+        </div>
+        <div class="item-controls">
+          <div class="item-price">
+          ${lineDiscount ? `<s>${money(originalLineTotal)}</s>` : ""}
+          <strong>${money(netLineTotal)}</strong>
+          ${lineDiscount ? `<small>Net after coupon</small>` : ""}
         </div>
         <div class="qty-control" aria-label="Quantity for ${item.name}">
           <button type="button" data-action="decrease" aria-label="Decrease quantity">-</button>
@@ -574,12 +704,11 @@ function renderSummary() {
     "[data-discount]",
     state.totals.discount ? `- ${money(state.totals.discount)}` : "Rs. 0",
   );
-  setTextAll("[data-tax]", money(state.totals.tax));
   setTextAll("[data-total]", money(state.totals.total));
   dom.mobileTotal.textContent =
     state.step === CHECKOUT_STEPS.REVIEW
       ? money(state.totals.total)
-      : money(state.totals.subtotal);
+      : money(Math.max(state.totals.subtotal - state.totals.discount, 0));
   setTextAll(
     "[data-summary-count]",
     `${count} ${count === 1 ? "item" : "items"}`,
@@ -618,6 +747,11 @@ function updateProgress() {
         (name === "details" && hasAddress && (isReviewStep || isSuccessStep)) ||
         (name === "payment" && isSuccessStep),
     );
+    if (step.classList.contains("is-active")) {
+      step.setAttribute("aria-current", "step");
+    } else {
+      step.removeAttribute("aria-current");
+    }
   });
 
   document.querySelectorAll(".progress-line").forEach((line, index) => {
@@ -773,11 +907,24 @@ function validateForm(showErrors = true) {
 
 function saveDraft() {
   const values = getFormValues();
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+  const shippingFields = ["name", "phone", "email", "address", "landmark", "city", "state", "pincode"];
+  const shippingDetails = Object.fromEntries(
+    shippingFields.map((field) => [field, values[field] || ""]),
+  );
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(shippingDetails));
+  const phoneKey = String(shippingDetails.phone).replace(/\D/g, "").slice(-10);
+  if (/^[6-9]\d{9}$/.test(phoneKey)) {
+    const customers = readJSON(CUSTOMER_DETAILS_KEY, {});
+    customers[phoneKey] = { ...shippingDetails, savedAt: new Date().toISOString() };
+    localStorage.setItem(CUSTOMER_DETAILS_KEY, JSON.stringify(customers));
+  }
 }
 
 function hydrateDraft() {
-  const draft = readJSON(DRAFT_KEY, {});
+  const user = getStoredUser();
+  const phoneKey = String(user?.phone || "").replace(/\D/g, "").slice(-10);
+  const customers = readJSON(CUSTOMER_DETAILS_KEY, {});
+  const draft = customers[phoneKey] || readJSON(DRAFT_KEY, {});
   Object.entries(draft).forEach(([key, value]) => {
     if (dom.form.elements[key]) {
       dom.form.elements[key].value = value;
@@ -905,6 +1052,7 @@ function showReviewStep() {
     value: state.totals.total,
     currency: "INR",
   });
+  reportCheckoutDetailsSubmitted();
 }
 
 function continueToReview(event) {
@@ -1003,12 +1151,14 @@ function verifyOtp(event) {
   }
 
   localStorage.setItem(USER_KEY, JSON.stringify(otpState.pendingUser));
+  saveDraft();
   otpState.code = "";
   otpState.pendingUser = null;
   closeOtpModal();
   setOrderButtonLabels();
   trackEvent("valour_user_verified", { phone: otpState.phone });
   showToast("Mobile verified.");
+  loadUserCoupons();
 
   if (otpState.nextAction === "review") {
     otpState.nextAction = null;
@@ -1136,13 +1286,13 @@ async function placeOrder(event) {
         name: line.name,
         size: line.size,
         price: line.unitPricePaise / 100,
+        compareAt: (line.compareAtPaise ?? line.unitPricePaise) / 100,
         quantity: line.quantity,
       }));
       state.totals = {
         subtotal: quote.subtotalPaise / 100,
         discount: quote.discountPaise / 100,
         shipping: quote.shippingPaise / 100,
-        tax: quote.taxPaise / 100,
         total: quote.totalPaise / 100,
       };
       renderCart();
@@ -1172,6 +1322,7 @@ async function placeOrder(event) {
       razorpay_order_id: verifiedOrder.order?.razorpayOrderId,
     });
 
+    rememberUsedUniversalCoupon(state.coupon);
     state.cart = [];
     state.coupon = null;
     localStorage.removeItem(STORAGE_KEY);
@@ -1215,6 +1366,12 @@ function closeSuccess() {
 }
 
 function bindEvents() {
+  document.querySelectorAll("[data-progress-step]").forEach((step) => {
+    step.addEventListener("click", () =>
+      navigateToProgressStep(step.dataset.progressStep),
+    );
+  });
+
   dom.cartItems.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     const item = event.target.closest("[data-item-id]");
@@ -1244,16 +1401,11 @@ function bindEvents() {
     }
   });
 
-  document.querySelectorAll(".coupon-chip").forEach((chip) => {
-    chip.addEventListener("click", () => applyCoupon(chip.dataset.coupon));
+  dom.availableCoupons.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-coupon]");
+    if (chip) applyCoupon(chip.dataset.coupon);
   });
 
-  document
-    .querySelector("[data-action='clear-coupon']")
-    .addEventListener("click", clearCoupon);
-  document
-    .querySelector("[data-action='restore-cart']")
-    .addEventListener("click", restoreCart);
   document
     .querySelector("[data-action='continue-to-details']")
     .addEventListener("click", continueToDetails);
@@ -1302,22 +1454,22 @@ function bindEvents() {
   document
     .querySelector("[data-action='close-otp']")
     .addEventListener("click", closeOtpModal);
-  document
-    .querySelector("[data-action='resend-otp']")
-    .addEventListener("click", () => {
-      if (!validateForm(true)) {
-        closeOtpModal();
-        showToast("Update the delivery details before resending OTP.", "error");
-        return;
-      }
-
-      startOtpVerification(otpState.nextAction);
-    });
   dom.otpForm.addEventListener("submit", verifyOtp);
 }
 
 function init() {
-  state.cart = cloneCart(readJSON(STORAGE_KEY, sampleCart));
+  state.cart = cloneCart(readJSON(STORAGE_KEY, sampleCart)).map((item) =>
+    item.id === "milky-mustard-520"
+      ? {
+          ...item,
+          id: "velvety-butter-520",
+          name: "Velvety Butter Chicken",
+          descriptor:
+            "Make restaurant-style Butter Chicken at home. Just add chicken.",
+        }
+      : item,
+  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cart));
   state.coupon = localStorage.getItem(COUPON_KEY);
   hydrateDraft();
 
@@ -1328,6 +1480,7 @@ function init() {
   setPaymentMethod(state.paymentMethod);
   bindEvents();
   renderAll();
+  loadUserCoupons();
   updateDeliveryEstimate();
   trackEvent("valour_checkout_view");
 }

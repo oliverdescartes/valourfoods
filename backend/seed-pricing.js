@@ -8,7 +8,7 @@ const products = [
     name: "Velvety Butter Liquid Spice",
     size: "520 ml",
     pricePaise: 35000,
-    compareAtPaise: 42500,
+    compareAtPaise: 35000,
     weightKg: 0.7,
     active: true,
   },
@@ -17,8 +17,8 @@ const products = [
 const rules = {
   _id: "checkout",
   currency: "INR",
-  taxRateBps: 500,
-  taxInclusive: false,
+  taxRateBps: 0,
+  taxInclusive: true,
   freeShippingThresholdPaise: 79900,
   defaultShippingPaise: 6500,
   coupons: {
@@ -28,6 +28,32 @@ const rules = {
   },
   updatedAt: new Date(),
 };
+
+// Public welcome coupons live separately from per-user coupon assignments.
+const universalCoupons = [
+  {
+    code: "NEWJOIN10",
+    title: "New customer welcome offer",
+    active: true,
+    type: "percent",
+    value: 10,
+    minSubtotalPaise: 0,
+    usageLimit: 1000,
+    startsAt: null,
+    endsAt: null,
+  },
+  {
+    code: "VALOUR75",
+    title: "Flat Rs. 75 welcome offer",
+    active: true,
+    type: "fixed",
+    valuePaise: 7500,
+    minSubtotalPaise: 0,
+    usageLimit: 1000,
+    startsAt: null,
+    endsAt: null,
+  },
+];
 
 async function main() {
   if (!process.env.MONGO_URI) throw new Error("MONGO_URI is required");
@@ -47,7 +73,14 @@ async function main() {
       { $set: rules, $setOnInsert: { createdAt: new Date() } },
       { upsert: true },
     );
-    console.log(`Seeded ${products.length} product(s) and checkout pricing rules`);
+    for (const coupon of universalCoupons) {
+      await database.collection("universal_coupons").updateOne(
+        { code: coupon.code },
+        { $set: { ...coupon, updatedAt: new Date() }, $setOnInsert: { createdAt: new Date(), usedCount: 0 } },
+        { upsert: true },
+      );
+    }
+    console.log(`Seeded ${products.length} product(s), pricing rules, and ${universalCoupons.length} universal coupon(s)`);
   } finally {
     await client.close();
   }

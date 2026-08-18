@@ -319,7 +319,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   .sachet-social-heading {
     width: min(100% - 32px, 900px);
     margin: 0 auto;
-    padding-top: clamp(80px, 10vw, 150px);
+    padding-top: clamp(140px, 10vw, 150px);
     text-align: center;
   }
 
@@ -1539,11 +1539,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .product-offer {
-    display: grid;
-    grid-template-columns: max-content max-content;
-    align-items: end;
-    column-gap: 12px;
-    row-gap: 9px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     margin-top: 32px;
   }
 
@@ -1552,7 +1550,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   .product-offer__original-price {
-    margin-bottom: 4px;
     color: rgba(255, 255, 255, 0.58);
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
     font-size: 18px;
@@ -1561,24 +1558,34 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     text-decoration-thickness: 1px;
   }
 
-  .product-offer__message {
-    grid-column: 1 / -1;
+  .product-offer__code {
+    margin-top: 5px;
+    color: #ffffff;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .product-offer__code strong {
+    color: #f7d46c;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+  }
+
+  .product-offer__secondary {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .product-offer__saving {
     color: #f7d46c;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
     font-size: 12px;
     line-height: 1.4;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0.02em;
-  }
-
-  .product-offer__message strong {
-    color: #ffffff;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-decoration: underline;
-    text-decoration-color: rgba(247, 212, 108, 0.7);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 4px;
   }
 
   .product_slide .right p {
@@ -5082,7 +5089,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
           <button class="buy-sheet-close" type="button" data-buy-sheet-close aria-label="Close buy panel">&times;</button>
         </div>
         <div class="buy-sheet-product">
-          <img src="vendor/cdn/cdn/shop/files/velvey_buttermain.png" alt="VALOUR Velvety Butter Chicken cooking base jar" data-buy-sheet-image loading="lazy" decoding="async">
+          <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" data-buy-sheet-image loading="lazy" decoding="async">
           <div>
             <strong data-buy-sheet-name>Velvety Butter Chicken</strong>
             <span data-buy-sheet-meta>520 ml · Makes 1 kg chicken · Serves 6–8</span>
@@ -5192,10 +5199,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                     <div class="product-specs" aria-label="Product details">
                       <span></i>Makes 1 kg chicken</span>
                     </div>
-                    <div class="product-offer" aria-label="Offer price 275 rupees, originally 350 rupees. Save 75 rupees with coupon VALOUR75.">
-                      <span class="price">&#8377;275.00</span>
-                      <span class="product-offer__original-price" aria-hidden="true">&#8377;350</span>
-                      <span class="product-offer__message">Save &#8377;75 with code <strong>VALOUR75</strong></span>
+                    <div class="product-offer" aria-label="Pay 275 rupees with code VALOUR75. Original price 350 rupees. You save 75 rupees.">
+                      <span class="price">&#8377;275</span>
+                      <span class="product-offer__code">with code <strong>VALOUR75</strong></span>
+                      <div class="product-offer__secondary">
+                        <span class="product-offer__original-price" aria-hidden="true">&#8377;350</span>
+                        <span class="product-offer__saving">You save &#8377;75</span>
+                      </div>
                     </div>
                   </div>
 
@@ -5227,26 +5237,26 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                     <button
                       class="product-action-btn product-action-btn--buy"
                       type="button"
-                      data-product-id="milky-mustard-520"
+                      data-product-id="velvety-butter-520"
                       data-product-name="Velvety Butter Chicken"
                       data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg chicken · Serves 6–8"
                       data-product-price="275"
                       data-product-compare-at="350"
-                      data-product-image="assets/images/velvey_buttermain.png"
+                      data-product-image="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp"
                     >BUY NOW</button>
                                        <button
                       class="product-action-btn product-action-btn--cart"
                       type="button"
-                      data-product-id="milky-mustard-520"
+                      data-product-id="velvety-butter-520"
                       data-product-name="Velvety Butter Chicken"
                       data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg chicken · Serves 6–8"
                       data-product-price="275"
                       data-product-compare-at="350"
-                      data-product-image="assets/images/velvey_buttermain.png"
+                      data-product-image="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp"
                     >ADD TO CART</button>
                     <a class="product-action-btn product-video-link" href="#looks-tastes-title">Watch 2-min Recipe</a>
  
@@ -5348,10 +5358,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
               <div class="cf-carousel">
 
                 <div class="cf-card"><video src="https://media.liquidspice.in/valour_ads_x1.mp4" muted loop playsinline preload="auto"></video></div>
-                <div class="cf-card"><video src="https://media.liquidspice.in/valour_ads_x2.mp4" muted loop playsinline preload="auto"></video></div>
                 <div class="cf-card cf-active"><video src="https://media.liquidspice.in/valour_ads_x2.mp4" muted loop playsinline preload="auto"></video></div>
-                <div class="cf-card"><video src="https://media.liquidspice.in/valour_ads_x1.mp4" muted loop playsinline preload="auto"></video></div>
-                <div class="cf-card"><video src="https://media.liquidspice.in/valour_ads_x1.mp4" muted loop playsinline preload="auto"></video></div>
 
               </div>
 
@@ -5390,7 +5397,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="image-grid">
                     <img class="review-image review-image--large" src="assets/images/why_liquid_img1.png" alt="Valour liquid spice package" loading="lazy" decoding="async">
                     <img class="review-image" src="assets/images/cooking_img_vlr.png" alt="Cooking with liquid spice" loading="lazy" decoding="async">
-                    <img class="review-image" src="assets/images/velvey_buttermain.png" alt="Valour liquid spice jar" loading="lazy" decoding="async">
+                    <img class="review-image" src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="Valour liquid spice jar" loading="lazy" decoding="async">
                   </div>
 
                   <div class="review-card">

@@ -52,6 +52,8 @@ const REQUIRED_ENV = [
   "GUPSHUP_API_KEY",
   "GUPSHUP_APP_NAME",
   "GUPSHUP_SOURCE_NUMBER",
+  "PUBLIC_SITE_URL",
+  "TRACKING_TOKEN_SECRET",
 ];
 const REQUIRED_RAZORPAY_ENV = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
 
@@ -118,8 +120,14 @@ function collections() {
     paymentAttempts: db.collection("payment_attempts"),
     products: db.collection("products"),
     pricingRules: db.collection("pricing_rules"),
+    couponAssignments: db.collection("coupon_assignments"),
+    universalCoupons: db.collection("universal_coupons"),
+    couponUsages: db.collection("coupon_usages"),
     flowDefinitions: db.collection("flow_definitions"),
     hesitationRecovery: db.collection("hesitation_recovery"),
+    reviews: db.collection("reviews"),
+    messageJobs: db.collection("message_jobs"),
+    customerEvents: db.collection("customer_events"),
   };
 }
 
@@ -136,6 +144,12 @@ async function connectDB() {
     paymentAttempts,
     products,
     flowDefinitions,
+    reviews,
+    messageJobs,
+    customerEvents,
+    couponAssignments,
+    universalCoupons,
+    couponUsages,
   } = collections();
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
@@ -151,6 +165,12 @@ async function connectDB() {
     orders.createIndex({ phone: 1, createdAt: -1 }),
     paymentAttempts.createIndex({ razorpayOrderId: 1 }, { unique: true }),
     products.createIndex({ sku: 1 }, { unique: true }),
+    couponAssignments.createIndex({ phone: 1, code: 1 }, { unique: true }),
+    couponAssignments.createIndex({ phone: 1, status: 1, assignedAt: -1 }),
+    universalCoupons.createIndex({ code: 1 }, { unique: true }),
+    universalCoupons.createIndex({ active: 1, startsAt: 1, endsAt: 1 }),
+    couponUsages.createIndex({ phone: 1, code: 1 }, { unique: true }),
+    couponUsages.createIndex({ phone: 1, usedAt: -1 }),
     flowDefinitions.createIndex(
       { product_id: 1, recipe_id: 1, quantity: 1, version: 1 },
       {
@@ -170,10 +190,19 @@ async function connectDB() {
       status: 1,
       version: -1,
     }),
+    reviews.createIndex({ orderReference: 1 }, { unique: true }),
+    reviews.createIndex({ createdAt: -1 }),
+    messageJobs.createIndex({ jobKey: 1 }, { unique: true }),
+    messageJobs.createIndex({ status: 1, scheduledAt: 1 }),
+    messageJobs.createIndex({ providerMessageId: 1 }, { sparse: true }),
+    messageJobs.createIndex({ phone: 1, sentAt: -1 }),
+    customerEvents.createIndex({ eventId: 1 }, { unique: true }),
+    customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
   ]);
 
   mongoReady = true;
   console.log("MongoDB connected");
+  startWhatsappJobWorker();
 }
 
 function normalizeText(text = "") {
@@ -505,6 +534,14 @@ async function markConversationStarted({ userId, sessionId }) {
         $inc: { leadScore: 2 },
       },
     );
+    const customer = await users.findOne({ _id: userId });
+    void scheduleWhatsappJob({
+      event: "new_lead",
+      phone: customer?.phone,
+      customerId: userId,
+      sessionId,
+      scheduledAt: new Date(),
+    }).catch((err) => console.error("New-lead WhatsApp scheduling failed", err.message));
   }
 }
 
@@ -661,6 +698,43 @@ async function sendMessage(phone, body) {
   }
 }
 
+async function sendListMessage(phone, message) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  console.log("Gupshup WhatsApp list send attempt", {
+    recipient,
+    optionCount: message.items?.reduce(
+      (count, section) => count + (section.options?.length || 0),
+      0,
+    ),
+  });
+
+  try {
+    const response = await axios.post(
+      GUPSHUP_MESSAGE_URL,
+      buildGupshupForm(recipient, { message }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
+      },
+    );
+
+    console.log("Gupshup WhatsApp list send accepted", {
+      recipient,
+      result: response.data,
+    });
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp list send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
+}
+
 async function sendImageMessage(phone, imageUrl, caption) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp image send attempt", {
@@ -763,14 +837,27 @@ async function sendTemplateMessage(
   });
 
   try {
+    const templateFields = {
+      template: {
+        id: templateId,
+        params: bodyParams.map(String),
+      },
+    };
+    const orderTemplateName = process.env.WHATSAPP_ORDER_TEMPLATE_NAME;
+    const orderImageUrl = getWhatsappOrderImageUrl();
+    if (
+      templateName === orderTemplateName &&
+      isSupportedWhatsappImageUrl(orderImageUrl)
+    ) {
+      templateFields.message = {
+        type: "image",
+        image: { link: orderImageUrl },
+      };
+    }
+
     const response = await axios.post(
       GUPSHUP_TEMPLATE_URL,
-      buildGupshupForm(recipient, {
-        template: {
-          id: templateId,
-          params: bodyParams.map(String),
-        },
-      }),
+      buildGupshupForm(recipient, templateFields),
       {
         headers: {
           apikey: process.env.GUPSHUP_API_KEY,
@@ -794,6 +881,285 @@ async function sendTemplateMessage(
     );
     throw err;
   }
+}
+
+const WHATSAPP_JOB_POLL_MS = Number(process.env.WHATSAPP_JOB_POLL_MS) || 60_000;
+const WHATSAPP_JOB_MAX_ATTEMPTS = Number(process.env.WHATSAPP_JOB_MAX_ATTEMPTS) || 4;
+const WHATSAPP_MARKETING_DAILY_CAP = Number(process.env.WHATSAPP_MARKETING_DAILY_CAP) || 1;
+const WHATSAPP_MARKETING_WEEKLY_CAP = Number(process.env.WHATSAPP_MARKETING_WEEKLY_CAP) || 3;
+let whatsappJobTimer = null;
+
+const WHATSAPP_AUTOMATION = {
+  new_lead: { env: "WHATSAPP_NEW_LEAD_TEMPLATE_NAME", kind: "marketing" },
+  product_demo: { env: "WHATSAPP_PRODUCT_DEMO_TEMPLATE_NAME", kind: "marketing" },
+  high_intent_followup: { env: "WHATSAPP_HIGH_INTENT_TEMPLATE_NAME", kind: "marketing" },
+  price_delivery_followup: { env: "WHATSAPP_PRICE_DELIVERY_TEMPLATE_NAME", kind: "marketing" },
+  checkout_reminder: { env: "WHATSAPP_CHECKOUT_REMINDER_TEMPLATE_NAME", kind: "marketing" },
+  order_confirmation: { env: "WHATSAPP_ORDER_TEMPLATE_NAME", kind: "transactional" },
+  cod_confirmation: { env: "WHATSAPP_COD_TEMPLATE_NAME", kind: "transactional" },
+  delivered_ready_to_cook: { env: "WHATSAPP_DELIVERED_TEMPLATE_NAME", kind: "transactional" },
+  cooking_reminder: { env: "WHATSAPP_COOKING_REMINDER_TEMPLATE_NAME", kind: "transactional" },
+  post_cook_feedback: { env: "WHATSAPP_POST_COOK_TEMPLATE_NAME", kind: "transactional" },
+  review_request: { env: "WHATSAPP_REVIEW_TEMPLATE_NAME", kind: "marketing" },
+  reorder_reminder: { env: "WHATSAPP_REORDER_TEMPLATE_NAME", kind: "marketing" },
+};
+
+function automationLanguage(event) {
+  if (event === "order_confirmation") {
+    return process.env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE || "en_US";
+  }
+  if (event === "review_request") {
+    return process.env.WHATSAPP_REVIEW_TEMPLATE_LANGUAGE || "en_US";
+  }
+  const suffix = event.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  return process.env[`WHATSAPP_${suffix}_TEMPLATE_LANGUAGE`] ||
+    process.env.WHATSAPP_AUTOMATION_TEMPLATE_LANGUAGE || "en_US";
+}
+
+function getProviderMessageId(result = {}) {
+  return result.messageId || result.message_id || result.id ||
+    result.messages?.[0]?.id || result.response?.messageId || null;
+}
+
+function getOrderReference(order = {}) {
+  return String(order._id || order.orderNumber || order.razorpayOrderId || "");
+}
+
+function getOrderProductName(order = {}) {
+  return (order.products || []).map((item) => item.name).filter(Boolean).join(", ") ||
+    PRODUCTS[order.productId || order.selected_product]?.name || "your VALOUR order";
+}
+
+function nextIstSendTime(date = new Date()) {
+  const shifted = new Date(date.getTime() + 330 * 60_000);
+  const hour = shifted.getUTCHours();
+  if (hour >= 9 && hour < 20) return date;
+  if (hour >= 20) shifted.setUTCDate(shifted.getUTCDate() + 1);
+  shifted.setUTCHours(9, 0, 0, 0);
+  return new Date(shifted.getTime() - 330 * 60_000);
+}
+
+function getCookingReminderTime(choice, now = new Date()) {
+  const shifted = new Date(now.getTime() + 330 * 60_000);
+  if (choice.includes("tomorrow")) shifted.setUTCDate(shifted.getUTCDate() + 1);
+  else if (choice.includes("weekend")) {
+    const daysUntilSaturday = (6 - shifted.getUTCDay() + 7) % 7 || 7;
+    shifted.setUTCDate(shifted.getUTCDate() + daysUntilSaturday);
+  } else return nextIstSendTime(new Date(now.getTime() + 3 * 60 * 60_000));
+  shifted.setUTCHours(10, 0, 0, 0);
+  return new Date(shifted.getTime() - 330 * 60_000);
+}
+
+async function scheduleWhatsappJob({
+  event,
+  phone,
+  customerId = null,
+  order = null,
+  sessionId = null,
+  parameters = [],
+  scheduledAt = new Date(),
+  occurrence = "1",
+  metadata = {},
+}) {
+  const definition = WHATSAPP_AUTOMATION[event];
+  if (!definition) throw new Error(`Unknown WhatsApp automation event: ${event}`);
+  const templateName = process.env[definition.env];
+  if (!templateName) {
+    console.log(`WhatsApp automation skipped: ${definition.env} is not configured`);
+    return { scheduled: false, reason: "template_not_configured" };
+  }
+  const recipient = normalizeWhatsappRecipient(phone);
+  if (!recipient) return { scheduled: false, reason: "missing_phone" };
+  const subject = getOrderReference(order) || String(sessionId || customerId || recipient);
+  const jobKey = `${event}:${subject}:${occurrence}`;
+  const sendAt = definition.kind === "marketing" ? nextIstSendTime(scheduledAt) : scheduledAt;
+  try {
+    const result = await collections().messageJobs.updateOne(
+      { jobKey },
+      {
+        $setOnInsert: {
+          jobKey,
+          phone: recipient,
+          customerId,
+          orderId: order?._id || null,
+          orderReference: getOrderReference(order) || null,
+          sessionId,
+          templateName,
+          languageCode: automationLanguage(event),
+          parameters: parameters.map((value) => String(value ?? "")),
+          trigger: event,
+          kind: definition.kind,
+          scheduledAt: sendAt,
+          status: "scheduled",
+          attemptCount: 0,
+          metadata,
+          createdAt: new Date(),
+          sentAt: null,
+          providerMessageId: null,
+        },
+      },
+      { upsert: true },
+    );
+    return { scheduled: result.upsertedCount === 1, jobKey };
+  } catch (err) {
+    if (err?.code === 11000) return { scheduled: false, reason: "duplicate", jobKey };
+    throw err;
+  }
+}
+
+async function cancelWhatsappJobs(filter, reason) {
+  return collections().messageJobs.updateMany(
+    { ...filter, status: "scheduled" },
+    { $set: { status: "cancelled", cancellationReason: reason, cancelledAt: new Date() } },
+  );
+}
+
+async function resolveAutomationOrder(job) {
+  if (job.orderId) {
+    const order = await collections().orders.findOne({ _id: job.orderId });
+    if (order) return order;
+  }
+  if (job.orderReference) {
+    const order = await findOrderByReference(job.orderReference);
+    if (order) return order;
+  }
+  if (job.metadata?.razorpayOrderId) {
+    return collections().paymentAttempts.findOne({ razorpayOrderId: job.metadata.razorpayOrderId });
+  }
+  return null;
+}
+
+async function runWhatsappQualityGate(job) {
+  if (!job.templateName || !Array.isArray(job.parameters) ||
+      job.parameters.some((value) => !String(value).trim() || String(value).length > 1024)) {
+    return { action: "cancel", reason: "invalid_template_parameters" };
+  }
+  const order = await resolveAutomationOrder(job);
+  if (["checkout_reminder", "price_delivery_followup"].includes(job.trigger) &&
+      order && String(order.paymentStatus).toLowerCase() === "paid") {
+    return { action: "cancel", reason: "payment_completed" };
+  }
+  if (job.trigger === "checkout_reminder" && !order) {
+    const paidOrder = await collections().orders.findOne({
+      phone: { $regex: `${String(job.phone).slice(-10)}$` },
+      createdAt: { $gte: job.createdAt },
+      paymentStatus: "paid",
+    });
+    if (paidOrder) return { action: "cancel", reason: "payment_completed" };
+  }
+  if (job.trigger === "delivered_ready_to_cook" &&
+      !String(order?.shippingStatus || "").toLowerCase().includes("delivered")) {
+    return { action: "cancel", reason: "order_not_delivered" };
+  }
+  if (job.trigger === "reorder_reminder" && job.orderId) {
+    const newerOrder = await collections().orders.findOne({
+      phone: { $regex: `${String(job.phone).slice(-10)}$` },
+      createdAt: { $gt: order?.createdAt || job.createdAt },
+      paymentStatus: { $in: ["paid", "confirmed", "pending_cod"] },
+    });
+    if (newerOrder) return { action: "cancel", reason: "customer_reordered" };
+  }
+  const openSupport = await collections().supportCases.findOne({
+    phone: { $regex: `${String(job.phone).slice(-10)}$` },
+    status: { $in: ["open", "pending", "in_progress"] },
+    $or: [
+      { "category.key": { $in: ["return_refund", "damaged_missing"] } },
+      { priority: "high" },
+    ],
+  });
+  if (openSupport && job.kind === "marketing") {
+    return { action: "cancel", reason: "unresolved_support_case" };
+  }
+  if (job.kind === "marketing") {
+    const now = new Date();
+    const [dailyCount, weeklyCount] = await Promise.all([
+      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", sentAt: { $gte: new Date(now - 24 * 60 * 60_000) } }),
+      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", sentAt: { $gte: new Date(now - 7 * 24 * 60 * 60_000) } }),
+    ]);
+    if (dailyCount >= WHATSAPP_MARKETING_DAILY_CAP || weeklyCount >= WHATSAPP_MARKETING_WEEKLY_CAP) {
+      return { action: "reschedule", reason: "frequency_cap", scheduledAt: nextIstSendTime(new Date(now.getTime() + 24 * 60 * 60_000)) };
+    }
+    if (job.trigger !== "new_lead") {
+      const user = await collections().users.findOne({ phone: { $regex: `${String(job.phone).slice(-10)}$` } });
+      if (user?.last_seen_at && user.last_seen_at > job.createdAt) {
+        return { action: "reschedule", reason: "recent_customer_reply", scheduledAt: nextIstSendTime(new Date(user.last_seen_at.getTime() + 24 * 60 * 60_000)) };
+      }
+    }
+  }
+  return { action: "send", order };
+}
+
+async function processDueWhatsappJobs() {
+  if (!mongoReady) return;
+  while (true) {
+    const job = await collections().messageJobs.findOneAndUpdate(
+      { status: "scheduled", scheduledAt: { $lte: new Date() } },
+      { $set: { status: "processing", processingStartedAt: new Date() } },
+      { sort: { scheduledAt: 1 }, returnDocument: "after" },
+    );
+    if (!job) break;
+    try {
+      const decision = await runWhatsappQualityGate(job);
+      if (decision.action === "cancel") {
+        await collections().messageJobs.updateOne({ _id: job._id }, { $set: { status: "cancelled", cancellationReason: decision.reason, cancelledAt: new Date() } });
+        continue;
+      }
+      if (decision.action === "reschedule") {
+        await collections().messageJobs.updateOne({ _id: job._id }, { $set: { status: "scheduled", scheduledAt: decision.scheduledAt, rescheduleReason: decision.reason }, $unset: { processingStartedAt: "" } });
+        continue;
+      }
+      const result = await sendTemplateMessage(job.phone, job.templateName, job.languageCode, job.parameters);
+      await collections().messageJobs.updateOne(
+        { _id: job._id },
+        { $set: { status: "sent", sentAt: new Date(), providerMessageId: getProviderMessageId(result), providerResponse: result }, $unset: { processingStartedAt: "" } },
+      );
+    } catch (err) {
+      const attemptCount = Number(job.attemptCount || 0) + 1;
+      const permanent = /template|parameter|invalid phone|destination/i.test(String(err.response?.data?.message || err.message));
+      const failed = permanent || attemptCount >= WHATSAPP_JOB_MAX_ATTEMPTS;
+      const delay = Math.min(60, 5 * (3 ** Math.max(0, attemptCount - 1))) * 60_000;
+      await collections().messageJobs.updateOne(
+        { _id: job._id },
+        { $set: { status: failed ? "failed" : "scheduled", attemptCount, scheduledAt: new Date(Date.now() + delay), lastError: String(err.response?.data?.message || err.message).slice(0, 500), failedAt: failed ? new Date() : null }, $unset: { processingStartedAt: "" } },
+      );
+    }
+  }
+}
+
+async function recoverStuckWhatsappJobs() {
+  if (!mongoReady) return;
+  await collections().messageJobs.updateMany(
+    { status: "processing", processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) }, providerMessageId: null },
+    { $set: { status: "scheduled", scheduledAt: new Date(), recoveryReason: "processing_timeout" }, $unset: { processingStartedAt: "" } },
+  );
+}
+
+function startWhatsappJobWorker() {
+  if (whatsappJobTimer) return;
+  void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) => console.error("WhatsApp job worker failed", err.message));
+  whatsappJobTimer = setInterval(() => {
+    void processDueWhatsappJobs().catch((err) => console.error("WhatsApp job worker failed", err.message));
+  }, WHATSAPP_JOB_POLL_MS);
+}
+
+async function recordWhatsappJobStatus(status = {}) {
+  if (!mongoReady || !status.id) return;
+  const normalized = String(status.status || "").toLowerCase();
+  const allowed = new Set(["sent", "delivered", "read", "failed"]);
+  if (!allowed.has(normalized)) return;
+  const timestamp = status.timestamp
+    ? new Date(Number(status.timestamp) * 1000)
+    : new Date();
+  const updates = {
+    status: normalized,
+    [`${normalized}At`]: timestamp,
+    statusUpdatedAt: new Date(),
+  };
+  if (status.errors) updates.providerErrors = status.errors;
+  await collections().messageJobs.updateOne(
+    { providerMessageId: status.id },
+    { $set: updates },
+  );
 }
 
 async function saveInboundMessage({
@@ -948,20 +1314,51 @@ function getCookingProgressFields({
 }
 
 async function sendMainMenu(phone) {
-  await sendMessage(
-    phone,
-    `Welcome to VALOUR.
-
-Choose an option:
-
-1. Start guided cooking
-2. Explore VALOUR products
-3. Buy now
-4. Track an order
-5. Customer care
-
-Reply MENU at any time.`,
-  );
+  await sendListMessage(phone, {
+    type: "list",
+    title: "Welcome to VALOUR",
+    body: "Choose what you would like to do.",
+    footer: "Send MENU at any time to return here.",
+    msgid: "valour_main_menu",
+    globalButtons: [{ type: "text", title: "Choose an option" }],
+    items: [
+      {
+        title: "VALOUR menu",
+        options: [
+          {
+            type: "text",
+            title: "Start guided cooking",
+            description: "Cook step by step with VALOUR",
+            postbackText: "1",
+          },
+          {
+            type: "text",
+            title: "Explore products",
+            description: "Discover VALOUR cooking bases",
+            postbackText: "2",
+          },
+          {
+            type: "text",
+            title: "Buy now",
+            description: "Start a WhatsApp order",
+            postbackText: "3",
+          },
+          {
+            type: "text",
+            title: "Track an order",
+            description: "View an existing order update",
+            postbackText: "4",
+          },
+          {
+            type: "text",
+            title: "Customer care",
+            description: "Get help from VALOUR",
+            postbackText: "5",
+          },
+        ],
+      },
+    ],
+  });
 }
 
 const SUPPORT_CATEGORIES = {
@@ -1144,7 +1541,177 @@ function getOrderTemplateParams(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
   const total = `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}`;
 
-  return [orderNumber, total, formatProductsForWhatsapp(order.products)];
+  return [
+    orderNumber,
+    formatProductsForWhatsapp(order.products),
+    total,
+    createOrderTrackingToken(order),
+    createOrderPaymentToken(order),
+  ];
+}
+
+function createOrderTrackingToken(order) {
+  const orderReference = String(order._id || order.orderNumber || "");
+  if (!orderReference) throw new Error("Cannot create tracking token without an order reference");
+
+  const payload = Buffer.from(
+    JSON.stringify({ orderReference }),
+    "utf8",
+  ).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+
+  return `${payload}.${signature}`;
+}
+
+function readOrderTrackingToken(token = "") {
+  const [payload, signature] = String(token).split(".");
+  if (!payload || !signature) return null;
+
+  const expected = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+  const receivedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (
+    receivedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return parsed.orderReference ? String(parsed.orderReference) : null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+const COD_PAYMENT_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+function createOrderPaymentToken(order, now = Date.now()) {
+  const orderReference = String(order._id || order.orderNumber || "");
+  if (!orderReference) throw new Error("Cannot create payment token without an order reference");
+
+  const payload = Buffer.from(
+    JSON.stringify({
+      orderReference,
+      purpose: "cod_payment",
+      expiresAt: Math.floor(now / 1000) + COD_PAYMENT_TOKEN_TTL_SECONDS,
+    }),
+    "utf8",
+  ).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+
+  return `${payload}.${signature}`;
+}
+
+function readOrderPaymentToken(token = "", now = Date.now()) {
+  const [payload, signature, extra] = String(token).split(".");
+  if (!payload || !signature || extra) return null;
+
+  const expected = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+  const receivedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    receivedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+  ) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (
+      parsed.purpose !== "cod_payment" ||
+      !parsed.orderReference ||
+      !Number.isFinite(parsed.expiresAt) ||
+      parsed.expiresAt < Math.floor(now / 1000)
+    ) return null;
+    return String(parsed.orderReference);
+  } catch (_err) {
+    return null;
+  }
+}
+
+const REVIEW_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+function createReviewToken(order, now = Date.now()) {
+  const orderReference = String(order._id || order.orderNumber || "");
+  if (!orderReference) throw new Error("Cannot create review token without an order reference");
+
+  const payload = Buffer.from(
+    JSON.stringify({
+      orderReference,
+      purpose: "customer_review",
+      expiresAt: Math.floor(now / 1000) + REVIEW_TOKEN_TTL_SECONDS,
+    }),
+    "utf8",
+  ).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+
+  return `${payload}.${signature}`;
+}
+
+function readReviewToken(token = "", now = Date.now()) {
+  const [payload, signature, extra] = String(token).split(".");
+  if (!payload || !signature || extra) return null;
+
+  const expected = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+  const receivedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    receivedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+  ) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (
+      parsed.purpose !== "customer_review" ||
+      !parsed.orderReference ||
+      !Number.isFinite(parsed.expiresAt) ||
+      parsed.expiresAt < Math.floor(now / 1000)
+    ) return null;
+    return String(parsed.orderReference);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function getReviewUrl(order) {
+  const baseUrl = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  if (!baseUrl) throw new Error("PUBLIC_SITE_URL is required to create review links");
+  return `${baseUrl}/review.html?token=${encodeURIComponent(createReviewToken(order))}`;
+}
+
+async function sendReviewRequestWhatsapp(order) {
+  const templateName = process.env.WHATSAPP_REVIEW_TEMPLATE_NAME;
+  if (!templateName) throw new Error("WHATSAPP_REVIEW_TEMPLATE_NAME is not configured");
+
+  const phone = order.whatsappPhone || order.phone;
+  const reviewUrl = getReviewUrl(order);
+  return sendTemplateMessage(
+    phone,
+    templateName,
+    process.env.WHATSAPP_REVIEW_TEMPLATE_LANGUAGE || "en_US",
+    [reviewUrl],
+  );
 }
 
 function getWhatsappOrderImageUrl() {
@@ -1268,6 +1835,32 @@ async function sendOrderConfirmationWhatsapp(order) {
   }
 
   throw lastError || new Error("WhatsApp confirmation failed");
+}
+
+async function schedulePaidOrderAutomation(order) {
+  const phone = order.whatsappPhone || order.phone;
+  const orderReference = getOrderReference(order);
+  await cancelWhatsappJobs(
+    {
+      phone: normalizeWhatsappRecipient(phone),
+      trigger: { $in: [
+        "checkout_reminder",
+        "price_delivery_followup",
+        "product_demo",
+        "high_intent_followup",
+        "reorder_reminder",
+      ] },
+    },
+    "payment_completed",
+  );
+  return scheduleWhatsappJob({
+    event: "order_confirmation",
+    phone,
+    order,
+    parameters: getOrderTemplateParams(order),
+    scheduledAt: new Date(),
+    occurrence: orderReference || "1",
+  });
 }
 
 function formatShippingStatusMessage(order) {
@@ -1872,6 +2465,22 @@ User message: ${text}`,
       });
     }
 
+    if (["price_question", "delivery_question"].includes(result.intent)) {
+      const productId = result.productId || session.selected_product;
+      const product = PRODUCT_CATALOG[productId];
+      if (product) {
+        void scheduleWhatsappJob({
+          event: "price_delivery_followup",
+          phone,
+          customerId: userId,
+          sessionId: session._id,
+          parameters: [product.name, `Rs. ${product.price}`, "Confirmed at checkout"],
+          scheduledAt: new Date(Date.now() + 30 * 60_000),
+          metadata: { productId },
+        }).catch((err) => console.error("Price/delivery follow-up scheduling failed", err.message));
+      }
+    }
+
     await sendMessage(phone, `${result.answer.trim()}\n\n${resumePrompt}`);
     return result;
   } catch (err) {
@@ -1989,6 +2598,23 @@ Reply 1 for Velvety Butter, 2 for Spicy Mustard, or MENU.`,
     cooking_type: product.cookingType,
   });
   await sendProductDetails(phone, product);
+  void scheduleWhatsappJob({
+    event: "product_demo",
+    phone,
+    customerId: session.user_id,
+    sessionId: session._id,
+    parameters: [product.recipeName],
+    scheduledAt: new Date(Date.now() + 18 * 60 * 60_000),
+    metadata: { productId: product.id },
+  }).catch((err) => console.error("Product-demo scheduling failed", err.message));
+  void scheduleWhatsappJob({
+    event: "high_intent_followup",
+    phone,
+    customerId: session.user_id,
+    sessionId: session._id,
+    scheduledAt: new Date(Date.now() + 24 * 60 * 60_000),
+    metadata: { productId: product.id },
+  }).catch((err) => console.error("High-intent scheduling failed", err.message));
 }
 
 async function handleProductDetails({ session, text, phone, userId }) {
@@ -2582,7 +3208,15 @@ async function completeCooking({ session, phone, userId, flow }) {
     }),
   });
 
-  await sendMessage(phone, getFeedbackPrompt(session.selected_product));
+  await sendMessage(phone, "Cooking complete. We’ll check in shortly to hear how it turned out.");
+  void scheduleWhatsappJob({
+    event: "post_cook_feedback",
+    phone,
+    customerId: userId,
+    sessionId: session._id,
+    parameters: [],
+    scheduledAt: new Date(Date.now() + 30 * 60_000),
+  }).catch((err) => console.error("Post-cook feedback scheduling failed", err.message));
 }
 
 function getFeedbackPrompt(productId) {
@@ -2752,6 +3386,12 @@ async function recordPostCookFeedback({ session, userId, feedbackType }) {
 async function handlePostCookFeedback({ session, text, phone, userId }) {
   const lower = normalizeText(text);
   const feedbackType = getFeedbackType(text);
+  if (feedbackType) {
+    await cancelWhatsappJobs(
+      { sessionId: session._id, trigger: "post_cook_feedback" },
+      "feedback_received",
+    );
+  }
 
   if (lower === "1" || lower.includes("loved")) {
     await recordPostCookFeedback({ session, userId, feedbackType });
@@ -2759,6 +3399,20 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
       phone,
       "Glad to hear it. Reply MENU whenever you want to cook again.",
     );
+    const order = await collections().orders.findOne(
+      { phone: { $regex: `${String(phone).slice(-10)}$` } },
+      { sort: { createdAt: -1 } },
+    );
+    if (order) {
+      void scheduleWhatsappJob({
+        event: "review_request",
+        phone,
+        customerId: userId,
+        order,
+        parameters: [getReviewUrl(order)],
+        scheduledAt: new Date(Date.now() + 5 * 60_000),
+      }).catch((err) => console.error("Review-request scheduling failed", err.message));
+    }
     await resetToIdle(session._id);
     return;
   }
@@ -3193,9 +3847,32 @@ async function handleWhatsappOrderState({ session, text, phone }) {
   return null;
 }
 
+function getInboundMessageText(message = {}) {
+  const value =
+    message.text?.body ||
+    message.interactive?.list_reply?.id ||
+    message.interactive?.list_reply?.title ||
+    message.interactive?.button_reply?.id ||
+    message.interactive?.button_reply?.title ||
+    message.button?.payload ||
+    message.button?.text ||
+    "";
+  const normalized = String(value).trim();
+  const menuSelections = {
+    "start guided cooking": "1",
+    "explore products": "2",
+    "explore valour products": "2",
+    "buy now": "3",
+    "track an order": "4",
+    "customer care": "5",
+  };
+
+  return menuSelections[normalized.toLowerCase()] || normalized;
+}
+
 async function processIncomingMessage(message) {
   const phone = message.from;
-  const text = message.text?.body?.trim() || "";
+  const text = getInboundMessageText(message);
   const lower = normalizeText(text);
   const directOrderItems = parseOrderItems(text);
   const messageSignals = getMessageSignals(message);
@@ -3257,6 +3934,34 @@ async function processIncomingMessage(message) {
       "Please send a text reply. Reply MENU for options.",
     );
     return;
+  }
+
+  if (matchesAny(lower, ["tomorrow", "this weekend", "weekend", "remind me later"])) {
+    const latestOrder = await collections().orders.findOne(
+      { phone: { $regex: `${String(phone).slice(-10)}$` } },
+      { sort: { createdAt: -1 } },
+    );
+    const reminder = await scheduleWhatsappJob({
+      event: "cooking_reminder",
+      phone,
+      customerId: user._id,
+      order: latestOrder,
+      sessionId: session._id,
+      parameters: [latestOrder ? getOrderProductName(latestOrder) : "your VALOUR dish"],
+      scheduledAt: getCookingReminderTime(lower),
+      occurrence: Date.now().toString(),
+    });
+    await sendMessage(phone, reminder.scheduled
+      ? "Done. We’ll remind you here at the right time."
+      : "That reminder is already scheduled.");
+    return;
+  }
+
+  if (isStartCookingIntent(lower)) {
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(phone), trigger: "cooking_reminder" },
+      "cooking_started",
+    );
   }
 
   if (await verifyPendingOrderOtp(phone, text)) return;
@@ -3669,6 +4374,9 @@ app.post("/webhook/gupshup", (req, res) => {
   const status = value?.statuses?.[0];
 
   if (status) {
+    void recordWhatsappJobStatus(status).catch((err) =>
+      console.error("Gupshup job status update failed", err.message),
+    );
     console.dir(
       {
         event: "Gupshup WhatsApp delivery status webhook",
@@ -3709,6 +4417,9 @@ app.post("/webhook", (req, res) => {
   });
 
   if (status) {
+    void recordWhatsappJobStatus(status).catch((err) =>
+      console.error("WhatsApp job status update failed", err.message),
+    );
     console.dir(
       {
         event: "WhatsApp delivery status webhook",
@@ -3840,22 +4551,35 @@ app.post("/api/payment/webhook", async (req, res) => {
         { returnDocument: "after" },
       );
       res.json({ ok: true, matched: Boolean(paidAttempt) });
-      if (paidAttempt) void sendOrderConfirmationWhatsapp(paidAttempt);
+      if (paidAttempt) await recordCouponRedemption(paidAttempt, payment.order_id);
+      if (paidAttempt) void schedulePaidOrderAutomation(paidAttempt).catch((err) =>
+        console.error("Paid-order automation scheduling failed", err.message),
+      );
       return;
     }
 
     // Acknowledge unrelated Razorpay events without changing an order.
     if (event !== "payment_link.paid") return res.json({ ok: true });
 
+    const linkedOrder = await orders.findOne({ razorpayPaymentLinkId: link.id });
+    const isCodConversion = linkedOrder?.paymentConversion === "cod_to_prepaid";
+    const eligiblePaymentFilter = isCodConversion
+      ? {
+          razorpayPaymentLinkId: link.id,
+          paymentStatus: { $nin: ["paid", "cancelled"] },
+          shippingStatus: { $not: /cancelled|delivered/i },
+          paymentConversion: "cod_to_prepaid",
+        }
+      : { razorpayPaymentLinkId: link.id, paymentStatus: { $ne: "paid" } };
     const result = await orders.findOneAndUpdate(
-      { razorpayPaymentLinkId: link.id, paymentStatus: { $ne: "paid" } },
+      eligiblePaymentFilter,
       {
         $set: {
           paymentStatus: "paid",
           shippingStatus: "Order confirmed",
           razorpayPaymentId: payment.id,
-          paymentMethod: payment.method || "online",
-          paymentMethodLabel: payment.method || "Online payment",
+          paymentMethod: isCodConversion ? "Prepaid" : (payment.method || "online"),
+          paymentMethodLabel: isCodConversion ? "Prepaid (paid online)" : (payment.method || "Online payment"),
           paidAt: new Date(),
           updatedAt: new Date(),
         },
@@ -3864,7 +4588,7 @@ app.post("/api/payment/webhook", async (req, res) => {
     );
 
     if (!result) {
-      const existing = await orders.findOne({ razorpayPaymentLinkId: link.id });
+      const existing = linkedOrder || await orders.findOne({ razorpayPaymentLinkId: link.id });
       return existing
         ? res.json({ ok: true, duplicate: true })
         : res.status(404).json({ ok: false, error: "Order not found" });
@@ -3886,9 +4610,9 @@ app.post("/api/payment/webhook", async (req, res) => {
     void recordCompletedOrderIntelligence(order).catch((err) =>
       console.error("WhatsApp order intelligence update failed", err.message),
     );
-    void sendOrderConfirmationWhatsapp(order).catch((err) =>
+    void schedulePaidOrderAutomation(order).catch((err) =>
       console.error(
-        "WhatsApp paid confirmation failed",
+        "WhatsApp paid confirmation scheduling failed",
         err.response?.data || err.message,
       ),
     );
@@ -4174,14 +4898,90 @@ function quoteToOrderFields(quote) {
     totalAmount: fromPaise(quote.totalPaise),
     currency: quote.currency,
     couponCode: quote.couponCode,
+    couponScope: quote.couponScope,
     pricingSnapshot: quote,
   };
 }
 
-async function buildAuthoritativeQuote({ items, pincode, couponCode }) {
+function normalizeCouponPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const local = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+  if (!/^[6-9]\d{9}$/.test(local)) throw new Error("A valid user phone is required");
+  return local;
+}
+
+function isCouponAvailable(coupon, now = new Date()) {
+  if (!coupon || coupon.active === false) return false;
+  if (coupon.startsAt && new Date(coupon.startsAt) > now) return false;
+  if (coupon.endsAt && new Date(coupon.endsAt) <= now) return false;
+  const usageLimit = Number(coupon.usageLimit);
+  return !Number.isFinite(usageLimit) || usageLimit < 1 || Number(coupon.usedCount || 0) < usageLimit;
+}
+
+function parseCouponDate(value, field) {
+  if (value === undefined || value === null || value === "") return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error(`${field} must be a valid date`);
+  return date;
+}
+
+function parseUsageLimit(value, fallback = 1) {
+  const limit = value === undefined || value === "" ? fallback : Number(value);
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("Usage limit must be a positive integer");
+  return limit;
+}
+
+async function recordCouponRedemption(order, orderId) {
+  if (!order?.couponCode || !order?.couponScope) return;
+  const now = new Date();
+  if (order.couponScope === "assigned") {
+    await collections().couponAssignments.updateOne(
+      {
+        phone: order.phone,
+        code: order.couponCode,
+        active: { $ne: false },
+        status: { $ne: "removed" },
+        $expr: { $lt: [{ $ifNull: ["$usedCount", 0] }, { $ifNull: ["$usageLimit", 1] }] },
+      },
+      { $inc: { usedCount: 1 }, $set: { usedAt: now, orderId, updatedAt: now } },
+    );
+    return;
+  }
+  if (order.couponScope === "universal") {
+    try {
+      await collections().couponUsages.insertOne({
+        phone: order.phone,
+        code: order.couponCode,
+        orderId,
+        usedAt: now,
+        source: "website",
+      });
+    } catch (error) {
+      if (error?.code === 11000) return;
+      throw error;
+    }
+    await collections().universalCoupons.updateOne(
+      {
+        code: order.couponCode,
+        active: true,
+        $expr: { $lt: [{ $ifNull: ["$usedCount", 0] }, { $ifNull: ["$usageLimit", 1] }] },
+      },
+      { $inc: { usedCount: 1 }, $set: { updatedAt: now } },
+    );
+  }
+}
+
+async function getCouponDefinition(code) {
+  const rules = await collections().pricingRules.findOne({ _id: "checkout" });
+  return { rules, coupon: rules?.coupons?.[code] || null };
+}
+
+async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
   const requestedItems = normaliseCartItems(items);
-  const { products, pricingRules } = collections();
-  const [catalogue, rules] = await Promise.all([
+  const { products, pricingRules, universalCoupons } = collections();
+  const normalizedCode = String(couponCode || "").trim().toUpperCase();
+  const now = new Date();
+  const [catalogue, storedRules, universalCouponCandidate] = await Promise.all([
     products
       .find({
         sku: { $in: requestedItems.map((item) => item.sku) },
@@ -4189,18 +4989,58 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode }) {
       })
       .toArray(),
     pricingRules.findOne({ _id: "checkout" }),
+    normalizedCode
+      ? universalCoupons.findOne({
+          code: normalizedCode,
+          active: true,
+          $and: [
+            { $or: [{ startsAt: { $exists: false } }, { startsAt: null }, { startsAt: { $lte: now } }] },
+            { $or: [{ endsAt: { $exists: false } }, { endsAt: null }, { endsAt: { $gt: now } }] },
+          ],
+        })
+      : null,
   ]);
-  if (!rules)
+  if (!storedRules)
     throw new Error("Checkout pricing rules have not been configured");
+  const universalCoupon = isCouponAvailable(universalCouponCandidate, now)
+    ? universalCouponCandidate
+    : null;
+
+  let couponScope = null;
+  if (normalizedCode && universalCoupon) {
+    if (phone) {
+      const normalizedPhone = normalizeCouponPhone(phone);
+      const previousUse = await collections().couponUsages.findOne({
+        phone: normalizedPhone,
+        code: normalizedCode,
+      });
+      if (previousUse) throw new Error("This coupon has already been used by this user");
+    }
+    couponScope = "universal";
+  } else if (normalizedCode) {
+    const normalizedPhone = normalizeCouponPhone(phone);
+    const assignment = await collections().couponAssignments.findOne({
+      phone: normalizedPhone,
+      code: normalizedCode,
+      status: { $ne: "removed" },
+    });
+    if (!isCouponAvailable(assignment, now)) throw new Error("This coupon is not available for this user");
+    couponScope = "assigned";
+  }
+
+  const rules = universalCoupon
+    ? { ...storedRules, coupons: { ...storedRules.coupons, [normalizedCode]: universalCoupon } }
+    : storedRules;
 
   const quote = calculateQuote({
     requestedItems,
     products: catalogue,
     rules,
-    couponCode,
+    couponCode: normalizedCode,
   });
   return {
     ...quote,
+    couponScope,
     pricingRulesId: rules._id,
     pricedAt: new Date(),
   };
@@ -4241,6 +5081,251 @@ function verifyRazorpaySignature({
 app.use("/auth", require("./routes/auth"));
 app.use("/user", require("./routes/user"));
 
+app.get("/api/coupons/universal", async (req, res) => {
+  try {
+    const now = new Date();
+    const phone = req.query.phone ? normalizeCouponPhone(req.query.phone) : null;
+    const [coupons, usages] = await Promise.all([
+      collections().universalCoupons.find({
+        active: true,
+        $and: [
+          { $or: [{ startsAt: { $exists: false } }, { startsAt: null }, { startsAt: { $lte: now } }] },
+          { $or: [{ endsAt: { $exists: false } }, { endsAt: null }, { endsAt: { $gt: now } }] },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .project({ _id: 0, code: 1, type: 1, value: 1, valuePaise: 1, minSubtotalPaise: 1, title: 1, usageLimit: 1, usedCount: 1, startsAt: 1, endsAt: 1 })
+      .toArray(),
+      phone ? collections().couponUsages.find({ phone }).project({ _id: 0, code: 1, usedAt: 1 }).toArray() : [],
+    ]);
+    const usedCodes = new Set(usages.map((usage) => usage.code));
+    res.json({
+      ok: true,
+      coupons: coupons.filter((coupon) =>
+        isCouponAvailable(coupon, now) && (!phone || !usedCodes.has(coupon.code)),
+      ),
+      used: usages,
+    });
+  } catch (error) {
+    const status = /valid user phone/i.test(error.message) ? 400 : 500;
+    res.status(status).json({ ok: false, error: status === 400 ? error.message : "Unable to load universal coupons" });
+  }
+});
+
+app.get("/api/coupons/mine", async (req, res) => {
+  try {
+    const phone = normalizeCouponPhone(req.query.phone);
+    const [assignments, rules] = await Promise.all([
+      collections().couponAssignments.find({ phone }).sort({ assignedAt: -1 }).toArray(),
+      collections().pricingRules.findOne({ _id: "checkout" }),
+    ]);
+    const coupons = assignments.map((assignment) => {
+      const definition = rules?.coupons?.[assignment.code] || {};
+      const available = isCouponAvailable(assignment);
+      return {
+        code: assignment.code,
+        status: assignment.status === "removed" ? "removed" : available ? "available" : "used",
+        assignedAt: assignment.assignedAt,
+        usedAt: assignment.usedAt || null,
+        type: definition.type,
+        value: definition.type === "fixed" ? definition.valuePaise : definition.value,
+        minSubtotalPaise: definition.minSubtotalPaise || 0,
+        active: definition.active === true && assignment.active !== false,
+        usageLimit: assignment.usageLimit || 1,
+        usedCount: assignment.usedCount || 0,
+        startsAt: assignment.startsAt || null,
+        endsAt: assignment.endsAt || null,
+      };
+    });
+    res.json({ ok: true, coupons });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/api/admin/coupons/assign", async (req, res) => {
+  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const phone = normalizeCouponPhone(req.body.phone);
+    const code = String(req.body.code || "").trim().toUpperCase();
+    const { coupon } = await getCouponDefinition(code);
+    if (!coupon?.active) return res.status(400).json({ ok: false, error: "Coupon code is not active" });
+    const usageLimit = parseUsageLimit(req.body.usageLimit, 1);
+    const startsAt = parseCouponDate(req.body.startsAt, "Start date");
+    const endsAt = parseCouponDate(req.body.endsAt, "End date");
+    if (startsAt && endsAt && endsAt <= startsAt) throw new Error("End date must be after start date");
+    const now = new Date();
+    const existing = await collections().couponAssignments.findOne({ phone, code });
+    if (Number(existing?.usedCount || 0) >= usageLimit) throw new Error("Usage limit must exceed the existing usage count");
+    await collections().couponAssignments.updateOne(
+      { phone, code },
+      {
+        $set: { status: "available", active: true, usageLimit, startsAt, endsAt, assignedAt: now, assignedBy: "admin", updatedAt: now },
+        $setOnInsert: { usedCount: 0 },
+        $unset: { removedAt: "" },
+      },
+      { upsert: true },
+    );
+    res.json({ ok: true, assignment: { phone, code, status: "available", usageLimit, startsAt, endsAt, assignedAt: now } });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/api/admin/coupons/universal", async (req, res) => {
+  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const code = String(req.body.code || "").trim().toUpperCase();
+    const type = String(req.body.type || "").trim();
+    const value = Number(req.body.value);
+    const minSubtotalPaise = Math.round(Number(req.body.minSubtotal || 0) * 100);
+    const usageLimit = parseUsageLimit(req.body.usageLimit, 1);
+    const startsAt = parseCouponDate(req.body.startsAt, "Start date");
+    const endsAt = parseCouponDate(req.body.endsAt, "End date");
+    if (!/^[A-Z0-9_-]{3,24}$/.test(code)) throw new Error("Coupon code must be 3-24 letters or numbers");
+    if (!['percent', 'fixed'].includes(type) || !Number.isFinite(value) || value <= 0) throw new Error("A valid coupon type and value are required");
+    if (type === "percent" && value > 100) throw new Error("Percentage cannot exceed 100");
+    if (!Number.isSafeInteger(minSubtotalPaise) || minSubtotalPaise < 0) throw new Error("Minimum subtotal is invalid");
+    if (startsAt && endsAt && endsAt <= startsAt) throw new Error("End date must be after start date");
+    const now = new Date();
+    const definition = {
+      code,
+      title: String(req.body.title || "Welcome offer").trim().slice(0, 80),
+      type,
+      active: true,
+      usageLimit,
+      startsAt,
+      endsAt,
+      minSubtotalPaise,
+      ...(type === "percent" ? { value } : { valuePaise: Math.round(value * 100) }),
+      updatedAt: now,
+    };
+    await collections().universalCoupons.updateOne(
+      { code },
+      { $set: definition, $setOnInsert: { createdAt: now, usedCount: 0 } },
+      { upsert: true },
+    );
+    res.json({ ok: true, coupon: definition });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.delete("/api/admin/coupons/universal/:code", async (req, res) => {
+  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const code = String(req.params.code || "").trim().toUpperCase();
+  const result = await collections().universalCoupons.updateOne(
+    { code },
+    { $set: { active: false, removedAt: new Date(), updatedAt: new Date() } },
+  );
+  res.status(result.matchedCount ? 200 : 404).json({ ok: Boolean(result.matchedCount), code });
+});
+
+app.delete("/api/admin/coupons/assign/:phone/:code", async (req, res) => {
+  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const phone = normalizeCouponPhone(req.params.phone);
+    const code = String(req.params.code || "").trim().toUpperCase();
+    const result = await collections().couponAssignments.updateOne(
+      { phone, code },
+      { $set: { active: false, status: "removed", removedAt: new Date(), updatedAt: new Date() } },
+    );
+    res.status(result.matchedCount ? 200 : 404).json({ ok: Boolean(result.matchedCount), phone, code });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/api/customer-events", async (req, res) => {
+  const allowedEvents = new Set([
+    "lead_created",
+    "product_viewed",
+    "product_explored",
+    "recipe_video_clicked",
+    "checkout_started",
+    "checkout_details_submitted",
+  ]);
+  const event = String(req.body.event || "").trim().toLowerCase();
+  const phone = normalizeWhatsappRecipient(req.body.phone);
+  const productId = String(req.body.productId || "").trim();
+  if (!allowedEvents.has(event)) {
+    return res.status(400).json({ ok: false, error: "Unsupported customer event" });
+  }
+  if (!phone) {
+    return res.status(400).json({ ok: false, error: "Phone is required" });
+  }
+  try {
+    const eventId = String(req.body.eventId || crypto.randomUUID()).slice(0, 160);
+    const customer = await getOrCreateUser(phone);
+    try {
+      await collections().customerEvents.insertOne({
+        eventId,
+        event,
+        phone,
+        customerId: customer._id,
+        productId: productId || null,
+        sessionId: String(req.body.sessionId || "").slice(0, 160) || null,
+        cartId: String(req.body.cartId || "").slice(0, 160) || null,
+        occurredAt: new Date(),
+        source: "website",
+      });
+    } catch (err) {
+      if (err?.code === 11000) return res.json({ ok: true, duplicate: true });
+      throw err;
+    }
+    const product = PRODUCT_CATALOG[productId];
+    const occurrence = `${productId || "general"}:${new Date().toISOString().slice(0, 10)}`;
+    if (["product_viewed", "product_explored"].includes(event) && product) {
+      await scheduleWhatsappJob({
+        event: "product_demo",
+        phone,
+        customerId: customer._id,
+        parameters: [product.name],
+        scheduledAt: new Date(Date.now() + 18 * 60 * 60_000),
+        occurrence,
+        metadata: { productId, sourceEvent: event },
+      });
+    }
+    if (event === "recipe_video_clicked" && product) {
+      await scheduleWhatsappJob({
+        event: "high_intent_followup",
+        phone,
+        customerId: customer._id,
+        scheduledAt: new Date(Date.now() + 24 * 60 * 60_000),
+        occurrence,
+        metadata: { productId, sourceEvent: event },
+      });
+    }
+    if (event === "checkout_details_submitted") {
+      const productName = String(req.body.productName || "your VALOUR order").slice(0, 160);
+      const orderValue = String(req.body.orderValue || "").slice(0, 40);
+      if (orderValue) {
+        await scheduleWhatsappJob({
+          event: "checkout_reminder",
+          phone,
+          customerId: customer._id,
+          parameters: [productName, orderValue],
+          scheduledAt: new Date(Date.now() + 60 * 60_000),
+          occurrence: String(req.body.cartId || eventId),
+          metadata: { sourceEvent: event, checkoutEventId: eventId },
+        });
+      }
+    }
+    res.json({ ok: true, eventId });
+  } catch (err) {
+    console.error("Customer event recording failed", err.message);
+    res.status(500).json({ ok: false, error: "Unable to record customer event" });
+  }
+});
+
 app.post("/api/checkout/quote", async (req, res) => {
   try {
     const pincode = String(req.body.pincode || "").trim();
@@ -4253,6 +5338,7 @@ app.post("/api/checkout/quote", async (req, res) => {
       items: req.body.items,
       pincode,
       couponCode: req.body.couponCode,
+      phone: req.body.phone,
     });
     res.json({ ok: true, quote });
   } catch (error) {
@@ -4277,6 +5363,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       items: rawOrder.products,
       pincode: customerOrder.pincode,
       couponCode: rawOrder.coupon,
+      phone: customerOrder.phone,
     });
     const websiteOrder = { ...customerOrder, ...quoteToOrderFields(quote) };
     const validationError = validateOrderPayload(websiteOrder);
@@ -4295,7 +5382,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       },
     });
 
-    await collections().paymentAttempts.insertOne({
+    const paymentAttempt = {
       ...websiteOrder,
       razorpayOrderId: razorpayOrder.id,
       orderNumber: `WEB-${Date.now()}`,
@@ -4303,7 +5390,20 @@ app.post("/api/payment/create-order", async (req, res) => {
       paymentStatus: "pending",
       failureNotifiedAt: null,
       createdAt: new Date(),
-    });
+    };
+    const paymentAttemptResult = await collections().paymentAttempts.insertOne(paymentAttempt);
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(paymentAttempt.phone), trigger: "checkout_reminder" },
+      "replaced_by_payment_attempt",
+    );
+    void scheduleWhatsappJob({
+      event: "checkout_reminder",
+      phone: paymentAttempt.phone,
+      order: { ...paymentAttempt, _id: paymentAttemptResult.insertedId },
+      parameters: [getOrderProductName(paymentAttempt), `Rs. ${Math.round(Number(paymentAttempt.totalAmount) || 0).toLocaleString("en-IN")}`],
+      scheduledAt: new Date(Date.now() + 60 * 60_000),
+      metadata: { razorpayOrderId: razorpayOrder.id },
+    }).catch((err) => console.error("Checkout reminder scheduling failed", err.message));
 
     res.json({
       ok: true,
@@ -4314,10 +5414,16 @@ app.post("/api/payment/create-order", async (req, res) => {
       quote,
     });
   } catch (err) {
-    console.error(
-      "Razorpay create order failed",
-      err.response?.data || err.message,
-    );
+    const razorpayError = err?.error || err?.response?.data?.error;
+    console.error("Razorpay create order failed", {
+      statusCode: err?.statusCode || err?.response?.status || null,
+      code: razorpayError?.code || err?.code || null,
+      description:
+        razorpayError?.description ||
+        err?.response?.data?.description ||
+        err?.message ||
+        String(err),
+    });
     res
       .status(500)
       .json({ ok: false, error: "Unable to create payment order" });
@@ -4440,6 +5546,7 @@ app.post("/api/payment/verify", async (req, res) => {
     delete savedOrder._id;
 
     const result = await orders.insertOne(savedOrder);
+    await recordCouponRedemption(savedOrder, result.insertedId);
     await paymentAttempts.updateOne(
       { razorpayOrderId },
       {
@@ -4500,7 +5607,7 @@ app.post("/api/payment/verify", async (req, res) => {
           { returnDocument: "after" },
         );
       whatsappConfirmation = notificationClaim
-        ? await sendOrderConfirmationWhatsapp(orderForResponse)
+        ? await schedulePaidOrderAutomation(orderForResponse)
         : { sent: false, reason: "already_notified" };
       console.log("WhatsApp order confirmation sent", whatsappConfirmation);
     } catch (whatsappErr) {
@@ -4530,6 +5637,143 @@ app.post("/api/payment/verify", async (req, res) => {
       err.response?.data || err.message,
     );
     res.status(500).json({ ok: false, error: "Unable to verify payment" });
+  }
+});
+
+function isCodOrder(order = {}) {
+  const method = `${order.paymentMethod || ""} ${order.paymentMethodLabel || ""}`.toLowerCase();
+  return method === "cod " || method.includes("cash on delivery") || method.trim() === "cod";
+}
+
+function getCodPaymentBlockReason(order = {}) {
+  const paymentStatus = String(order.paymentStatus || "").toLowerCase();
+  const shippingStatus = String(order.shippingStatus || "").toLowerCase();
+  if (paymentStatus === "paid") return "This order has already been paid.";
+  if (paymentStatus === "cancelled" || shippingStatus.includes("cancelled")) {
+    return "This order has been cancelled and cannot be paid.";
+  }
+  if (shippingStatus.includes("delivered")) {
+    return "This order has already been delivered and cannot be paid online.";
+  }
+  if (!isCodOrder(order) && order.paymentConversion !== "cod_to_prepaid") {
+    return "This payment link is only available for Cash on Delivery orders.";
+  }
+  return null;
+}
+
+async function getOrCreateCodPaymentLink(order) {
+  assertRazorpayConfig();
+  const { orders } = collections();
+  if (order.razorpayPaymentLinkUrl) return order.razorpayPaymentLinkUrl;
+  if (order.razorpayPaymentLinkId) {
+    const existingLink = await razorpay.paymentLink.fetch(order.razorpayPaymentLinkId);
+    if (existingLink?.short_url) {
+      await orders.updateOne(
+        { _id: order._id },
+        { $set: { razorpayPaymentLinkUrl: existingLink.short_url, updatedAt: new Date() } },
+      );
+      return existingLink.short_url;
+    }
+  }
+
+  const claimId = crypto.randomUUID();
+  const claimed = await orders.findOneAndUpdate(
+    {
+      _id: order._id,
+      razorpayPaymentLinkId: { $exists: false },
+      paymentStatus: { $nin: ["paid", "cancelled"] },
+      shippingStatus: { $not: /cancelled|delivered/i },
+      $or: [
+        { paymentLinkCreationStartedAt: { $exists: false } },
+        { paymentLinkCreationStartedAt: { $lt: new Date(Date.now() - 60_000) } },
+      ],
+    },
+    {
+      $set: {
+        paymentConversion: "cod_to_prepaid",
+        paymentLinkCreationId: claimId,
+        paymentLinkCreationStartedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: "after" },
+  );
+  if (!claimed) {
+    const current = await orders.findOne({ _id: order._id });
+    const reason = getCodPaymentBlockReason(current || order);
+    if (reason) throw Object.assign(new Error(reason), { statusCode: 409 });
+    if (current?.razorpayPaymentLinkUrl) return current.razorpayPaymentLinkUrl;
+    throw Object.assign(new Error("Your payment link is being prepared. Please try again."), { statusCode: 409 });
+  }
+
+  try {
+    const amount = toPaise(claimed.totalAmount);
+    if (!amount) throw Object.assign(new Error("This order has no payable amount."), { statusCode: 409 });
+    const orderNumber = claimed.orderNumber || formatOrderNumber(claimed._id);
+    const paymentLink = await razorpay.paymentLink.create({
+      amount,
+      currency: "INR",
+      accept_partial: false,
+      reference_id: `COD-${claimed._id}`,
+      description: `VALOUR COD order ${orderNumber}`,
+      customer: {
+        name: claimed.customerName || "VALOUR customer",
+        contact: claimed.phone ? `+91${normalizeIndianPhone(claimed.phone)}` : undefined,
+        email: claimed.email || undefined,
+      },
+      notify: { sms: false, email: false },
+      reminder_enable: true,
+      notes: { channel: "whatsapp_cod_conversion", order_id: String(claimed._id) },
+    });
+    await orders.updateOne(
+      { _id: claimed._id, paymentLinkCreationId: claimId },
+      {
+        $set: {
+          razorpayPaymentLinkId: paymentLink.id,
+          razorpayPaymentLinkUrl: paymentLink.short_url,
+          updatedAt: new Date(),
+        },
+        $unset: { paymentLinkCreationId: "", paymentLinkCreationStartedAt: "" },
+      },
+    );
+    return paymentLink.short_url;
+  } catch (error) {
+    await orders.updateOne(
+      { _id: order._id, paymentLinkCreationId: claimId },
+      { $unset: { paymentLinkCreationId: "", paymentLinkCreationStartedAt: "" } },
+    );
+    throw error;
+  }
+}
+
+app.get("/api/cod-payment/:token", async (req, res) => {
+  const orderReference = readOrderPaymentToken(req.params.token);
+  if (!orderReference) {
+    return res.status(400).json({ ok: false, error: "This payment link is invalid or has expired." });
+  }
+
+  try {
+    const order = await findOrderByReference(orderReference);
+    if (!order) return res.status(404).json({ ok: false, error: "Order not found." });
+    const blockReason = getCodPaymentBlockReason(order);
+    if (blockReason) return res.status(409).json({ ok: false, error: blockReason });
+
+    const redirectUrl = await getOrCreateCodPaymentLink(order);
+    res.json({
+      ok: true,
+      order: {
+        orderNumber: order.orderNumber || formatOrderNumber(order._id),
+        amount: Number(order.totalAmount),
+        currency: "INR",
+      },
+      redirectUrl,
+    });
+  } catch (err) {
+    console.error("COD payment link resolution failed", err.response?.data || err.message);
+    res.status(err.statusCode || 500).json({
+      ok: false,
+      error: err.statusCode ? err.message : "Unable to prepare payment. Please try again shortly.",
+    });
   }
 });
 
@@ -4568,6 +5812,12 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     }
 
     updates.updatedAt = new Date();
+    const isDeliveredUpdate = String(updates.shippingStatus || "").toLowerCase() === "delivered";
+    if (isDeliveredUpdate) {
+      updates.deliveredAt = new Date();
+      updates.deliverySource = "internal";
+      if (req.body.deliveredBy) updates.deliveredBy = String(req.body.deliveredBy).slice(0, 120);
+    }
 
     const { orders } = collections();
     await orders.updateOne({ _id: order._id }, { $set: updates });
@@ -4575,7 +5825,35 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     const updatedOrder = { ...order, ...updates };
     let whatsappUpdate = { sent: false, reason: "not_requested" };
 
-    if (req.body.notifyWhatsapp !== false) {
+    const isCodConfirmation = isCodOrder(updatedOrder) &&
+      /confirmed|processing/i.test(String(updates.shippingStatus || ""));
+    if (isCodConfirmation) {
+      const codJob = await scheduleWhatsappJob({
+        event: "cod_confirmation",
+        phone: updatedOrder.whatsappPhone || updatedOrder.phone,
+        order: updatedOrder,
+        parameters: getOrderTemplateParams(updatedOrder),
+        scheduledAt: new Date(),
+      });
+      whatsappUpdate = { sent: false, scheduled: codJob.scheduled, jobKey: codJob.jobKey };
+    } else if (isDeliveredUpdate) {
+      const phone = updatedOrder.whatsappPhone || updatedOrder.phone;
+      const deliveredJob = await scheduleWhatsappJob({
+        event: "delivered_ready_to_cook",
+        phone,
+        order: updatedOrder,
+        parameters: [updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id)],
+        scheduledAt: nextIstSendTime(new Date(Date.now() + 2 * 60 * 60_000)),
+      });
+      await scheduleWhatsappJob({
+        event: "reorder_reminder",
+        phone,
+        order: updatedOrder,
+        parameters: [getOrderProductName(updatedOrder)],
+        scheduledAt: nextIstSendTime(new Date(Date.now() + 7 * 24 * 60 * 60_000)),
+      });
+      whatsappUpdate = { sent: false, scheduled: deliveredJob.scheduled, jobKey: deliveredJob.jobKey };
+    } else if (req.body.notifyWhatsapp !== false) {
       try {
         await sendMessage(
           getWhatsappOrderRecipients(updatedOrder)[0],
@@ -4608,6 +5886,142 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     res
       .status(500)
       .json({ ok: false, error: "Unable to update shipping status" });
+  }
+});
+
+app.get("/api/order-tracking/:token", async (req, res) => {
+  const orderReference = readOrderTrackingToken(req.params.token);
+  if (!orderReference) {
+    return res.status(400).json({ ok: false, error: "Invalid tracking link" });
+  }
+
+  try {
+    const order = await findOrderByReference(orderReference);
+    if (!order) {
+      return res.status(404).json({ ok: false, error: "Order not found" });
+    }
+
+    res.json({
+      ok: true,
+      order: {
+        orderNumber: order.orderNumber || formatOrderNumber(order._id),
+        paymentStatus: order.paymentStatus || "Confirmed",
+        shippingStatus: order.shippingStatus || "Order confirmed",
+        courierName: order.courierName || null,
+        trackingNumber: order.trackingNumber || order.awbCode || null,
+        trackingUrl: order.trackingUrl || null,
+        estimatedDelivery: order.estimatedDelivery || null,
+        items: (order.products || []).map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+        })),
+        updatedAt: order.updatedAt || order.paidAt || order.createdAt || null,
+      },
+    });
+  } catch (err) {
+    console.error("Public order tracking lookup failed", err.message);
+    res.status(500).json({ ok: false, error: "Tracking is temporarily unavailable" });
+  }
+});
+
+app.get("/api/reviews/customer/:token", async (req, res) => {
+  const orderReference = readReviewToken(req.params.token);
+  if (!orderReference) {
+    return res.status(400).json({ ok: false, error: "This review link is invalid or has expired." });
+  }
+
+  try {
+    const order = await findOrderByReference(orderReference);
+    if (!order) return res.status(404).json({ ok: false, error: "Customer details were not found." });
+
+    res.json({
+      ok: true,
+      customer: {
+        name: order.customerName || "VALOUR customer",
+        phone: order.phone || order.whatsappPhone || "",
+      },
+      order: {
+        orderNumber: order.orderNumber || formatOrderNumber(order._id),
+      },
+    });
+  } catch (err) {
+    console.error("Review customer lookup failed", err.message);
+    res.status(500).json({ ok: false, error: "Customer details are temporarily unavailable." });
+  }
+});
+
+app.post("/api/reviews/:token", async (req, res) => {
+  const orderReference = readReviewToken(req.params.token);
+  if (!orderReference) {
+    return res.status(400).json({ ok: false, error: "This review link is invalid or has expired." });
+  }
+
+  const rating = Number(req.body.rating);
+  const allowedFeedback = new Set([
+    "Easy to cook", "Loved the taste", "Good quantity", "Clear instructions",
+    "Would cook again", "Taste", "Spice level", "Texture", "Instructions",
+    "Quantity", "Something else",
+  ]);
+  const feedback = Array.isArray(req.body.feedback)
+    ? req.body.feedback.filter((item) => allowedFeedback.has(item)).slice(0, 6)
+    : [];
+  const reviewText = String(req.body.review || "").trim().slice(0, 2000);
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ ok: false, error: "Please choose a rating from 1 to 5." });
+  }
+
+  try {
+    const order = await findOrderByReference(orderReference);
+    if (!order) return res.status(404).json({ ok: false, error: "Customer details were not found." });
+
+    const { reviews } = collections();
+    await reviews.updateOne(
+      { orderReference },
+      {
+        $set: {
+          rating,
+          feedback,
+          review: reviewText,
+          customerName: order.customerName || "",
+          phone: order.phone || order.whatsappPhone || "",
+          showFirstName: req.body.showName === true,
+          updatedAt: new Date(),
+        },
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true },
+    );
+
+    await cancelWhatsappJobs(
+      { orderId: order._id, trigger: "review_request" },
+      "review_submitted",
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Review submission failed", err.message);
+    res.status(500).json({ ok: false, error: "Your review could not be saved. Please try again." });
+  }
+});
+
+app.post("/api/orders/:orderReference/request-review", async (req, res) => {
+  const adminToken = process.env.ORDER_ADMIN_TOKEN;
+  if (!adminToken) {
+    return res.status(503).json({ ok: false, error: "Review messaging is not configured." });
+  }
+  if (req.headers["x-admin-token"] !== adminToken) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  try {
+    const order = await findOrderByReference(req.params.orderReference);
+    if (!order) return res.status(404).json({ ok: false, error: "Order not found" });
+    await sendReviewRequestWhatsapp(order);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("WhatsApp review request failed", err.response?.data || err.message);
+    res.status(500).json({ ok: false, error: "Unable to send the review request." });
   }
 });
 
@@ -4696,6 +6110,16 @@ module.exports = {
     parseQuantity,
     parseProductSelection,
     getFeedbackPrompt,
+    getInboundMessageText,
+    createOrderTrackingToken,
+    createOrderPaymentToken,
+    createReviewToken,
+    readOrderTrackingToken,
+    readOrderPaymentToken,
+    readReviewToken,
+    getCodPaymentBlockReason,
+    getCookingReminderTime,
+    nextIstSendTime,
     sanitizeReassuranceText,
     shouldTryBrandNLU,
   },

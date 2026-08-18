@@ -59,35 +59,40 @@
       <main class="checkout-layout">
         <section class="checkout-main" aria-labelledby="cart-title">
           <div class="progress-card" aria-label="Checkout progress">
-            <div class="progress-step is-active" data-progress-step="cart">
-              <span>1</span>
-              <p>Cart</p>
-            </div>
+            <button
+              class="progress-step is-active"
+              type="button"
+              data-progress-step="cart"
+              aria-current="step"
+            >
+              <span class="progress-step-number">1</span>
+              <span class="progress-step-label">Cart</span>
+            </button>
             <div class="progress-line" aria-hidden="true"></div>
-            <div class="progress-step" data-progress-step="details">
-              <span>2</span>
-              <p>Details</p>
-            </div>
+            <button
+              class="progress-step"
+              type="button"
+              data-progress-step="details"
+            >
+              <span class="progress-step-number">2</span>
+              <span class="progress-step-label">Details</span>
+            </button>
             <div class="progress-line" aria-hidden="true"></div>
-            <div class="progress-step" data-progress-step="payment">
-              <span>3</span>
-              <p>Review</p>
-            </div>
+            <button
+              class="progress-step"
+              type="button"
+              data-progress-step="payment"
+            >
+              <span class="progress-step-number">3</span>
+              <span class="progress-step-label">Review</span>
+            </button>
           </div>
 
           <section class="panel cart-panel" aria-labelledby="cart-title">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Your selection</p>
                 <h2 id="cart-title">Cart</h2>
               </div>
-              <button
-                class="quiet-btn"
-                type="button"
-                data-action="restore-cart"
-              >
-                Restore sample cart
-              </button>
             </div>
 
             <div class="cart-items" data-cart-items></div>
@@ -106,16 +111,20 @@
           <section class="panel coupon-panel" aria-labelledby="coupon-title">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">A small courtesy</p>
                 <h2 id="coupon-title">Apply coupon</h2>
+                <div
+                  class="coupon-availability"
+                  data-coupon-availability
+                  aria-live="polite"
+                >
+                  <span class="coupon-availability-icon" aria-hidden="true"
+                    >%</span
+                  >
+                  <span data-coupon-availability-text
+                    >Finding your offers...</span
+                  >
+                </div>
               </div>
-              <button
-                class="quiet-btn"
-                type="button"
-                data-action="clear-coupon"
-              >
-                Clear
-              </button>
             </div>
 
             <div class="coupon-input-row">
@@ -140,32 +149,14 @@
 
             <details class="coupon-dropdown">
               <summary>View available coupons</summary>
-              <div class="coupon-grid" aria-label="Available coupons">
-                <button
-                  class="coupon-chip"
-                  type="button"
-                  data-coupon="WELCOME10"
-                >
-                  <strong>WELCOME10</strong>
-                  <span>10% off for new kitchens</span>
-                </button>
-                <button
-                  class="coupon-chip"
-                  type="button"
-                  data-coupon="FIRSTORDER"
-                >
-                  <strong>FIRSTORDER</strong>
-                  <span>Rs. 75 off above Rs. 499</span>
-                </button>
-                <button
-                  class="coupon-chip"
-                  type="button"
-                  data-coupon="VALOURVIP"
-                >
-                  <strong>VALOURVIP</strong>
-                  <span>15% off above Rs. 799</span>
-                </button>
+              <div
+                class="coupon-grid"
+                data-available-coupons
+                aria-label="Available coupons"
+              >
+                <p>Verify your mobile number to see coupons allotted to you.</p>
               </div>
+              <div data-used-coupons hidden></div>
             </details>
           </section>
 
@@ -182,7 +173,6 @@
           <form class="panel checkout-form" data-checkout-form novalidate>
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Delivery details</p>
                 <h2>Where should we send it?</h2>
               </div>
             </div>
@@ -199,7 +189,7 @@
                 <p class="field-error" data-error-for="name"></p>
               </div>
               <div class="field">
-                <label for="phone">Phone</label>
+                <label for="phone">Whatsapp Phone number</label>
                 <input
                   id="phone"
                   name="phone"
@@ -284,7 +274,6 @@
           >
             <div class="payment-card">
               <div class="payment-card-heading">
-                <p class="eyebrow">Payment</p>
                 <h2>Choose a comfortable method.</h2>
               </div>
 
@@ -421,16 +410,12 @@
                     <strong data-subtotal>Rs. 0</strong>
                   </div>
                   <div>
-                    <span>Shipping</span>
-                    <strong data-shipping>Rs. 0</strong>
-                  </div>
-                  <div>
                     <span>Discount</span>
                     <strong data-discount>Rs. 0</strong>
                   </div>
                   <div>
-                    <span>Taxes</span>
-                    <strong data-tax>Rs. 0</strong>
+                    <span>Shipping</span>
+                    <strong data-shipping>Rs. 0</strong>
                   </div>
                 </div>
 
@@ -442,8 +427,7 @@
                 <div class="summary-note">
                   <strong data-applied-coupon>No coupon applied</strong>
                   <span
-                    >GST included. Shipping updates with your order value and
-                    pincode.</span
+                    >Shipping updates with your order value and pincode.</span
                   >
                 </div>
 
@@ -511,7 +495,6 @@
             <div class="order-success-hero">
               <div class="success-icon" aria-hidden="true"></div>
               <div>
-                <p class="eyebrow">Order placed</p>
                 <h2 id="success-title">Thank you, your order is confirmed.</h2>
                 <p>
                   We have received your Valour order and will share dispatch
@@ -582,7 +565,6 @@
           >
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Delivery estimate</p>
                 <h2 id="delivery-title">Freshly packed. Carefully sent.</h2>
               </div>
             </div>
@@ -637,7 +619,6 @@
         >
           &times;
         </button>
-        <p class="eyebrow">Quick verification</p>
         <h2 id="otp-title">Before you order, let's verify it's you.</h2>
         <p data-otp-message>
           We will send a one-time password to the mobile number in your delivery
@@ -662,13 +643,6 @@
           </div>
           <p class="field-error" data-otp-error aria-live="polite"></p>
         </form>
-        <button
-          class="quiet-btn resend-otp"
-          type="button"
-          data-action="resend-otp"
-        >
-          Resend OTP
-        </button>
       </div>
     </div>
 
