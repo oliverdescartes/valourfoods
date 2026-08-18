@@ -21,4 +21,67 @@ assert.equal(
   "2026-08-19T04:30:00.000Z",
 );
 
+const order = {
+  _id: "507f1f77bcf86cd799439011",
+  orderNumber: "VALOUR-ABC123",
+  totalAmount: 415,
+  products: [{ name: "Velvety Butter Chicken", quantity: 1 }],
+};
+const prepaidParams = _test.getOrderTemplateParams(order);
+assert.equal(prepaidParams.length, 4);
+assert.deepEqual(prepaidParams.slice(0, 3), [
+  "VALOUR-ABC123",
+  "Rs. 415",
+  "Velvety Butter Chicken x 1",
+]);
+const codParams = _test.getCodTemplateParams(order);
+assert.equal(codParams.length, 5);
+assert.deepEqual(codParams.slice(0, 3), [
+  "VALOUR-ABC123",
+  "Velvety Butter Chicken x 1",
+  "Rs. 415",
+]);
+
+const failedEvent = _test.parseGupshupV2Webhook({
+  type: "message-event",
+  timestamp: 1787044000000,
+  payload: {
+    id: "gupshup-message-id",
+    type: "failed",
+    destination: "919999999999",
+    payload: { code: 1002, reason: "Number Does Not Exist On WhatsApp" },
+  },
+});
+assert.equal(failedEvent.status.id, "gupshup-message-id");
+assert.equal(failedEvent.status.status, "failed");
+assert.equal(failedEvent.status.errors.code, 1002);
+
+const deliveredEvent = _test.parseGupshupV2Webhook({
+  type: "message-event",
+  timestamp: 1787044000000,
+  payload: {
+    id: "whatsapp-message-id",
+    gsId: "gupshup-message-id",
+    type: "delivered",
+    destination: "919999999999",
+    ts: 1787044000,
+  },
+});
+assert.equal(deliveredEvent.status.id, "gupshup-message-id");
+assert.equal(deliveredEvent.status.whatsappMessageId, "whatsapp-message-id");
+assert.equal(deliveredEvent.status.status, "delivered");
+
+const inboundEvent = _test.parseGupshupV2Webhook({
+  type: "message",
+  timestamp: 1787044000000,
+  payload: {
+    id: "incoming-id",
+    source: "919999999999",
+    type: "text",
+    payload: { text: "MENU" },
+  },
+});
+assert.equal(inboundEvent.message.from, "919999999999");
+assert.equal(inboundEvent.message.text.body, "MENU");
+
 console.log("WhatsApp automation unit tests passed");

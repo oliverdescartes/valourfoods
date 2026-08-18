@@ -196,6 +196,7 @@ async function connectDB() {
     messageJobs.createIndex({ status: 1, scheduledAt: 1 }),
     messageJobs.createIndex({ providerMessageId: 1 }, { sparse: true }),
     messageJobs.createIndex({ phone: 1, sentAt: -1 }),
+    messageJobs.createIndex({ phone: 1, submittedAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
   ]);
@@ -1073,8 +1074,8 @@ async function runWhatsappQualityGate(job) {
   if (job.kind === "marketing") {
     const now = new Date();
     const [dailyCount, weeklyCount] = await Promise.all([
-      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", sentAt: { $gte: new Date(now - 24 * 60 * 60_000) } }),
-      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", sentAt: { $gte: new Date(now - 7 * 24 * 60 * 60_000) } }),
+      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", submittedAt: { $gte: new Date(now - 24 * 60 * 60_000) } }),
+      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", submittedAt: { $gte: new Date(now - 7 * 24 * 60 * 60_000) } }),
     ]);
     if (dailyCount >= WHATSAPP_MARKETING_DAILY_CAP || weeklyCount >= WHATSAPP_MARKETING_WEEKLY_CAP) {
       return { action: "reschedule", reason: "frequency_cap", scheduledAt: nextIstSendTime(new Date(now.getTime() + 24 * 60 * 60_000)) };
@@ -1111,7 +1112,7 @@ async function processDueWhatsappJobs() {
       const result = await sendTemplateMessage(job.phone, job.templateName, job.languageCode, job.parameters);
       await collections().messageJobs.updateOne(
         { _id: job._id },
-        { $set: { status: "sent", sentAt: new Date(), providerMessageId: getProviderMessageId(result), providerResponse: result }, $unset: { processingStartedAt: "" } },
+        { $set: { status: "submitted", submittedAt: new Date(), providerMessageId: getProviderMessageId(result), providerResponse: result }, $unset: { processingStartedAt: "" } },
       );
     } catch (err) {
       const attemptCount = Number(job.attemptCount || 0) + 1;
@@ -1145,21 +1146,65 @@ function startWhatsappJobWorker() {
 async function recordWhatsappJobStatus(status = {}) {
   if (!mongoReady || !status.id) return;
   const normalized = String(status.status || "").toLowerCase();
-  const allowed = new Set(["sent", "delivered", "read", "failed"]);
+  const allowed = new Set(["submitted", "enqueued", "sent", "delivered", "read", "failed"]);
   if (!allowed.has(normalized)) return;
-  const timestamp = status.timestamp
-    ? new Date(Number(status.timestamp) * 1000)
+  const rawTimestamp = Number(status.timestamp);
+  const timestamp = Number.isFinite(rawTimestamp)
+    ? new Date(rawTimestamp > 10_000_000_000 ? rawTimestamp : rawTimestamp * 1000)
     : new Date();
   const updates = {
     status: normalized,
     [`${normalized}At`]: timestamp,
     statusUpdatedAt: new Date(),
   };
+  if (status.whatsappMessageId) updates.whatsappMessageId = status.whatsappMessageId;
   if (status.errors) updates.providerErrors = status.errors;
+  const allowedPreviousStatuses = {
+    submitted: ["processing", "submitted"],
+    enqueued: ["processing", "submitted", "enqueued"],
+    sent: ["processing", "submitted", "enqueued", "sent"],
+    delivered: ["processing", "submitted", "enqueued", "sent", "delivered"],
+    read: ["processing", "submitted", "enqueued", "sent", "delivered", "read"],
+    failed: ["processing", "submitted", "enqueued", "sent", "failed"],
+  }[normalized];
   await collections().messageJobs.updateOne(
-    { providerMessageId: status.id },
+    { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
     { $set: updates },
   );
+}
+
+function parseGupshupV2Webhook(body = {}) {
+  const payload = body.payload || {};
+  if (body.type === "message-event") {
+    const eventType = String(payload.type || "").toLowerCase();
+    return {
+      status: {
+        id: payload.gsId || payload.id,
+        whatsappMessageId: payload.gsId ? payload.id : payload.payload?.whatsappMessageId,
+        status: eventType,
+        timestamp: payload.ts || body.timestamp,
+        errors: eventType === "failed"
+          ? payload.payload || { code: payload.code, reason: payload.reason }
+          : undefined,
+      },
+      message: null,
+    };
+  }
+  if (body.type !== "message") return { status: null, message: null };
+  const inner = payload.payload || {};
+  const from = payload.source || payload.sender?.phone || payload.phone || inner.sender?.phone;
+  const text = inner.text || inner.postbackText || inner.title || inner.body || inner.payload || "";
+  if (!from) return { status: null, message: null };
+  return {
+    status: null,
+    message: {
+      from: String(from),
+      id: payload.id || `gupshup-${body.timestamp || Date.now()}`,
+      type: payload.type || "text",
+      text: { body: String(text) },
+      gupshupPayload: payload,
+    },
+  };
 }
 
 async function saveInboundMessage({
@@ -1538,6 +1583,18 @@ async function sendPaymentFailureWhatsapp(order, reason) {
 }
 
 function getOrderTemplateParams(order) {
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const total = `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}`;
+
+  return [
+    orderNumber,
+    total,
+    formatProductsForWhatsapp(order.products),
+    createOrderTrackingToken(order),
+  ];
+}
+
+function getCodTemplateParams(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
   const total = `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}`;
 
@@ -4370,8 +4427,9 @@ app.post("/webhook/gupshup", (req, res) => {
   res.sendStatus(200);
 
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-  const message = value?.messages?.[0];
-  const status = value?.statuses?.[0];
+  const nativeGupshup = parseGupshupV2Webhook(req.body);
+  const message = value?.messages?.[0] || nativeGupshup.message;
+  const status = value?.statuses?.[0] || nativeGupshup.status;
 
   if (status) {
     void recordWhatsappJobStatus(status).catch((err) =>
@@ -5832,7 +5890,7 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         event: "cod_confirmation",
         phone: updatedOrder.whatsappPhone || updatedOrder.phone,
         order: updatedOrder,
-        parameters: getOrderTemplateParams(updatedOrder),
+        parameters: getCodTemplateParams(updatedOrder),
         scheduledAt: new Date(),
       });
       whatsappUpdate = { sent: false, scheduled: codJob.scheduled, jobKey: codJob.jobKey };
@@ -6118,6 +6176,9 @@ module.exports = {
     readOrderPaymentToken,
     readReviewToken,
     getCodPaymentBlockReason,
+    getOrderTemplateParams,
+    getCodTemplateParams,
+    parseGupshupV2Webhook,
     getCookingReminderTime,
     nextIstSendTime,
     sanitizeReassuranceText,
