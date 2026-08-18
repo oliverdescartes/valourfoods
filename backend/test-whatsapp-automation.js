@@ -84,4 +84,29 @@ const inboundEvent = _test.parseGupshupV2Webhook({
 assert.equal(inboundEvent.message.from, "919999999999");
 assert.equal(inboundEvent.message.text.body, "MENU");
 
+const mediaConfig = _test.getWhatsappTemplateMediaConfig(JSON.stringify({
+  valour_product_demo: {
+    type: "image",
+    url: "https://example.com/whatsapp/product-demo.jpg",
+  },
+  valour_cooking_video: {
+    type: "video",
+    url: "https://example.com/whatsapp/cooking.mp4",
+  },
+}));
+assert.equal(mediaConfig.valour_product_demo.type, "image");
+assert.equal(mediaConfig.valour_cooking_video.type, "video");
+assert.throws(
+  () => _test.getWhatsappTemplateMediaConfig('{"broken":'),
+  /Invalid WHATSAPP_TEMPLATE_MEDIA JSON/,
+);
+assert.throws(
+  () => _test.getWhatsappTemplateMediaConfig(JSON.stringify({ bad: { type: "audio", url: "https://example.com/a.mp3" } })),
+  /type must be image, video, or document/,
+);
+assert.throws(
+  () => _test.getWhatsappTemplateMediaConfig(JSON.stringify({ bad: { type: "image", url: "http://localhost/a.jpg" } })),
+  /must be a public HTTPS URL/,
+);
+
 console.log("WhatsApp automation unit tests passed");

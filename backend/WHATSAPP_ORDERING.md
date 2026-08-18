@@ -39,6 +39,11 @@ Configure the template names in `.env` using the variables listed in
 `.env.example`, and map those names to approved Gupshup template IDs through
 `GUPSHUP_TEMPLATE_IDS`.
 
+Media-header templates are configured centrally with `WHATSAPP_TEMPLATE_MEDIA`.
+Each key is an approved template name and each value contains `type` (`image`,
+`video`, or `document`) plus a public HTTPS `url`. The legacy
+`WHATSAPP_ORDER_IMAGE_URL` remains an order-template fallback.
+
 Website checkout abandonment is inferred reliably: `/api/payment/create-order`
 creates a reminder job for 60 minutes later, and successful payment cancels it.
 No tab-close tracker, Meta Pixel, Google Analytics, or WebSocket is required.

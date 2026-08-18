@@ -52,6 +52,7 @@ const REQUIRED_ENV = [
   "GUPSHUP_API_KEY",
   "GUPSHUP_APP_NAME",
   "GUPSHUP_SOURCE_NUMBER",
+  "WHATSAPP_ORDER_TEMPLATE_NAME",
   "PUBLIC_SITE_URL",
   "TRACKING_TOKEN_SECRET",
 ];
@@ -615,6 +616,11 @@ function normalizeWhatsappRecipient(phone = "") {
   return digits;
 }
 
+function maskWhatsappPhone(phone = "") {
+  const digits = normalizeWhatsappRecipient(phone);
+  return digits ? `***${digits.slice(-4)}` : "missing";
+}
+
 const GUPSHUP_MESSAGE_URL = "https://api.gupshup.io/wa/api/v1/msg";
 const GUPSHUP_TEMPLATE_URL = "https://api.gupshup.io/wa/api/v1/template/msg";
 
@@ -844,15 +850,11 @@ async function sendTemplateMessage(
         params: bodyParams.map(String),
       },
     };
-    const orderTemplateName = process.env.WHATSAPP_ORDER_TEMPLATE_NAME;
-    const orderImageUrl = getWhatsappOrderImageUrl();
-    if (
-      templateName === orderTemplateName &&
-      isSupportedWhatsappImageUrl(orderImageUrl)
-    ) {
+    const media = getWhatsappTemplateMedia(templateName);
+    if (media) {
       templateFields.message = {
-        type: "image",
-        image: { link: orderImageUrl },
+        type: media.type,
+        [media.type]: { link: media.url },
       };
     }
 
@@ -871,6 +873,7 @@ async function sendTemplateMessage(
     console.log("Gupshup WhatsApp template send accepted", {
       recipient,
       templateName,
+      mediaType: media?.type || null,
       result: response.data,
     });
 
@@ -1099,10 +1102,19 @@ async function processDueWhatsappJobs() {
       { sort: { scheduledAt: 1 }, returnDocument: "after" },
     );
     if (!job) break;
+    console.log("[WHATSAPP][JOB_CLAIMED]", {
+      jobKey: job.jobKey,
+      trigger: job.trigger,
+      recipient: maskWhatsappPhone(job.phone),
+      templateName: job.templateName,
+      parameterCount: job.parameters?.length || 0,
+      scheduledAt: job.scheduledAt,
+    });
     try {
       const decision = await runWhatsappQualityGate(job);
       if (decision.action === "cancel") {
         await collections().messageJobs.updateOne({ _id: job._id }, { $set: { status: "cancelled", cancellationReason: decision.reason, cancelledAt: new Date() } });
+        console.log("[WHATSAPP][JOB_CANCELLED]", { jobKey: job.jobKey, reason: decision.reason });
         continue;
       }
       if (decision.action === "reschedule") {
@@ -1110,10 +1122,19 @@ async function processDueWhatsappJobs() {
         continue;
       }
       const result = await sendTemplateMessage(job.phone, job.templateName, job.languageCode, job.parameters);
+      const providerMessageId = getProviderMessageId(result);
       await collections().messageJobs.updateOne(
         { _id: job._id },
-        { $set: { status: "submitted", submittedAt: new Date(), providerMessageId: getProviderMessageId(result), providerResponse: result }, $unset: { processingStartedAt: "" } },
+        { $set: { status: "submitted", submittedAt: new Date(), providerMessageId, providerResponse: result }, $unset: { processingStartedAt: "" } },
       );
+      console.log("[WHATSAPP][SUBMITTED]", {
+        jobKey: job.jobKey,
+        recipient: maskWhatsappPhone(job.phone),
+        templateName: job.templateName,
+        providerMessageId,
+        providerStatus: result?.status || null,
+        explanation: "Gupshup accepted the request; this is not delivery confirmation",
+      });
     } catch (err) {
       const attemptCount = Number(job.attemptCount || 0) + 1;
       const permanent = /template|parameter|invalid phone|destination/i.test(String(err.response?.data?.message || err.message));
@@ -1123,6 +1144,13 @@ async function processDueWhatsappJobs() {
         { _id: job._id },
         { $set: { status: failed ? "failed" : "scheduled", attemptCount, scheduledAt: new Date(Date.now() + delay), lastError: String(err.response?.data?.message || err.message).slice(0, 500), failedAt: failed ? new Date() : null }, $unset: { processingStartedAt: "" } },
       );
+      console.error("[WHATSAPP][SEND_ERROR]", {
+        jobKey: job.jobKey,
+        recipient: maskWhatsappPhone(job.phone),
+        attemptCount,
+        willRetry: !failed,
+        error: String(err.response?.data?.message || err.message).slice(0, 500),
+      });
     }
   }
 }
@@ -1167,10 +1195,27 @@ async function recordWhatsappJobStatus(status = {}) {
     read: ["processing", "submitted", "enqueued", "sent", "delivered", "read"],
     failed: ["processing", "submitted", "enqueued", "sent", "failed"],
   }[normalized];
-  await collections().messageJobs.updateOne(
+  const result = await collections().messageJobs.updateOne(
     { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
     { $set: updates },
   );
+  const label = normalized === "failed" ? "FAILED" : "CALLBACK";
+  console.log(`[WHATSAPP][${label}]`, {
+    providerMessageId: status.id,
+    whatsappMessageId: status.whatsappMessageId || null,
+    status: normalized,
+    matchedJob: result.matchedCount === 1,
+    recipient: maskWhatsappPhone(status.destination || status.recipient_id),
+    errors: status.errors || null,
+    timestamp: timestamp.toISOString(),
+  });
+  if (!result.matchedCount) {
+    console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
+      providerMessageId: status.id,
+      status: normalized,
+      explanation: "No message_jobs record matched this Gupshup message ID/status progression",
+    });
+  }
 }
 
 function parseGupshupV2Webhook(body = {}) {
@@ -1181,6 +1226,7 @@ function parseGupshupV2Webhook(body = {}) {
       status: {
         id: payload.gsId || payload.id,
         whatsappMessageId: payload.gsId ? payload.id : payload.payload?.whatsappMessageId,
+        destination: payload.destination,
         status: eventType,
         timestamp: payload.ts || body.timestamp,
         errors: eventType === "failed"
@@ -1240,7 +1286,7 @@ async function getOrCreateUser(phone, signals = {}) {
   const now = new Date();
   const signalUpdates = compactSignalFields(signals);
 
-  return users.findOneAndUpdate(
+  const result = await users.findOneAndUpdate(
     { phone },
     {
       $set: { last_seen_at: now, ...signalUpdates },
@@ -1248,6 +1294,17 @@ async function getOrCreateUser(phone, signals = {}) {
     },
     { upsert: true, returnDocument: "after" },
   );
+
+  // MongoDB driver versions/configurations can return either the document
+  // directly or a result wrapper. A concurrent upsert can also yield null.
+  const user = result?.value || result;
+  if (user?._id) return user;
+
+  const persistedUser = await users.findOne({ phone });
+  if (!persistedUser) {
+    throw new Error("Customer record could not be created or loaded");
+  }
+  return persistedUser;
 }
 
 async function getOrCreateSession(userId) {
@@ -1785,11 +1842,66 @@ function getWhatsappOrderImageUrl() {
 
 function isSupportedWhatsappImageUrl(imageUrl = "") {
   try {
-    const { pathname } = new URL(imageUrl);
-    return /\.(jpe?g|png)$/i.test(pathname);
+    const parsed = new URL(imageUrl);
+    // Gupshup fetches media by URL and does not require a file extension.
+    // Image CDNs commonly expose valid JPEG/PNG content through paths such as
+    // `/images?id=...`, so rejecting solely by pathname drops required headers.
+    return parsed.protocol === "https:" && Boolean(parsed.hostname);
   } catch (_err) {
     return false;
   }
+}
+
+const WHATSAPP_MEDIA_TYPES = new Set(["image", "video", "document"]);
+
+function getWhatsappTemplateMediaConfig(rawValue = process.env.WHATSAPP_TEMPLATE_MEDIA) {
+  if (!rawValue) return {};
+
+  let config;
+  try {
+    config = JSON.parse(rawValue);
+  } catch (error) {
+    throw new Error(`Invalid WHATSAPP_TEMPLATE_MEDIA JSON: ${error.message}`);
+  }
+
+  if (!config || Array.isArray(config) || typeof config !== "object") {
+    throw new Error("WHATSAPP_TEMPLATE_MEDIA must be a JSON object keyed by template name");
+  }
+
+  for (const [templateName, media] of Object.entries(config)) {
+    const type = String(media?.type || "").toLowerCase();
+    if (!WHATSAPP_MEDIA_TYPES.has(type)) {
+      throw new Error(
+        `WHATSAPP_TEMPLATE_MEDIA.${templateName}.type must be image, video, or document`,
+      );
+    }
+    try {
+      const parsed = new URL(String(media?.url || ""));
+      if (parsed.protocol !== "https:" || !parsed.hostname) throw new Error("not public HTTPS");
+    } catch (_error) {
+      throw new Error(
+        `WHATSAPP_TEMPLATE_MEDIA.${templateName}.url must be a public HTTPS URL`,
+      );
+    }
+  }
+
+  return config;
+}
+
+function getWhatsappTemplateMedia(templateName) {
+  const media = getWhatsappTemplateMediaConfig()[templateName];
+  if (media) {
+    return { type: String(media.type).toLowerCase(), url: String(media.url) };
+  }
+
+  if (templateName === process.env.WHATSAPP_ORDER_TEMPLATE_NAME) {
+    const orderImageUrl = getWhatsappOrderImageUrl();
+    if (isSupportedWhatsappImageUrl(orderImageUrl)) {
+      return { type: "image", url: orderImageUrl };
+    }
+  }
+
+  return null;
 }
 
 async function sendOrderConfirmationWhatsapp(order) {
@@ -4429,7 +4541,25 @@ app.post("/webhook/gupshup", (req, res) => {
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
   const nativeGupshup = parseGupshupV2Webhook(req.body);
   const message = value?.messages?.[0] || nativeGupshup.message;
-  const status = value?.statuses?.[0] || nativeGupshup.status;
+  const wrappedStatus = value?.statuses?.[0];
+  const isCallbackSetupEvent = wrappedStatus?.type === "set-callback";
+  const status = wrappedStatus?.id && wrappedStatus?.status
+    ? {
+        ...wrappedStatus,
+        // Gupshup's WABA-style callback uses gs_id for the ID returned by
+        // the send API and id for Meta's WhatsApp message ID.
+        id: wrappedStatus.gs_id || wrappedStatus.id,
+        whatsappMessageId: wrappedStatus.gs_id ? wrappedStatus.id : undefined,
+      }
+    : nativeGupshup.status;
+
+  if (isCallbackSetupEvent) {
+    console.log("[WHATSAPP][CALLBACK_CONFIGURED]", {
+      gsAppId: req.body?.gs_app_id || null,
+      accountObject: req.body?.object || null,
+      explanation: "Gupshup confirmed the callback URL; this is not a message delivery event",
+    });
+  }
 
   if (status) {
     void recordWhatsappJobStatus(status).catch((err) =>
@@ -5302,6 +5432,110 @@ app.delete("/api/admin/coupons/assign/:phone/:code", async (req, res) => {
   }
 });
 
+app.post("/api/temporary-cart-confirmation", async (req, res) => {
+  if (process.env.ENABLE_TEMP_CART_CONFIRMATION !== "true") {
+    return res.status(404).json({ ok: false, error: "Temporary confirmation trigger is disabled" });
+  }
+  if (!mongoReady) {
+    return res.status(503).json({ ok: false, error: "Database is connecting" });
+  }
+  const phone = normalizeWhatsappRecipient(req.body.phone);
+  const rawItems = Array.isArray(req.body.items) ? req.body.items : [];
+  if (!phone || !rawItems.length) {
+    return res.status(400).json({ ok: false, error: "Verified phone and cart items are required" });
+  }
+  try {
+    const customer = await collections().users.findOne({
+      phone: { $regex: `${phone.slice(-10)}$` },
+    });
+    if (!customer) {
+      console.warn("[WHATSAPP][TEMP_TRIGGER_REJECTED]", {
+        recipient: maskWhatsappPhone(phone),
+        reason: "verified_customer_not_found",
+      });
+      return res.status(400).json({ ok: false, error: "Verify your phone before requesting WhatsApp confirmation" });
+    }
+    const recent = await collections().messageJobs.findOne({
+      phone,
+      trigger: "temporary_cart_confirmation",
+      createdAt: { $gte: new Date(Date.now() - 10 * 60_000) },
+      status: { $in: ["submitted", "enqueued", "sent", "delivered", "read"] },
+    });
+    if (recent) {
+      console.log("[WHATSAPP][TEMP_TRIGGER_SKIPPED]", {
+        recipient: maskWhatsappPhone(phone),
+        reason: "ten_minute_rate_limit",
+        previousProviderMessageId: recent.providerMessageId || null,
+      });
+      return res.json({ ok: true, submitted: false, reason: "recently_submitted" });
+    }
+    const cart = rawItems.map((line) => {
+      const product = PRODUCT_CATALOG[String(line.id || "")];
+      const quantity = Number(line.quantity);
+      if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return null;
+      return { ...product, aliases: undefined, quantity };
+    }).filter(Boolean);
+    if (!cart.length || cart.length !== rawItems.length) {
+      return res.status(400).json({ ok: false, error: "Cart contains an invalid product or quantity" });
+    }
+    const totals = calculateWhatsappTotals(cart);
+    const temporaryOrder = {
+      _id: new ObjectId(),
+      orderNumber: `VALOUR-TEST-${Date.now().toString().slice(-6)}`,
+      phone,
+      products: cart,
+      totalAmount: totals.total,
+    };
+    const parameters = getOrderTemplateParams(temporaryOrder);
+    const templateName = process.env.WHATSAPP_ORDER_TEMPLATE_NAME;
+    if (!templateName) throw new Error("Order confirmation template is not configured");
+    const languageCode = process.env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE || "en_US";
+    console.log("[WHATSAPP][TEMP_TRIGGER]", {
+      source: "checkout_cart_continue",
+      recipient: maskWhatsappPhone(phone),
+      templateName,
+      languageCode,
+      temporaryOrderNumber: temporaryOrder.orderNumber,
+      items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
+      total: totals.total,
+      parameterCount: parameters.length,
+    });
+    const providerResponse = await sendTemplateMessage(phone, templateName, languageCode, parameters);
+    const providerMessageId = getProviderMessageId(providerResponse);
+    await collections().messageJobs.insertOne({
+      jobKey: `temporary_cart_confirmation:${phone}:${Date.now()}`,
+      phone,
+      customerId: customer._id,
+      orderId: temporaryOrder._id,
+      orderReference: String(temporaryOrder._id),
+      templateName,
+      languageCode,
+      parameters,
+      trigger: "temporary_cart_confirmation",
+      kind: "transactional",
+      scheduledAt: new Date(),
+      status: "submitted",
+      attemptCount: 1,
+      createdAt: new Date(),
+      submittedAt: new Date(),
+      providerMessageId,
+      providerResponse,
+      metadata: { temporary: true, source: "checkout_cart_continue" },
+    });
+    console.log("[WHATSAPP][TEMP_SUBMITTED]", {
+      recipient: maskWhatsappPhone(phone),
+      templateName,
+      providerMessageId,
+      providerStatus: providerResponse?.status || null,
+      nextExpectedEvents: ["enqueued", "sent", "delivered", "read"],
+    });
+    res.json({ ok: true, submitted: true, providerMessageId });
+  } catch (err) {
+    console.error("Temporary cart confirmation failed", err.response?.data || err.message);
+    res.status(500).json({ ok: false, error: "Unable to submit temporary WhatsApp confirmation" });
+  }
+});
+
 app.post("/api/customer-events", async (req, res) => {
   const allowedEvents = new Set([
     "lead_created",
@@ -5323,6 +5557,9 @@ app.post("/api/customer-events", async (req, res) => {
   try {
     const eventId = String(req.body.eventId || crypto.randomUUID()).slice(0, 160);
     const customer = await getOrCreateUser(phone);
+    if (!customer?._id) {
+      throw new Error("Customer record is unavailable after creation");
+    }
     try {
       await collections().customerEvents.insertOne({
         eventId,
@@ -6133,6 +6370,8 @@ function startServer() {
     );
   }
 
+  getWhatsappTemplateMediaConfig();
+
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);
     initializeBackgroundServices();
@@ -6179,6 +6418,8 @@ module.exports = {
     getOrderTemplateParams,
     getCodTemplateParams,
     parseGupshupV2Webhook,
+    getWhatsappTemplateMediaConfig,
+    getWhatsappTemplateMedia,
     getCookingReminderTime,
     nextIstSendTime,
     sanitizeReassuranceText,
