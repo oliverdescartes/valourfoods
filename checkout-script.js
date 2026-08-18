@@ -542,10 +542,7 @@ function getSubtotal() {
 }
 
 function calculateShipping(subtotal, pincode = "") {
-  if (!subtotal) return 0;
-  if (subtotal >= 799) return 0;
-  if (/^78/.test(pincode)) return 35;
-  return 65;
+  return 0;
 }
 
 function calculateDiscount(subtotal) {
