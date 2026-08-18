@@ -4724,15 +4724,12 @@ app.post("/api/payment/webhook", async (req, res) => {
 
     if (event === "payment.captured" && payment.order_id) {
       const paidAttempt = await paymentAttempts.findOneAndUpdate(
-        {
-          razorpayOrderId: payment.order_id,
-          successNotifiedAt: { $exists: false },
-        },
+        { razorpayOrderId: payment.order_id },
         {
           $set: {
             paymentStatus: "paid",
             razorpayPaymentId: payment.id,
-            successNotifiedAt: new Date(),
+            paidAt: new Date(),
             updatedAt: new Date(),
           },
         },
@@ -4740,9 +4737,28 @@ app.post("/api/payment/webhook", async (req, res) => {
       );
       res.json({ ok: true, matched: Boolean(paidAttempt) });
       if (paidAttempt) await recordCouponRedemption(paidAttempt, payment.order_id);
-      if (paidAttempt) void schedulePaidOrderAutomation(paidAttempt).catch((err) =>
-        console.error("Paid-order automation scheduling failed", err.message),
-      );
+      if (paidAttempt?.completedOrderId) {
+        const notificationClaim = await paymentAttempts.findOneAndUpdate(
+          {
+            razorpayOrderId: payment.order_id,
+            completedOrderId: paidAttempt.completedOrderId,
+            successNotifiedAt: { $exists: false },
+          },
+          { $set: { successNotifiedAt: new Date(), updatedAt: new Date() } },
+          { returnDocument: "after" },
+        );
+        if (notificationClaim) {
+          const completedOrder = await orders.findOne({ _id: paidAttempt.completedOrderId });
+          if (completedOrder) void schedulePaidOrderAutomation(completedOrder).catch((err) =>
+            console.error("Paid-order automation scheduling failed", err.message),
+          );
+        }
+      } else if (paidAttempt) {
+        console.log("[WHATSAPP][PAYMENT_CAPTURED_AWAITING_ORDER]", {
+          razorpayOrderId: payment.order_id,
+          explanation: "Final order will claim WhatsApp confirmation after verified checkout completion",
+        });
+      }
       return;
     }
 
@@ -5904,7 +5920,7 @@ app.post("/api/payment/verify", async (req, res) => {
       whatsappConfirmation = notificationClaim
         ? await schedulePaidOrderAutomation(orderForResponse)
         : { sent: false, reason: "already_notified" };
-      console.log("WhatsApp order confirmation sent", whatsappConfirmation);
+      console.log("WhatsApp order confirmation scheduling result", whatsappConfirmation);
     } catch (whatsappErr) {
       whatsappConfirmation = { sent: false, reason: "send_failed" };
       console.error(
