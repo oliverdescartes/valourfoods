@@ -41,6 +41,23 @@ assert.deepEqual(codParams.slice(0, 3), [
   "Velvety Butter Chicken x 1",
   "Rs. 415",
 ]);
+assert.equal(_test.readOrderPaymentToken(codParams[3]), order._id);
+assert.equal(_test.readOrderTrackingToken(codParams[4]), order._id);
+const statusParams = _test.getOrderStatusTemplateParams({
+  ...order,
+  shippingStatus: "Dispatched",
+  paymentMethodLabel: "UPI",
+  paymentStatus: "paid",
+  estimatedDelivery: "21 August 2026",
+});
+assert.equal(statusParams.length, 6);
+assert.deepEqual(statusParams.slice(0, 5), [
+  "VALOUR-ABC123",
+  "Dispatched",
+  "UPI",
+  "Paid",
+  "21 August 2026",
+]);
 
 const failedEvent = _test.parseGupshupV2Webhook({
   type: "message-event",
@@ -107,5 +124,13 @@ assert.throws(
 assert.throws(
   () => _test.getWhatsappTemplateMediaConfig(JSON.stringify({ bad: { type: "image", url: "http://localhost/a.jpg" } })),
   /must be a public HTTPS URL/,
+);
+assert.doesNotThrow(() => _test.validateWhatsappAutomationConfig());
+assert.doesNotThrow(() =>
+  _test.validateWhatsappTemplatePayload("valour_order_confirmation", prepaidParams),
+);
+assert.throws(
+  () => _test.validateWhatsappTemplatePayload("valour_review_request", ["unexpected"]),
+  /requires 0 parameters; received 1/,
 );
 console.log("WhatsApp automation unit tests passed");

@@ -542,6 +542,7 @@ async function markConversationStarted({ userId, sessionId }) {
       phone: customer?.phone,
       customerId: userId,
       sessionId,
+      parameters: ["Butter Chicken"],
       scheduledAt: new Date(),
     }).catch((err) => console.error("New-lead WhatsApp scheduling failed", err.message));
   }
@@ -835,6 +836,7 @@ async function sendTemplateMessage(
 ) {
   const recipient = normalizeWhatsappRecipient(phone);
   const templateId = getGupshupTemplateId(templateName, languageCode);
+  const validatedMedia = validateWhatsappTemplatePayload(templateName, bodyParams);
 
   console.log("Gupshup WhatsApp template send attempt", {
     recipient,
@@ -850,7 +852,7 @@ async function sendTemplateMessage(
         params: bodyParams.map(String),
       },
     };
-    const media = getWhatsappTemplateMedia(templateName);
+    const media = validatedMedia || getWhatsappTemplateMedia(templateName);
     if (media) {
       templateFields.message = {
         type: media.type,
@@ -901,12 +903,78 @@ const WHATSAPP_AUTOMATION = {
   checkout_reminder: { env: "WHATSAPP_CHECKOUT_REMINDER_TEMPLATE_NAME", kind: "marketing" },
   order_confirmation: { env: "WHATSAPP_ORDER_TEMPLATE_NAME", kind: "transactional" },
   cod_confirmation: { env: "WHATSAPP_COD_TEMPLATE_NAME", kind: "transactional" },
+  order_status_update: { env: "WHATSAPP_ORDER_STATUS_TEMPLATE_NAME", kind: "transactional" },
   delivered_ready_to_cook: { env: "WHATSAPP_DELIVERED_TEMPLATE_NAME", kind: "transactional" },
   cooking_reminder: { env: "WHATSAPP_COOKING_REMINDER_TEMPLATE_NAME", kind: "transactional" },
   post_cook_feedback: { env: "WHATSAPP_POST_COOK_TEMPLATE_NAME", kind: "transactional" },
   review_request: { env: "WHATSAPP_REVIEW_TEMPLATE_NAME", kind: "marketing" },
   reorder_reminder: { env: "WHATSAPP_REORDER_TEMPLATE_NAME", kind: "marketing" },
 };
+
+const CHECKOUT_SKU_TO_WHATSAPP_PRODUCT = {
+  "velvety-butter-520": "velvety_butter",
+};
+
+function normalizeWhatsappProductId(productId = "") {
+  const value = String(productId).trim();
+  return CHECKOUT_SKU_TO_WHATSAPP_PRODUCT[value] || value;
+}
+
+const WHATSAPP_TEMPLATE_CONTRACTS = {
+  valour_new_lead: { parameterCount: 1, mediaType: "image" },
+  valour_product_demo: { parameterCount: 1, mediaType: "image" },
+  valour_high_intent: { parameterCount: 0, mediaType: "image" },
+  valour_price_delivery: { parameterCount: 3, mediaType: "image" },
+  valour_checkout_reminder: { parameterCount: 2, mediaType: "image" },
+  valour_order_confirmation: { parameterCount: 4, mediaType: "image" },
+  valour_cod_confirmation: { parameterCount: 5, mediaType: "image" },
+  valour_order_status: { parameterCount: 6, mediaType: "image" },
+  valour_delivered: { parameterCount: 1, mediaType: "image" },
+  valour_cooking_reminder: { parameterCount: 1, mediaType: null },
+  valour_post_cook_feedback: { parameterCount: 0, mediaType: null },
+  valour_review_request: { parameterCount: 0, mediaType: null },
+  valour_reorder_reminder: { parameterCount: 1, mediaType: "image" },
+};
+
+function validateWhatsappTemplatePayload(templateName, parameters = []) {
+  const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
+  if (!contract) return null;
+  if (!Array.isArray(parameters) || parameters.length !== contract.parameterCount) {
+    throw new Error(
+      `Template ${templateName} requires ${contract.parameterCount} parameters; received ${parameters?.length ?? 0}`,
+    );
+  }
+  const media = getWhatsappTemplateMedia(templateName);
+  if (contract.mediaType && media?.type !== contract.mediaType) {
+    throw new Error(
+      `Template ${templateName} requires ${contract.mediaType} media in WHATSAPP_TEMPLATE_MEDIA`,
+    );
+  }
+  if (!contract.mediaType && media) {
+    throw new Error(`Template ${templateName} is text-only but media is configured`);
+  }
+  return media;
+}
+
+function validateWhatsappAutomationConfig() {
+  for (const [event, definition] of Object.entries(WHATSAPP_AUTOMATION)) {
+    const templateName = process.env[definition.env];
+    if (!templateName) continue;
+    if (!WHATSAPP_TEMPLATE_CONTRACTS[templateName]) {
+      throw new Error(`Missing WhatsApp template contract for ${templateName} (${event})`);
+    }
+    getGupshupTemplateId(templateName, automationLanguage(event));
+    const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
+    const media = getWhatsappTemplateMedia(templateName);
+    if (contract.mediaType && media?.type !== contract.mediaType) {
+      throw new Error(`${templateName} requires ${contract.mediaType} media`);
+    }
+    if (!contract.mediaType && media) {
+      throw new Error(`${templateName} is text-only but media is configured`);
+    }
+  }
+  return true;
+}
 
 function automationLanguage(event) {
   if (event === "order_confirmation") {
@@ -974,6 +1042,7 @@ async function scheduleWhatsappJob({
   }
   const recipient = normalizeWhatsappRecipient(phone);
   if (!recipient) return { scheduled: false, reason: "missing_phone" };
+  validateWhatsappTemplatePayload(templateName, parameters);
   const subject = getOrderReference(order) || String(sessionId || customerId || recipient);
   const jobKey = `${event}:${subject}:${occurrence}`;
   const sendAt = definition.kind === "marketing" ? nextIstSendTime(scheduledAt) : scheduledAt;
@@ -1659,8 +1728,24 @@ function getCodTemplateParams(order) {
     orderNumber,
     formatProductsForWhatsapp(order.products),
     total,
-    createOrderTrackingToken(order),
     createOrderPaymentToken(order),
+    createOrderTrackingToken(order),
+  ];
+}
+
+function getOrderStatusTemplateParams(order) {
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const paymentMode = order.paymentMethodLabel || order.paymentMethod || "Prepaid";
+  const paymentStatus = String(order.paymentStatus || "paid").toLowerCase() === "paid"
+    ? "Paid"
+    : "Payment due";
+  return [
+    orderNumber,
+    order.shippingStatus || "Processing",
+    paymentMode,
+    paymentStatus,
+    order.estimatedDelivery || "We will update you shortly",
+    createOrderTrackingToken(order),
   ];
 }
 
@@ -1819,12 +1904,11 @@ async function sendReviewRequestWhatsapp(order) {
   if (!templateName) throw new Error("WHATSAPP_REVIEW_TEMPLATE_NAME is not configured");
 
   const phone = order.whatsappPhone || order.phone;
-  const reviewUrl = getReviewUrl(order);
   return sendTemplateMessage(
     phone,
     templateName,
     process.env.WHATSAPP_REVIEW_TEMPLATE_LANGUAGE || "en_US",
-    [reviewUrl],
+    [],
   );
 }
 
@@ -3578,7 +3662,7 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
         phone,
         customerId: userId,
         order,
-        parameters: [getReviewUrl(order)],
+        parameters: [],
         scheduledAt: new Date(Date.now() + 5 * 60_000),
       }).catch((err) => console.error("Review-request scheduling failed", err.message));
     }
@@ -4102,6 +4186,29 @@ async function processIncomingMessage(message) {
       phone,
       "Please send a text reply. Reply MENU for options.",
     );
+    return;
+  }
+
+  if (lower === "rate valour") {
+    const latestOrder = await collections().orders.findOne(
+      { phone: { $regex: `${String(phone).slice(-10)}$` } },
+      { sort: { createdAt: -1 } },
+    );
+    await sendMessage(
+      phone,
+      latestOrder
+        ? `Thank you. You can rate VALOUR here:\n${getReviewUrl(latestOrder)}`
+        : "We could not find your latest order. Reply NEED HELP and we will assist you.",
+    );
+    return;
+  }
+
+  if (lower === "not now") {
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(phone), trigger: "review_request" },
+      "customer_selected_not_now",
+    );
+    await sendMessage(phone, "No problem. You can review VALOUR whenever you are ready.");
     return;
   }
 
@@ -5471,27 +5578,44 @@ app.post("/api/temporary-cart-confirmation", async (req, res) => {
     const customer = await collections().users.findOne({
       phone: { $regex: `${phone.slice(-10)}$` },
     });
-    const recent = await collections().messageJobs.findOne({
-      phone,
-      trigger: "temporary_cart_confirmation",
-      createdAt: { $gte: new Date(Date.now() - 10 * 60_000) },
-      status: { $in: ["submitted", "enqueued", "sent", "delivered", "read"] },
-    });
-    if (recent) {
-      console.log("[WHATSAPP][TEMP_TRIGGER_SKIPPED]", {
-        recipient: maskWhatsappPhone(phone),
-        reason: "ten_minute_rate_limit",
-        previousProviderMessageId: recent.providerMessageId || null,
+    if (process.env.ENABLE_TEMP_CART_CONFIRMATION_DUPLICATES !== "true") {
+      const recent = await collections().messageJobs.findOne({
+        phone,
+        trigger: "temporary_cart_confirmation",
+        createdAt: { $gte: new Date(Date.now() - 10 * 60_000) },
+        status: { $in: ["submitted", "enqueued", "sent", "delivered", "read"] },
       });
-      return res.json({ ok: true, submitted: false, reason: "recently_submitted" });
+      if (recent) {
+        console.log("[WHATSAPP][TEMP_TRIGGER_SKIPPED]", {
+          recipient: maskWhatsappPhone(phone),
+          reason: "ten_minute_rate_limit",
+          previousProviderMessageId: recent.providerMessageId || null,
+        });
+        return res.json({ ok: true, submitted: false, reason: "recently_submitted" });
+      }
+    } else {
+      console.warn("[WHATSAPP][TEMP_DUPLICATES_ENABLED]", {
+        recipient: maskWhatsappPhone(phone),
+        explanation: "Temporary testing only; ten-minute duplicate suppression is disabled",
+      });
     }
     const cart = rawItems.map((line) => {
-      const product = PRODUCT_CATALOG[String(line.id || "")];
+      const requestedId = String(line.id || "");
+      const productId = normalizeWhatsappProductId(requestedId);
+      const product = PRODUCT_CATALOG[productId];
       const quantity = Number(line.quantity);
       if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return null;
       return { ...product, aliases: undefined, quantity };
     }).filter(Boolean);
     if (!cart.length || cart.length !== rawItems.length) {
+      console.warn("[WHATSAPP][TEMP_TRIGGER_REJECTED]", {
+        recipient: maskWhatsappPhone(phone),
+        reason: "invalid_cart_product_or_quantity",
+        receivedItems: rawItems.map((line) => ({
+          id: String(line?.id || ""),
+          quantity: Number(line?.quantity),
+        })),
+      });
       return res.status(400).json({ ok: false, error: "Cart contains an invalid product or quantity" });
     }
     const totals = calculateWhatsappTotals(cart);
@@ -5563,7 +5687,8 @@ app.post("/api/customer-events", async (req, res) => {
   ]);
   const event = String(req.body.event || "").trim().toLowerCase();
   const phone = normalizeWhatsappRecipient(req.body.phone);
-  const productId = String(req.body.productId || "").trim();
+  const rawProductId = String(req.body.productId || "").trim();
+  const productId = normalizeWhatsappProductId(rawProductId);
   if (!allowedEvents.has(event)) {
     return res.status(400).json({ ok: false, error: "Unsupported customer event" });
   }
@@ -6165,20 +6290,15 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       });
       whatsappUpdate = { sent: false, scheduled: deliveredJob.scheduled, jobKey: deliveredJob.jobKey };
     } else if (req.body.notifyWhatsapp !== false) {
-      try {
-        await sendMessage(
-          getWhatsappOrderRecipients(updatedOrder)[0],
-          formatShippingStatusMessage(updatedOrder),
-        );
-        whatsappUpdate = { sent: true };
-        console.log("WhatsApp shipping update sent", whatsappUpdate);
-      } catch (whatsappErr) {
-        whatsappUpdate = { sent: false, reason: "send_failed" };
-        console.error(
-          "WhatsApp shipping update failed",
-          whatsappErr.response?.data || whatsappErr.message,
-        );
-      }
+      const statusJob = await scheduleWhatsappJob({
+        event: "order_status_update",
+        phone: updatedOrder.whatsappPhone || updatedOrder.phone,
+        order: updatedOrder,
+        parameters: getOrderStatusTemplateParams(updatedOrder),
+        scheduledAt: new Date(),
+        occurrence: `${String(updatedOrder.shippingStatus || "update").toLowerCase()}:${Date.now()}`,
+      });
+      whatsappUpdate = { sent: false, scheduled: statusJob.scheduled, jobKey: statusJob.jobKey };
     }
 
     res.json({
@@ -6387,6 +6507,7 @@ function startServer() {
   }
 
   getWhatsappTemplateMediaConfig();
+  validateWhatsappAutomationConfig();
 
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);
@@ -6433,9 +6554,12 @@ module.exports = {
     getCodPaymentBlockReason,
     getOrderTemplateParams,
     getCodTemplateParams,
+    getOrderStatusTemplateParams,
     parseGupshupV2Webhook,
     getWhatsappTemplateMediaConfig,
     getWhatsappTemplateMedia,
+    validateWhatsappTemplatePayload,
+    validateWhatsappAutomationConfig,
     getCookingReminderTime,
     nextIstSendTime,
     sanitizeReassuranceText,
