@@ -994,7 +994,7 @@ function getProviderMessageId(result = {}) {
 }
 
 function getOrderReference(order = {}) {
-  return String(order._id || order.orderNumber || order.razorpayOrderId || "");
+  return String(order?._id || order?.orderNumber || order?.razorpayOrderId || "");
 }
 
 function getOrderProductName(order = {}) {
@@ -1073,7 +1073,15 @@ async function scheduleWhatsappJob({
       },
       { upsert: true },
     );
-    return { scheduled: result.upsertedCount === 1, jobKey };
+    const scheduled = result.upsertedCount === 1;
+    if (scheduled && definition.kind === "transactional" && sendAt <= new Date()) {
+      setImmediate(() => {
+        void processDueWhatsappJobs().catch((err) =>
+          console.error("Immediate WhatsApp job processing failed", err.message),
+        );
+      });
+    }
+    return { scheduled, jobKey };
   } catch (err) {
     if (err?.code === 11000) return { scheduled: false, reason: "duplicate", jobKey };
     throw err;
@@ -5695,12 +5703,15 @@ app.post("/api/customer-events", async (req, res) => {
   if (!phone) {
     return res.status(400).json({ ok: false, error: "Phone is required" });
   }
+  let recordingStage = "initializing";
   try {
     const eventId = String(req.body.eventId || crypto.randomUUID()).slice(0, 160);
+    recordingStage = "loading_customer";
     const customer = await getOrCreateUser(phone);
     if (!customer?._id) {
       throw new Error("Customer record is unavailable after creation");
     }
+    recordingStage = "inserting_event";
     try {
       await collections().customerEvents.insertOne({
         eventId,
@@ -5720,6 +5731,7 @@ app.post("/api/customer-events", async (req, res) => {
     const product = PRODUCT_CATALOG[productId];
     const occurrence = `${productId || "general"}:${new Date().toISOString().slice(0, 10)}`;
     if (["product_viewed", "product_explored"].includes(event) && product) {
+      recordingStage = "scheduling_product_demo";
       await scheduleWhatsappJob({
         event: "product_demo",
         phone,
@@ -5731,6 +5743,7 @@ app.post("/api/customer-events", async (req, res) => {
       });
     }
     if (event === "recipe_video_clicked" && product) {
+      recordingStage = "scheduling_high_intent";
       await scheduleWhatsappJob({
         event: "high_intent_followup",
         phone,
@@ -5741,6 +5754,7 @@ app.post("/api/customer-events", async (req, res) => {
       });
     }
     if (event === "checkout_details_submitted") {
+      recordingStage = "scheduling_checkout_reminder";
       const productName = String(req.body.productName || "your VALOUR order").slice(0, 160);
       const orderValue = String(req.body.orderValue || "").slice(0, 40);
       if (orderValue) {
@@ -5757,7 +5771,13 @@ app.post("/api/customer-events", async (req, res) => {
     }
     res.json({ ok: true, eventId });
   } catch (err) {
-    console.error("Customer event recording failed", err.message);
+    console.error("Customer event recording failed", {
+      stage: recordingStage,
+      event,
+      recipient: maskWhatsappPhone(phone),
+      error: err.message,
+      stack: err.stack,
+    });
     res.status(500).json({ ok: false, error: "Unable to record customer event" });
   }
 });
@@ -6552,6 +6572,7 @@ module.exports = {
     readOrderPaymentToken,
     readReviewToken,
     getCodPaymentBlockReason,
+    getOrderReference,
     getOrderTemplateParams,
     getCodTemplateParams,
     getOrderStatusTemplateParams,

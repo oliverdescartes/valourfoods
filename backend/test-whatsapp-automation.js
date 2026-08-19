@@ -27,6 +27,8 @@ const order = {
   totalAmount: 415,
   products: [{ name: "Velvety Butter Chicken", quantity: 1 }],
 };
+assert.equal(_test.getOrderReference(null), "");
+assert.equal(_test.getOrderReference(order), order._id);
 const prepaidParams = _test.getOrderTemplateParams(order);
 assert.equal(prepaidParams.length, 4);
 assert.deepEqual(prepaidParams.slice(0, 3), [
