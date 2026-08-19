@@ -39,7 +39,6 @@
         <div><dt>Payment</dt><dd id="payment"></dd></div>
         <div><dt>Expected delivery</dt><dd id="eta"></dd></div>
         <div><dt>Courier</dt><dd id="courier"></dd></div>
-        <div><dt>Tracking number</dt><dd id="tracking-number"></dd></div>
       </dl>
       <div class="items"><span class="label">Items</span><ul id="items"></ul></div>
       <a class="external" id="courier-link" hidden target="_blank" rel="noopener noreferrer">Track with courier →</a>
@@ -63,9 +62,8 @@
       setText("#order-number", order.orderNumber);
       setText("#order-total", new Intl.NumberFormat("en-IN", { style: "currency", currency: order.currency || "INR" }).format(order.totalAmount || 0));
       setText("#payment", [order.paymentStatus, order.paymentMethod].filter(Boolean).join(" · "));
-      setText("#eta", order.estimatedDelivery);
+      setText("#eta", order.expectedDelivery);
       setText("#courier", order.courierName);
-      setText("#tracking-number", order.trackingNumber);
       const items = document.querySelector("#items");
       (order.items || []).forEach((item) => {
         const li = document.createElement("li");

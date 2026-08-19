@@ -164,6 +164,9 @@ async function connectDB() {
       { unique: true, sparse: true },
     ),
     orders.createIndex({ phone: 1, createdAt: -1 }),
+    orders.createIndex({ createdAt: -1 }),
+    orders.createIndex({ shippingStatus: 1, createdAt: -1 }),
+    orders.createIndex({ paymentStatus: 1, createdAt: -1 }),
     orders.createIndex({ checkoutIdempotencyKey: 1 }, { unique: true, sparse: true }),
     paymentAttempts.createIndex({ razorpayOrderId: 1 }, { unique: true }),
     products.createIndex({ sku: 1 }, { unique: true }),
@@ -910,6 +913,40 @@ function whatsappAutomationDelay(productionMs, testMinutes) {
   return WHATSAPP_SCHEDULE_TEST_MODE ? testMinutes * 60_000 : productionMs;
 }
 
+async function sendQuickReplyMessage(phone, message) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  console.log("Gupshup WhatsApp quick-reply send attempt", {
+    recipient,
+    buttonCount: message.options?.length || 0,
+    msgid: message.msgid,
+  });
+
+  try {
+    const response = await axios.post(
+      GUPSHUP_MESSAGE_URL,
+      buildGupshupForm(recipient, { message }),
+      {
+        headers: {
+          apikey: process.env.GUPSHUP_API_KEY,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout: 10000,
+      },
+    );
+    console.log("Gupshup WhatsApp quick-reply send accepted", {
+      recipient,
+      result: response.data,
+    });
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Gupshup WhatsApp quick-reply send failed",
+      err.response?.data || err.message,
+    );
+    throw err;
+  }
+}
+
 const WHATSAPP_AUTOMATION = {
   new_lead: { env: "WHATSAPP_NEW_LEAD_TEMPLATE_NAME", kind: "marketing" },
   product_demo: { env: "WHATSAPP_PRODUCT_DEMO_TEMPLATE_NAME", kind: "marketing" },
@@ -1160,6 +1197,13 @@ async function runWhatsappQualityGate(job) {
     });
     if (newerOrder) return { action: "cancel", reason: "customer_reordered" };
   }
+  if (job.trigger === "post_cook_feedback" && job.sessionId) {
+    const session = await collections().sessions.findOne({ _id: job.sessionId });
+    if (!session) return { action: "cancel", reason: "cooking_session_not_found" };
+    if (!["guided_cooking", "post_cook_feedback"].includes(session.current_state)) {
+      return { action: "cancel", reason: "cooking_journey_no_longer_active" };
+    }
+  }
   const openSupport = await collections().supportCases.findOne({
     phone: { $regex: `${String(job.phone).slice(-10)}$` },
     status: { $in: ["open", "pending", "in_progress"] },
@@ -1219,6 +1263,14 @@ async function processDueWhatsappJobs() {
         continue;
       }
       const result = await sendTemplateMessage(job.phone, job.templateName, job.languageCode, job.parameters);
+      if (job.trigger === "post_cook_feedback" && job.sessionId) {
+        await updateSession(job.sessionId, {
+          current_state: "post_cook_feedback",
+          last_flow_state: "post_cook_feedback",
+          post_cook_feedback_prompted_at: new Date(),
+          last_left_at: new Date(),
+        });
+      }
       const providerMessageId = getProviderMessageId(result);
       await collections().messageJobs.updateOne(
         { _id: job._id },
@@ -1509,24 +1561,6 @@ async function resetToIdle(sessionId) {
   });
 }
 
-function getCookingProgressFields({
-  state = "guided_cooking",
-  flow,
-  stepIndex,
-}) {
-  const step = flow?.steps?.[stepIndex];
-  const stepNumber = Number.isInteger(stepIndex) ? stepIndex + 1 : null;
-
-  return compactSignalFields({
-    last_flow_state: state,
-    last_cooking_step_index: stepIndex,
-    last_cooking_step_number: stepNumber,
-    last_cooking_total_steps: flow?.steps?.length,
-    last_cooking_step_text: step?.text,
-    last_left_at: new Date(),
-  });
-}
-
 async function sendMainMenu(phone) {
   await sendListMessage(phone, {
     type: "list",
@@ -1541,8 +1575,8 @@ async function sendMainMenu(phone) {
         options: [
           {
             type: "text",
-            title: "Start guided cooking",
-            description: "Cook step by step with VALOUR",
+            title: "Cook Butter Chicken",
+            description: "Watch the VALOUR cooking tutorial",
             postbackText: "1",
           },
           {
@@ -1806,9 +1840,36 @@ function getOrderStatusTemplateParams(order) {
     order.shippingStatus || "Processing",
     paymentMode,
     paymentStatus,
-    order.estimatedDelivery || "We will update you shortly",
+    getExpectedDeliveryText(order),
     createOrderTrackingToken(order),
   ];
+}
+
+function getExpectedDeliveryText(order = {}, now = new Date()) {
+  const configured = String(
+    order.expectedDeliveryDate || order.estimatedDelivery || "",
+  ).trim();
+  const formatter = new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+
+  if (configured) {
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(configured);
+    if (dateOnly) {
+      const [, year, month, day] = dateOnly;
+      return formatter.format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 6)));
+    }
+    return configured;
+  }
+
+  const createdAt = new Date(order.createdAt || 0);
+  const base = Number.isNaN(createdAt.getTime()) || createdAt < now ? now : createdAt;
+  const firstDay = new Date(base.getTime() + 24 * 60 * 60_000);
+  const secondDay = new Date(base.getTime() + 2 * 24 * 60 * 60_000);
+  return `${formatter.format(firstDay)} – ${formatter.format(secondDay)}`;
 }
 
 const ORDER_TRACKING_TOKEN_TTL_SECONDS = 180 * 24 * 60 * 60;
@@ -2196,7 +2257,7 @@ function formatShippingStatusMessage(order) {
     order.trackingNumber ||
     order.awbCode ||
     "Tracking number will be shared soon";
-  const eta = order.estimatedDelivery || "ETA will be shared after dispatch";
+  const eta = getExpectedDeliveryText(order);
   const trackingLine = order.trackingUrl
     ? `\nTrack here: ${order.trackingUrl}`
     : "";
@@ -2572,7 +2633,7 @@ async function getResumePrompt(session) {
     return "To continue, reply 1 to start cooking, 2 to buy now, or 3 to go back.";
   }
   if (session.current_state === "product_selection") {
-    return "To continue, reply 1 for Velvety Butter or 2 for Spicy Mustard.";
+    return "Your Velvety Butter tutorial is ready. Tap Cook Butter Chicken from the menu to receive it.";
   }
 
   if (session.current_state === "awaiting_quantity") {
@@ -2590,21 +2651,7 @@ async function getResumePrompt(session) {
 
   if (session.current_state === "guided_cooking") {
     const product = PRODUCTS[session.selected_product];
-    const { flowDefinitions } = collections();
-    const flow =
-      session.active_flow ||
-      (session.active_flow_id
-        ? await flowDefinitions.findOne({ _id: session.active_flow_id })
-        : null);
-    const step = flow?.steps?.[session.current_step_index];
-
-    if (step) {
-      return `You are cooking ${product?.recipeName || "your recipe"}. You left at Step ${session.current_step_index + 1}/${flow.steps.length}. Reply REPEAT to see it again, NEXT when ready, BACK for the previous step, or MENU.`;
-    }
-
-    if (session.last_cooking_step_number && session.last_cooking_total_steps) {
-      return `You left at Step ${session.last_cooking_step_number}/${session.last_cooking_total_steps}. Reply REPEAT to see it again, NEXT when ready, BACK for the previous step, or MENU.`;
-    }
+    return `You are cooking ${product?.recipeName || "your recipe"}. Reply VIDEO to receive the tutorial again, or DONE after you finish cooking.`;
   }
 
   if (session.current_state === "post_cook_feedback") {
@@ -2838,22 +2885,6 @@ async function sendCookingScenarioQuestion(phone) {
   );
 }
 
-async function sendProductSelection(phone) {
-  await sendMessage(
-    phone,
-    `What would you like to cook?
-
-1. Velvety Butter
-   Butter Chicken Curry
-
-2. Spicy Mustard
-   Spicy Mustard Fish Curry
-
-Reply with 1 or 2.
-Reply MENU to return.`,
-  );
-}
-
 async function sendProductCatalog(phone) {
   await sendMessage(
     phone,
@@ -3055,7 +3086,7 @@ async function handleProductSelection({ session, text, phone, userId }) {
   }
 
   const updates = {
-    current_state: "awaiting_quantity",
+    current_state: "guided_cooking",
     selected_product: product.id,
     selected_recipe: product.recipeId,
     primary_ingredient: product.primaryIngredient,
@@ -3088,8 +3119,78 @@ async function handleProductSelection({ session, text, phone, userId }) {
     },
   });
 
-  await sendCookingIntro(phone, product);
-  await sendQuantityQuestion(phone, product);
+  await beginTutorialCooking({ session, phone, userId, product });
+}
+
+async function beginTutorialCooking({ session, phone, userId, product }) {
+  const videoResult = await sendCookingIntro(phone, product);
+
+  await updateSession(session._id, {
+    current_state: "guided_cooking",
+    active_flow_id: null,
+    active_flow: null,
+    active_flow_version: null,
+    current_step_index: null,
+    segment: `${product.id}_tutorial_started`,
+    last_flow_state: "guided_cooking",
+    last_cooking_step_index: null,
+    last_cooking_step_number: null,
+    last_cooking_total_steps: null,
+    last_cooking_step_text: null,
+    tutorial_video_sent: videoResult.sent,
+    tutorial_video_sent_at: videoResult.sent ? new Date() : null,
+    last_left_at: new Date(),
+  });
+  await updateUserSignals(userId, {
+    selectedProduct: product.id,
+    selectedRecipe: product.recipeId,
+    cookingType: product.cookingType,
+    activationPreference: "guided_cooking",
+    segment: `${product.id}_tutorial_started`,
+  });
+  await cancelWhatsappJobs(
+    { phone: normalizeWhatsappRecipient(phone), trigger: "reorder_reminder" },
+    "customer_started_cooking",
+  );
+
+  await sendCookingDonePrompt(phone, product, videoResult.sent);
+  void scheduleWhatsappJob({
+    event: "post_cook_feedback",
+    phone,
+    customerId: userId,
+    sessionId: session._id,
+    occurrence: "tutorial-no-response",
+    parameters: [],
+    scheduledAt: new Date(Date.now() + whatsappAutomationDelay(30 * 60_000, 2)),
+    metadata: { reason: "tutorial_no_response_fallback", productId: product.id },
+  })
+    .then((result) => console.log("[WHATSAPP][POST_COOK_FALLBACK_SCHEDULED]", {
+      recipient: maskWhatsappPhone(phone),
+      ...result,
+    }))
+    .catch((err) => console.error("Post-cook fallback scheduling failed", err.message));
+}
+
+async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
+  return sendQuickReplyMessage(phone, {
+    type: "quick_reply",
+    msgid: "valour_cooking_complete",
+    content: {
+      type: "text",
+      header: "Cook Butter Chicken with VALOUR",
+      text: videoWasSent
+        ? "Follow the tutorial above and enjoy an easier way to cook rich, delicious Butter Chicken. Tap Done when your dish is ready."
+        : "The tutorial video is temporarily unavailable. Tap Done only after you have finished cooking, or send VIDEO to try the tutorial again.",
+      caption: "VALOUR makes the curry. You make it yours.",
+    },
+    options: [
+      {
+        type: "text",
+        title: "Done",
+        postbackText: "DONE",
+      },
+    ],
+  });
 }
 
 function getProductExplorationChoice(text = "") {
@@ -3322,15 +3423,16 @@ async function handleCookingScenario({ session, text, phone, userId }) {
 }
 
 async function startCookingFlow({ session, phone, userId }) {
+  const product = PRODUCTS.velvety_butter;
   await updateSession(session._id, {
-    current_state: "product_selection",
-    selected_product: null,
-    selected_recipe: null,
+    current_state: "guided_cooking",
+    selected_product: product.id,
+    selected_recipe: product.recipeId,
     selected_quantity: null,
-    primary_ingredient: null,
+    primary_ingredient: product.primaryIngredient,
     fishQuantity: null,
-    cookingType: null,
-    cooking_type: null,
+    cookingType: product.cookingType,
+    cooking_type: product.cookingType,
     active_flow_id: null,
     active_flow: null,
     active_flow_version: null,
@@ -3339,6 +3441,9 @@ async function startCookingFlow({ session, phone, userId }) {
     segment: "cooking_intent",
   });
   await updateUserSignals(userId, {
+    selectedProduct: product.id,
+    selectedRecipe: product.recipeId,
+    cookingType: product.cookingType,
     activationPreference: "guided_cooking",
     segment: "cooking_intent",
   });
@@ -3347,7 +3452,7 @@ async function startCookingFlow({ session, phone, userId }) {
     sessionId: session._id,
     leadScoreDelta: getLeadScoreDelta("", "viewed_cooking_demo"),
   });
-  await sendProductSelection(phone);
+  await beginTutorialCooking({ session, phone, userId, product });
 }
 
 function parseQuantity(text) {
@@ -3362,52 +3467,6 @@ function parseQuantity(text) {
   return null;
 }
 
-function getVelvetyButterFallbackFlow(quantity) {
-  if (!PRODUCTS.velvety_butter.quantities[quantity]) return null;
-  return {
-    _id: `fallback_velvety_butter_${quantity}`,
-    product_id: "velvety_butter",
-    recipe_id: "butter_chicken_curry",
-    quantity,
-    version: 1,
-    steps: [
-      { text: `Keep ${quantity} chicken cleaned and ready.` },
-      { text: "Heat the pan and begin cooking the chicken." },
-      { text: "Add Velvety Butter according to the guide." },
-      { text: "Simmer until the chicken is completely cooked." },
-      { text: "Check the gravy consistency and serve hot." },
-    ],
-  };
-}
-
-function getSpicyMustardFallbackFlow(quantity) {
-  if (!PRODUCTS.spicy_mustard.quantities[quantity]) return null;
-  return {
-    _id: `fallback_spicy_mustard_${quantity}`,
-    product_id: "spicy_mustard",
-    recipe_id: "spicy_mustard_fish_curry",
-    quantity,
-    version: 1,
-    steps: [
-      { text: `Keep ${quantity} cleaned fish ready.` },
-      { text: "Lightly cook the fish according to the guide." },
-      { text: "Add Spicy Mustard and the required water." },
-      { text: "Simmer gently until the fish is cooked." },
-      { text: "Check the gravy consistency and serve hot." },
-    ],
-  };
-}
-
-function getFallbackCookingFlow({ productId, quantity }) {
-  if (productId === "velvety_butter") {
-    return getVelvetyButterFallbackFlow(quantity);
-  }
-  if (productId === "spicy_mustard") {
-    return getSpicyMustardFallbackFlow(quantity);
-  }
-  return null;
-}
-
 async function handleQuantity({ session, text, phone, userId }) {
   const quantity = parseQuantity(text);
 
@@ -3417,35 +3476,7 @@ async function handleQuantity({ session, text, phone, userId }) {
   }
 
   if (!session.selected_product || !session.selected_recipe) {
-    await updateSession(session._id, { current_state: "product_selection" });
-    await sendProductSelection(phone);
-    return;
-  }
-
-  const { flowDefinitions } = collections();
-  const savedFlow = await flowDefinitions.findOne(
-    {
-      product_id: session.selected_product,
-      recipe_id: session.selected_recipe,
-      quantity,
-      status: "published",
-    },
-    { sort: { version: -1 } },
-  );
-  const flow =
-    savedFlow && Array.isArray(savedFlow.steps) && savedFlow.steps.length > 0
-      ? savedFlow
-      : getFallbackCookingFlow({
-          productId: session.selected_product,
-          quantity,
-        });
-
-  if (!flow || !Array.isArray(flow.steps) || flow.steps.length === 0) {
-    await updateSession(session._id, { current_state: "product_selection" });
-    await sendMessage(
-      phone,
-      "This cooking guide is unavailable right now. Please choose another product or reply MENU.",
-    );
+    await startCookingFlow({ session, phone, userId });
     return;
   }
 
@@ -3454,12 +3485,11 @@ async function handleQuantity({ session, text, phone, userId }) {
     selected_quantity: quantity,
     fishQuantity:
       session.selected_product === "spicy_mustard" ? quantity : null,
-    active_flow_id: savedFlow?._id || null,
-    active_flow: savedFlow ? null : flow,
-    active_flow_version: flow.version || 1,
-    current_step_index: 0,
+    active_flow_id: null,
+    active_flow: null,
+    active_flow_version: null,
+    current_step_index: null,
     segment: `${session.selected_product}_activated_cook`,
-    ...getCookingProgressFields({ flow, stepIndex: 0 }),
   });
   await updateUserSignals(userId, {
     selectedProduct: session.selected_product,
@@ -3470,24 +3500,15 @@ async function handleQuantity({ session, text, phone, userId }) {
     segment: `${session.selected_product}_activated_cook`,
   });
 
-  await sendCookingStep(phone, flow, 0);
-}
-
-async function sendCookingStep(phone, flow, stepIndex) {
-  const step = flow.steps[stepIndex];
-
-  await sendMessage(
+  await beginTutorialCooking({
+    session,
     phone,
-    `Step ${stepIndex + 1}/${flow.steps.length}
-
-${step.text}
-
-Reply NEXT when ready.
-You can also reply REPEAT, BACK, or MENU.`,
-  );
+    userId,
+    product: PRODUCTS[session.selected_product],
+  });
 }
 
-async function completeCooking({ session, phone, userId, flow }) {
+async function completeCooking({ session, phone, userId }) {
   const { cookingOutcomes } = collections();
   const completedSegment = `${session.selected_product || "unknown_product"}_completed_cooking`;
 
@@ -3526,12 +3547,18 @@ async function completeCooking({ session, phone, userId, flow }) {
   await updateSession(session._id, {
     current_state: "post_cook_feedback",
     segment: completedSegment,
-    ...getCookingProgressFields({
-      state: "post_cook_feedback",
-      flow,
-      stepIndex: session.current_step_index,
-    }),
+    last_flow_state: "post_cook_feedback",
+    last_left_at: new Date(),
   });
+
+  await cancelWhatsappJobs(
+    {
+      sessionId: session._id,
+      trigger: "post_cook_feedback",
+      "metadata.reason": "tutorial_no_response_fallback",
+    },
+    "customer_confirmed_cooking_complete",
+  );
 
   await sendMessage(phone, "Cooking complete. We’ll check in shortly to hear how it turned out.");
   void scheduleWhatsappJob({
@@ -3539,9 +3566,36 @@ async function completeCooking({ session, phone, userId, flow }) {
     phone,
     customerId: userId,
     sessionId: session._id,
+    occurrence: "customer-completed",
     parameters: [],
     scheduledAt: new Date(Date.now() + whatsappAutomationDelay(30 * 60_000, 2)),
-  }).catch((err) => console.error("Post-cook feedback scheduling failed", err.message));
+  })
+    .then((result) => console.log("[WHATSAPP][POST_COOK_FEEDBACK_SCHEDULED]", {
+      recipient: maskWhatsappPhone(phone),
+      ...result,
+    }))
+    .catch((err) => console.error("Post-cook feedback scheduling failed", err.message));
+
+  const order = await collections().orders.findOne(
+    { phone: { $regex: `${String(phone).slice(-10)}$` } },
+    { sort: { createdAt: -1 } },
+  );
+  if (order) {
+    void scheduleWhatsappJob({
+      event: "reorder_reminder",
+      phone,
+      customerId: userId,
+      order,
+      occurrence: `cooking-${session._id}`,
+      parameters: [getOrderProductName(order)],
+      scheduledAt: new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
+    })
+      .then((result) => console.log("[WHATSAPP][POST_COOK_REORDER_SCHEDULED]", {
+        recipient: maskWhatsappPhone(phone),
+        ...result,
+      }))
+      .catch((err) => console.error("Post-cook reorder scheduling failed", err.message));
+  }
 }
 
 function getFeedbackPrompt(productId) {
@@ -3568,101 +3622,21 @@ How did your Spicy Mustard Fish Curry turn out?
 
 async function handleGuidedCooking({ session, text, phone, userId }) {
   const lower = normalizeText(text);
-  const { flowDefinitions, hesitationRecovery } = collections();
-  const flow =
-    session.active_flow ||
-    (session.active_flow_id
-      ? await flowDefinitions.findOne({ _id: session.active_flow_id })
-      : null);
+  const product = PRODUCTS[session.selected_product];
 
-  if (!flow || !Array.isArray(flow.steps) || flow.steps.length === 0) {
-    await sendMessage(
-      phone,
-      "Cooking flow unavailable. Reply RESTART to begin again.",
-    );
+  if (matchesAny(lower, ["video", "repeat", "again", "tutorial"])) {
+    const result = await sendCookingIntro(phone, product);
+    await sendCookingDonePrompt(phone, product, result.sent);
     return;
   }
 
-  if (matchesAny(lower, ["repeat", "again", "current"])) {
-    await updateSession(session._id, {
-      ...getCookingProgressFields({
-        flow,
-        stepIndex: session.current_step_index,
-      }),
-    });
-    await sendCookingStep(phone, flow, session.current_step_index);
+  if (matchesAny(lower, ["done", "finished", "complete", "completed", "cooked", "ready"])) {
+    await completeCooking({ session, phone, userId });
     return;
   }
-
-  if (matchesAny(lower, ["back", "previous", "prev"])) {
-    const previousIndex = Math.max(0, session.current_step_index - 1);
-    await updateSession(session._id, {
-      current_step_index: previousIndex,
-      ...getCookingProgressFields({ flow, stepIndex: previousIndex }),
-    });
-    await sendCookingStep(phone, flow, previousIndex);
-    return;
-  }
-
-  if (matchesAny(lower, ["next", "n", "done", "ready"])) {
-    const nextIndex = session.current_step_index + 1;
-
-    if (nextIndex >= flow.steps.length) {
-      await completeCooking({ session, phone, userId, flow });
-      return;
-    }
-
-    await updateSession(session._id, {
-      current_step_index: nextIndex,
-      ...getCookingProgressFields({ flow, stepIndex: nextIndex }),
-    });
-    await sendCookingStep(phone, flow, nextIndex);
-    return;
-  }
-
-  const recoveryOptions = await hesitationRecovery
-    .find({}, { projection: { keywords: 1, response: 1, follow_up: 1 } })
-    .toArray();
-  const recovery = recoveryOptions.find((item) =>
-    item.keywords?.some((keyword) => lower.includes(normalizeText(keyword))),
-  );
-
-  if (recovery) {
-    const hesitationType =
-      recovery.hesitationType ||
-      recovery.type ||
-      recovery.key ||
-      recovery._id?.toString() ||
-      "guided_cooking_hesitation";
-
-    await updateSession(session._id, {
-      hesitationType,
-      segment: "hesitating_cook",
-    });
-    await updateUserSignals(userId, {
-      hesitationType,
-      segment: "hesitating_cook",
-    });
-    await sendMessage(phone, `${recovery.response}\n\n${recovery.follow_up}`);
-    return;
-  }
-
-  const reassurance = await reassuranceAI(text);
-  await updateSession(session._id, {
-    ...getCookingProgressFields({
-      flow,
-      stepIndex: session.current_step_index,
-    }),
-  });
-  const resumePrompt = await getResumePrompt({
-    ...session,
-    active_flow: flow,
-  });
   await sendMessage(
     phone,
-    `${reassurance}
-
-${resumePrompt}`,
+    `Use the tutorial video to cook ${product?.recipeName || "your dish"}. Reply VIDEO to receive it again, or DONE after you finish cooking.`,
   );
 }
 
@@ -4349,12 +4323,9 @@ async function processIncomingMessage(message) {
   }
 
   if (activeSession.current_state === "product_selection") {
-    await handleProductSelection({
-      session: activeSession,
-      text,
-      phone,
-      userId: user._id,
-    });
+    // Migrate sessions left in the retired product-selection state directly
+    // into the Velvety Butter tutorial journey.
+    await startCookingFlow({ session: activeSession, phone, userId: user._id });
     return;
   }
 
@@ -5464,6 +5435,136 @@ function verifyRazorpaySignature({
 app.use("/auth", require("./routes/auth"));
 app.use("/user", require("./routes/user"));
 
+function isAuthorizedAdminRequest(req) {
+  return Boolean(
+    process.env.ORDER_ADMIN_TOKEN &&
+    req.get("x-admin-token") === process.env.ORDER_ADMIN_TOKEN
+  );
+}
+
+function escapeMongoRegex(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function serializeAdminOrder(order = {}) {
+  return {
+    id: String(order._id || ""),
+    orderNumber: order.orderNumber || (order._id ? formatOrderNumber(order._id) : ""),
+    createdAt: order.createdAt || null,
+    updatedAt: order.updatedAt || null,
+    customerName: order.customerName || "",
+    phone: order.phone || order.whatsappPhone || "",
+    email: order.email || "",
+    address: order.address || "",
+    city: order.city || "",
+    state: order.state || "",
+    pincode: order.pincode || "",
+    products: getPublicOrderItems(order),
+    subtotal: Number(order.subtotal) || 0,
+    discountAmount: Number(order.discountAmount) || 0,
+    shippingCharge: Number(order.shippingCharge) || 0,
+    totalAmount: Number(order.totalAmount) || 0,
+    currency: order.currency || "INR",
+    couponCode: order.couponCode || null,
+    paymentMethod: order.paymentMethodLabel || order.paymentMethod || "",
+    paymentStatus: order.paymentStatus || "",
+    shippingStatus: order.shippingStatus || "Order confirmed",
+    courierName: order.courierName || "",
+    trackingNumber: order.trackingNumber || order.awbCode || "",
+    trackingUrl: order.trackingUrl || "",
+    estimatedDelivery: order.estimatedDelivery || "",
+    expectedDeliveryDate: order.expectedDeliveryDate || order.estimatedDelivery || "",
+    deliveredAt: order.deliveredAt || null,
+  };
+}
+
+app.get("/api/admin/dashboard", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(10, Number.parseInt(req.query.limit, 10) || 50));
+    const search = String(req.query.search || "").trim().slice(0, 100);
+    const shippingStatus = String(req.query.shippingStatus || "").trim();
+    const paymentStatus = String(req.query.paymentStatus || "").trim();
+    const orderFilter = {};
+    if (shippingStatus) orderFilter.shippingStatus = shippingStatus;
+    if (paymentStatus) orderFilter.paymentStatus = paymentStatus;
+    if (search) {
+      const pattern = new RegExp(escapeMongoRegex(search), "i");
+      orderFilter.$or = [
+        { orderNumber: pattern },
+        { customerName: pattern },
+        { phone: pattern },
+        { email: pattern },
+        { trackingNumber: pattern },
+        { awbCode: pattern },
+      ];
+    }
+
+    const now = new Date();
+    const istNow = new Date(now.getTime() + 330 * 60_000);
+    istNow.setUTCHours(0, 0, 0, 0);
+    const todayStart = new Date(istNow.getTime() - 330 * 60_000);
+    const { orders, couponAssignments, pricingRules } = collections();
+    const [
+      orderRows, filteredCount, totalOrders, todayOrders, pendingOrders,
+      deliveredOrders, paidRevenueRows, rules, assignments,
+    ] = await Promise.all([
+      orders.find(orderFilter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
+      orders.countDocuments(orderFilter),
+      orders.countDocuments({}),
+      orders.countDocuments({ createdAt: { $gte: todayStart } }),
+      orders.countDocuments({ shippingStatus: { $not: /^delivered$|cancelled/i } }),
+      orders.countDocuments({ shippingStatus: /^delivered$/i }),
+      orders.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+      ]).toArray(),
+      pricingRules.findOne({ _id: "checkout" }),
+      couponAssignments.find({ active: { $ne: false } }).sort({ assignedAt: -1 }).limit(100).toArray(),
+    ]);
+
+    const couponDefinitions = Object.entries(rules?.coupons || {}).map(([code, definition]) => ({
+      code,
+      active: definition.active === true,
+      type: definition.type,
+      value: definition.type === "fixed" ? Number(definition.valuePaise || 0) / 100 : Number(definition.value || 0),
+      minSubtotal: Number(definition.minSubtotalPaise || 0) / 100,
+    }));
+
+    return res.json({
+      ok: true,
+      generatedAt: now,
+      metrics: {
+        totalOrders,
+        todayOrders,
+        pendingOrders,
+        deliveredOrders,
+        paidRevenue: Number(paidRevenueRows[0]?.total) || 0,
+      },
+      orders: orderRows.map(serializeAdminOrder),
+      pagination: { page, limit, total: filteredCount, pages: Math.max(1, Math.ceil(filteredCount / limit)) },
+      couponDefinitions,
+      assignments: assignments.map((assignment) => ({
+        id: String(assignment._id),
+        phone: assignment.phone,
+        code: assignment.code,
+        status: assignment.status || "available",
+        usageLimit: assignment.usageLimit || 1,
+        usedCount: assignment.usedCount || 0,
+        startsAt: assignment.startsAt || null,
+        endsAt: assignment.endsAt || null,
+        assignedAt: assignment.assignedAt || null,
+      })),
+    });
+  } catch (error) {
+    console.error("Admin dashboard load failed", { error: error.message, stack: error.stack });
+    return res.status(500).json({ ok: false, error: "Unable to load admin dashboard" });
+  }
+});
+
 app.get("/api/coupons/universal", async (req, res) => {
   try {
     const now = new Date();
@@ -6305,19 +6406,38 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }
 
+    const expectedDeliveryDate =
+      req.body.expectedDeliveryDate ?? req.body.estimatedDelivery;
+    const expectedDateText = String(expectedDeliveryDate || "");
+    const parsedExpectedDate = new Date(`${expectedDateText}T00:00:00.000Z`);
+    if (
+      expectedDeliveryDate &&
+      (!/^\d{4}-\d{2}-\d{2}$/.test(expectedDateText) ||
+        Number.isNaN(parsedExpectedDate.getTime()) ||
+        parsedExpectedDate.toISOString().slice(0, 10) !== expectedDateText)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: "Expected delivery date must be a valid date",
+      });
+    }
+
     const allowedUpdates = {
       shippingStatus: req.body.shippingStatus,
       courierName: req.body.courierName,
       trackingNumber: req.body.trackingNumber,
       awbCode: req.body.awbCode,
       trackingUrl: req.body.trackingUrl,
-      estimatedDelivery: req.body.estimatedDelivery,
+      expectedDeliveryDate,
     };
     const updates = Object.fromEntries(
       Object.entries(allowedUpdates).filter(
         ([, value]) => value !== undefined && value !== null,
       ),
     );
+    if (updates.expectedDeliveryDate !== undefined) {
+      updates.estimatedDelivery = updates.expectedDeliveryDate;
+    }
 
     if (!Object.keys(updates).length) {
       return res
@@ -6424,9 +6544,8 @@ app.get("/api/order-tracking/:token", async (req, res) => {
         currency: "INR",
         shippingStatus: order.shippingStatus || "Order confirmed",
         courierName: order.courierName || null,
-        trackingNumber: order.trackingNumber || order.awbCode || null,
         trackingUrl: order.trackingUrl || null,
-        estimatedDelivery: order.estimatedDelivery || null,
+        expectedDelivery: getExpectedDeliveryText(order),
         items: getPublicOrderItems(order),
         updatedAt: order.updatedAt || order.paidAt || order.createdAt || null,
       },
@@ -6557,6 +6676,9 @@ app.get("/", (req, res) => {
 app.get("/checkout", (req, res) => {
   res.sendFile(path.join(rootPath, "checkout.html"));
 });
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(rootPath, "admin-dashboard.html"));
+});
 app.get("/privacy-policy", (req, res) => {
   res.sendFile(path.join(rootPath, "privacy-policy.html"));
 });
@@ -6612,7 +6734,6 @@ module.exports = {
     buildCustomerSegment,
     getCookingScenarioChoice,
     getDesiredOutcomeFromPainPoint,
-    getFallbackCookingFlow,
     getFirstAction,
     getLeadScoreDelta,
     getProductExplorationChoice,

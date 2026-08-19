@@ -18,7 +18,9 @@ assert.equal(_test.nextIstSendTime(daytime).toISOString(), daytime.toISOString()
 
 assert.equal(
   _test.getCookingReminderTime("tomorrow", daytime).toISOString(),
-  "2026-08-19T04:30:00.000Z",
+  process.env.WHATSAPP_SCHEDULE_TEST_MODE === "true"
+    ? "2026-08-18T06:32:00.000Z"
+    : "2026-08-19T04:30:00.000Z",
 );
 
 const order = {
