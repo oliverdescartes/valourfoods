@@ -305,21 +305,6 @@ function reportCheckoutDetailsSubmitted() {
   }).catch((error) => console.warn("Unable to record checkout event", error.message));
 }
 
-async function triggerTemporaryCartConfirmation() {
-  const user = getStoredUser();
-  if (!state.cart.length) return;
-  try {
-    const result = await postJSON(`${API_BASE}/api/temporary-cart-confirmation`, {
-      phone: user?.phone || "",
-      items: state.cart.map((item) => ({ id: item.id, quantity: item.quantity })),
-    });
-    if (result.submitted) showToast("Temporary WhatsApp confirmation submitted.");
-  } catch (error) {
-    console.warn("Temporary WhatsApp confirmation failed", error.message);
-    showToast(error.message, "error");
-  }
-}
-
 async function loadUserCoupons() {
   const user = getStoredUser();
   dom.couponAvailability?.classList.remove("is-empty", "is-error");
@@ -1047,8 +1032,6 @@ function continueToDetails() {
     showToast("Add an item before continuing.", "error");
     return;
   }
-
-  void triggerTemporaryCartConfirmation();
 
   setCheckoutStep(CHECKOUT_STEPS.DETAILS);
   dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
