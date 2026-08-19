@@ -60,9 +60,9 @@
               <div>
                 <p class="eyebrow">Order placed</p>
                 <h1 id="success-title">Thank you, your order is confirmed.</h1>
-                <p>
-                  Your payment has been verified and your Valour order is now
-                  saved. We will share dispatch updates on WhatsApp.
+                <p data-success-message>
+                  Your Valour order is now saved. We will share dispatch
+                  updates on WhatsApp.
                 </p>
               </div>
             </div>
@@ -83,7 +83,7 @@
                 <strong data-payment>Razorpay paid</strong>
               </article>
               <article>
-                <span>Total paid</span>
+                <span data-total-label>Order total</span>
                 <strong data-total>Rs. 0</strong>
               </article>
             </div>
@@ -142,6 +142,10 @@
       }
 
       const order = readOrder();
+      const paymentDescriptor = `${order.paymentMethod || ""} ${order.paymentMethodLabel || ""} ${order.paymentStatus || ""}`.toLowerCase();
+      const isCashOnDelivery = paymentDescriptor.includes("cod") ||
+        paymentDescriptor.includes("cash on delivery") ||
+        paymentDescriptor.includes("pending_cod");
       const shortOrderId = order.orderNumber
         ? order.orderNumber
         : order.orderId
@@ -153,6 +157,16 @@
         order.deliveryEstimate || "Delivery estimate will be shared soon";
       document.querySelector("[data-payment]").textContent =
         getPaymentMethodLabel(order);
+      if (isCashOnDelivery) {
+        document.querySelector("[data-success-message]").textContent =
+          "Your Valour order has been saved. Pay when your order is delivered. We will share dispatch updates on WhatsApp.";
+        document.querySelector("[data-total-label]").textContent =
+          "Amount due on delivery";
+      } else {
+        document.querySelector("[data-success-message]").textContent =
+          "Your payment has been verified and your Valour order is now saved. We will share dispatch updates on WhatsApp.";
+        document.querySelector("[data-total-label]").textContent = "Total paid";
+      }
       document.querySelector("[data-total]").textContent = money(
         order.totalAmount,
       );

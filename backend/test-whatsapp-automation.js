@@ -25,7 +25,7 @@ const order = {
   _id: "507f1f77bcf86cd799439011",
   orderNumber: "VALOUR-ABC123",
   totalAmount: 415,
-  products: [{ name: "Velvety Butter Chicken", quantity: 1 }],
+  products: [{ id: "velvety-butter-chicken", sku: "velvety-butter-chicken", name: "Velvety Butter Chicken", size: "520 ml", price: 415, quantity: 1 }],
 };
 assert.equal(_test.getOrderReference(null), "");
 assert.equal(_test.getOrderReference(order), order._id);
@@ -34,17 +34,30 @@ assert.equal(prepaidParams.length, 4);
 assert.deepEqual(prepaidParams.slice(0, 3), [
   "VALOUR-ABC123",
   "Rs. 415",
-  "Velvety Butter Chicken x 1",
+  "Velvety Butter Chicken (520 ml) x 1",
 ]);
 const codParams = _test.getCodTemplateParams(order);
 assert.equal(codParams.length, 5);
 assert.deepEqual(codParams.slice(0, 3), [
   "VALOUR-ABC123",
-  "Velvety Butter Chicken x 1",
+  "Velvety Butter Chicken (520 ml) x 1",
   "Rs. 415",
 ]);
 assert.equal(_test.readOrderPaymentToken(codParams[3]), order._id);
 assert.equal(_test.readOrderTrackingToken(codParams[4]), order._id);
+const trackingCreatedAt = Date.parse("2026-08-19T00:00:00.000Z");
+const expiringTrackingToken = _test.createOrderTrackingToken(order, trackingCreatedAt);
+assert.equal(_test.readOrderTrackingToken(expiringTrackingToken, trackingCreatedAt), order._id);
+assert.equal(_test.readOrderTrackingToken(expiringTrackingToken, trackingCreatedAt + 181 * 24 * 60 * 60_000), null);
+assert.deepEqual(_test.getPublicOrderItems(order), [{
+  id: "velvety-butter-chicken",
+  sku: "velvety-butter-chicken",
+  name: "Velvety Butter Chicken",
+  size: "520 ml",
+  quantity: 1,
+  unitPrice: 415,
+  lineTotal: 415,
+}]);
 const statusParams = _test.getOrderStatusTemplateParams({
   ...order,
   shippingStatus: "Dispatched",

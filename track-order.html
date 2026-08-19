@@ -35,6 +35,8 @@
       <div class="status"><span class="label">Current status</span><strong class="value" id="status"></strong></div>
       <dl>
         <div><dt>Order</dt><dd id="order-number"></dd></div>
+        <div><dt>Order total</dt><dd id="order-total"></dd></div>
+        <div><dt>Payment</dt><dd id="payment"></dd></div>
         <div><dt>Expected delivery</dt><dd id="eta"></dd></div>
         <div><dt>Courier</dt><dd id="courier"></dd></div>
         <div><dt>Tracking number</dt><dd id="tracking-number"></dd></div>
@@ -61,13 +63,19 @@
       message.textContent = "Here is the latest update for your VALOUR order.";
       setText("#status", order.shippingStatus);
       setText("#order-number", order.orderNumber);
+      setText("#order-total", new Intl.NumberFormat("en-IN", { style: "currency", currency: order.currency || "INR" }).format(order.totalAmount || 0));
+      setText("#payment", [order.paymentStatus, order.paymentMethod].filter(Boolean).join(" · "));
       setText("#eta", order.estimatedDelivery);
       setText("#courier", order.courierName);
       setText("#tracking-number", order.trackingNumber);
       const items = document.querySelector("#items");
       (order.items || []).forEach((item) => {
         const li = document.createElement("li");
-        li.textContent = `${item.name} × ${item.quantity}`;
+        const size = item.size ? ` · ${item.size}` : "";
+        const price = Number.isFinite(item.lineTotal)
+          ? ` · ${new Intl.NumberFormat("en-IN", { style: "currency", currency: order.currency || "INR" }).format(item.lineTotal)}`
+          : "";
+        li.textContent = `${item.name}${size} · Qty ${item.quantity}${price}`;
         items.appendChild(li);
       });
       if (!order.items?.length) items.innerHTML = "<li>Order items unavailable</li>";

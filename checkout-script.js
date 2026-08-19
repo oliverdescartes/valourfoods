@@ -21,7 +21,7 @@ const CHECKOUT_STEPS = {
 
 const sampleCart = [
   {
-    id: "velvety-butter-520",
+    id: "velvety-butter-chicken",
     name: "Velvety Butter Chicken",
     descriptor: "Make restaurant-style Butter Chicken at home. Just add chicken.",
     size: "520 ml",
@@ -102,6 +102,8 @@ const dom = {
   successOrderId: document.querySelector("[data-success-order-id]"),
   successDelivery: document.querySelector("[data-success-delivery]"),
   successPayment: document.querySelector("[data-success-payment]"),
+  successMessage: document.querySelector("[data-success-message]"),
+  successTotalLabel: document.querySelector("[data-success-total-label]"),
   successTotal: document.querySelector("[data-success-total]"),
   otpModal: document.querySelector("[data-otp-modal]"),
   otpForm: document.querySelector("[data-otp-form]"),
@@ -271,10 +273,10 @@ function showToast(message, type = "success") {
   window.setTimeout(() => toast.remove(), 3300);
 }
 
-async function postJSON(url, payload) {
+async function postJSON(url, payload, extraHeaders = {}) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
     body: JSON.stringify(payload),
   });
   const data = await response.json().catch(() => ({}));
@@ -1024,6 +1026,15 @@ function renderSuccessOrderItems() {
   dom.successOrderId.textContent = orderId;
   dom.successDelivery.textContent = deliveryText;
   dom.successPayment.textContent = getPaymentMethodLabel();
+  if (state.paymentMethod === "COD") {
+    dom.successMessage.textContent =
+      "Your Valour order has been saved. Pay when your order is delivered. We will share dispatch updates on WhatsApp.";
+    dom.successTotalLabel.textContent = "Amount due on delivery";
+  } else {
+    dom.successMessage.textContent =
+      "Your payment has been verified and your Valour order is now saved. We will share dispatch updates on WhatsApp.";
+    dom.successTotalLabel.textContent = "Total paid";
+  }
   dom.successTotal.textContent = money(state.totals.total);
 }
 
@@ -1247,16 +1258,8 @@ async function placeOrder(event) {
     return;
   }
 
-  if (state.paymentMethod === "COD") {
-    showToast(
-      "Cash on delivery is not active yet. Please choose UPI, Cards, Net banking, or Wallets.",
-      "error",
-    );
-    return;
-  }
-
   setOrderLoading(true);
-  showToast(`Opening ${getPaymentMethodLabel()} payment...`);
+  showToast(state.paymentMethod === "COD" ? "Placing your COD order..." : `Opening ${getPaymentMethodLabel()} payment...`);
   trackEvent("valour_begin_checkout", {
     value: state.totals.total,
     currency: "INR",
@@ -1268,6 +1271,43 @@ async function placeOrder(event) {
   try {
     renderSummary();
     const orderPayload = buildOrderPayload();
+
+    if (state.paymentMethod === "COD") {
+      const idempotencyStorageKey = "valour_cod_idempotency_key";
+      const generatedIdempotencyKey = globalThis.crypto?.randomUUID?.() ||
+        `cod-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+      const idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || generatedIdempotencyKey;
+      sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
+      const codOrder = await postJSON(
+        `${API_BASE}/api/orders/cod`,
+        { order: orderPayload },
+        { "Idempotency-Key": idempotencyKey },
+      );
+      sessionStorage.setItem(
+        ORDER_RESULT_KEY,
+        JSON.stringify({
+          ...codOrder.order,
+          orderId: codOrder.orderId,
+          deliveryEstimate: orderPayload.delivery.estimate,
+          paymentMethod: "COD",
+          paymentMethodLabel: "Cash on delivery",
+        }),
+      );
+      trackEvent("valour_purchase", {
+        value: codOrder.order.totalAmount,
+        currency: "INR",
+        items: codOrder.order.products,
+        payment_method: "COD",
+      });
+      rememberUsedUniversalCoupon(state.coupon);
+      state.cart = [];
+      state.coupon = null;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(COUPON_KEY);
+      sessionStorage.removeItem(idempotencyStorageKey);
+      window.location.href = "order-success.html";
+      return;
+    }
 
     // Create order step: backend creates the Razorpay order for the final payable total.
     razorpayOrder = await postJSON(`${API_BASE}/api/payment/create-order`, {
@@ -1327,7 +1367,11 @@ async function placeOrder(event) {
 
     window.location.href = "order-success.html";
   } catch (error) {
-    console.error("Payment failed", error);
+    console.error(state.paymentMethod === "COD" ? "COD order failed" : "Payment failed", error);
+    if (state.paymentMethod === "COD") {
+      showToast(error.message || "Unable to place the COD order. Please try again.", "error");
+      return;
+    }
     if (razorpayOrder?.order_id) {
       void postJSON(`${API_BASE}/api/payment/client-failure`, {
         razorpay_order_id: razorpayOrder.order_id,
@@ -1456,10 +1500,10 @@ function bindEvents() {
 
 function init() {
   state.cart = cloneCart(readJSON(STORAGE_KEY, sampleCart)).map((item) =>
-    item.id === "milky-mustard-520"
+    ["milky-mustard-520", "velvety-butter-520"].includes(item.id)
       ? {
           ...item,
-          id: "velvety-butter-520",
+          id: "velvety-butter-chicken",
           name: "Velvety Butter Chicken",
           descriptor:
             "Make restaurant-style Butter Chicken at home. Just add chicken.",
