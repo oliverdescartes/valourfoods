@@ -39,9 +39,7 @@
   <script>
     const token = new URLSearchParams(location.search).get("t");
     const message = document.querySelector("#message");
-    const apiBase = location.hostname === "localhost" || location.hostname === "127.0.0.1"
-      ? ""
-      : "https://api.liquidspice.in";
+    const apiBase = location.origin;
     async function loadPayment() {
       if (!token) throw new Error("This payment link is incomplete.");
       const response = await fetch(`${apiBase}/api/cod-payment/${encodeURIComponent(token)}`);
