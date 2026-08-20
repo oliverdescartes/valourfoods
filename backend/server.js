@@ -200,6 +200,7 @@ async function connectDB() {
     messageJobs.createIndex({ jobKey: 1 }, { unique: true }),
     messageJobs.createIndex({ status: 1, scheduledAt: 1 }),
     messageJobs.createIndex({ providerMessageId: 1 }, { sparse: true }),
+    messageJobs.createIndex({ createdAt: -1 }),
     messageJobs.createIndex({ phone: 1, sentAt: -1 }),
     messageJobs.createIndex({ phone: 1, submittedAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
@@ -893,25 +894,14 @@ async function sendTemplateMessage(
   }
 }
 
-const WHATSAPP_SCHEDULE_TEST_MODE = process.env.WHATSAPP_SCHEDULE_TEST_MODE === "true";
-const WHATSAPP_JOB_POLL_MS = WHATSAPP_SCHEDULE_TEST_MODE
-  ? 10_000
-  : Number(process.env.WHATSAPP_JOB_POLL_MS) || 60_000;
+const WHATSAPP_JOB_POLL_MS = Number(process.env.WHATSAPP_JOB_POLL_MS) || 60_000;
 const WHATSAPP_JOB_MAX_ATTEMPTS = Number(process.env.WHATSAPP_JOB_MAX_ATTEMPTS) || 4;
 const WHATSAPP_MARKETING_DAILY_CAP = Number(process.env.WHATSAPP_MARKETING_DAILY_CAP) || 1;
 const WHATSAPP_MARKETING_WEEKLY_CAP = Number(process.env.WHATSAPP_MARKETING_WEEKLY_CAP) || 3;
 let whatsappJobTimer = null;
 
-const WHATSAPP_DELIVERED_DELAY_MS = WHATSAPP_SCHEDULE_TEST_MODE
-  ? 2 * 60_000
-  : 15 * 60_000;
-const WHATSAPP_REORDER_DELAY_MS = WHATSAPP_SCHEDULE_TEST_MODE
-  ? 10 * 60_000
-  : 7 * 24 * 60 * 60_000;
-
-function whatsappAutomationDelay(productionMs, testMinutes) {
-  return WHATSAPP_SCHEDULE_TEST_MODE ? testMinutes * 60_000 : productionMs;
-}
+const WHATSAPP_DELIVERED_DELAY_MS = 15 * 60_000;
+const WHATSAPP_REORDER_DELAY_MS = 7 * 24 * 60 * 60_000;
 
 async function sendQuickReplyMessage(phone, message) {
   const recipient = normalizeWhatsappRecipient(phone);
@@ -1066,7 +1056,6 @@ function nextIstSendTime(date = new Date()) {
 }
 
 function getCookingReminderTime(choice, now = new Date()) {
-  if (WHATSAPP_SCHEDULE_TEST_MODE) return new Date(now.getTime() + 2 * 60_000);
   const shifted = new Date(now.getTime() + 330 * 60_000);
   if (choice.includes("tomorrow")) shifted.setUTCDate(shifted.getUTCDate() + 1);
   else if (choice.includes("weekend")) {
@@ -1100,7 +1089,7 @@ async function scheduleWhatsappJob({
   validateWhatsappTemplatePayload(templateName, parameters);
   const subject = getOrderReference(order) || String(sessionId || customerId || recipient);
   const jobKey = `${event}:${subject}:${occurrence}`;
-  const sendAt = definition.kind === "marketing" && !WHATSAPP_SCHEDULE_TEST_MODE
+  const sendAt = definition.kind === "marketing"
     ? nextIstSendTime(scheduledAt)
     : scheduledAt;
   try {
@@ -1215,7 +1204,7 @@ async function runWhatsappQualityGate(job) {
   if (openSupport && job.kind === "marketing") {
     return { action: "cancel", reason: "unresolved_support_case" };
   }
-  if (job.kind === "marketing" && !WHATSAPP_SCHEDULE_TEST_MODE) {
+  if (job.kind === "marketing") {
     const now = new Date();
     const [dailyCount, weeklyCount] = await Promise.all([
       collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", submittedAt: { $gte: new Date(now - 24 * 60 * 60_000) } }),
@@ -1314,21 +1303,6 @@ async function recoverStuckWhatsappJobs() {
 
 function startWhatsappJobWorker() {
   if (whatsappJobTimer) return;
-  if (WHATSAPP_SCHEDULE_TEST_MODE) {
-    console.warn("[WHATSAPP][SCHEDULE_TEST_MODE]", {
-      pollSeconds: WHATSAPP_JOB_POLL_MS / 1000,
-      productDemoDelayMinutes: 1,
-      highIntentDelayMinutes: 2,
-      priceDeliveryDelayMinutes: 1,
-      checkoutReminderDelayMinutes: 2,
-      deliveredDelayMinutes: WHATSAPP_DELIVERED_DELAY_MS / 60_000,
-      cookingReminderDelayMinutes: 2,
-      postCookDelayMinutes: 2,
-      reviewDelayMinutes: 3,
-      reorderDelayMinutes: WHATSAPP_REORDER_DELAY_MS / 60_000,
-      warning: "Real event triggers with temporary QA timings are enabled; disable before production use",
-    });
-  }
   void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) => console.error("WhatsApp job worker failed", err.message));
   whatsappJobTimer = setInterval(() => {
     void processDueWhatsappJobs().catch((err) => console.error("WhatsApp job worker failed", err.message));
@@ -1846,23 +1820,34 @@ function getOrderStatusTemplateParams(order) {
 }
 
 function getExpectedDeliveryText(order = {}, now = new Date()) {
-  const configured = String(
-    order.expectedDeliveryDate || order.estimatedDelivery || "",
-  ).trim();
   const formatter = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
     timeZone: "Asia/Kolkata",
   });
+  const formatDateOnly = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+    if (!match) return null;
+    const [, year, month, day] = match;
+    return formatter.format(
+      new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 6)),
+    );
+  };
+
+  const configuredDate = String(order.expectedDeliveryDate || "").trim();
+  if (configuredDate) return formatDateOnly(configuredDate) || configuredDate;
+
+  const configuredStart = formatDateOnly(order.expectedDeliveryStartDate);
+  const configuredEnd = formatDateOnly(order.expectedDeliveryEndDate);
+  if (configuredStart && configuredEnd) {
+    return `${configuredStart} – ${configuredEnd}`;
+  }
+
+  const configured = String(order.estimatedDelivery || "").trim();
 
   if (configured) {
-    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(configured);
-    if (dateOnly) {
-      const [, year, month, day] = dateOnly;
-      return formatter.format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 6)));
-    }
-    return configured;
+    return formatDateOnly(configured) || configured;
   }
 
   const createdAt = new Date(order.createdAt || 0);
@@ -1870,6 +1855,39 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
   const firstDay = new Date(base.getTime() + 24 * 60 * 60_000);
   const secondDay = new Date(base.getTime() + 2 * 24 * 60 * 60_000);
   return `${formatter.format(firstDay)} – ${formatter.format(secondDay)}`;
+}
+
+function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
+  const minDays = Number(rules.deliveryMinDays);
+  const maxDays = Number(rules.deliveryMaxDays);
+  if (
+    !Number.isInteger(minDays) ||
+    !Number.isInteger(maxDays) ||
+    minDays < 0 ||
+    maxDays < minDays ||
+    maxDays > 30
+  ) {
+    throw new Error("Checkout delivery timing has not been configured in MongoDB");
+  }
+  const ist = new Date(now.getTime() + 330 * 60_000);
+  const base = new Date(Date.UTC(
+    ist.getUTCFullYear(),
+    ist.getUTCMonth(),
+    ist.getUTCDate(),
+  ));
+  const toDateOnly = (daysAhead) => {
+    const date = new Date(base);
+    date.setUTCDate(date.getUTCDate() + daysAhead);
+    return date.toISOString().slice(0, 10);
+  };
+  const fields = {
+    expectedDeliveryStartDate: toDateOnly(minDays),
+    expectedDeliveryEndDate: toDateOnly(maxDays),
+  };
+  return {
+    ...fields,
+    estimatedDelivery: getExpectedDeliveryText(fields, now),
+  };
 }
 
 const ORDER_TRACKING_TOKEN_TTL_SECONDS = 180 * 24 * 60 * 60;
@@ -2847,7 +2865,7 @@ User message: ${text}`,
           customerId: userId,
           sessionId: session._id,
           parameters: [product.name, `Rs. ${product.price}`, "Confirmed at checkout"],
-          scheduledAt: new Date(Date.now() + whatsappAutomationDelay(30 * 60_000, 1)),
+          scheduledAt: new Date(Date.now() + 30 * 60_000),
           metadata: { productId },
         }).catch((err) => console.error("Price/delivery follow-up scheduling failed", err.message));
       }
@@ -2960,7 +2978,7 @@ Reply 1 for Velvety Butter, 2 for Spicy Mustard, or MENU.`,
     customerId: session.user_id,
     sessionId: session._id,
     parameters: [product.recipeName],
-    scheduledAt: new Date(Date.now() + whatsappAutomationDelay(18 * 60 * 60_000, 1)),
+    scheduledAt: new Date(Date.now() + 18 * 60 * 60_000),
     metadata: { productId: product.id },
   }).catch((err) => console.error("Product-demo scheduling failed", err.message));
   void scheduleWhatsappJob({
@@ -2968,7 +2986,7 @@ Reply 1 for Velvety Butter, 2 for Spicy Mustard, or MENU.`,
     phone,
     customerId: session.user_id,
     sessionId: session._id,
-    scheduledAt: new Date(Date.now() + whatsappAutomationDelay(24 * 60 * 60_000, 2)),
+    scheduledAt: new Date(Date.now() + 24 * 60 * 60_000),
     metadata: { productId: product.id },
   }).catch((err) => console.error("High-intent scheduling failed", err.message));
 }
@@ -3161,7 +3179,7 @@ async function beginTutorialCooking({ session, phone, userId, product }) {
     sessionId: session._id,
     occurrence: "tutorial-no-response",
     parameters: [],
-    scheduledAt: new Date(Date.now() + whatsappAutomationDelay(30 * 60_000, 2)),
+    scheduledAt: new Date(Date.now() + 30 * 60_000),
     metadata: { reason: "tutorial_no_response_fallback", productId: product.id },
   })
     .then((result) => console.log("[WHATSAPP][POST_COOK_FALLBACK_SCHEDULED]", {
@@ -3568,7 +3586,7 @@ async function completeCooking({ session, phone, userId }) {
     sessionId: session._id,
     occurrence: "customer-completed",
     parameters: [],
-    scheduledAt: new Date(Date.now() + whatsappAutomationDelay(30 * 60_000, 2)),
+    scheduledAt: new Date(Date.now() + 30 * 60_000),
   })
     .then((result) => console.log("[WHATSAPP][POST_COOK_FEEDBACK_SCHEDULED]", {
       recipient: maskWhatsappPhone(phone),
@@ -3709,7 +3727,7 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
         customerId: userId,
         order,
         parameters: [],
-        scheduledAt: new Date(Date.now() + whatsappAutomationDelay(5 * 60_000, 3)),
+        scheduledAt: new Date(Date.now() + 5 * 60_000),
       }).catch((err) => console.error("Review-request scheduling failed", err.message));
     }
     await resetToIdle(session._id);
@@ -5253,6 +5271,9 @@ function quoteToOrderFields(quote) {
     currency: quote.currency,
     couponCode: quote.couponCode,
     couponScope: quote.couponScope,
+    expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
+    expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
+    estimatedDelivery: quote.estimatedDelivery,
     pricingSnapshot: quote,
   };
 }
@@ -5392,8 +5413,10 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
     rules,
     couponCode: normalizedCode,
   });
+  const delivery = getDefaultExpectedDeliveryFields(now, storedRules);
   return {
     ...quote,
+    ...delivery,
     couponScope,
     pricingRulesId: rules._id,
     pricedAt: new Date(),
@@ -5432,7 +5455,6 @@ function verifyRazorpaySignature({
 // API ROUTES (🔥 MUST BE FIRST)
 // ======================
 
-app.use("/auth", require("./routes/auth"));
 app.use("/user", require("./routes/user"));
 
 function isAuthorizedAdminRequest(req) {
@@ -5440,6 +5462,45 @@ function isAuthorizedAdminRequest(req) {
     process.env.ORDER_ADMIN_TOKEN &&
     req.get("x-admin-token") === process.env.ORDER_ADMIN_TOKEN
   );
+}
+
+async function verifyFirebasePhoneIdentity(idToken, expectedPhone) {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) {
+    const error = new Error("Firebase phone verification is not configured");
+    error.statusCode = 503;
+    throw error;
+  }
+  if (!idToken || String(idToken).length > 5000) {
+    const error = new Error("Phone verification is required before ordering");
+    error.statusCode = 401;
+    throw error;
+  }
+  try {
+    const response = await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+      { idToken: String(idToken) },
+      { timeout: 10000 },
+    );
+    const firebaseUser = response.data?.users?.[0];
+    const verifiedPhone = String(firebaseUser?.phoneNumber || "").replace(/\D/g, "").slice(-10);
+    const requestedPhone = String(expectedPhone || "").replace(/\D/g, "").slice(-10);
+    if (!firebaseUser?.localId || !verifiedPhone || verifiedPhone !== requestedPhone) {
+      const error = new Error("Verified phone number does not match the delivery phone");
+      error.statusCode = 401;
+      throw error;
+    }
+    return {
+      firebaseUid: firebaseUser.localId,
+      firebasePhoneNumber: firebaseUser.phoneNumber,
+      phoneVerifiedAt: new Date(),
+    };
+  } catch (error) {
+    if (error.statusCode) throw error;
+    const authError = new Error("Phone verification expired or is invalid");
+    authError.statusCode = 401;
+    throw authError;
+  }
 }
 
 function escapeMongoRegex(value = "") {
@@ -5478,6 +5539,32 @@ function serializeAdminOrder(order = {}) {
   };
 }
 
+function serializeAdminWhatsappJob(job = {}) {
+  return {
+    id: String(job._id || ""),
+    jobKey: job.jobKey || "",
+    phone: job.phone || "",
+    trigger: job.trigger || "",
+    kind: job.kind || "",
+    templateName: job.templateName || "",
+    status: job.status || "scheduled",
+    providerMessageId: job.providerMessageId || "",
+    attemptCount: Number(job.attemptCount) || 0,
+    createdAt: job.createdAt || null,
+    scheduledAt: job.scheduledAt || null,
+    processingStartedAt: job.processingStartedAt || null,
+    submittedAt: job.submittedAt || null,
+    enqueuedAt: job.enqueuedAt || null,
+    sentAt: job.sentAt || null,
+    deliveredAt: job.deliveredAt || null,
+    readAt: job.readAt || null,
+    failedAt: job.failedAt || null,
+    cancelledAt: job.cancelledAt || null,
+    statusUpdatedAt: job.statusUpdatedAt || null,
+    error: job.lastError || job.providerErrors || job.cancellationReason || "",
+  };
+}
+
 app.get("/api/admin/dashboard", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -5507,10 +5594,11 @@ app.get("/api/admin/dashboard", async (req, res) => {
     const istNow = new Date(now.getTime() + 330 * 60_000);
     istNow.setUTCHours(0, 0, 0, 0);
     const todayStart = new Date(istNow.getTime() - 330 * 60_000);
-    const { orders, couponAssignments, pricingRules } = collections();
+    const { orders, couponAssignments, pricingRules, messageJobs } = collections();
     const [
       orderRows, filteredCount, totalOrders, todayOrders, pendingOrders,
-      deliveredOrders, paidRevenueRows, rules, assignments,
+      deliveredOrders, paidRevenueRows, rules, assignments, whatsappRows,
+      whatsappStatusRows,
     ] = await Promise.all([
       orders.find(orderFilter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
       orders.countDocuments(orderFilter),
@@ -5524,6 +5612,11 @@ app.get("/api/admin/dashboard", async (req, res) => {
       ]).toArray(),
       pricingRules.findOne({ _id: "checkout" }),
       couponAssignments.find({ active: { $ne: false } }).sort({ assignedAt: -1 }).limit(100).toArray(),
+      messageJobs.find({}).sort({ createdAt: -1 }).limit(100).toArray(),
+      messageJobs.aggregate([
+        { $match: { createdAt: { $gte: todayStart } } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]).toArray(),
     ]);
 
     const couponDefinitions = Object.entries(rules?.coupons || {}).map(([code, definition]) => ({
@@ -5558,6 +5651,12 @@ app.get("/api/admin/dashboard", async (req, res) => {
         endsAt: assignment.endsAt || null,
         assignedAt: assignment.assignedAt || null,
       })),
+      whatsapp: {
+        jobs: whatsappRows.map(serializeAdminWhatsappJob),
+        todayByStatus: Object.fromEntries(
+          whatsappStatusRows.map((row) => [row._id || "unknown", row.count]),
+        ),
+      },
     });
   } catch (error) {
     console.error("Admin dashboard load failed", { error: error.message, stack: error.stack });
@@ -5781,7 +5880,7 @@ app.post("/api/customer-events", async (req, res) => {
         phone,
         customerId: customer._id,
         parameters: [product.name],
-        scheduledAt: new Date(Date.now() + whatsappAutomationDelay(18 * 60 * 60_000, 1)),
+        scheduledAt: new Date(Date.now() + 18 * 60 * 60_000),
         occurrence,
         metadata: { productId, sourceEvent: event },
       });
@@ -5792,7 +5891,7 @@ app.post("/api/customer-events", async (req, res) => {
         event: "high_intent_followup",
         phone,
         customerId: customer._id,
-        scheduledAt: new Date(Date.now() + whatsappAutomationDelay(24 * 60 * 60_000, 2)),
+        scheduledAt: new Date(Date.now() + 24 * 60 * 60_000),
         occurrence,
         metadata: { productId, sourceEvent: event },
       });
@@ -5807,7 +5906,7 @@ app.post("/api/customer-events", async (req, res) => {
           phone,
           customerId: customer._id,
           parameters: [productName, orderValue],
-          scheduledAt: new Date(Date.now() + whatsappAutomationDelay(60 * 60_000, 2)),
+          scheduledAt: new Date(Date.now() + 60 * 60_000),
           occurrence: String(req.body.cartId || eventId),
           metadata: { sourceEvent: event, checkoutEventId: eventId },
         });
@@ -5868,13 +5967,21 @@ app.post("/api/orders/cod", async (req, res) => {
     if (!savedOrder) {
       const rawOrder = req.body.order || {};
       const customerOrder = normalizeOrderPayload(rawOrder);
+      const firebaseIdentity = await verifyFirebasePhoneIdentity(
+        rawOrder.firebaseIdToken,
+        customerOrder.phone,
+      );
       const quote = await buildAuthoritativeQuote({
         items: rawOrder.products,
         pincode: customerOrder.pincode,
         couponCode: rawOrder.coupon,
         phone: customerOrder.phone,
       });
-      const websiteOrder = { ...customerOrder, ...quoteToOrderFields(quote) };
+      const websiteOrder = {
+        ...customerOrder,
+        ...quoteToOrderFields(quote),
+        ...firebaseIdentity,
+      };
       const validationError = validateOrderPayload(websiteOrder);
       if (validationError) return res.status(400).json({ ok: false, error: validationError });
 
@@ -5954,13 +6061,13 @@ app.post("/api/orders/cod", async (req, res) => {
       order: { ...savedOrder, _id: String(savedOrder._id) },
     });
   } catch (error) {
-    const clientError = /required|valid|unavailable|quantity|coupon/i.test(error.message);
+    const clientError = Boolean(error.statusCode) || /required|valid|unavailable|quantity|coupon/i.test(error.message);
     console.error("COD checkout failed", {
       error: error.message,
       code: error.code || null,
       stack: error.stack,
     });
-    return res.status(clientError ? 400 : 500).json({
+    return res.status(error.statusCode || (clientError ? 400 : 500)).json({
       ok: false,
       error: clientError ? error.message : "Unable to place the COD order",
     });
@@ -5972,13 +6079,21 @@ app.post("/api/payment/create-order", async (req, res) => {
     assertRazorpayConfig();
     const rawOrder = req.body.order || {};
     const customerOrder = normalizeOrderPayload(rawOrder);
+    const firebaseIdentity = await verifyFirebasePhoneIdentity(
+      rawOrder.firebaseIdToken,
+      customerOrder.phone,
+    );
     const quote = await buildAuthoritativeQuote({
       items: rawOrder.products,
       pincode: customerOrder.pincode,
       couponCode: rawOrder.coupon,
       phone: customerOrder.phone,
     });
-    const websiteOrder = { ...customerOrder, ...quoteToOrderFields(quote) };
+    const websiteOrder = {
+      ...customerOrder,
+      ...quoteToOrderFields(quote),
+      ...firebaseIdentity,
+    };
     const validationError = validateOrderPayload(websiteOrder);
     if (validationError) {
       return res.status(400).json({ ok: false, error: validationError });
@@ -6014,7 +6129,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       phone: paymentAttempt.phone,
       order: { ...paymentAttempt, _id: paymentAttemptResult.insertedId },
       parameters: [getOrderProductName(paymentAttempt), `Rs. ${Math.round(Number(paymentAttempt.totalAmount) || 0).toLocaleString("en-IN")}`],
-      scheduledAt: new Date(Date.now() + whatsappAutomationDelay(60 * 60_000, 2)),
+      scheduledAt: new Date(Date.now() + 60 * 60_000),
       metadata: { razorpayOrderId: razorpayOrder.id },
     }).catch((err) => console.error("Checkout reminder scheduling failed", err.message));
 
@@ -6037,9 +6152,10 @@ app.post("/api/payment/create-order", async (req, res) => {
         err?.message ||
         String(err),
     });
-    res
-      .status(500)
-      .json({ ok: false, error: "Unable to create payment order" });
+    res.status(err.statusCode || 500).json({
+      ok: false,
+      error: err.statusCode ? err.message : "Unable to create payment order",
+    });
   }
 });
 
@@ -6152,7 +6268,6 @@ app.post("/api/payment/verify", async (req, res) => {
       courierName: null,
       trackingNumber: null,
       trackingUrl: null,
-      estimatedDelivery: null,
       createdAt: new Date(),
     };
 
@@ -6477,18 +6592,18 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         phone,
         order: updatedOrder,
         parameters: [updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id)],
-        scheduledAt: WHATSAPP_SCHEDULE_TEST_MODE
-          ? new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS)
-          : nextIstSendTime(new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS)),
+        scheduledAt: nextIstSendTime(
+          new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS),
+        ),
       });
       await scheduleWhatsappJob({
         event: "reorder_reminder",
         phone,
         order: updatedOrder,
         parameters: [getOrderProductName(updatedOrder)],
-        scheduledAt: WHATSAPP_SCHEDULE_TEST_MODE
-          ? new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS)
-          : nextIstSendTime(new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS)),
+        scheduledAt: nextIstSendTime(
+          new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
+        ),
       });
       whatsappUpdate = { sent: false, scheduled: deliveredJob.scheduled, jobKey: deliveredJob.jobKey };
     } else if (req.body.notifyWhatsapp !== false) {
@@ -6759,6 +6874,8 @@ module.exports = {
     getOrderTemplateParams,
     getCodTemplateParams,
     getOrderStatusTemplateParams,
+    getDefaultExpectedDeliveryFields,
+    getExpectedDeliveryText,
     getPublicOrderItems,
     parseGupshupV2Webhook,
     getWhatsappTemplateMediaConfig,

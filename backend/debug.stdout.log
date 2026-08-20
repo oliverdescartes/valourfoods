@@ -1,4 +1,0 @@
-◇ injected env (44) from .env // tip: ⌘ enable debugging { debug: true }
-VALOUR running on  http://localhost:3000
-Direct Meta WABA subscription disabled; Gupshup WhatsApp transport is active. Set ENABLE_META_WABA_SUBSCRIPTION=true with WABA_ID and AUTH_TOKEN to enable the Meta fallback.
-MongoDB connected

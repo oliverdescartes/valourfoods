@@ -6,8 +6,6 @@ const USER_KEY = "user";
 const USED_COUPONS_KEY = "valour_used_universal_coupons";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
-const OTP_VALIDITY_MS = 5 * 60 * 1000;
-const DEMO_OTP_CODE = "123456";
 // The Express app serves both the storefront and API. Keeping requests on the
 // current origin avoids stale deployment-domain mappings and works locally too.
 const API_BASE = window.location.origin;
@@ -46,6 +44,7 @@ const state = {
   },
   pricingRequestId: 0,
   pricingTimer: null,
+  delivery: null,
   step: CHECKOUT_STEPS.CART,
   paymentMethod: "upi",
 };
@@ -114,11 +113,10 @@ const dom = {
 };
 
 const otpState = {
-  code: "",
   phone: "",
-  expiresAt: 0,
   pendingUser: null,
   nextAction: null,
+  sending: false,
 };
 
 function money(value) {
@@ -150,7 +148,14 @@ function getStoredUser() {
 
 function hasVerifiedUser(phone = getFormValues().phone) {
   const user = getStoredUser();
-  return Boolean(user && user.phone === String(phone || "").trim());
+  const verifiedAt = Date.parse(user?.verifiedAt || "");
+  return Boolean(
+    user &&
+    user.phone === String(phone || "").trim() &&
+    user.firebaseIdToken &&
+    Number.isFinite(verifiedAt) &&
+    Date.now() - verifiedAt < 50 * 60 * 1000,
+  );
 }
 
 function setOrderButtonLabels() {
@@ -310,6 +315,7 @@ function reportCheckoutDetailsSubmitted() {
 async function loadUserCoupons() {
   const user = getStoredUser();
   dom.couponAvailability?.classList.remove("is-empty", "is-error");
+  if (dom.couponAvailability) dom.couponAvailability.hidden = true;
   if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Finding your offers...";
   try {
     const universalUrl = user?.phone
@@ -356,6 +362,9 @@ async function loadUserCoupons() {
         ? "1 coupon available"
         : `${available.length} coupons available`;
     }
+    if (dom.couponAvailability) {
+      dom.couponAvailability.hidden = available.length === 0;
+    }
     dom.couponAvailability?.classList.toggle("is-empty", available.length === 0);
     Object.keys(coupons).forEach((code) => delete coupons[code]);
     available.forEach((item) => {
@@ -382,6 +391,7 @@ async function loadUserCoupons() {
     renderCouponState();
   } catch (error) {
     dom.availableCoupons.innerHTML = `<p>${error.message}</p>`;
+    if (dom.couponAvailability) dom.couponAvailability.hidden = false;
     dom.couponAvailability?.classList.add("is-error");
     if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Offers unavailable";
   }
@@ -512,6 +522,7 @@ function buildOrderPayload() {
     })),
     totals: { ...state.totals },
     coupon: state.coupon,
+    firebaseIdToken: getStoredUser()?.firebaseIdToken || "",
     tracking,
     delivery: {
       estimate:
@@ -605,6 +616,7 @@ async function refreshServerPricing() {
       shipping: quote.shippingPaise / 100,
       total: quote.totalPaise / 100,
     };
+    applyQuoteDelivery(quote);
     renderCart();
     renderSummary();
   } catch (error) {
@@ -722,6 +734,16 @@ function renderSummary() {
   renderCouponState();
   setOrderButtonLabels();
   updateFloatingSubtotalBar();
+}
+
+function applyQuoteDelivery(quote = {}) {
+  if (!quote.estimatedDelivery) return;
+  state.delivery = {
+    expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
+    expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
+    estimatedDelivery: quote.estimatedDelivery,
+  };
+  setTextAll("[data-delivery-window]", quote.estimatedDelivery);
 }
 
 function updateProgress() {
@@ -931,58 +953,6 @@ function hydrateDraft() {
   });
 }
 
-function addBusinessDays(date, days) {
-  const result = new Date(date);
-  let remaining = days;
-
-  while (remaining > 0) {
-    result.setDate(result.getDate() + 1);
-    const day = result.getDay();
-    if (day !== 0 && day !== 6) remaining -= 1;
-  }
-
-  return result;
-}
-
-function formatDeliveryDate(date) {
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function getDeliveryEstimateText(minDays, maxDays) {
-  const today = new Date();
-  const fromDate = formatDeliveryDate(addBusinessDays(today, minDays));
-  const toDate = formatDeliveryDate(addBusinessDays(today, maxDays));
-  return `Delivery by ${fromDate} - ${toDate}`;
-}
-
-function getFallbackDeliveryEstimate(pincode) {
-  const prefix = Number(pincode.slice(0, 2));
-
-  if (prefix >= 70 && prefix <= 79) {
-    return getDeliveryEstimateText(2, 4);
-  }
-
-  if (prefix >= 10 && prefix <= 59) {
-    return getDeliveryEstimateText(4, 6);
-  }
-
-  return getDeliveryEstimateText(5, 8);
-}
-
-function updateDeliveryEstimate() {
-  const pincode = getPincode();
-  const deliveryText = /^\d{6}$/.test(pincode)
-    ? getFallbackDeliveryEstimate(pincode)
-    : "Enter pincode for estimate";
-
-  setTextAll("[data-delivery-window]", deliveryText);
-  renderSummary();
-  scheduleServerPricing();
-}
-
 function setLoading(button, loading) {
   button.classList.toggle("is-loading", loading);
   button.disabled = loading;
@@ -1051,7 +1021,7 @@ function continueToDetails() {
 
 function showReviewStep() {
   saveDraft();
-  updateDeliveryEstimate();
+  scheduleServerPricing();
   setCheckoutStep(CHECKOUT_STEPS.REVIEW);
   document
     .querySelector(".mobile-summary-panel")
@@ -1095,11 +1065,29 @@ function handleFloatingStep() {
   placeOrder();
 }
 
-function sendOtp(phone) {
-  otpState.code = DEMO_OTP_CODE;
-  otpState.phone = phone;
-  otpState.expiresAt = Date.now() + OTP_VALIDITY_MS;
+async function getFirebaseAuthClient() {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (window.valourFirebaseAuth) return window.valourFirebaseAuth;
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
+  throw new Error("Phone verification could not load. Check your connection and try again.");
+}
 
+function getFirebaseOtpError(error) {
+  const code = String(error?.code || "");
+  if (code.includes("invalid-phone-number")) return "Enter a valid Indian mobile number.";
+  if (code.includes("too-many-requests")) return "Too many attempts. Please wait before trying again.";
+  if (code.includes("quota-exceeded")) return "SMS verification is temporarily unavailable.";
+  if (code.includes("invalid-verification-code")) return "That OTP does not match. Please try again.";
+  if (code.includes("code-expired")) return "This OTP has expired. Request a new code.";
+  if (code.includes("unauthorized-domain")) return "This website domain is not authorized in Firebase.";
+  return error?.message || "Phone verification failed. Please try again.";
+}
+
+async function sendOtp(phone) {
+  const firebaseAuth = await getFirebaseAuthClient();
+  otpState.phone = phone;
+  await firebaseAuth.sendCode(phone);
   trackEvent("valour_otp_send", { phone });
   showToast(`OTP sent to ${phone}.`);
 }
@@ -1109,7 +1097,7 @@ function openOtpModal() {
   document.body.classList.add("is-modal-open");
   dom.otpInput.value = "";
   dom.otpError.textContent = "";
-  dom.otpMessage.textContent = `We sent a 6-digit OTP to ${otpState.phone}. For demo testing, use ${DEMO_OTP_CODE}.`;
+  dom.otpMessage.textContent = `We sent a 6-digit OTP to ${otpState.phone}.`;
   window.setTimeout(() => dom.otpInput.focus(), 50);
 }
 
@@ -1118,7 +1106,8 @@ function closeOtpModal() {
   document.body.classList.remove("is-modal-open");
 }
 
-function startOtpVerification(nextAction = null) {
+async function startOtpVerification(nextAction = null) {
+  if (otpState.sending) return;
   const values = getFormValues();
   otpState.nextAction = nextAction;
   otpState.pendingUser = {
@@ -1130,14 +1119,20 @@ function startOtpVerification(nextAction = null) {
     city: values.city,
     state: values.state,
     pincode: values.pincode,
-    verifiedAt: new Date().toISOString(),
   };
-
-  sendOtp(values.phone);
-  openOtpModal();
+  otpState.sending = true;
+  showToast("Sending verification code...");
+  try {
+    await sendOtp(values.phone);
+    openOtpModal();
+  } catch (error) {
+    showToast(getFirebaseOtpError(error), "error");
+  } finally {
+    otpState.sending = false;
+  }
 }
 
-function verifyOtp(event) {
+async function verifyOtp(event) {
   event.preventDefault();
 
   const enteredOtp = dom.otpInput.value.trim();
@@ -1148,20 +1143,29 @@ function verifyOtp(event) {
     return;
   }
 
-  if (!otpState.code || Date.now() > otpState.expiresAt) {
-    dom.otpError.textContent = "This OTP has expired. Please resend it.";
+  const verifyButton = dom.otpForm.querySelector("[data-verify-otp]");
+  setLoading(verifyButton, true);
+  let firebaseUser;
+  try {
+    const firebaseAuth = await getFirebaseAuthClient();
+    firebaseUser = await firebaseAuth.confirmCode(enteredOtp);
+  } catch (error) {
+    dom.otpError.textContent = getFirebaseOtpError(error);
+    setLoading(verifyButton, false);
     return;
   }
 
-  if (enteredOtp !== otpState.code) {
-    dom.otpError.textContent = "That OTP does not match. Please try again.";
-    return;
-  }
-
-  localStorage.setItem(USER_KEY, JSON.stringify(otpState.pendingUser));
+  const verifiedUser = {
+    ...otpState.pendingUser,
+    firebaseUid: firebaseUser.uid,
+    firebasePhoneNumber: firebaseUser.phoneNumber,
+    firebaseIdToken: firebaseUser.idToken,
+    verifiedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
   saveDraft();
-  otpState.code = "";
   otpState.pendingUser = null;
+  setLoading(verifyButton, false);
   closeOtpModal();
   setOrderButtonLabels();
   trackEvent("valour_user_verified", { phone: otpState.phone });
@@ -1332,6 +1336,7 @@ async function placeOrder(event) {
         shipping: quote.shippingPaise / 100,
         total: quote.totalPaise / 100,
       };
+      applyQuoteDelivery(quote);
       renderCart();
       renderSummary();
     }
@@ -1477,7 +1482,7 @@ function bindEvents() {
     saveDraft();
     updateProgress();
   });
-  dom.form.elements.pincode.addEventListener("input", updateDeliveryEstimate);
+  dom.form.elements.pincode.addEventListener("input", scheduleServerPricing);
 
   document.querySelectorAll("[data-payment-input]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -1522,7 +1527,6 @@ function init() {
   bindEvents();
   renderAll();
   loadUserCoupons();
-  updateDeliveryEstimate();
   trackEvent("valour_checkout_view");
 }
 

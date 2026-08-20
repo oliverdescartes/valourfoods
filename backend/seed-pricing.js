@@ -21,6 +21,8 @@ const rules = {
   taxInclusive: true,
   freeShippingThresholdPaise: 79900,
   defaultShippingPaise: 6500,
+  deliveryMinDays: 1,
+  deliveryMaxDays: 2,
   coupons: {
     WELCOME10: { active: true, type: "percent", value: 10, minSubtotalPaise: 0 },
     FIRSTORDER: { active: true, type: "fixed", valuePaise: 7500, minSubtotalPaise: 49900 },

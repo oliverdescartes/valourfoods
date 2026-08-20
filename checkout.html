@@ -116,6 +116,7 @@
                   class="coupon-availability"
                   data-coupon-availability
                   aria-live="polite"
+                  hidden
                 >
                   <span class="coupon-availability-icon" aria-hidden="true"
                     >%</span
@@ -448,7 +449,7 @@
                 </span>
                 <div>
                   <strong>Delivery</strong>
-                  <span data-delivery-window>Enter pincode for estimate</span>
+                  <span data-delivery-window>Loading delivery estimate...</span>
                 </div>
               </article>
               <article>
@@ -505,7 +506,7 @@
               <article>
                 <span>Delivery</span>
                 <strong data-success-delivery
-                  >Enter pincode for estimate</strong
+                  >Loading delivery estimate...</strong
                 >
               </article>
               <article>
@@ -565,7 +566,7 @@
             <div class="delivery-grid">
               <div>
                 <span class="mini-label">Timeline</span>
-                <strong data-delivery-window>Enter pincode for estimate</strong>
+                <strong data-delivery-window>Loading delivery estimate...</strong>
               </div>
               <div>
                 <span class="mini-label">Shipping</span>
@@ -636,10 +637,12 @@
             </button>
           </div>
           <p class="field-error" data-otp-error aria-live="polite"></p>
+          <div id="firebase-recaptcha-container"></div>
         </form>
       </div>
     </div>
 
+    <script type="module" src="firebase-auth.js"></script>
     <script src="checkout-script.js" defer></script>
   </body>
 </html>

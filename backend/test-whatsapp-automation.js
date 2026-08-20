@@ -18,9 +18,7 @@ assert.equal(_test.nextIstSendTime(daytime).toISOString(), daytime.toISOString()
 
 assert.equal(
   _test.getCookingReminderTime("tomorrow", daytime).toISOString(),
-  process.env.WHATSAPP_SCHEDULE_TEST_MODE === "true"
-    ? "2026-08-18T06:32:00.000Z"
-    : "2026-08-19T04:30:00.000Z",
+  "2026-08-19T04:30:00.000Z",
 );
 
 const order = {
@@ -75,6 +73,13 @@ assert.deepEqual(statusParams.slice(0, 5), [
   "Paid",
   "21 August 2026",
 ]);
+const defaultDelivery = _test.getDefaultExpectedDeliveryFields(
+  new Date("2026-08-20T10:00:00.000Z"),
+  { deliveryMinDays: 1, deliveryMaxDays: 2 },
+);
+assert.equal(defaultDelivery.expectedDeliveryStartDate, "2026-08-21");
+assert.equal(defaultDelivery.expectedDeliveryEndDate, "2026-08-22");
+assert.equal(defaultDelivery.estimatedDelivery, "21 Aug 2026 – 22 Aug 2026");
 
 const failedEvent = _test.parseGupshupV2Webhook({
   type: "message-event",
