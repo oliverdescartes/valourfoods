@@ -5,7 +5,7 @@ const { MongoClient } = require("mongodb");
 const products = [
   {
     sku: "velvety-butter-chicken",
-    name: "Velvety Butter Liquid Spice",
+    name: "Velvety Butter Chicken Liquid Spice",
     size: "520 ml",
     pricePaise: 35000,
     compareAtPaise: 35000,

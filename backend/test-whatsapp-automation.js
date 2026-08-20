@@ -1,6 +1,19 @@
 const assert = require("assert");
 const { _test } = require("./server");
 
+assert.deepEqual(
+  _test.parseTrackingLookupDetails("9233054806, 799003"),
+  { phone: "9233054806", pincode: "799003" },
+);
+assert.deepEqual(
+  _test.parseTrackingLookupDetails("phone +91 9233054806 pincode 799003"),
+  { phone: "9233054806", pincode: "799003" },
+);
+assert.deepEqual(
+  _test.parseTrackingLookupDetails("799003"),
+  { phone: "", pincode: "799003" },
+);
+
 const beforeQuietHours = new Date("2026-08-18T01:00:00.000Z"); // 06:30 IST
 assert.equal(
   _test.nextIstSendTime(beforeQuietHours).toISOString(),
@@ -25,7 +38,7 @@ const order = {
   _id: "507f1f77bcf86cd799439011",
   orderNumber: "VALOUR-ABC123",
   totalAmount: 415,
-  products: [{ id: "velvety-butter-chicken", sku: "velvety-butter-chicken", name: "Velvety Butter Chicken", size: "520 ml", price: 415, quantity: 1 }],
+  products: [{ id: "velvety-butter-chicken", sku: "velvety-butter-chicken", name: "Velvety Butter Chicken Liquid Spice", size: "520 ml", price: 415, quantity: 1 }],
 };
 assert.equal(_test.getOrderReference(null), "");
 assert.equal(_test.getOrderReference(order), order._id);
@@ -34,13 +47,13 @@ assert.equal(prepaidParams.length, 4);
 assert.deepEqual(prepaidParams.slice(0, 3), [
   "VALOUR-ABC123",
   "Rs. 415",
-  "Velvety Butter Chicken (520 ml) x 1",
+  "Velvety Butter Chicken Liquid Spice (520 ml) x 1",
 ]);
 const codParams = _test.getCodTemplateParams(order);
 assert.equal(codParams.length, 5);
 assert.deepEqual(codParams.slice(0, 3), [
   "VALOUR-ABC123",
-  "Velvety Butter Chicken (520 ml) x 1",
+  "Velvety Butter Chicken Liquid Spice (520 ml) x 1",
   "Rs. 415",
 ]);
 assert.equal(_test.readOrderPaymentToken(codParams[3]), order._id);
@@ -52,7 +65,7 @@ assert.equal(_test.readOrderTrackingToken(expiringTrackingToken, trackingCreated
 assert.deepEqual(_test.getPublicOrderItems(order), [{
   id: "velvety-butter-chicken",
   sku: "velvety-butter-chicken",
-  name: "Velvety Butter Chicken",
+  name: "Velvety Butter Chicken Liquid Spice",
   size: "520 ml",
   quantity: 1,
   unitPrice: 415,

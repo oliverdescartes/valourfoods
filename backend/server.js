@@ -78,7 +78,7 @@ let wabaSubscribed = false;
 const PRODUCTS = {
   velvety_butter: {
     id: "velvety_butter",
-    name: "Velvety Butter",
+    name: "Velvety Butter Chicken Liquid Spice",
     recipeId: "butter_chicken_curry",
     recipeName: "Butter Chicken Curry",
     cookingType: "chicken",
@@ -88,20 +88,6 @@ const PRODUCTS = {
       "250g": { label: "250g chicken" },
       "500g": { label: "500g chicken" },
       "1kg": { label: "1kg chicken" },
-    },
-  },
-  spicy_mustard: {
-    id: "spicy_mustard",
-    name: "Spicy Mustard",
-    recipeId: "spicy_mustard_fish_curry",
-    recipeName: "Spicy Mustard Fish Curry",
-    cookingType: "fish",
-    primaryIngredient: "fish",
-    videoEnvKey: "WHATSAPP_SPICY_MUSTARD_VIDEO_URL",
-    quantities: {
-      "250g": { label: "250g fish" },
-      "500g": { label: "500g fish" },
-      "1kg": { label: "1kg fish" },
     },
   },
 };
@@ -280,7 +266,6 @@ function isStartCookingIntent(text = "") {
       "guidided cooking",
       "guide cooking",
       "cook",
-      "cook fish",
       "show recipe",
       "recipe",
     ]) || lower.includes("guided cook")
@@ -293,7 +278,7 @@ function getFirstAction(text = "") {
   if (isStartCookingIntent(lower)) {
     return "start_guided_cooking";
   }
-  if (matchesAny(lower, ["2", "what is valour", "what is milky mustard"])) {
+  if (matchesAny(lower, ["2", "what is valour", "what is velvety butter"])) {
     return "learn_about_valour";
   }
   if (matchesAny(lower, ["3", "buy", "buy now", "order"])) {
@@ -334,13 +319,6 @@ function getFeedbackType(text = "") {
 function inferCookingType(text = "") {
   const lower = normalizeText(text);
 
-  if (
-    lower.includes("fish") ||
-    lower.includes("macher") ||
-    lower.includes("mustard")
-  ) {
-    return "fish";
-  }
   if (lower.includes("chicken")) return "chicken";
   if (lower.includes("paneer")) return "paneer";
   if (lower.includes("veg") || lower.includes("vegetable")) return "vegetables";
@@ -351,15 +329,12 @@ function inferCookingType(text = "") {
 function inferProduct(text = "") {
   const lower = normalizeText(text);
 
-  if (lower.includes("velvety butter") || lower.includes("butter chicken")) {
-    return "velvety_butter";
-  }
   if (
-    lower.includes("spicy mustard") ||
-    lower.includes("mustard fish") ||
-    lower.includes("fish curry")
+    lower.includes("velvety butter") ||
+    lower.includes("butter chicken") ||
+    lower.includes("liquid spice")
   ) {
-    return "spicy_mustard";
+    return "velvety_butter";
   }
 
   return null;
@@ -1555,8 +1530,8 @@ async function sendMainMenu(phone) {
           },
           {
             type: "text",
-            title: "Explore products",
-            description: "Discover VALOUR cooking bases",
+            title: "Explore the product",
+            description: "Discover the Liquid Spice",
             postbackText: "2",
           },
           {
@@ -2309,7 +2284,88 @@ async function startOrderTrackingFlow({ session, phone }) {
 
 Example: VALOUR-123ABC
 
-You can find it on the order success page after payment.`,
+You can find it on the order success page after payment.
+
+If you cannot find the order number, reply HELP.`,
+  );
+}
+
+async function startTrackingRecovery({ session, phone }) {
+  await updateSession(session._id, {
+    current_state: "tracking_awaiting_lookup_details",
+    support_category: SUPPORT_CATEGORIES["1"],
+    support_order_id: null,
+    activationPreference: "track_order",
+    segment: "tracking_recovery",
+  });
+  await sendMessage(
+    phone,
+    `We can help find your order.
+
+Please send these two details in ONE message:
+1. Registered phone number
+2. Delivery pincode
+
+Example: 9233054806, 799003`,
+  );
+}
+
+function parseTrackingLookupDetails(text = "") {
+  const digitGroups = String(text).match(/\d+/g) || [];
+  const joined = digitGroups.join(" ");
+  const phoneMatch = joined.match(/(?:91)?([6-9]\d{9})/);
+  const pincode = digitGroups.find((group) => /^\d{6}$/.test(group)) || "";
+  return {
+    phone: phoneMatch ? phoneMatch[1] : "",
+    pincode,
+  };
+}
+
+async function handleTrackingLookupDetails({ session, text, phone }) {
+  const details = parseTrackingLookupDetails(text);
+  if (!details.phone || !details.pincode) {
+    await sendMessage(
+      phone,
+      "Please send both the registered 10-digit phone number and 6-digit delivery pincode in one message.",
+    );
+    return;
+  }
+
+  const { orders } = collections();
+  const matches = await orders
+    .find({
+      phone: { $regex: `${details.phone}$` },
+      pincode: details.pincode,
+    })
+    .sort({ createdAt: -1 })
+    .limit(3)
+    .toArray();
+
+  if (!matches.length) {
+    await sendMessage(
+      phone,
+      "We could not find an order with those details. Check the phone number and pincode and try again, or reply CUSTOMER CARE for manual help.",
+    );
+    return;
+  }
+
+  if (matches.length === 1) {
+    await resetToIdle(session._id);
+    await sendMessage(phone, formatShippingStatusMessage(matches[0]));
+    return;
+  }
+
+  await updateSession(session._id, {
+    current_state: "support_awaiting_order_id",
+    segment: "tracking_recovery_matched",
+  });
+  const choices = matches.map((order) => {
+    const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+    return `${orderNumber} — ${order.shippingStatus || "Processing"}`;
+  });
+  await sendMessage(
+    phone,
+    `We found these recent orders:\n\n${choices.join("\n")}\n\nReply with the order number you want to track.`,
   );
 }
 
@@ -2362,7 +2418,7 @@ async function handleSupportCategory({ session, text, phone }) {
 
 Please reply with your order number.
 
-If you cannot find it, reply UNKNOWN.`,
+If this is order tracking and you cannot find it, reply HELP.`,
     );
     return;
   }
@@ -2378,6 +2434,14 @@ Please describe what you need help with in one message. Include any useful detai
 async function handleSupportOrderId({ session, text, phone }) {
   const orderId = text.trim();
 
+  if (
+    session.support_category?.key === "order_status" &&
+    matchesAny(normalizeText(text), ["help", "unknown", "can't find", "cannot find"])
+  ) {
+    await startTrackingRecovery({ session, phone });
+    return;
+  }
+
   if (orderId.length < 3) {
     await sendMessage(
       phone,
@@ -2390,16 +2454,11 @@ async function handleSupportOrderId({ session, text, phone }) {
     const order = await findOrderByReference(orderId, phone);
 
     if (!order) {
-      await updateSession(session._id, {
-        current_state: "support_awaiting_details",
-        support_order_id: orderId,
-      });
-
       await sendMessage(
         phone,
         `We could not find ${orderId} yet.
 
-Please share one more detail, like your registered phone number or what you ordered, and our customer-care team will check it.`,
+Check the order number and try again, or reply HELP so we can find the order using your registered details.`,
       );
       return;
     }
@@ -2539,12 +2598,11 @@ Keep the answer under 25 words.`,
 
 const BRAND_KNOWLEDGE = `
 VALOUR creates Liquid Spice cooking bases that simplify traditional curry preparation while the customer still cooks the final dish.
-VALOUR currently has two products.
-VELVETY BUTTER is VALOUR's cooking base for Butter Chicken Curry. The customer adds chicken and the basic ingredients specified by the verified cooking guide.
-SPICY MUSTARD is VALOUR's cooking base for Spicy Mustard Fish Curry. It reduces mustard grinding and complicated preparation. The customer adds fish and the basic ingredients specified by the verified cooking guide.
-Guided cooking supports 250g, 500g, and 1kg quantities for both products.
+VALOUR currently has one product: Velvety Butter Chicken Liquid Spice.
+VELVETY BUTTER CHICKEN LIQUID SPICE is VALOUR's cooking base for Butter Chicken Curry. The customer adds chicken and the basic ingredients specified by the verified cooking guide.
+Guided cooking supports 250g, 500g, and 1kg chicken quantities.
 VALOUR is not a ready-to-eat meal. Customers still cook the final curry.
-When a customer wants to cook, identify the product first: Velvety Butter for Butter Chicken Curry or Spicy Mustard for Spicy Mustard Fish Curry.
+When a customer wants to cook, use Velvety Butter Chicken Liquid Spice directly; never ask them to select a product.
 Customers can get help with delivery, returns, refunds, damaged or missing items, product use, and cooking.
 Never invent prices, delivery dates, order status, refund eligibility, ingredients, allergens, quantities, timings, or cooking instructions.
 `;
@@ -2599,14 +2657,9 @@ function shouldTryBrandNLU(session, text) {
     "butter chicken",
     "butter chicken curry",
     "chicken",
-    "spicy mustard",
-    "mustard fish",
-    "spicy mustard fish curry",
-    "mustard",
     "product",
     "spicy",
     "spice",
-    "fish",
     "ingredient",
     "allergen",
     "cook",
@@ -2645,7 +2698,7 @@ function shouldTryBrandNLU(session, text) {
 
 async function getResumePrompt(session) {
   if (session.current_state === "product_catalog") {
-    return "To continue, reply 1 for Velvety Butter, 2 for Spicy Mustard, or 3 to compare both.";
+    return "To continue, reply 1 to start cooking, 2 to buy now, or 3 to go back.";
   }
   if (session.current_state === "product_details") {
     return "To continue, reply 1 to start cooking, 2 to buy now, or 3 to go back.";
@@ -2681,7 +2734,11 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "support_awaiting_order_id") {
-    return "To continue with Customer Care, reply with your order number or UNKNOWN.";
+    return "To continue, reply with your order number. If you cannot find it, reply HELP.";
+  }
+
+  if (session.current_state === "tracking_awaiting_lookup_details") {
+    return "To find your order, send the registered phone number and delivery pincode in one message.";
   }
 
   if (session.current_state === "support_awaiting_details") {
@@ -2715,8 +2772,8 @@ function isValidBrandUnderstanding(result) {
       "show_menu",
       "handoff_support",
     ],
-    productId: ["velvety_butter", "spicy_mustard", null],
-    cookingType: ["fish", "chicken", "paneer", "vegetables", null],
+    productId: ["velvety_butter", null],
+    cookingType: ["chicken", "paneer", "vegetables", null],
     painPoint: [
       "ingredient_complexity",
       "taste_inconsistency",
@@ -2795,8 +2852,8 @@ Classify the user's message and respond as strict JSON:
   "scope":"brand"|"out_of_scope"|"uncertain",
   "intent":"product_info"|"cooking_help"|"ingredient_question"|"quantity_question"|"taste_question"|"time_question"|"price_question"|"delivery_question"|"buy_intent"|"support"|"flow_reply"|"unknown",
   "flowAction":"answer"|"start_cooking"|"continue_current_flow"|"show_menu"|"handoff_support",
-  "productId":"velvety_butter"|"spicy_mustard"|null,
-  "cookingType":"fish"|"chicken"|"paneer"|"vegetables"|null,
+  "productId":"velvety_butter"|null,
+  "cookingType":"chicken"|"paneer"|"vegetables"|null,
   "painPoint":"ingredient_complexity"|"taste_inconsistency"|"time_consumption"|"restaurant_style_desire"|null,
   "desiredOutcome":"simpler_cooking"|"better_flavour"|"faster_preparation"|"consistent_results"|null,
   "purchaseIntent":"low"|"medium"|"high"|null,
@@ -2807,7 +2864,7 @@ Classify the user's message and respond as strict JSON:
 
 Rules:
 - Answer only questions about VALOUR, its products, cooking guidance, orders, delivery, returns, refunds, or customer care.
-- Identify Velvety Butter with Butter Chicken Curry and Spicy Mustard with Spicy Mustard Fish Curry when relevant.
+- VALOUR has only Velvety Butter Chicken Liquid Spice, for Butter Chicken Curry. Never offer or invent another product.
 - Do not behave like ChatGPT, an AI assistant, a chatbot, or a recipe encyclopedia.
 - If customer context contains a pain point, tailor the answer to it without mentioning segmentation.
 - Use only the verified brand knowledge below.
@@ -2894,7 +2951,7 @@ async function sendProductExplorationQuestion(phone) {
 async function sendCookingScenarioQuestion(phone) {
   await sendMessage(
     phone,
-    `When making mustard fish curry, which part usually takes the most effort?
+    `When making Butter Chicken, which part usually takes the most effort?
 
 1. Preparing ingredients
 2. Getting the taste right
@@ -2904,29 +2961,11 @@ async function sendCookingScenarioQuestion(phone) {
 }
 
 async function sendProductCatalog(phone) {
-  await sendMessage(
-    phone,
-    `VALOUR helps you cook complete curries with less preparation.
-
-Choose a product:
-
-1. Velvety Butter
-   For Butter Chicken Curry
-
-2. Spicy Mustard
-   For Spicy Mustard Fish Curry
-
-3. Compare both
-
-Reply MENU to return.`,
-  );
+  await sendProductDetails(phone, PRODUCTS.velvety_butter);
 }
 
 async function sendProductDetails(phone, product) {
-  const description =
-    product.id === "velvety_butter"
-      ? "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy."
-      : "You still cook the fish and finish the dish. VALOUR reduces mustard grinding and complicated curry preparation.";
+  const description = "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy.";
 
   await sendMessage(
     phone,
@@ -2943,25 +2982,7 @@ ${description}
 }
 
 async function handleProductCatalog({ session, text, phone }) {
-  const lower = normalizeText(text);
-  const product = parseProductSelection(text);
-
-  if (lower === "3" || lower.includes("compare")) {
-    await sendMessage(
-      phone,
-      `Velvety Butter creates a smooth, rich Butter Chicken Curry with balanced spices.
-
-Spicy Mustard creates a bold, authentic Mustard Fish Curry with fresh mustard flavour.
-
-Reply 1 for Velvety Butter, 2 for Spicy Mustard, or MENU.`,
-    );
-    return;
-  }
-
-  if (!product) {
-    await sendProductCatalog(phone);
-    return;
-  }
+  const product = PRODUCTS.velvety_butter;
 
   await updateSession(session._id, {
     current_state: "product_details",
@@ -3026,24 +3047,7 @@ async function handleProductDetails({ session, text, phone, userId }) {
 
 function parseProductSelection(text = "") {
   const lower = normalizeText(text);
-
-  if (
-    lower === "1" ||
-    lower.includes("velvety butter") ||
-    lower.includes("butter chicken")
-  ) {
-    return PRODUCTS.velvety_butter;
-  }
-  if (
-    lower === "2" ||
-    lower.includes("spicy mustard") ||
-    lower.includes("mustard fish") ||
-    lower.includes("fish curry")
-  ) {
-    return PRODUCTS.spicy_mustard;
-  }
-
-  return null;
+  return lower ? PRODUCTS.velvety_butter : null;
 }
 
 function getCookingIntroVideoUrl(product) {
@@ -3061,10 +3065,7 @@ async function sendCookingIntro(phone, product) {
   }
 
   try {
-    const caption =
-      product.id === "velvety_butter"
-        ? "Before you begin, watch how to use Velvety Butter."
-        : "Before you begin, watch how to use Spicy Mustard.";
+    const caption = "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice.";
     const result = await sendVideoMessage(phone, videoUrl, caption);
     return { sent: true, result };
   } catch (err) {
@@ -3090,15 +3091,12 @@ Reply MENU to return.`,
 }
 
 async function handleProductSelection({ session, text, phone, userId }) {
-  const product = parseProductSelection(text);
+  const product = PRODUCTS.velvety_butter;
 
   if (!product) {
     await sendMessage(
       phone,
-      `Please choose a VALOUR product:
-
-1. Velvety Butter — Butter Chicken Curry
-2. Spicy Mustard — Spicy Mustard Fish Curry`,
+      "Velvety Butter Chicken Liquid Spice is the only VALOUR product currently available.",
     );
     return;
   }
@@ -3218,28 +3216,28 @@ function getProductExplorationChoice(text = "") {
     return {
       painPoint: "ingredient_complexity",
       desiredOutcome: "simpler_cooking",
-      segment: "fish_complexity",
+      segment: "butter_chicken_complexity",
     };
   }
   if (lower === "2" || lower.includes("flavour") || lower.includes("flavor")) {
     return {
       painPoint: "restaurant_style_desire",
       desiredOutcome: "better_flavour",
-      segment: "fish_restaurant",
+      segment: "butter_chicken_restaurant",
     };
   }
   if (lower === "3" || lower.includes("faster") || lower.includes("quick")) {
     return {
       painPoint: "time_consumption",
       desiredOutcome: "faster_preparation",
-      segment: "fish_time",
+      segment: "butter_chicken_time",
     };
   }
   if (lower === "4" || lower.includes("mess") || lower.includes("clean")) {
     return {
       painPoint: "ingredient_complexity",
       desiredOutcome: "simpler_cooking",
-      segment: "fish_complexity",
+      segment: "butter_chicken_complexity",
     };
   }
 
@@ -3253,25 +3251,25 @@ function getCookingScenarioChoice(text = "") {
     return {
       painPoint: "ingredient_complexity",
       desiredOutcome: "simpler_cooking",
-      segment: "fish_complexity",
+      segment: "butter_chicken_complexity",
       response:
-        "Got it. VALOUR gives you one balanced Liquid Spice base, so you do not have to manage mustard, coconut, and multiple prep steps separately.",
+        "Got it. VALOUR gives you one balanced Liquid Spice base, so Butter Chicken needs fewer separate curry-base preparation steps.",
     };
   }
   if (lower === "2" || lower.includes("taste")) {
     return {
       painPoint: "taste_inconsistency",
       desiredOutcome: "consistent_results",
-      segment: "fish_consistency",
+      segment: "butter_chicken_consistency",
       response:
-        "Got it. VALOUR helps keep the mustard and coconut flavour balanced, so the curry feels more consistent each time.",
+        "Got it. VALOUR helps keep the Butter Chicken gravy rich and balanced, so the result feels more consistent each time.",
     };
   }
   if (lower === "3" || lower.includes("clean")) {
     return {
       painPoint: "ingredient_complexity",
       desiredOutcome: "simpler_cooking",
-      segment: "fish_complexity",
+      segment: "butter_chicken_complexity",
       response:
         "Got it. VALOUR reduces grinding, measuring, and extra prep, so there is less kitchen mess around the curry.",
     };
@@ -3284,9 +3282,9 @@ function getCookingScenarioChoice(text = "") {
     return {
       painPoint: "ingredient_complexity",
       desiredOutcome: "simpler_cooking",
-      segment: "fish_complexity",
+      segment: "butter_chicken_complexity",
       response:
-        "Got it. VALOUR brings mustard, coconut, and Bengali-style flavour into one Liquid Spice base, so you do not have to hunt for everything separately.",
+        "Got it. VALOUR combines the Butter Chicken curry-base preparation into one Liquid Spice, so you need fewer separate ingredients.",
     };
   }
 
@@ -3326,7 +3324,7 @@ async function handleProductExploration({ session, text, phone, userId }) {
 
   await updateSession(session._id, {
     ...choice,
-    cookingType: "fish",
+    cookingType: "chicken",
     purchaseIntent: session.purchaseIntent || "medium",
     current_state: "cooking_scenario",
   });
@@ -3335,7 +3333,7 @@ async function handleProductExploration({ session, text, phone, userId }) {
     sessionId: session._id,
     intelligence: {
       ...choice,
-      cookingType: "fish",
+      cookingType: "chicken",
       purchaseIntent: session.purchaseIntent || "medium",
     },
   });
@@ -3355,7 +3353,7 @@ async function askQuantityAfterScenario({ session, phone }) {
 
   await sendMessage(
     phone,
-    `How much fish are you cooking?
+    `How much chicken are you cooking?
 
 1. 250g
 2. 500g
@@ -3421,7 +3419,7 @@ async function handleCookingScenario({ session, text, phone, userId }) {
 
   await updateSession(session._id, {
     ...intelligence,
-    cookingType: "fish",
+    cookingType: "chicken",
     activationPreference: "guided_cooking",
     purchaseIntent: session.purchaseIntent || "medium",
   });
@@ -3430,7 +3428,7 @@ async function handleCookingScenario({ session, text, phone, userId }) {
     sessionId: session._id,
     intelligence: {
       ...intelligence,
-      cookingType: "fish",
+      cookingType: "chicken",
       activationPreference: "guided_cooking",
       purchaseIntent: session.purchaseIntent || "medium",
     },
@@ -3501,8 +3499,7 @@ async function handleQuantity({ session, text, phone, userId }) {
   await updateSession(session._id, {
     current_state: "guided_cooking",
     selected_quantity: quantity,
-    fishQuantity:
-      session.selected_product === "spicy_mustard" ? quantity : null,
+    fishQuantity: null,
     active_flow_id: null,
     active_flow: null,
     active_flow_version: null,
@@ -3548,7 +3545,7 @@ async function completeCooking({ session, phone, userId }) {
     hesitationType: session.hesitationType || null,
     activationPreference: session.activationPreference || "guided_cooking",
     feedbackType: null,
-    cookingType: session.cookingType || "fish",
+    cookingType: session.cookingType || "chicken",
     painPoint: session.painPoint || null,
     desiredOutcome: session.desiredOutcome || null,
     purchaseIntent: session.purchaseIntent || null,
@@ -3617,23 +3614,12 @@ async function completeCooking({ session, phone, userId }) {
 }
 
 function getFeedbackPrompt(productId) {
-  if (productId === "velvety_butter") {
-    return `Cooking complete.
+  return `Cooking complete.
 
 How did your Butter Chicken turn out?
 
 1. Loved it
 2. Too rich or strong
-3. Too mild
-4. Need help`;
-  }
-
-  return `Cooking complete.
-
-How did your Spicy Mustard Fish Curry turn out?
-
-1. Loved it
-2. Mustard flavour too strong
 3. Too mild
 4. Need help`;
 }
@@ -3777,17 +3763,20 @@ Reply MENU to return.`,
 }
 
 async function startWhatsappOrder({ session, phone }) {
+  const product = PRODUCT_CATALOG.velvety_butter;
+  const cart = [{ ...product, aliases: undefined, quantity: 1 }];
   await updateSession(session._id, {
-    current_state: "order_product",
-    order_cart: [],
+    current_state: "order_delivery",
+    order_cart: cart,
     order_draft: {},
+    selected_product: null,
     activationPreference: "buy_now",
     purchaseIntent: "high",
     segment: "whatsapp_buyer",
   });
   await sendMessage(
     phone,
-    `Order VALOUR on WhatsApp\n\n1. Velvety Butter Chicken - Rs. 350 (520 ml)\n2. Mithila Fish Curry - Rs. 350 (520 ml)\n\nReply 1 or 2. Reply CANCEL at any time.`,
+    `${formatWhatsappCart(cart)}\n\nPlease send all delivery details in ONE message, in this order:\n\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street\n\nReply CANCEL at any time.`,
   );
 }
 
@@ -3795,7 +3784,7 @@ async function handleOrderProduct({ session, text, phone }) {
   const requestedItems = parseOrderItems(text);
   if (requestedItems.length) {
     await updateSession(session._id, {
-      current_state: "order_add_more",
+      current_state: "order_delivery",
       order_cart: requestedItems,
       selected_product: null,
       activationPreference: "buy_now",
@@ -3804,7 +3793,7 @@ async function handleOrderProduct({ session, text, phone }) {
     });
     await sendMessage(
       phone,
-      `I found these products and quantities:\n\n${formatWhatsappCart(requestedItems)}\n\nAdd another product? Reply YES or NO to checkout.`,
+      `I found your order:\n\n${formatWhatsappCart(requestedItems)}\n\nPlease send all delivery details in ONE message, in this order:\n\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street`,
     );
     return;
   }
@@ -3812,7 +3801,7 @@ async function handleOrderProduct({ session, text, phone }) {
   if (!product) {
     await sendMessage(
       phone,
-      "Please reply 1 for Velvety Butter Chicken or 2 for Mithila Fish Curry.",
+      "Velvety Butter Chicken Liquid Spice is the only available product. Reply with the number of bottles you want, from 1 to 10.",
     );
     return;
   }
@@ -3838,37 +3827,40 @@ async function handleOrderQuantity({ session, text, phone }) {
   if (existing && existing.quantity + quantity > 10) {
     await sendMessage(
       phone,
-      "You can order up to 10 bottles of each product in one WhatsApp order.",
+      "You can order up to 10 bottles in one WhatsApp order.",
     );
     return;
   }
   if (existing) existing.quantity += quantity;
   else cart.push({ ...product, aliases: undefined, quantity });
   await updateSession(session._id, {
-    current_state: "order_add_more",
+    current_state: "order_delivery",
     order_cart: cart,
     selected_product: null,
   });
   await sendMessage(
     phone,
-    `${formatWhatsappCart(cart)}\n\nAdd another product? Reply YES or NO.`,
+    `${formatWhatsappCart(cart)}\n\nPlease send all delivery details in ONE message, in this order:\n\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street`,
   );
 }
 
 async function handleOrderAddMore({ session, text, phone }) {
   const lower = normalizeText(text);
   if (matchesAny(lower, ["yes", "y", "add", "add more"])) {
-    await updateSession(session._id, { current_state: "order_product" });
+    await updateSession(session._id, {
+      current_state: "order_quantity",
+      selected_product: PRODUCT_CATALOG.velvety_butter.id,
+    });
     await sendMessage(
       phone,
-      "Choose another product:\n\n1. Velvety Butter Chicken\n2. Mithila Fish Curry",
+      "How many more Velvety Butter Chicken Liquid Spice bottles would you like? Reply with 1 to 10.",
     );
     return;
   }
   if (!matchesAny(lower, ["no", "n", "checkout", "pay", "done"])) {
     await sendMessage(
       phone,
-      "Reply YES to add another product or NO to checkout.",
+      "Reply YES to add more bottles or NO to checkout.",
     );
     return;
   }
@@ -4026,12 +4018,10 @@ async function handleLinkedVerifiedOrder(phone, text) {
 
 async function handleWhatsappOrderState({ session, text, phone }) {
   const value = String(text || "").trim();
-  if (session.current_state === "order_product")
-    return handleOrderProduct({ session, text, phone });
-  if (session.current_state === "order_quantity")
-    return handleOrderQuantity({ session, text, phone });
-  if (session.current_state === "order_add_more")
-    return handleOrderAddMore({ session, text, phone });
+  if (["order_product", "order_quantity", "order_add_more"].includes(session.current_state)) {
+    // Migrate any conversation left in the retired product/quantity states.
+    return startWhatsappOrder({ session, phone });
+  }
   if (session.current_state === "order_delivery") {
     const details = parseDeliveryDetails(value);
     const validation = validateDeliveryDetails(details);
@@ -4320,7 +4310,7 @@ async function processIncomingMessage(message) {
 
   if (directOrderItems.length) {
     await updateSession(session._id, {
-      current_state: "order_add_more",
+      current_state: "order_delivery",
       order_cart: directOrderItems,
       order_draft: {},
       selected_product: null,
@@ -4335,7 +4325,7 @@ async function processIncomingMessage(message) {
     });
     await sendMessage(
       phone,
-      `I found these products and quantities:\n\n${formatWhatsappCart(directOrderItems)}\n\nAdd another product? Reply YES or NO to checkout.`,
+      `I found your order:\n\n${formatWhatsappCart(directOrderItems)}\n\nPlease send all delivery details in ONE message, in this order:\n\n1. Name\n2. Locality/area\n3. City\n4. State\n5. Pincode\n6. House number/street`,
     );
     return;
   }
@@ -4441,6 +4431,11 @@ async function processIncomingMessage(message) {
     return;
   }
 
+  if (activeSession.current_state === "tracking_awaiting_lookup_details") {
+    await handleTrackingLookupDetails({ session: activeSession, text, phone });
+    return;
+  }
+
   if (activeSession.current_state === "support_awaiting_details") {
     await createSupportCase({
       session: activeSession,
@@ -4501,7 +4496,7 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (matchesAny(lower, ["2", "what is valour", "what is milky mustard"])) {
+  if (matchesAny(lower, ["2", "what is valour", "what is velvety butter"])) {
     await updateSession(session._id, {
       activationPreference: "learn_about_valour",
       current_state: "product_catalog",
@@ -4528,7 +4523,7 @@ async function processIncomingMessage(message) {
       userId: user._id,
       sessionId: session._id,
       intelligence: {
-        cookingType: activeSession.cookingType || "fish",
+        cookingType: activeSession.cookingType || "chicken",
         purchaseIntent: "high",
         segment: activeSession.segment || "buyer_intent",
       },
@@ -5466,12 +5461,25 @@ function isAuthorizedAdminRequest(req) {
 
 async function verifyFirebasePhoneIdentity(idToken, expectedPhone) {
   const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  const maskedPhone = maskWhatsappPhone(expectedPhone);
+  console.info("[FIREBASE_AUTH][TOKEN_VERIFY_ATTEMPT]", {
+    recipient: maskedPhone,
+    tokenSupplied: Boolean(idToken),
+  });
   if (!apiKey) {
+    console.error("[FIREBASE_AUTH][TOKEN_REJECTED]", {
+      recipient: maskedPhone,
+      reason: "firebase_not_configured",
+    });
     const error = new Error("Firebase phone verification is not configured");
     error.statusCode = 503;
     throw error;
   }
   if (!idToken || String(idToken).length > 5000) {
+    console.warn("[FIREBASE_AUTH][TOKEN_REJECTED]", {
+      recipient: maskedPhone,
+      reason: !idToken ? "token_missing" : "token_length_invalid",
+    });
     const error = new Error("Phone verification is required before ordering");
     error.statusCode = 401;
     throw error;
@@ -5490,12 +5498,21 @@ async function verifyFirebasePhoneIdentity(idToken, expectedPhone) {
       error.statusCode = 401;
       throw error;
     }
+    console.info("[FIREBASE_AUTH][TOKEN_VERIFIED]", {
+      recipient: maskWhatsappPhone(firebaseUser.phoneNumber),
+      firebaseUid: `${firebaseUser.localId.slice(0, 6)}...`,
+    });
     return {
       firebaseUid: firebaseUser.localId,
       firebasePhoneNumber: firebaseUser.phoneNumber,
       phoneVerifiedAt: new Date(),
     };
   } catch (error) {
+    const providerReason = error.response?.data?.error?.message || error.code || error.message;
+    console.warn("[FIREBASE_AUTH][TOKEN_REJECTED]", {
+      recipient: maskedPhone,
+      reason: String(providerReason || "firebase_verification_failed").slice(0, 160),
+    });
     if (error.statusCode) throw error;
     const authError = new Error("Phone verification expired or is invalid");
     authError.statusCode = 401;
@@ -6861,6 +6878,7 @@ module.exports = {
     isValidBrandUnderstanding,
     parseQuantity,
     parseProductSelection,
+    parseTrackingLookupDetails,
     getFeedbackPrompt,
     getInboundMessageText,
     createOrderTrackingToken,

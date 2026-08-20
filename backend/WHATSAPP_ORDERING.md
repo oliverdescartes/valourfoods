@@ -3,7 +3,7 @@
 The webhook conversation now supports a complete WhatsApp checkout:
 
 1. Customer replies `3`, `BUY`, or `ORDER`.
-2. Customer selects products and quantities, then sends one structured delivery-details message. They may also order multiple items in one natural message, such as `Order 2 Velvety Butter Chicken and 3 Mithila Fish Curry`; recognized catalog names and quantities from 1–10 are extracted and shown as a cart before checkout continues.
+2. Customer orders the single Velvety Butter Chicken Liquid Spice SKU and is taken directly to delivery details. The WhatsApp order defaults to one unit; no product or bottle-quantity question is shown.
 3. The server creates a Razorpay Payment Link and sends it in WhatsApp.
 4. Razorpay calls the signed payment webhook after payment.
 5. The MongoDB order is marked paid and WhatsApp sends the order confirmation.

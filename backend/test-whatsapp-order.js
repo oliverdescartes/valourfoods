@@ -12,20 +12,17 @@ const {
 } = require("./whatsapp-order");
 
 assert.equal(parseProduct("Velvety Butter").id, "velvety_butter");
-assert.equal(parseProduct("2").id, "spicy_mustard");
+assert.equal(parseProduct("buy").id, "velvety_butter");
 assert.equal(parseProduct("unknown"), null);
 assert.equal(parseQuantity("3 bottles"), 3);
 assert.equal(parseQuantity("11"), null);
 assert.deepEqual(
-  parseOrderItems("Order 2 velvety butter chicken and 3 mithila fish curry").map(({ id, quantity }) => ({ id, quantity })),
-  [
-    { id: "velvety_butter", quantity: 2 },
-    { id: "spicy_mustard", quantity: 3 },
-  ],
+  parseOrderItems("Order 2 Velvety Butter Chicken Liquid Spice").map(({ id, quantity }) => ({ id, quantity })),
+  [{ id: "velvety_butter", quantity: 2 }],
 );
 assert.deepEqual(
   parseOrderItems("Mithila fish curry x 4").map(({ id, quantity }) => ({ id, quantity })),
-  [{ id: "spicy_mustard", quantity: 4 }],
+  [],
 );
 assert.deepEqual(parseOrderItems("Order 12 unknown sauce"), []);
 assert.deepEqual(calculateTotals([{ price: 350, quantity: 1 }]), {
@@ -40,7 +37,7 @@ assert.deepEqual(calculateTotals([{ price: 350, quantity: 2 }]), {
 });
 assert.equal(calculateTotals([{ price: 350, quantity: 3 }]).shipping, 0);
 assert.match(
-  formatCart([{ name: "Spicy Mustard", price: 350, quantity: 2 }]),
+  formatCart([{ name: "Velvety Butter Chicken Liquid Spice", price: 350, quantity: 2 }]),
   /Total: Rs\. 765/,
 );
 

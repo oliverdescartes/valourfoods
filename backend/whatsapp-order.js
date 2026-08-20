@@ -1,17 +1,10 @@
 const PRODUCT_CATALOG = {
   velvety_butter: {
     id: "velvety_butter",
-    name: "Velvety Butter Chicken",
+    name: "Velvety Butter Chicken Liquid Spice",
     size: "520 ml",
     price: 350,
-    aliases: ["1", "velvety butter", "butter chicken", "velvety"],
-  },
-  spicy_mustard: {
-    id: "spicy_mustard",
-    name: "Mithila Fish Curry",
-    size: "520 ml",
-    price: 350,
-    aliases: ["2", "mithila fish curry", "mithila", "spicy mustard", "mustard fish", "fish curry"],
+    aliases: ["1", "velvety butter chicken liquid spice", "velvety butter", "butter chicken", "velvety", "liquid spice"],
   },
 };
 
@@ -21,9 +14,10 @@ function normalize(value = "") {
 
 function parseProduct(value = "") {
   const input = normalize(value);
+  if (!input) return null;
   return Object.values(PRODUCT_CATALOG).find((product) =>
     product.aliases.some((alias) => input === alias || (alias.length > 2 && input.includes(alias))),
-  ) || null;
+  ) || (/^(buy|order|product|yes)$/i.test(input) ? PRODUCT_CATALOG.velvety_butter : null);
 }
 
 function parseQuantity(value = "") {
