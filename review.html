@@ -160,14 +160,14 @@
     .chip:hover { border-color: var(--brand); }
     .chip[aria-pressed="true"] { border-color: var(--brand); color: #fff; background: var(--brand); }
 
-    input[type="text"], textarea {
+    input[type="text"], input[type="tel"], textarea {
       width: 100%;
       border: 1px solid #d9cbb7;
       border-radius: 12px;
       color: var(--ink);
       background: #fff;
     }
-    input[type="text"] { height: 50px; padding: 0 14px; }
+    input[type="text"], input[type="tel"] { height: 50px; padding: 0 14px; }
     textarea { min-height: 104px; padding: 13px 14px; line-height: 1.5; resize: vertical; }
     input::placeholder, textarea::placeholder { color: #a19487; }
 
