@@ -159,7 +159,10 @@ async function connectDB() {
     orders.createIndex({ createdAt: -1 }),
     orders.createIndex({ shippingStatus: 1, createdAt: -1 }),
     orders.createIndex({ paymentStatus: 1, createdAt: -1 }),
-    orders.createIndex({ checkoutIdempotencyKey: 1 }, { unique: true, sparse: true }),
+    orders.createIndex(
+      { checkoutIdempotencyKey: 1 },
+      { unique: true, sparse: true },
+    ),
     paymentAttempts.createIndex({ razorpayOrderId: 1 }, { unique: true }),
     products.createIndex({ sku: 1 }, { unique: true }),
     couponAssignments.createIndex({ phone: 1, code: 1 }, { unique: true }),
@@ -322,7 +325,10 @@ function getFeedbackType(text = "") {
   const lower = normalizeText(text);
 
   if (lower === "1" || lower.includes("loved")) return "loved_it";
-  if (lower.includes("could be better") || lower.includes("could've been better")) {
+  if (
+    lower.includes("could be better") ||
+    lower.includes("could've been better")
+  ) {
     return "could_be_better";
   }
   if (lower === "2" || lower.includes("strong")) return "too_strong";
@@ -540,7 +546,9 @@ async function markConversationStarted({ userId, sessionId }) {
       sessionId,
       parameters: ["Butter Chicken"],
       scheduledAt: new Date(),
-    }).catch((err) => console.error("New-lead WhatsApp scheduling failed", err.message));
+    }).catch((err) =>
+      console.error("New-lead WhatsApp scheduling failed", err.message),
+    );
   }
 }
 
@@ -861,7 +869,10 @@ async function sendTemplateMessage(
 ) {
   const recipient = normalizeWhatsappRecipient(phone);
   const templateId = getGupshupTemplateId(templateName, languageCode);
-  const validatedMedia = validateWhatsappTemplatePayload(templateName, bodyParams);
+  const validatedMedia = validateWhatsappTemplatePayload(
+    templateName,
+    bodyParams,
+  );
 
   console.log("Gupshup WhatsApp template send attempt", {
     recipient,
@@ -922,9 +933,12 @@ async function sendTemplateMessage(
 }
 
 const WHATSAPP_JOB_POLL_MS = Number(process.env.WHATSAPP_JOB_POLL_MS) || 60_000;
-const WHATSAPP_JOB_MAX_ATTEMPTS = Number(process.env.WHATSAPP_JOB_MAX_ATTEMPTS) || 4;
-const WHATSAPP_MARKETING_DAILY_CAP = Number(process.env.WHATSAPP_MARKETING_DAILY_CAP) || 1;
-const WHATSAPP_MARKETING_WEEKLY_CAP = Number(process.env.WHATSAPP_MARKETING_WEEKLY_CAP) || 3;
+const WHATSAPP_JOB_MAX_ATTEMPTS =
+  Number(process.env.WHATSAPP_JOB_MAX_ATTEMPTS) || 4;
+const WHATSAPP_MARKETING_DAILY_CAP =
+  Number(process.env.WHATSAPP_MARKETING_DAILY_CAP) || 1;
+const WHATSAPP_MARKETING_WEEKLY_CAP =
+  Number(process.env.WHATSAPP_MARKETING_WEEKLY_CAP) || 3;
 let whatsappJobTimer = null;
 
 const WHATSAPP_DELIVERED_DELAY_MS = 15 * 60_000;
@@ -957,7 +971,10 @@ async function sendQuickReplyMessage(phone, message) {
     await saveOutboundWhatsappMessage({
       phone: recipient,
       type: "quick_reply",
-      content: message.content?.text || message.content?.caption || "Quick-reply message sent",
+      content:
+        message.content?.text ||
+        message.content?.caption ||
+        "Quick-reply message sent",
       providerMessageId: getProviderMessageId(response.data),
     });
     return response.data;
@@ -972,18 +989,51 @@ async function sendQuickReplyMessage(phone, message) {
 
 const WHATSAPP_AUTOMATION = {
   new_lead: { env: "WHATSAPP_NEW_LEAD_TEMPLATE_NAME", kind: "marketing" },
-  product_demo: { env: "WHATSAPP_PRODUCT_DEMO_TEMPLATE_NAME", kind: "marketing" },
-  high_intent_followup: { env: "WHATSAPP_HIGH_INTENT_TEMPLATE_NAME", kind: "marketing" },
-  price_delivery_followup: { env: "WHATSAPP_PRICE_DELIVERY_TEMPLATE_NAME", kind: "marketing" },
-  checkout_reminder: { env: "WHATSAPP_CHECKOUT_REMINDER_TEMPLATE_NAME", kind: "marketing" },
-  order_confirmation: { env: "WHATSAPP_ORDER_TEMPLATE_NAME", kind: "transactional" },
-  cod_confirmation: { env: "WHATSAPP_COD_TEMPLATE_NAME", kind: "transactional" },
-  order_status_update: { env: "WHATSAPP_ORDER_STATUS_TEMPLATE_NAME", kind: "transactional" },
-  delivered_ready_to_cook: { env: "WHATSAPP_DELIVERED_TEMPLATE_NAME", kind: "transactional" },
-  cooking_reminder: { env: "WHATSAPP_COOKING_REMINDER_TEMPLATE_NAME", kind: "transactional" },
-  post_cook_feedback: { env: "WHATSAPP_POST_COOK_TEMPLATE_NAME", kind: "transactional" },
+  product_demo: {
+    env: "WHATSAPP_PRODUCT_DEMO_TEMPLATE_NAME",
+    kind: "marketing",
+  },
+  high_intent_followup: {
+    env: "WHATSAPP_HIGH_INTENT_TEMPLATE_NAME",
+    kind: "marketing",
+  },
+  price_delivery_followup: {
+    env: "WHATSAPP_PRICE_DELIVERY_TEMPLATE_NAME",
+    kind: "marketing",
+  },
+  checkout_reminder: {
+    env: "WHATSAPP_CHECKOUT_REMINDER_TEMPLATE_NAME",
+    kind: "marketing",
+  },
+  order_confirmation: {
+    env: "WHATSAPP_ORDER_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  cod_confirmation: {
+    env: "WHATSAPP_COD_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  order_status_update: {
+    env: "WHATSAPP_ORDER_STATUS_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  delivered_ready_to_cook: {
+    env: "WHATSAPP_DELIVERED_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  cooking_reminder: {
+    env: "WHATSAPP_COOKING_REMINDER_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  post_cook_feedback: {
+    env: "WHATSAPP_POST_COOK_TEMPLATE_NAME",
+    kind: "transactional",
+  },
   review_request: { env: "WHATSAPP_REVIEW_TEMPLATE_NAME", kind: "marketing" },
-  reorder_reminder: { env: "WHATSAPP_REORDER_TEMPLATE_NAME", kind: "marketing" },
+  reorder_reminder: {
+    env: "WHATSAPP_REORDER_TEMPLATE_NAME",
+    kind: "marketing",
+  },
 };
 
 const CHECKOUT_SKU_TO_WHATSAPP_PRODUCT = {
@@ -1016,7 +1066,10 @@ const WHATSAPP_TEMPLATE_CONTRACTS = {
 function validateWhatsappTemplatePayload(templateName, parameters = []) {
   const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
   if (!contract) return null;
-  if (!Array.isArray(parameters) || parameters.length !== contract.parameterCount) {
+  if (
+    !Array.isArray(parameters) ||
+    parameters.length !== contract.parameterCount
+  ) {
     throw new Error(
       `Template ${templateName} requires ${contract.parameterCount} parameters; received ${parameters?.length ?? 0}`,
     );
@@ -1028,7 +1081,9 @@ function validateWhatsappTemplatePayload(templateName, parameters = []) {
     );
   }
   if (!contract.mediaType && media) {
-    throw new Error(`Template ${templateName} is text-only but media is configured`);
+    throw new Error(
+      `Template ${templateName} is text-only but media is configured`,
+    );
   }
   return media;
 }
@@ -1038,7 +1093,9 @@ function validateWhatsappAutomationConfig() {
     const templateName = process.env[definition.env];
     if (!templateName) continue;
     if (!WHATSAPP_TEMPLATE_CONTRACTS[templateName]) {
-      throw new Error(`Missing WhatsApp template contract for ${templateName} (${event})`);
+      throw new Error(
+        `Missing WhatsApp template contract for ${templateName} (${event})`,
+      );
     }
     getGupshupTemplateId(templateName, automationLanguage(event));
     const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
@@ -1061,22 +1118,39 @@ function automationLanguage(event) {
     return process.env.WHATSAPP_REVIEW_TEMPLATE_LANGUAGE || "en_US";
   }
   const suffix = event.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-  return process.env[`WHATSAPP_${suffix}_TEMPLATE_LANGUAGE`] ||
-    process.env.WHATSAPP_AUTOMATION_TEMPLATE_LANGUAGE || "en_US";
+  return (
+    process.env[`WHATSAPP_${suffix}_TEMPLATE_LANGUAGE`] ||
+    process.env.WHATSAPP_AUTOMATION_TEMPLATE_LANGUAGE ||
+    "en_US"
+  );
 }
 
 function getProviderMessageId(result = {}) {
-  return result.messageId || result.message_id || result.id ||
-    result.messages?.[0]?.id || result.response?.messageId || null;
+  return (
+    result.messageId ||
+    result.message_id ||
+    result.id ||
+    result.messages?.[0]?.id ||
+    result.response?.messageId ||
+    null
+  );
 }
 
 function getOrderReference(order = {}) {
-  return String(order?._id || order?.orderNumber || order?.razorpayOrderId || "");
+  return String(
+    order?._id || order?.orderNumber || order?.razorpayOrderId || "",
+  );
 }
 
 function getOrderProductName(order = {}) {
-  return (order.products || []).map((item) => item.name).filter(Boolean).join(", ") ||
-    PRODUCTS[order.productId || order.selected_product]?.name || "your VALOUR order";
+  return (
+    (order.products || [])
+      .map((item) => item.name)
+      .filter(Boolean)
+      .join(", ") ||
+    PRODUCTS[order.productId || order.selected_product]?.name ||
+    "your VALOUR order"
+  );
 }
 
 function nextIstSendTime(date = new Date()) {
@@ -1111,20 +1185,25 @@ async function scheduleWhatsappJob({
   metadata = {},
 }) {
   const definition = WHATSAPP_AUTOMATION[event];
-  if (!definition) throw new Error(`Unknown WhatsApp automation event: ${event}`);
+  if (!definition)
+    throw new Error(`Unknown WhatsApp automation event: ${event}`);
   const templateName = process.env[definition.env];
   if (!templateName) {
-    console.log(`WhatsApp automation skipped: ${definition.env} is not configured`);
+    console.log(
+      `WhatsApp automation skipped: ${definition.env} is not configured`,
+    );
     return { scheduled: false, reason: "template_not_configured" };
   }
   const recipient = normalizeWhatsappRecipient(phone);
   if (!recipient) return { scheduled: false, reason: "missing_phone" };
   validateWhatsappTemplatePayload(templateName, parameters);
-  const subject = getOrderReference(order) || String(sessionId || customerId || recipient);
+  const subject =
+    getOrderReference(order) || String(sessionId || customerId || recipient);
   const jobKey = `${event}:${subject}:${occurrence}`;
-  const sendAt = definition.kind === "marketing"
-    ? nextIstSendTime(scheduledAt)
-    : scheduledAt;
+  const sendAt =
+    definition.kind === "marketing"
+      ? nextIstSendTime(scheduledAt)
+      : scheduledAt;
   try {
     const result = await collections().messageJobs.updateOne(
       { jobKey },
@@ -1153,16 +1232,24 @@ async function scheduleWhatsappJob({
       { upsert: true },
     );
     const scheduled = result.upsertedCount === 1;
-    if (scheduled && definition.kind === "transactional" && sendAt <= new Date()) {
+    if (
+      scheduled &&
+      definition.kind === "transactional" &&
+      sendAt <= new Date()
+    ) {
       setImmediate(() => {
         void processDueWhatsappJobs().catch((err) =>
-          console.error("Immediate WhatsApp job processing failed", err.message),
+          console.error(
+            "Immediate WhatsApp job processing failed",
+            err.message,
+          ),
         );
       });
     }
     return { scheduled, jobKey };
   } catch (err) {
-    if (err?.code === 11000) return { scheduled: false, reason: "duplicate", jobKey };
+    if (err?.code === 11000)
+      return { scheduled: false, reason: "duplicate", jobKey };
     throw err;
   }
 }
@@ -1170,7 +1257,13 @@ async function scheduleWhatsappJob({
 async function cancelWhatsappJobs(filter, reason) {
   return collections().messageJobs.updateMany(
     { ...filter, status: "scheduled" },
-    { $set: { status: "cancelled", cancellationReason: reason, cancelledAt: new Date() } },
+    {
+      $set: {
+        status: "cancelled",
+        cancellationReason: reason,
+        cancelledAt: new Date(),
+      },
+    },
   );
 }
 
@@ -1184,19 +1277,29 @@ async function resolveAutomationOrder(job) {
     if (order) return order;
   }
   if (job.metadata?.razorpayOrderId) {
-    return collections().paymentAttempts.findOne({ razorpayOrderId: job.metadata.razorpayOrderId });
+    return collections().paymentAttempts.findOne({
+      razorpayOrderId: job.metadata.razorpayOrderId,
+    });
   }
   return null;
 }
 
 async function runWhatsappQualityGate(job) {
-  if (!job.templateName || !Array.isArray(job.parameters) ||
-      job.parameters.some((value) => !String(value).trim() || String(value).length > 1024)) {
+  if (
+    !job.templateName ||
+    !Array.isArray(job.parameters) ||
+    job.parameters.some(
+      (value) => !String(value).trim() || String(value).length > 1024,
+    )
+  ) {
     return { action: "cancel", reason: "invalid_template_parameters" };
   }
   const order = await resolveAutomationOrder(job);
-  if (["checkout_reminder", "price_delivery_followup"].includes(job.trigger) &&
-      order && String(order.paymentStatus).toLowerCase() === "paid") {
+  if (
+    ["checkout_reminder", "price_delivery_followup"].includes(job.trigger) &&
+    order &&
+    String(order.paymentStatus).toLowerCase() === "paid"
+  ) {
     return { action: "cancel", reason: "payment_completed" };
   }
   if (job.trigger === "checkout_reminder" && !order) {
@@ -1207,8 +1310,12 @@ async function runWhatsappQualityGate(job) {
     });
     if (paidOrder) return { action: "cancel", reason: "payment_completed" };
   }
-  if (job.trigger === "delivered_ready_to_cook" &&
-      !String(order?.shippingStatus || "").toLowerCase().includes("delivered")) {
+  if (
+    job.trigger === "delivered_ready_to_cook" &&
+    !String(order?.shippingStatus || "")
+      .toLowerCase()
+      .includes("delivered")
+  ) {
     return { action: "cancel", reason: "order_not_delivered" };
   }
   if (job.trigger === "reorder_reminder" && job.orderId) {
@@ -1220,9 +1327,14 @@ async function runWhatsappQualityGate(job) {
     if (newerOrder) return { action: "cancel", reason: "customer_reordered" };
   }
   if (job.trigger === "post_cook_feedback" && job.sessionId) {
-    const session = await collections().sessions.findOne({ _id: job.sessionId });
-    if (!session) return { action: "cancel", reason: "cooking_session_not_found" };
-    if (!["guided_cooking", "post_cook_feedback"].includes(session.current_state)) {
+    const session = await collections().sessions.findOne({
+      _id: job.sessionId,
+    });
+    if (!session)
+      return { action: "cancel", reason: "cooking_session_not_found" };
+    if (
+      !["guided_cooking", "post_cook_feedback"].includes(session.current_state)
+    ) {
       return { action: "cancel", reason: "cooking_journey_no_longer_active" };
     }
   }
@@ -1240,16 +1352,41 @@ async function runWhatsappQualityGate(job) {
   if (job.kind === "marketing") {
     const now = new Date();
     const [dailyCount, weeklyCount] = await Promise.all([
-      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", submittedAt: { $gte: new Date(now - 24 * 60 * 60_000) } }),
-      collections().messageJobs.countDocuments({ phone: job.phone, kind: "marketing", submittedAt: { $gte: new Date(now - 7 * 24 * 60 * 60_000) } }),
+      collections().messageJobs.countDocuments({
+        phone: job.phone,
+        kind: "marketing",
+        submittedAt: { $gte: new Date(now - 24 * 60 * 60_000) },
+      }),
+      collections().messageJobs.countDocuments({
+        phone: job.phone,
+        kind: "marketing",
+        submittedAt: { $gte: new Date(now - 7 * 24 * 60 * 60_000) },
+      }),
     ]);
-    if (dailyCount >= WHATSAPP_MARKETING_DAILY_CAP || weeklyCount >= WHATSAPP_MARKETING_WEEKLY_CAP) {
-      return { action: "reschedule", reason: "frequency_cap", scheduledAt: nextIstSendTime(new Date(now.getTime() + 24 * 60 * 60_000)) };
+    if (
+      dailyCount >= WHATSAPP_MARKETING_DAILY_CAP ||
+      weeklyCount >= WHATSAPP_MARKETING_WEEKLY_CAP
+    ) {
+      return {
+        action: "reschedule",
+        reason: "frequency_cap",
+        scheduledAt: nextIstSendTime(
+          new Date(now.getTime() + 24 * 60 * 60_000),
+        ),
+      };
     }
     if (job.trigger !== "new_lead") {
-      const user = await collections().users.findOne({ phone: { $regex: `${String(job.phone).slice(-10)}$` } });
+      const user = await collections().users.findOne({
+        phone: { $regex: `${String(job.phone).slice(-10)}$` },
+      });
       if (user?.last_seen_at && user.last_seen_at > job.createdAt) {
-        return { action: "reschedule", reason: "recent_customer_reply", scheduledAt: nextIstSendTime(new Date(user.last_seen_at.getTime() + 24 * 60 * 60_000)) };
+        return {
+          action: "reschedule",
+          reason: "recent_customer_reply",
+          scheduledAt: nextIstSendTime(
+            new Date(user.last_seen_at.getTime() + 24 * 60 * 60_000),
+          ),
+        };
       }
     }
   }
@@ -1276,15 +1413,42 @@ async function processDueWhatsappJobs() {
     try {
       const decision = await runWhatsappQualityGate(job);
       if (decision.action === "cancel") {
-        await collections().messageJobs.updateOne({ _id: job._id }, { $set: { status: "cancelled", cancellationReason: decision.reason, cancelledAt: new Date() } });
-        console.log("[WHATSAPP][JOB_CANCELLED]", { jobKey: job.jobKey, reason: decision.reason });
+        await collections().messageJobs.updateOne(
+          { _id: job._id },
+          {
+            $set: {
+              status: "cancelled",
+              cancellationReason: decision.reason,
+              cancelledAt: new Date(),
+            },
+          },
+        );
+        console.log("[WHATSAPP][JOB_CANCELLED]", {
+          jobKey: job.jobKey,
+          reason: decision.reason,
+        });
         continue;
       }
       if (decision.action === "reschedule") {
-        await collections().messageJobs.updateOne({ _id: job._id }, { $set: { status: "scheduled", scheduledAt: decision.scheduledAt, rescheduleReason: decision.reason }, $unset: { processingStartedAt: "" } });
+        await collections().messageJobs.updateOne(
+          { _id: job._id },
+          {
+            $set: {
+              status: "scheduled",
+              scheduledAt: decision.scheduledAt,
+              rescheduleReason: decision.reason,
+            },
+            $unset: { processingStartedAt: "" },
+          },
+        );
         continue;
       }
-      const result = await sendTemplateMessage(job.phone, job.templateName, job.languageCode, job.parameters);
+      const result = await sendTemplateMessage(
+        job.phone,
+        job.templateName,
+        job.languageCode,
+        job.parameters,
+      );
       if (job.trigger === "post_cook_feedback" && job.sessionId) {
         await updateSession(job.sessionId, {
           current_state: "post_cook_feedback",
@@ -1296,7 +1460,15 @@ async function processDueWhatsappJobs() {
       const providerMessageId = getProviderMessageId(result);
       await collections().messageJobs.updateOne(
         { _id: job._id },
-        { $set: { status: "submitted", submittedAt: new Date(), providerMessageId, providerResponse: result }, $unset: { processingStartedAt: "" } },
+        {
+          $set: {
+            status: "submitted",
+            submittedAt: new Date(),
+            providerMessageId,
+            providerResponse: result,
+          },
+          $unset: { processingStartedAt: "" },
+        },
       );
       console.log("[WHATSAPP][SUBMITTED]", {
         jobKey: job.jobKey,
@@ -1304,16 +1476,32 @@ async function processDueWhatsappJobs() {
         templateName: job.templateName,
         providerMessageId,
         providerStatus: result?.status || null,
-        explanation: "Gupshup accepted the request; this is not delivery confirmation",
+        explanation:
+          "Gupshup accepted the request; this is not delivery confirmation",
       });
     } catch (err) {
       const attemptCount = Number(job.attemptCount || 0) + 1;
-      const permanent = /template|parameter|invalid phone|destination/i.test(String(err.response?.data?.message || err.message));
+      const permanent = /template|parameter|invalid phone|destination/i.test(
+        String(err.response?.data?.message || err.message),
+      );
       const failed = permanent || attemptCount >= WHATSAPP_JOB_MAX_ATTEMPTS;
-      const delay = Math.min(60, 5 * (3 ** Math.max(0, attemptCount - 1))) * 60_000;
+      const delay =
+        Math.min(60, 5 * 3 ** Math.max(0, attemptCount - 1)) * 60_000;
       await collections().messageJobs.updateOne(
         { _id: job._id },
-        { $set: { status: failed ? "failed" : "scheduled", attemptCount, scheduledAt: new Date(Date.now() + delay), lastError: String(err.response?.data?.message || err.message).slice(0, 500), failedAt: failed ? new Date() : null }, $unset: { processingStartedAt: "" } },
+        {
+          $set: {
+            status: failed ? "failed" : "scheduled",
+            attemptCount,
+            scheduledAt: new Date(Date.now() + delay),
+            lastError: String(err.response?.data?.message || err.message).slice(
+              0,
+              500,
+            ),
+            failedAt: failed ? new Date() : null,
+          },
+          $unset: { processingStartedAt: "" },
+        },
       );
       console.error("[WHATSAPP][SEND_ERROR]", {
         jobKey: job.jobKey,
@@ -1329,34 +1517,59 @@ async function processDueWhatsappJobs() {
 async function recoverStuckWhatsappJobs() {
   if (!mongoReady) return;
   await collections().messageJobs.updateMany(
-    { status: "processing", processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) }, providerMessageId: null },
-    { $set: { status: "scheduled", scheduledAt: new Date(), recoveryReason: "processing_timeout" }, $unset: { processingStartedAt: "" } },
+    {
+      status: "processing",
+      processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) },
+      providerMessageId: null,
+    },
+    {
+      $set: {
+        status: "scheduled",
+        scheduledAt: new Date(),
+        recoveryReason: "processing_timeout",
+      },
+      $unset: { processingStartedAt: "" },
+    },
   );
 }
 
 function startWhatsappJobWorker() {
   if (whatsappJobTimer) return;
-  void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) => console.error("WhatsApp job worker failed", err.message));
+  void recoverStuckWhatsappJobs()
+    .then(processDueWhatsappJobs)
+    .catch((err) => console.error("WhatsApp job worker failed", err.message));
   whatsappJobTimer = setInterval(() => {
-    void processDueWhatsappJobs().catch((err) => console.error("WhatsApp job worker failed", err.message));
+    void processDueWhatsappJobs().catch((err) =>
+      console.error("WhatsApp job worker failed", err.message),
+    );
   }, WHATSAPP_JOB_POLL_MS);
 }
 
 async function recordWhatsappJobStatus(status = {}) {
   if (!mongoReady || !status.id) return;
   const normalized = String(status.status || "").toLowerCase();
-  const allowed = new Set(["submitted", "enqueued", "sent", "delivered", "read", "failed"]);
+  const allowed = new Set([
+    "submitted",
+    "enqueued",
+    "sent",
+    "delivered",
+    "read",
+    "failed",
+  ]);
   if (!allowed.has(normalized)) return;
   const rawTimestamp = Number(status.timestamp);
   const timestamp = Number.isFinite(rawTimestamp)
-    ? new Date(rawTimestamp > 10_000_000_000 ? rawTimestamp : rawTimestamp * 1000)
+    ? new Date(
+        rawTimestamp > 10_000_000_000 ? rawTimestamp : rawTimestamp * 1000,
+      )
     : new Date();
   const updates = {
     status: normalized,
     [`${normalized}At`]: timestamp,
     statusUpdatedAt: new Date(),
   };
-  if (status.whatsappMessageId) updates.whatsappMessageId = status.whatsappMessageId;
+  if (status.whatsappMessageId)
+    updates.whatsappMessageId = status.whatsappMessageId;
   if (status.errors) updates.providerErrors = status.errors;
   const allowedPreviousStatuses = {
     submitted: ["processing", "submitted"],
@@ -1384,7 +1597,8 @@ async function recordWhatsappJobStatus(status = {}) {
     console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
       providerMessageId: status.id,
       status: normalized,
-      explanation: "No message_jobs record matched this Gupshup message ID/status progression",
+      explanation:
+        "No message_jobs record matched this Gupshup message ID/status progression",
     });
   }
 }
@@ -1396,21 +1610,34 @@ function parseGupshupV2Webhook(body = {}) {
     return {
       status: {
         id: payload.gsId || payload.id,
-        whatsappMessageId: payload.gsId ? payload.id : payload.payload?.whatsappMessageId,
+        whatsappMessageId: payload.gsId
+          ? payload.id
+          : payload.payload?.whatsappMessageId,
         destination: payload.destination,
         status: eventType,
         timestamp: payload.ts || body.timestamp,
-        errors: eventType === "failed"
-          ? payload.payload || { code: payload.code, reason: payload.reason }
-          : undefined,
+        errors:
+          eventType === "failed"
+            ? payload.payload || { code: payload.code, reason: payload.reason }
+            : undefined,
       },
       message: null,
     };
   }
   if (body.type !== "message") return { status: null, message: null };
   const inner = payload.payload || {};
-  const from = payload.source || payload.sender?.phone || payload.phone || inner.sender?.phone;
-  const text = inner.text || inner.postbackText || inner.title || inner.body || inner.payload || "";
+  const from =
+    payload.source ||
+    payload.sender?.phone ||
+    payload.phone ||
+    inner.sender?.phone;
+  const text =
+    inner.text ||
+    inner.postbackText ||
+    inner.title ||
+    inner.body ||
+    inner.payload ||
+    "";
   if (!from) return { status: null, message: null };
   return {
     status: null,
@@ -1482,7 +1709,9 @@ async function getOrCreateUser(phone, signals = {}) {
 }
 
 async function findUserByPhone(phone) {
-  const digits = String(phone || "").replace(/\D/g, "").slice(-10);
+  const digits = String(phone || "")
+    .replace(/\D/g, "")
+    .slice(-10);
   if (!/^\d{10}$/.test(digits)) return null;
   return collections().users.findOne({
     phone: { $regex: `${digits}$` },
@@ -1754,10 +1983,12 @@ async function findOrderByReference(reference, phone = "") {
 function formatProductsForWhatsapp(products = []) {
   if (!products.length) return "Items will be confirmed by our team.";
 
-  return products.map((item) => {
-    const size = String(item.size || "").trim();
-    return `${item.name}${size ? ` (${size})` : ""} x ${item.quantity}`;
-  }).join(", ");
+  return products
+    .map((item) => {
+      const size = String(item.size || "").trim();
+      return `${item.name}${size ? ` (${size})` : ""} x ${item.quantity}`;
+    })
+    .join(", ");
 }
 
 function getPublicOrderItems(order = {}) {
@@ -1849,10 +2080,12 @@ function getCodTemplateParams(order) {
 
 function getOrderStatusTemplateParams(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
-  const paymentMode = order.paymentMethodLabel || order.paymentMethod || "Prepaid";
-  const paymentStatus = String(order.paymentStatus || "paid").toLowerCase() === "paid"
-    ? "Paid"
-    : "Payment due";
+  const paymentMode =
+    order.paymentMethodLabel || order.paymentMethod || "Prepaid";
+  const paymentStatus =
+    String(order.paymentStatus || "paid").toLowerCase() === "paid"
+      ? "Paid"
+      : "Payment due";
   return [
     orderNumber,
     order.shippingStatus || "Processing",
@@ -1895,7 +2128,8 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
   }
 
   const createdAt = new Date(order.createdAt || 0);
-  const base = Number.isNaN(createdAt.getTime()) || createdAt < now ? now : createdAt;
+  const base =
+    Number.isNaN(createdAt.getTime()) || createdAt < now ? now : createdAt;
   const firstDay = new Date(base.getTime() + 24 * 60 * 60_000);
   const secondDay = new Date(base.getTime() + 2 * 24 * 60 * 60_000);
   return `${formatter.format(firstDay)} – ${formatter.format(secondDay)}`;
@@ -1911,14 +2145,14 @@ function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
     maxDays < minDays ||
     maxDays > 30
   ) {
-    throw new Error("Checkout delivery timing has not been configured in MongoDB");
+    throw new Error(
+      "Checkout delivery timing has not been configured in MongoDB",
+    );
   }
   const ist = new Date(now.getTime() + 330 * 60_000);
-  const base = new Date(Date.UTC(
-    ist.getUTCFullYear(),
-    ist.getUTCMonth(),
-    ist.getUTCDate(),
-  ));
+  const base = new Date(
+    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()),
+  );
   const toDateOnly = (daysAhead) => {
     const date = new Date(base);
     date.setUTCDate(date.getUTCDate() + daysAhead);
@@ -1938,7 +2172,8 @@ const ORDER_TRACKING_TOKEN_TTL_SECONDS = 180 * 24 * 60 * 60;
 
 function createOrderTrackingToken(order, now = Date.now()) {
   const orderReference = String(order._id || order.orderNumber || "");
-  if (!orderReference) throw new Error("Cannot create tracking token without an order reference");
+  if (!orderReference)
+    throw new Error("Cannot create tracking token without an order reference");
 
   const payload = Buffer.from(
     JSON.stringify({
@@ -1975,11 +2210,14 @@ function readOrderTrackingToken(token = "", now = Date.now()) {
   }
 
   try {
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
     // Tokens issued before expiries were introduced contained only the order
     // reference. Keep them readable so links already sent to customers work.
     if (parsed.purpose && parsed.purpose !== "order_tracking") return null;
-    if (parsed.expiresAt && parsed.expiresAt < Math.floor(now / 1000)) return null;
+    if (parsed.expiresAt && parsed.expiresAt < Math.floor(now / 1000))
+      return null;
     return parsed.orderReference ? String(parsed.orderReference) : null;
   } catch (_err) {
     return null;
@@ -1990,7 +2228,8 @@ const COD_PAYMENT_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function createOrderPaymentToken(order, now = Date.now()) {
   const orderReference = String(order._id || order.orderNumber || "");
-  if (!orderReference) throw new Error("Cannot create payment token without an order reference");
+  if (!orderReference)
+    throw new Error("Cannot create payment token without an order reference");
 
   const payload = Buffer.from(
     JSON.stringify({
@@ -2021,16 +2260,20 @@ function readOrderPaymentToken(token = "", now = Date.now()) {
   if (
     receivedBuffer.length !== expectedBuffer.length ||
     !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
-  ) return null;
+  )
+    return null;
 
   try {
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
     if (
       parsed.purpose !== "cod_payment" ||
       !parsed.orderReference ||
       !Number.isFinite(parsed.expiresAt) ||
       parsed.expiresAt < Math.floor(now / 1000)
-    ) return null;
+    )
+      return null;
     return String(parsed.orderReference);
   } catch (_err) {
     return null;
@@ -2041,7 +2284,8 @@ const REVIEW_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 function createReviewToken(order, now = Date.now()) {
   const orderReference = String(order._id || order.orderNumber || "");
-  if (!orderReference) throw new Error("Cannot create review token without an order reference");
+  if (!orderReference)
+    throw new Error("Cannot create review token without an order reference");
 
   const payload = Buffer.from(
     JSON.stringify({
@@ -2072,31 +2316,53 @@ function readReviewToken(token = "", now = Date.now()) {
   if (
     receivedBuffer.length !== expectedBuffer.length ||
     !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
-  ) return null;
+  )
+    return null;
 
   try {
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
     if (
       parsed.purpose !== "customer_review" ||
       !parsed.orderReference ||
       !Number.isFinite(parsed.expiresAt) ||
       parsed.expiresAt < Math.floor(now / 1000)
-    ) return null;
+    )
+      return null;
     return String(parsed.orderReference);
   } catch (_err) {
     return null;
   }
 }
 
+function createPublicReviewToken() {
+  return crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update("public_review:v1")
+    .digest("base64url");
+}
+
+function isPublicReviewToken(token = "") {
+  const received = Buffer.from(String(token));
+  const expected = Buffer.from(createPublicReviewToken());
+  return (
+    received.length === expected.length &&
+    crypto.timingSafeEqual(received, expected)
+  );
+}
+
 function getReviewUrl(order) {
   const baseUrl = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
-  if (!baseUrl) throw new Error("PUBLIC_SITE_URL is required to create review links");
+  if (!baseUrl)
+    throw new Error("PUBLIC_SITE_URL is required to create review links");
   return `${baseUrl}/review.html?token=${encodeURIComponent(createReviewToken(order))}`;
 }
 
 async function sendReviewRequestWhatsapp(order) {
   const templateName = process.env.WHATSAPP_REVIEW_TEMPLATE_NAME;
-  if (!templateName) throw new Error("WHATSAPP_REVIEW_TEMPLATE_NAME is not configured");
+  if (!templateName)
+    throw new Error("WHATSAPP_REVIEW_TEMPLATE_NAME is not configured");
 
   const phone = order.whatsappPhone || order.phone;
   return sendTemplateMessage(
@@ -2153,14 +2419,19 @@ async function saveOutboundWhatsappMessage({
     });
   } catch (error) {
     if (error?.code !== 11000) {
-      console.error("WhatsApp outbound conversation recording failed", error.message);
+      console.error(
+        "WhatsApp outbound conversation recording failed",
+        error.message,
+      );
     }
   }
 }
 
 const WHATSAPP_MEDIA_TYPES = new Set(["image", "video", "document"]);
 
-function getWhatsappTemplateMediaConfig(rawValue = process.env.WHATSAPP_TEMPLATE_MEDIA) {
+function getWhatsappTemplateMediaConfig(
+  rawValue = process.env.WHATSAPP_TEMPLATE_MEDIA,
+) {
   if (!rawValue) return {};
 
   let config;
@@ -2171,7 +2442,9 @@ function getWhatsappTemplateMediaConfig(rawValue = process.env.WHATSAPP_TEMPLATE
   }
 
   if (!config || Array.isArray(config) || typeof config !== "object") {
-    throw new Error("WHATSAPP_TEMPLATE_MEDIA must be a JSON object keyed by template name");
+    throw new Error(
+      "WHATSAPP_TEMPLATE_MEDIA must be a JSON object keyed by template name",
+    );
   }
 
   for (const [templateName, media] of Object.entries(config)) {
@@ -2183,7 +2456,8 @@ function getWhatsappTemplateMediaConfig(rawValue = process.env.WHATSAPP_TEMPLATE
     }
     try {
       const parsed = new URL(String(media?.url || ""));
-      if (parsed.protocol !== "https:" || !parsed.hostname) throw new Error("not public HTTPS");
+      if (parsed.protocol !== "https:" || !parsed.hostname)
+        throw new Error("not public HTTPS");
     } catch (_error) {
       throw new Error(
         `WHATSAPP_TEMPLATE_MEDIA.${templateName}.url must be a public HTTPS URL`,
@@ -2212,20 +2486,22 @@ function getWhatsappTemplateMedia(templateName) {
 
 function isHumanSupportRequest(text = "") {
   const lower = normalizeText(text);
-  return matchesAny(lower, [
-    "help",
-    "need help",
-    "need help?",
-    "customer care",
-    "contact support",
-    "need support",
-    "human support",
-    "live agent",
-    "speak to an agent",
-    "talk to an agent",
-    "speak to a human",
-    "talk to a human",
-  ]) || lower.includes("customer care agent");
+  return (
+    matchesAny(lower, [
+      "help",
+      "need help",
+      "need help?",
+      "customer care",
+      "contact support",
+      "need support",
+      "human support",
+      "live agent",
+      "speak to an agent",
+      "talk to an agent",
+      "speak to a human",
+      "talk to a human",
+    ]) || lower.includes("customer care agent")
+  );
 }
 
 async function sendOrderConfirmationWhatsapp(order) {
@@ -2336,13 +2612,15 @@ async function schedulePaidOrderAutomation(order) {
   await cancelWhatsappJobs(
     {
       phone: normalizeWhatsappRecipient(phone),
-      trigger: { $in: [
-        "checkout_reminder",
-        "price_delivery_followup",
-        "product_demo",
-        "high_intent_followup",
-        "reorder_reminder",
-      ] },
+      trigger: {
+        $in: [
+          "checkout_reminder",
+          "price_delivery_followup",
+          "product_demo",
+          "high_intent_followup",
+          "reorder_reminder",
+        ],
+      },
     },
     "payment_completed",
   );
@@ -2550,7 +2828,12 @@ async function handleSupportOrderId({ session, text, phone }) {
 
   if (
     session.support_category?.key === "order_status" &&
-    matchesAny(normalizeText(text), ["help", "unknown", "can't find", "cannot find"])
+    matchesAny(normalizeText(text), [
+      "help",
+      "unknown",
+      "can't find",
+      "cannot find",
+    ])
   ) {
     await startTrackingRecovery({ session, phone });
     return;
@@ -3035,10 +3318,19 @@ User message: ${text}`,
           phone,
           customerId: userId,
           sessionId: session._id,
-          parameters: [product.name, `Rs. ${product.price}`, "Confirmed at checkout"],
+          parameters: [
+            product.name,
+            `Rs. ${product.price}`,
+            "Confirmed at checkout",
+          ],
           scheduledAt: new Date(Date.now() + 30 * 60_000),
           metadata: { productId },
-        }).catch((err) => console.error("Price/delivery follow-up scheduling failed", err.message));
+        }).catch((err) =>
+          console.error(
+            "Price/delivery follow-up scheduling failed",
+            err.message,
+          ),
+        );
       }
     }
 
@@ -3079,7 +3371,8 @@ async function sendProductCatalog(phone) {
 }
 
 async function sendProductDetails(phone, product) {
-  const description = "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy.";
+  const description =
+    "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy.";
 
   await sendMessage(
     phone,
@@ -3115,7 +3408,9 @@ async function handleProductCatalog({ session, text, phone }) {
     parameters: [product.recipeName],
     scheduledAt: new Date(Date.now() + 18 * 60 * 60_000),
     metadata: { productId: product.id },
-  }).catch((err) => console.error("Product-demo scheduling failed", err.message));
+  }).catch((err) =>
+    console.error("Product-demo scheduling failed", err.message),
+  );
   void scheduleWhatsappJob({
     event: "high_intent_followup",
     phone,
@@ -3123,7 +3418,9 @@ async function handleProductCatalog({ session, text, phone }) {
     sessionId: session._id,
     scheduledAt: new Date(Date.now() + 24 * 60 * 60_000),
     metadata: { productId: product.id },
-  }).catch((err) => console.error("High-intent scheduling failed", err.message));
+  }).catch((err) =>
+    console.error("High-intent scheduling failed", err.message),
+  );
 }
 
 async function handleProductDetails({ session, text, phone, userId }) {
@@ -3179,7 +3476,8 @@ async function sendCookingIntro(phone, product) {
   }
 
   try {
-    const caption = "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice.";
+    const caption =
+      "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice.";
     const result = await sendVideoMessage(phone, videoUrl, caption);
     return { sent: true, result };
   } catch (err) {
@@ -3259,7 +3557,9 @@ async function sendQuickCookingDemo(phone) {
     "Here’s a quick look at how easy it is to cook Butter Chicken with VALOUR.";
 
   if (!videoUrl) {
-    console.warn("WhatsApp quick demo was not sent because WHATSAPP_VELVETY_BUTTER_VIDEO_URL is not configured.");
+    console.warn(
+      "WhatsApp quick demo was not sent because WHATSAPP_VELVETY_BUTTER_VIDEO_URL is not configured.",
+    );
     await sendMessage(
       phone,
       "The quick cooking demo is temporarily unavailable. Reply HELP if you’d like assistance.",
@@ -3345,13 +3645,20 @@ async function beginTutorialCooking({ session, phone, userId, product }) {
     occurrence: "tutorial-no-response",
     parameters: [],
     scheduledAt: new Date(Date.now() + 30 * 60_000),
-    metadata: { reason: "tutorial_no_response_fallback", productId: product.id },
+    metadata: {
+      reason: "tutorial_no_response_fallback",
+      productId: product.id,
+    },
   })
-    .then((result) => console.log("[WHATSAPP][POST_COOK_FALLBACK_SCHEDULED]", {
-      recipient: maskWhatsappPhone(phone),
-      ...result,
-    }))
-    .catch((err) => console.error("Post-cook fallback scheduling failed", err.message));
+    .then((result) =>
+      console.log("[WHATSAPP][POST_COOK_FALLBACK_SCHEDULED]", {
+        recipient: maskWhatsappPhone(phone),
+        ...result,
+      }),
+    )
+    .catch((err) =>
+      console.error("Post-cook fallback scheduling failed", err.message),
+    );
 }
 
 async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
@@ -3742,7 +4049,10 @@ async function completeCooking({ session, phone, userId }) {
     "customer_confirmed_cooking_complete",
   );
 
-  await sendMessage(phone, "Cooking complete. We’ll check in shortly to hear how it turned out.");
+  await sendMessage(
+    phone,
+    "Cooking complete. We’ll check in shortly to hear how it turned out.",
+  );
   void scheduleWhatsappJob({
     event: "post_cook_feedback",
     phone,
@@ -3752,11 +4062,15 @@ async function completeCooking({ session, phone, userId }) {
     parameters: [],
     scheduledAt: new Date(Date.now() + 30 * 60_000),
   })
-    .then((result) => console.log("[WHATSAPP][POST_COOK_FEEDBACK_SCHEDULED]", {
-      recipient: maskWhatsappPhone(phone),
-      ...result,
-    }))
-    .catch((err) => console.error("Post-cook feedback scheduling failed", err.message));
+    .then((result) =>
+      console.log("[WHATSAPP][POST_COOK_FEEDBACK_SCHEDULED]", {
+        recipient: maskWhatsappPhone(phone),
+        ...result,
+      }),
+    )
+    .catch((err) =>
+      console.error("Post-cook feedback scheduling failed", err.message),
+    );
 
   const order = await collections().orders.findOne(
     { phone: { $regex: `${String(phone).slice(-10)}$` } },
@@ -3772,11 +4086,15 @@ async function completeCooking({ session, phone, userId }) {
       parameters: [getOrderProductName(order)],
       scheduledAt: new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
     })
-      .then((result) => console.log("[WHATSAPP][POST_COOK_REORDER_SCHEDULED]", {
-        recipient: maskWhatsappPhone(phone),
-        ...result,
-      }))
-      .catch((err) => console.error("Post-cook reorder scheduling failed", err.message));
+      .then((result) =>
+        console.log("[WHATSAPP][POST_COOK_REORDER_SCHEDULED]", {
+          recipient: maskWhatsappPhone(phone),
+          ...result,
+        }),
+      )
+      .catch((err) =>
+        console.error("Post-cook reorder scheduling failed", err.message),
+      );
   }
 }
 
@@ -3801,7 +4119,16 @@ async function handleGuidedCooking({ session, text, phone, userId }) {
     return;
   }
 
-  if (matchesAny(lower, ["done", "finished", "complete", "completed", "cooked", "ready"])) {
+  if (
+    matchesAny(lower, [
+      "done",
+      "finished",
+      "complete",
+      "completed",
+      "cooked",
+      "ready",
+    ])
+  ) {
     await completeCooking({ session, phone, userId });
     return;
   }
@@ -3886,7 +4213,10 @@ ${getReviewUrl(order)}`
     return;
   }
 
-  if (lower.includes("could be better") || lower.includes("could've been better")) {
+  if (
+    lower.includes("could be better") ||
+    lower.includes("could've been better")
+  ) {
     await recordPostCookFeedback({ session, userId, feedbackType });
     const order = await collections().orders.findOne(
       { phone: { $regex: `${String(phone).slice(-10)}$` } },
@@ -4221,7 +4551,11 @@ async function handleLinkedVerifiedOrder(phone, text) {
 
 async function handleWhatsappOrderState({ session, text, phone }) {
   const value = String(text || "").trim();
-  if (["order_product", "order_quantity", "order_add_more"].includes(session.current_state)) {
+  if (
+    ["order_product", "order_quantity", "order_add_more"].includes(
+      session.current_state,
+    )
+  ) {
     // Migrate any conversation left in the retired product/quantity states.
     return startWhatsappOrder({ session, phone });
   }
@@ -4477,7 +4811,10 @@ async function processIncomingMessage(message) {
       { phone: normalizeWhatsappRecipient(phone), trigger: "review_request" },
       "customer_selected_not_now",
     );
-    await sendMessage(phone, "No problem. You can review VALOUR whenever you are ready.");
+    await sendMessage(
+      phone,
+      "No problem. You can review VALOUR whenever you are ready.",
+    );
     return;
   }
 
@@ -4527,7 +4864,14 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (matchesAny(lower, ["tomorrow", "this weekend", "weekend", "remind me later"])) {
+  if (
+    matchesAny(lower, [
+      "tomorrow",
+      "this weekend",
+      "weekend",
+      "remind me later",
+    ])
+  ) {
     const latestOrder = await collections().orders.findOne(
       { phone: { $regex: `${String(phone).slice(-10)}$` } },
       { sort: { createdAt: -1 } },
@@ -4538,13 +4882,18 @@ async function processIncomingMessage(message) {
       customerId: user._id,
       order: latestOrder,
       sessionId: session._id,
-      parameters: [latestOrder ? getOrderProductName(latestOrder) : "your VALOUR dish"],
+      parameters: [
+        latestOrder ? getOrderProductName(latestOrder) : "your VALOUR dish",
+      ],
       scheduledAt: getCookingReminderTime(lower),
       occurrence: Date.now().toString(),
     });
-    await sendMessage(phone, reminder.scheduled
-      ? "Done. We’ll remind you here at the right time."
-      : "That reminder is already scheduled.");
+    await sendMessage(
+      phone,
+      reminder.scheduled
+        ? "Done. We’ll remind you here at the right time."
+        : "That reminder is already scheduled.",
+    );
     return;
   }
 
@@ -4970,21 +5319,23 @@ app.post("/webhook/gupshup", (req, res) => {
   }
   const wrappedStatus = value?.statuses?.[0];
   const isCallbackSetupEvent = wrappedStatus?.type === "set-callback";
-  const status = wrappedStatus?.id && wrappedStatus?.status
-    ? {
-        ...wrappedStatus,
-        // Gupshup's WABA-style callback uses gs_id for the ID returned by
-        // the send API and id for Meta's WhatsApp message ID.
-        id: wrappedStatus.gs_id || wrappedStatus.id,
-        whatsappMessageId: wrappedStatus.gs_id ? wrappedStatus.id : undefined,
-      }
-    : nativeGupshup.status;
+  const status =
+    wrappedStatus?.id && wrappedStatus?.status
+      ? {
+          ...wrappedStatus,
+          // Gupshup's WABA-style callback uses gs_id for the ID returned by
+          // the send API and id for Meta's WhatsApp message ID.
+          id: wrappedStatus.gs_id || wrappedStatus.id,
+          whatsappMessageId: wrappedStatus.gs_id ? wrappedStatus.id : undefined,
+        }
+      : nativeGupshup.status;
 
   if (isCallbackSetupEvent) {
     console.log("[WHATSAPP][CALLBACK_CONFIGURED]", {
       gsAppId: req.body?.gs_app_id || null,
       accountObject: req.body?.object || null,
-      explanation: "Gupshup confirmed the callback URL; this is not a message delivery event",
+      explanation:
+        "Gupshup confirmed the callback URL; this is not a message delivery event",
     });
   }
 
@@ -5163,7 +5514,8 @@ app.post("/api/payment/webhook", async (req, res) => {
         { returnDocument: "after" },
       );
       res.json({ ok: true, matched: Boolean(paidAttempt) });
-      if (paidAttempt) await recordCouponRedemption(paidAttempt, payment.order_id);
+      if (paidAttempt)
+        await recordCouponRedemption(paidAttempt, payment.order_id);
       if (paidAttempt?.completedOrderId) {
         const notificationClaim = await paymentAttempts.findOneAndUpdate(
           {
@@ -5175,15 +5527,22 @@ app.post("/api/payment/webhook", async (req, res) => {
           { returnDocument: "after" },
         );
         if (notificationClaim) {
-          const completedOrder = await orders.findOne({ _id: paidAttempt.completedOrderId });
-          if (completedOrder) void schedulePaidOrderAutomation(completedOrder).catch((err) =>
-            console.error("Paid-order automation scheduling failed", err.message),
-          );
+          const completedOrder = await orders.findOne({
+            _id: paidAttempt.completedOrderId,
+          });
+          if (completedOrder)
+            void schedulePaidOrderAutomation(completedOrder).catch((err) =>
+              console.error(
+                "Paid-order automation scheduling failed",
+                err.message,
+              ),
+            );
         }
       } else if (paidAttempt) {
         console.log("[WHATSAPP][PAYMENT_CAPTURED_AWAITING_ORDER]", {
           razorpayOrderId: payment.order_id,
-          explanation: "Final order will claim WhatsApp confirmation after verified checkout completion",
+          explanation:
+            "Final order will claim WhatsApp confirmation after verified checkout completion",
         });
       }
       return;
@@ -5192,7 +5551,9 @@ app.post("/api/payment/webhook", async (req, res) => {
     // Acknowledge unrelated Razorpay events without changing an order.
     if (event !== "payment_link.paid") return res.json({ ok: true });
 
-    const linkedOrder = await orders.findOne({ razorpayPaymentLinkId: link.id });
+    const linkedOrder = await orders.findOne({
+      razorpayPaymentLinkId: link.id,
+    });
     const isCodConversion = linkedOrder?.paymentConversion === "cod_to_prepaid";
     const eligiblePaymentFilter = isCodConversion
       ? {
@@ -5209,8 +5570,12 @@ app.post("/api/payment/webhook", async (req, res) => {
           paymentStatus: "paid",
           shippingStatus: "Order confirmed",
           razorpayPaymentId: payment.id,
-          paymentMethod: isCodConversion ? "Prepaid" : (payment.method || "online"),
-          paymentMethodLabel: isCodConversion ? "Prepaid (paid online)" : (payment.method || "Online payment"),
+          paymentMethod: isCodConversion
+            ? "Prepaid"
+            : payment.method || "online",
+          paymentMethodLabel: isCodConversion
+            ? "Prepaid (paid online)"
+            : payment.method || "Online payment",
           paidAt: new Date(),
           updatedAt: new Date(),
         },
@@ -5219,7 +5584,9 @@ app.post("/api/payment/webhook", async (req, res) => {
     );
 
     if (!result) {
-      const existing = linkedOrder || await orders.findOne({ razorpayPaymentLinkId: link.id });
+      const existing =
+        linkedOrder ||
+        (await orders.findOne({ razorpayPaymentLinkId: link.id }));
       return existing
         ? res.json({ ok: true, duplicate: true })
         : res.status(404).json({ ok: false, error: "Order not found" });
@@ -5539,8 +5906,10 @@ function quoteToOrderFields(quote) {
 
 function normalizeCouponPhone(value) {
   const digits = String(value || "").replace(/\D/g, "");
-  const local = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
-  if (!/^[6-9]\d{9}$/.test(local)) throw new Error("A valid user phone is required");
+  const local =
+    digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+  if (!/^[6-9]\d{9}$/.test(local))
+    throw new Error("A valid user phone is required");
   return local;
 }
 
@@ -5549,19 +5918,25 @@ function isCouponAvailable(coupon, now = new Date()) {
   if (coupon.startsAt && new Date(coupon.startsAt) > now) return false;
   if (coupon.endsAt && new Date(coupon.endsAt) <= now) return false;
   const usageLimit = Number(coupon.usageLimit);
-  return !Number.isFinite(usageLimit) || usageLimit < 1 || Number(coupon.usedCount || 0) < usageLimit;
+  return (
+    !Number.isFinite(usageLimit) ||
+    usageLimit < 1 ||
+    Number(coupon.usedCount || 0) < usageLimit
+  );
 }
 
 function parseCouponDate(value, field) {
   if (value === undefined || value === null || value === "") return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new Error(`${field} must be a valid date`);
+  if (Number.isNaN(date.getTime()))
+    throw new Error(`${field} must be a valid date`);
   return date;
 }
 
 function parseUsageLimit(value, fallback = 1) {
   const limit = value === undefined || value === "" ? fallback : Number(value);
-  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("Usage limit must be a positive integer");
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw new Error("Usage limit must be a positive integer");
   return limit;
 }
 
@@ -5575,9 +5950,17 @@ async function recordCouponRedemption(order, orderId) {
         code: order.couponCode,
         active: { $ne: false },
         status: { $ne: "removed" },
-        $expr: { $lt: [{ $ifNull: ["$usedCount", 0] }, { $ifNull: ["$usageLimit", 1] }] },
+        $expr: {
+          $lt: [
+            { $ifNull: ["$usedCount", 0] },
+            { $ifNull: ["$usageLimit", 1] },
+          ],
+        },
       },
-      { $inc: { usedCount: 1 }, $set: { usedAt: now, orderId, updatedAt: now } },
+      {
+        $inc: { usedCount: 1 },
+        $set: { usedAt: now, orderId, updatedAt: now },
+      },
     );
     return;
   }
@@ -5598,7 +5981,12 @@ async function recordCouponRedemption(order, orderId) {
       {
         code: order.couponCode,
         active: true,
-        $expr: { $lt: [{ $ifNull: ["$usedCount", 0] }, { $ifNull: ["$usageLimit", 1] }] },
+        $expr: {
+          $lt: [
+            { $ifNull: ["$usedCount", 0] },
+            { $ifNull: ["$usageLimit", 1] },
+          ],
+        },
       },
       { $inc: { usedCount: 1 }, $set: { updatedAt: now } },
     );
@@ -5613,7 +6001,9 @@ async function getCouponDefinition(code) {
 async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
   const requestedItems = normaliseCartItems(items);
   const { products, pricingRules, universalCoupons } = collections();
-  const normalizedCode = String(couponCode || "").trim().toUpperCase();
+  const normalizedCode = String(couponCode || "")
+    .trim()
+    .toUpperCase();
   const now = new Date();
   const [catalogue, storedRules, universalCouponCandidate] = await Promise.all([
     products
@@ -5628,8 +6018,20 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
           code: normalizedCode,
           active: true,
           $and: [
-            { $or: [{ startsAt: { $exists: false } }, { startsAt: null }, { startsAt: { $lte: now } }] },
-            { $or: [{ endsAt: { $exists: false } }, { endsAt: null }, { endsAt: { $gt: now } }] },
+            {
+              $or: [
+                { startsAt: { $exists: false } },
+                { startsAt: null },
+                { startsAt: { $lte: now } },
+              ],
+            },
+            {
+              $or: [
+                { endsAt: { $exists: false } },
+                { endsAt: null },
+                { endsAt: { $gt: now } },
+              ],
+            },
           ],
         })
       : null,
@@ -5648,7 +6050,8 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
         phone: normalizedPhone,
         code: normalizedCode,
       });
-      if (previousUse) throw new Error("This coupon has already been used by this user");
+      if (previousUse)
+        throw new Error("This coupon has already been used by this user");
     }
     couponScope = "universal";
   } else if (normalizedCode) {
@@ -5658,12 +6061,16 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
       code: normalizedCode,
       status: { $ne: "removed" },
     });
-    if (!isCouponAvailable(assignment, now)) throw new Error("This coupon is not available for this user");
+    if (!isCouponAvailable(assignment, now))
+      throw new Error("This coupon is not available for this user");
     couponScope = "assigned";
   }
 
   const rules = universalCoupon
-    ? { ...storedRules, coupons: { ...storedRules.coupons, [normalizedCode]: universalCoupon } }
+    ? {
+        ...storedRules,
+        coupons: { ...storedRules.coupons, [normalizedCode]: universalCoupon },
+      }
     : storedRules;
 
   const quote = calculateQuote({
@@ -5719,7 +6126,7 @@ app.use("/user", require("./routes/user"));
 function isAuthorizedAdminRequest(req) {
   return Boolean(
     process.env.ORDER_ADMIN_TOKEN &&
-    req.get("x-admin-token") === process.env.ORDER_ADMIN_TOKEN
+    req.get("x-admin-token") === process.env.ORDER_ADMIN_TOKEN,
   );
 }
 
@@ -5730,7 +6137,9 @@ const CHECKOUT_OTP_MAX_SENDS_10_MIN = 3;
 const CHECKOUT_OTP_MAX_ATTEMPTS = 5;
 
 function getCheckoutOtpSecret() {
-  return process.env.CHECKOUT_OTP_SECRET || process.env.TRACKING_TOKEN_SECRET || "";
+  return (
+    process.env.CHECKOUT_OTP_SECRET || process.env.TRACKING_TOKEN_SECRET || ""
+  );
 }
 
 function hashCheckoutOtp(challengeId, phone, otp) {
@@ -5741,12 +6150,14 @@ function hashCheckoutOtp(challengeId, phone, otp) {
 }
 
 function signCheckoutPhoneToken(phone, challengeId, now = Date.now()) {
-  const payload = Buffer.from(JSON.stringify({
-    phone,
-    challengeId,
-    issuedAt: now,
-    expiresAt: now + CHECKOUT_OTP_TOKEN_TTL_MS,
-  })).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      phone,
+      challengeId,
+      issuedAt: now,
+      expiresAt: now + CHECKOUT_OTP_TOKEN_TTL_MS,
+    }),
+  ).toString("base64url");
   const signature = crypto
     .createHmac("sha256", getCheckoutOtpSecret())
     .update(payload)
@@ -5764,9 +6175,20 @@ function readCheckoutPhoneToken(token) {
       .update(payload)
       .digest();
     const supplied = Buffer.from(signature, "base64url");
-    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) return null;
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    if (!parsed.phone || !parsed.challengeId || Number(parsed.expiresAt) <= Date.now()) return null;
+    if (
+      expected.length !== supplied.length ||
+      !crypto.timingSafeEqual(expected, supplied)
+    )
+      return null;
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
+    if (
+      !parsed.phone ||
+      !parsed.challengeId ||
+      Number(parsed.expiresAt) <= Date.now()
+    )
+      return null;
     return parsed;
   } catch (_error) {
     return null;
@@ -5802,9 +6224,14 @@ async function verifyCheckoutPhoneIdentity(token, expectedPhone) {
 
 app.post("/api/auth/otp/send", async (req, res) => {
   const phone = normalizeFast2SmsNumber(req.body?.phone);
-  if (!phone) return res.status(400).json({ ok: false, error: "Enter a valid Indian mobile number" });
+  if (!phone)
+    return res
+      .status(400)
+      .json({ ok: false, error: "Enter a valid Indian mobile number" });
   if (!process.env.FAST2SMS_API_KEY || !getCheckoutOtpSecret()) {
-    return res.status(503).json({ ok: false, error: "SMS verification is not configured" });
+    return res
+      .status(503)
+      .json({ ok: false, error: "SMS verification is not configured" });
   }
 
   try {
@@ -5815,7 +6242,11 @@ app.post("/api/auth/otp/send", async (req, res) => {
       return res.json({
         ok: true,
         existingUser: true,
-        verificationToken: signCheckoutPhoneToken(phone, challengeId, verifiedAt.getTime()),
+        verificationToken: signCheckoutPhoneToken(
+          phone,
+          challengeId,
+          verifiedAt.getTime(),
+        ),
         phone: `+91${phone}`,
         verifiedAt: verifiedAt.toISOString(),
       });
@@ -5828,11 +6259,25 @@ app.post("/api/auth/otp/send", async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(CHECKOUT_OTP_MAX_SENDS_10_MIN)
       .toArray();
-    if (recent[0] && Date.now() - new Date(recent[0].createdAt).getTime() < CHECKOUT_OTP_RESEND_MS) {
-      return res.status(429).json({ ok: false, error: "Please wait one minute before requesting another code" });
+    if (
+      recent[0] &&
+      Date.now() - new Date(recent[0].createdAt).getTime() <
+        CHECKOUT_OTP_RESEND_MS
+    ) {
+      return res
+        .status(429)
+        .json({
+          ok: false,
+          error: "Please wait one minute before requesting another code",
+        });
     }
     if (recent.length >= CHECKOUT_OTP_MAX_SENDS_10_MIN) {
-      return res.status(429).json({ ok: false, error: "Too many OTP requests. Please try again after 10 minutes" });
+      return res
+        .status(429)
+        .json({
+          ok: false,
+          error: "Too many OTP requests. Please try again after 10 minutes",
+        });
     }
 
     const challengeId = crypto.randomUUID();
@@ -5844,7 +6289,10 @@ app.post("/api/auth/otp/send", async (req, res) => {
       otpHash: hashCheckoutOtp(challengeId, phone, otp),
       attemptCount: 0,
       status: "sending",
-      requestIp: String(req.ip || req.socket?.remoteAddress || "").slice(0, 100),
+      requestIp: String(req.ip || req.socket?.remoteAddress || "").slice(
+        0,
+        100,
+      ),
       createdAt: now,
       expiresAt: new Date(now.getTime() + CHECKOUT_OTP_TTL_MS),
     });
@@ -5858,7 +6306,13 @@ app.post("/api/auth/otp/send", async (req, res) => {
       });
       await otpChallenges.updateOne(
         { challengeId },
-        { $set: { status: "sent", providerRequestId: provider.request_id || null, sentAt: new Date() } },
+        {
+          $set: {
+            status: "sent",
+            providerRequestId: provider.request_id || null,
+            sentAt: new Date(),
+          },
+        },
       );
       console.info("[FAST2SMS_AUTH][OTP_SENT]", {
         recipient: maskWhatsappPhone(phone),
@@ -5868,20 +6322,40 @@ app.post("/api/auth/otp/send", async (req, res) => {
     } catch (error) {
       await otpChallenges.updateOne(
         { challengeId },
-        { $set: { status: "failed", failedAt: new Date(), failureReason: String(error.message).slice(0, 200) } },
+        {
+          $set: {
+            status: "failed",
+            failedAt: new Date(),
+            failureReason: String(error.message).slice(0, 200),
+          },
+        },
       );
       console.error("[FAST2SMS_AUTH][OTP_SEND_FAILED]", {
         recipient: maskWhatsappPhone(phone),
         challengeId,
         error: error.response?.data || error.message,
       });
-      return res.status(502).json({ ok: false, error: "Unable to send the verification code right now" });
+      return res
+        .status(502)
+        .json({
+          ok: false,
+          error: "Unable to send the verification code right now",
+        });
     }
 
-    return res.json({ ok: true, challengeId, expiresInSeconds: CHECKOUT_OTP_TTL_MS / 1000 });
+    return res.json({
+      ok: true,
+      challengeId,
+      expiresInSeconds: CHECKOUT_OTP_TTL_MS / 1000,
+    });
   } catch (error) {
-    console.error("[FAST2SMS_AUTH][OTP_SEND_ERROR]", { recipient: maskWhatsappPhone(phone), error: error.message });
-    return res.status(500).json({ ok: false, error: "Unable to start phone verification" });
+    console.error("[FAST2SMS_AUTH][OTP_SEND_ERROR]", {
+      recipient: maskWhatsappPhone(phone),
+      error: error.message,
+    });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to start phone verification" });
   }
 });
 
@@ -5890,25 +6364,52 @@ app.post("/api/auth/otp/verify", async (req, res) => {
   const challengeId = String(req.body?.challengeId || "");
   const otp = String(req.body?.otp || "").trim();
   if (!phone || !/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{6}$/.test(otp)) {
-    return res.status(400).json({ ok: false, error: "Invalid verification request" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Invalid verification request" });
   }
 
   try {
     const { otpChallenges } = collections();
     const challenge = await otpChallenges.findOne({ challengeId, phone });
-    if (!challenge || challenge.status !== "sent" || new Date(challenge.expiresAt) <= new Date()) {
-      return res.status(401).json({ ok: false, error: "This OTP has expired. Request a new code" });
+    if (
+      !challenge ||
+      challenge.status !== "sent" ||
+      new Date(challenge.expiresAt) <= new Date()
+    ) {
+      return res
+        .status(401)
+        .json({ ok: false, error: "This OTP has expired. Request a new code" });
     }
     if (Number(challenge.attemptCount) >= CHECKOUT_OTP_MAX_ATTEMPTS) {
-      return res.status(429).json({ ok: false, error: "Too many incorrect attempts. Request a new code" });
+      return res
+        .status(429)
+        .json({
+          ok: false,
+          error: "Too many incorrect attempts. Request a new code",
+        });
     }
 
     const expected = Buffer.from(challenge.otpHash, "hex");
-    const supplied = Buffer.from(hashCheckoutOtp(challengeId, phone, otp), "hex");
-    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
-      await otpChallenges.updateOne({ challengeId }, { $inc: { attemptCount: 1 }, $set: { lastAttemptAt: new Date() } });
-      console.warn("[FAST2SMS_AUTH][OTP_REJECTED]", { recipient: maskWhatsappPhone(phone), challengeId });
-      return res.status(401).json({ ok: false, error: "That OTP does not match" });
+    const supplied = Buffer.from(
+      hashCheckoutOtp(challengeId, phone, otp),
+      "hex",
+    );
+    if (
+      expected.length !== supplied.length ||
+      !crypto.timingSafeEqual(expected, supplied)
+    ) {
+      await otpChallenges.updateOne(
+        { challengeId },
+        { $inc: { attemptCount: 1 }, $set: { lastAttemptAt: new Date() } },
+      );
+      console.warn("[FAST2SMS_AUTH][OTP_REJECTED]", {
+        recipient: maskWhatsappPhone(phone),
+        challengeId,
+      });
+      return res
+        .status(401)
+        .json({ ok: false, error: "That OTP does not match" });
     }
 
     const verifiedAt = new Date();
@@ -5916,12 +6417,29 @@ app.post("/api/auth/otp/verify", async (req, res) => {
       { challengeId, status: "sent" },
       { $set: { status: "verified", verifiedAt }, $unset: { otpHash: "" } },
     );
-    const verificationToken = signCheckoutPhoneToken(phone, challengeId, verifiedAt.getTime());
-    console.info("[FAST2SMS_AUTH][OTP_VERIFIED]", { recipient: maskWhatsappPhone(phone), challengeId });
-    return res.json({ ok: true, verificationToken, phone: `+91${phone}`, verifiedAt: verifiedAt.toISOString() });
+    const verificationToken = signCheckoutPhoneToken(
+      phone,
+      challengeId,
+      verifiedAt.getTime(),
+    );
+    console.info("[FAST2SMS_AUTH][OTP_VERIFIED]", {
+      recipient: maskWhatsappPhone(phone),
+      challengeId,
+    });
+    return res.json({
+      ok: true,
+      verificationToken,
+      phone: `+91${phone}`,
+      verifiedAt: verifiedAt.toISOString(),
+    });
   } catch (error) {
-    console.error("[FAST2SMS_AUTH][OTP_VERIFY_ERROR]", { recipient: maskWhatsappPhone(phone), error: error.message });
-    return res.status(500).json({ ok: false, error: "Unable to verify the code right now" });
+    console.error("[FAST2SMS_AUTH][OTP_VERIFY_ERROR]", {
+      recipient: maskWhatsappPhone(phone),
+      error: error.message,
+    });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to verify the code right now" });
   }
 });
 
@@ -5932,7 +6450,8 @@ function escapeMongoRegex(value = "") {
 function serializeAdminOrder(order = {}) {
   return {
     id: String(order._id || ""),
-    orderNumber: order.orderNumber || (order._id ? formatOrderNumber(order._id) : ""),
+    orderNumber:
+      order.orderNumber || (order._id ? formatOrderNumber(order._id) : ""),
     createdAt: order.createdAt || null,
     updatedAt: order.updatedAt || null,
     customerName: order.customerName || "",
@@ -5956,7 +6475,8 @@ function serializeAdminOrder(order = {}) {
     trackingNumber: order.trackingNumber || order.awbCode || "",
     trackingUrl: order.trackingUrl || "",
     estimatedDelivery: order.estimatedDelivery || "",
-    expectedDeliveryDate: order.expectedDeliveryDate || order.estimatedDelivery || "",
+    expectedDeliveryDate:
+      order.expectedDeliveryDate || order.estimatedDelivery || "",
     deliveredAt: order.deliveredAt || null,
   };
 }
@@ -5988,7 +6508,13 @@ function serializeAdminWhatsappJob(job = {}) {
 }
 
 function getAdminConversationName(user = {}, order = {}) {
-  return user.profileName || user.customerName || user.name || order.customerName || "WhatsApp customer";
+  return (
+    user.profileName ||
+    user.customerName ||
+    user.name ||
+    order.customerName ||
+    "WhatsApp customer"
+  );
 }
 
 function serializeAdminConversationMessage(message = {}) {
@@ -6008,23 +6534,43 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   try {
-    const limit = Math.min(100, Math.max(10, Number.parseInt(req.query.limit, 10) || 50));
-    const search = String(req.query.search || "").trim().toLowerCase().slice(0, 100);
+    const limit = Math.min(
+      100,
+      Math.max(10, Number.parseInt(req.query.limit, 10) || 50),
+    );
+    const search = String(req.query.search || "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 100);
     const { messages, users, sessions, orders } = collections();
-    const recentMessages = await messages.find({}).sort({ created_at: -1 }).limit(3000).toArray();
-    const userIds = [...new Map(
-      recentMessages.filter((message) => message.user_id).map((message) => [String(message.user_id), message.user_id]),
-    ).values()];
+    const recentMessages = await messages
+      .find({})
+      .sort({ created_at: -1 })
+      .limit(3000)
+      .toArray();
+    const userIds = [
+      ...new Map(
+        recentMessages
+          .filter((message) => message.user_id)
+          .map((message) => [String(message.user_id), message.user_id]),
+      ).values(),
+    ];
     const [userRows, sessionRows] = await Promise.all([
       userIds.length ? users.find({ _id: { $in: userIds } }).toArray() : [],
-      userIds.length ? sessions.find({ user_id: { $in: userIds }, active: true }).toArray() : [],
+      userIds.length
+        ? sessions.find({ user_id: { $in: userIds }, active: true }).toArray()
+        : [],
     ]);
     const userById = new Map(userRows.map((user) => [String(user._id), user]));
-    const sessionByUserId = new Map(sessionRows.map((session) => [String(session.user_id), session]));
+    const sessionByUserId = new Map(
+      sessionRows.map((session) => [String(session.user_id), session]),
+    );
     const grouped = new Map();
 
     for (const message of recentMessages) {
-      const user = message.user_id ? userById.get(String(message.user_id)) : null;
+      const user = message.user_id
+        ? userById.get(String(message.user_id))
+        : null;
       const phone = normalizeWhatsappRecipient(message.phone || user?.phone);
       if (!phone) continue;
       if (!grouped.has(phone)) {
@@ -6039,7 +6585,8 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
       }
       const conversation = grouped.get(phone);
       conversation.messageCount += 1;
-      if (!conversation.reachedOutbound && message.role === "user") conversation.unreadCount += 1;
+      if (!conversation.reachedOutbound && message.role === "user")
+        conversation.unreadCount += 1;
       if (message.role !== "user") conversation.reachedOutbound = true;
       if (!conversation.user && user) conversation.user = user;
     }
@@ -6049,100 +6596,156 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
       return [phone, local, `+91${local}`];
     });
     const orderRows = phoneVariants.length
-      ? await orders.find({
-          $or: [
-            { phone: { $in: phoneVariants } },
-            { whatsappPhone: { $in: phoneVariants } },
-          ],
-        }).sort({ createdAt: -1 }).toArray()
+      ? await orders
+          .find({
+            $or: [
+              { phone: { $in: phoneVariants } },
+              { whatsappPhone: { $in: phoneVariants } },
+            ],
+          })
+          .sort({ createdAt: -1 })
+          .toArray()
       : [];
     const orderByPhone = new Map();
     for (const order of orderRows) {
-      const phone = normalizeWhatsappRecipient(order.whatsappPhone || order.phone);
+      const phone = normalizeWhatsappRecipient(
+        order.whatsappPhone || order.phone,
+      );
       if (phone && !orderByPhone.has(phone)) orderByPhone.set(phone, order);
     }
 
-    const conversations = [...grouped.values()].map((conversation) => {
-      const order = orderByPhone.get(conversation.phone) || {};
-      const session = conversation.user ? sessionByUserId.get(String(conversation.user._id)) : null;
-      return {
-        phone: conversation.phone,
-        customerName: getAdminConversationName(conversation.user, order),
-        customerId: String(conversation.user?._id || ""),
-        orderNumber: order.orderNumber || "",
-        currentState: session?.current_state || "",
-        latestMessage: conversation.latestMessage.content || "",
-        latestDirection: conversation.latestMessage.role === "user" ? "inbound" : "outbound",
-        latestAt: conversation.latestMessage.created_at || null,
-        messageCount: conversation.messageCount,
-        unreadCount: conversation.unreadCount,
-      };
-    }).filter((conversation) => {
-      if (!search) return true;
-      return [conversation.customerName, conversation.phone, conversation.orderNumber, conversation.latestMessage]
-        .some((value) => String(value || "").toLowerCase().includes(search));
-    }).slice(0, limit);
+    const conversations = [...grouped.values()]
+      .map((conversation) => {
+        const order = orderByPhone.get(conversation.phone) || {};
+        const session = conversation.user
+          ? sessionByUserId.get(String(conversation.user._id))
+          : null;
+        return {
+          phone: conversation.phone,
+          customerName: getAdminConversationName(conversation.user, order),
+          customerId: String(conversation.user?._id || ""),
+          orderNumber: order.orderNumber || "",
+          currentState: session?.current_state || "",
+          latestMessage: conversation.latestMessage.content || "",
+          latestDirection:
+            conversation.latestMessage.role === "user" ? "inbound" : "outbound",
+          latestAt: conversation.latestMessage.created_at || null,
+          messageCount: conversation.messageCount,
+          unreadCount: conversation.unreadCount,
+        };
+      })
+      .filter((conversation) => {
+        if (!search) return true;
+        return [
+          conversation.customerName,
+          conversation.phone,
+          conversation.orderNumber,
+          conversation.latestMessage,
+        ].some((value) =>
+          String(value || "")
+            .toLowerCase()
+            .includes(search),
+        );
+      })
+      .slice(0, limit);
 
     return res.json({ ok: true, conversations });
   } catch (error) {
     console.error("Admin WhatsApp conversations load failed", error.message);
-    return res.status(500).json({ ok: false, error: "Unable to load WhatsApp conversations" });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load WhatsApp conversations" });
   }
 });
 
-app.get("/api/admin/whatsapp/conversations/:phone/messages", async (req, res) => {
-  if (!isAuthorizedAdminRequest(req)) {
-    return res.status(401).json({ ok: false, error: "Unauthorized" });
-  }
-  const phone = normalizeWhatsappRecipient(req.params.phone);
-  if (!phone) return res.status(400).json({ ok: false, error: "Invalid WhatsApp phone number" });
-  try {
-    const localPhone = phone.slice(-10);
-    const { messages, users, orders, messageJobs } = collections();
-    const userRows = await users.find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }).toArray();
-    const userIds = userRows.map((user) => user._id);
-    const [messageRows, jobRows, order] = await Promise.all([
-      messages.find({
-        $or: [
-          { phone: { $in: [phone, localPhone, `+91${localPhone}`] } },
-          ...(userIds.length ? [{ user_id: { $in: userIds } }] : []),
-        ],
-      }).sort({ created_at: -1 }).limit(300).toArray(),
-      messageJobs.find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }).sort({ createdAt: -1 }).limit(100).toArray(),
-      orders.findOne(
-        { $or: [{ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }, { whatsappPhone: { $regex: `${escapeMongoRegex(localPhone)}$` } }] },
-        { sort: { createdAt: -1 } },
-      ),
-    ]);
-    const existingProviderIds = new Set(messageRows.map((message) => message.provider_message_id || message.message_id).filter(Boolean));
-    const historicalJobs = jobRows.filter((job) => !existingProviderIds.has(job.providerMessageId)).map((job) => ({
-      _id: job._id,
-      role: "assistant",
-      type: "template",
-      content: `Template: ${job.templateName || job.trigger}${job.parameters?.length ? ` — ${job.parameters.join(" · ")}` : ""}`,
-      provider_message_id: job.providerMessageId || "",
-      created_at: job.submittedAt || job.sentAt || job.createdAt,
-    }));
-    const timeline = [...messageRows, ...historicalJobs]
-      .sort((left, right) => new Date(left.created_at) - new Date(right.created_at))
-      .slice(-300)
-      .map(serializeAdminConversationMessage);
-    const user = userRows[0] || {};
-    return res.json({
-      ok: true,
-      customer: {
-        name: getAdminConversationName(user, order || {}),
-        phone,
-        customerId: String(user._id || ""),
-        orderNumber: order?.orderNumber || "",
-      },
-      messages: timeline,
-    });
-  } catch (error) {
-    console.error("Admin WhatsApp message history load failed", error.message);
-    return res.status(500).json({ ok: false, error: "Unable to load WhatsApp message history" });
-  }
-});
+app.get(
+  "/api/admin/whatsapp/conversations/:phone/messages",
+  async (req, res) => {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    const phone = normalizeWhatsappRecipient(req.params.phone);
+    if (!phone)
+      return res
+        .status(400)
+        .json({ ok: false, error: "Invalid WhatsApp phone number" });
+    try {
+      const localPhone = phone.slice(-10);
+      const { messages, users, orders, messageJobs } = collections();
+      const userRows = await users
+        .find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } })
+        .toArray();
+      const userIds = userRows.map((user) => user._id);
+      const [messageRows, jobRows, order] = await Promise.all([
+        messages
+          .find({
+            $or: [
+              { phone: { $in: [phone, localPhone, `+91${localPhone}`] } },
+              ...(userIds.length ? [{ user_id: { $in: userIds } }] : []),
+            ],
+          })
+          .sort({ created_at: -1 })
+          .limit(300)
+          .toArray(),
+        messageJobs
+          .find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } })
+          .sort({ createdAt: -1 })
+          .limit(100)
+          .toArray(),
+        orders.findOne(
+          {
+            $or: [
+              { phone: { $regex: `${escapeMongoRegex(localPhone)}$` } },
+              { whatsappPhone: { $regex: `${escapeMongoRegex(localPhone)}$` } },
+            ],
+          },
+          { sort: { createdAt: -1 } },
+        ),
+      ]);
+      const existingProviderIds = new Set(
+        messageRows
+          .map((message) => message.provider_message_id || message.message_id)
+          .filter(Boolean),
+      );
+      const historicalJobs = jobRows
+        .filter((job) => !existingProviderIds.has(job.providerMessageId))
+        .map((job) => ({
+          _id: job._id,
+          role: "assistant",
+          type: "template",
+          content: `Template: ${job.templateName || job.trigger}${job.parameters?.length ? ` — ${job.parameters.join(" · ")}` : ""}`,
+          provider_message_id: job.providerMessageId || "",
+          created_at: job.submittedAt || job.sentAt || job.createdAt,
+        }));
+      const timeline = [...messageRows, ...historicalJobs]
+        .sort(
+          (left, right) =>
+            new Date(left.created_at) - new Date(right.created_at),
+        )
+        .slice(-300)
+        .map(serializeAdminConversationMessage);
+      const user = userRows[0] || {};
+      return res.json({
+        ok: true,
+        customer: {
+          name: getAdminConversationName(user, order || {}),
+          phone,
+          customerId: String(user._id || ""),
+          orderNumber: order?.orderNumber || "",
+        },
+        messages: timeline,
+      });
+    } catch (error) {
+      console.error(
+        "Admin WhatsApp message history load failed",
+        error.message,
+      );
+      return res
+        .status(500)
+        .json({ ok: false, error: "Unable to load WhatsApp message history" });
+    }
+  },
+);
 
 app.get("/api/admin/dashboard", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
@@ -6150,8 +6753,13 @@ app.get("/api/admin/dashboard", async (req, res) => {
   }
   try {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(10, Number.parseInt(req.query.limit, 10) || 50));
-    const search = String(req.query.search || "").trim().slice(0, 100);
+    const limit = Math.min(
+      100,
+      Math.max(10, Number.parseInt(req.query.limit, 10) || 50),
+    );
+    const search = String(req.query.search || "")
+      .trim()
+      .slice(0, 100);
     const shippingStatus = String(req.query.shippingStatus || "").trim();
     const paymentStatus = String(req.query.paymentStatus || "").trim();
     const orderFilter = {};
@@ -6173,38 +6781,67 @@ app.get("/api/admin/dashboard", async (req, res) => {
     const istNow = new Date(now.getTime() + 330 * 60_000);
     istNow.setUTCHours(0, 0, 0, 0);
     const todayStart = new Date(istNow.getTime() - 330 * 60_000);
-    const { orders, couponAssignments, pricingRules, messageJobs } = collections();
+    const { orders, couponAssignments, pricingRules, messageJobs } =
+      collections();
     const [
-      orderRows, filteredCount, totalOrders, todayOrders, pendingOrders,
-      deliveredOrders, paidRevenueRows, rules, assignments, whatsappRows,
+      orderRows,
+      filteredCount,
+      totalOrders,
+      todayOrders,
+      pendingOrders,
+      deliveredOrders,
+      paidRevenueRows,
+      rules,
+      assignments,
+      whatsappRows,
       whatsappStatusRows,
     ] = await Promise.all([
-      orders.find(orderFilter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
+      orders
+        .find(orderFilter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray(),
       orders.countDocuments(orderFilter),
       orders.countDocuments({}),
       orders.countDocuments({ createdAt: { $gte: todayStart } }),
-      orders.countDocuments({ shippingStatus: { $not: /^delivered$|cancelled/i } }),
+      orders.countDocuments({
+        shippingStatus: { $not: /^delivered$|cancelled/i },
+      }),
       orders.countDocuments({ shippingStatus: /^delivered$/i }),
-      orders.aggregate([
-        { $match: { paymentStatus: "paid" } },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-      ]).toArray(),
+      orders
+        .aggregate([
+          { $match: { paymentStatus: "paid" } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        ])
+        .toArray(),
       pricingRules.findOne({ _id: "checkout" }),
-      couponAssignments.find({ active: { $ne: false } }).sort({ assignedAt: -1 }).limit(100).toArray(),
+      couponAssignments
+        .find({ active: { $ne: false } })
+        .sort({ assignedAt: -1 })
+        .limit(100)
+        .toArray(),
       messageJobs.find({}).sort({ createdAt: -1 }).limit(100).toArray(),
-      messageJobs.aggregate([
-        { $match: { createdAt: { $gte: todayStart } } },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]).toArray(),
+      messageJobs
+        .aggregate([
+          { $match: { createdAt: { $gte: todayStart } } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ])
+        .toArray(),
     ]);
 
-    const couponDefinitions = Object.entries(rules?.coupons || {}).map(([code, definition]) => ({
-      code,
-      active: definition.active === true,
-      type: definition.type,
-      value: definition.type === "fixed" ? Number(definition.valuePaise || 0) / 100 : Number(definition.value || 0),
-      minSubtotal: Number(definition.minSubtotalPaise || 0) / 100,
-    }));
+    const couponDefinitions = Object.entries(rules?.coupons || {}).map(
+      ([code, definition]) => ({
+        code,
+        active: definition.active === true,
+        type: definition.type,
+        value:
+          definition.type === "fixed"
+            ? Number(definition.valuePaise || 0) / 100
+            : Number(definition.value || 0),
+        minSubtotal: Number(definition.minSubtotalPaise || 0) / 100,
+      }),
+    );
 
     return res.json({
       ok: true,
@@ -6217,7 +6854,12 @@ app.get("/api/admin/dashboard", async (req, res) => {
         paidRevenue: Number(paidRevenueRows[0]?.total) || 0,
       },
       orders: orderRows.map(serializeAdminOrder),
-      pagination: { page, limit, total: filteredCount, pages: Math.max(1, Math.ceil(filteredCount / limit)) },
+      pagination: {
+        page,
+        limit,
+        total: filteredCount,
+        pages: Math.max(1, Math.ceil(filteredCount / limit)),
+      },
       couponDefinitions,
       assignments: assignments.map((assignment) => ({
         id: String(assignment._id),
@@ -6238,39 +6880,84 @@ app.get("/api/admin/dashboard", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Admin dashboard load failed", { error: error.message, stack: error.stack });
-    return res.status(500).json({ ok: false, error: "Unable to load admin dashboard" });
+    console.error("Admin dashboard load failed", {
+      error: error.message,
+      stack: error.stack,
+    });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load admin dashboard" });
   }
 });
 
 app.get("/api/coupons/universal", async (req, res) => {
   try {
     const now = new Date();
-    const phone = req.query.phone ? normalizeCouponPhone(req.query.phone) : null;
+    const phone = req.query.phone
+      ? normalizeCouponPhone(req.query.phone)
+      : null;
     const [coupons, usages] = await Promise.all([
-      collections().universalCoupons.find({
-        active: true,
-        $and: [
-          { $or: [{ startsAt: { $exists: false } }, { startsAt: null }, { startsAt: { $lte: now } }] },
-          { $or: [{ endsAt: { $exists: false } }, { endsAt: null }, { endsAt: { $gt: now } }] },
-        ],
-      })
-      .sort({ createdAt: -1 })
-      .project({ _id: 0, code: 1, type: 1, value: 1, valuePaise: 1, minSubtotalPaise: 1, title: 1, usageLimit: 1, usedCount: 1, startsAt: 1, endsAt: 1 })
-      .toArray(),
-      phone ? collections().couponUsages.find({ phone }).project({ _id: 0, code: 1, usedAt: 1 }).toArray() : [],
+      collections()
+        .universalCoupons.find({
+          active: true,
+          $and: [
+            {
+              $or: [
+                { startsAt: { $exists: false } },
+                { startsAt: null },
+                { startsAt: { $lte: now } },
+              ],
+            },
+            {
+              $or: [
+                { endsAt: { $exists: false } },
+                { endsAt: null },
+                { endsAt: { $gt: now } },
+              ],
+            },
+          ],
+        })
+        .sort({ createdAt: -1 })
+        .project({
+          _id: 0,
+          code: 1,
+          type: 1,
+          value: 1,
+          valuePaise: 1,
+          minSubtotalPaise: 1,
+          title: 1,
+          usageLimit: 1,
+          usedCount: 1,
+          startsAt: 1,
+          endsAt: 1,
+        })
+        .toArray(),
+      phone
+        ? collections()
+            .couponUsages.find({ phone })
+            .project({ _id: 0, code: 1, usedAt: 1 })
+            .toArray()
+        : [],
     ]);
     const usedCodes = new Set(usages.map((usage) => usage.code));
     res.json({
       ok: true,
-      coupons: coupons.filter((coupon) =>
-        isCouponAvailable(coupon, now) && (!phone || !usedCodes.has(coupon.code)),
+      coupons: coupons.filter(
+        (coupon) =>
+          isCouponAvailable(coupon, now) &&
+          (!phone || !usedCodes.has(coupon.code)),
       ),
       used: usages,
     });
   } catch (error) {
     const status = /valid user phone/i.test(error.message) ? 400 : 500;
-    res.status(status).json({ ok: false, error: status === 400 ? error.message : "Unable to load universal coupons" });
+    res
+      .status(status)
+      .json({
+        ok: false,
+        error:
+          status === 400 ? error.message : "Unable to load universal coupons",
+      });
   }
 });
 
@@ -6278,7 +6965,10 @@ app.get("/api/coupons/mine", async (req, res) => {
   try {
     const phone = normalizeCouponPhone(req.query.phone);
     const [assignments, rules] = await Promise.all([
-      collections().couponAssignments.find({ phone }).sort({ assignedAt: -1 }).toArray(),
+      collections()
+        .couponAssignments.find({ phone })
+        .sort({ assignedAt: -1 })
+        .toArray(),
       collections().pricingRules.findOne({ _id: "checkout" }),
     ]);
     const coupons = assignments.map((assignment) => {
@@ -6286,11 +6976,19 @@ app.get("/api/coupons/mine", async (req, res) => {
       const available = isCouponAvailable(assignment);
       return {
         code: assignment.code,
-        status: assignment.status === "removed" ? "removed" : available ? "available" : "used",
+        status:
+          assignment.status === "removed"
+            ? "removed"
+            : available
+              ? "available"
+              : "used",
         assignedAt: assignment.assignedAt,
         usedAt: assignment.usedAt || null,
         type: definition.type,
-        value: definition.type === "fixed" ? definition.valuePaise : definition.value,
+        value:
+          definition.type === "fixed"
+            ? definition.valuePaise
+            : definition.value,
         minSubtotalPaise: definition.minSubtotalPaise || 0,
         active: definition.active === true && assignment.active !== false,
         usageLimit: assignment.usageLimit || 1,
@@ -6306,64 +7004,117 @@ app.get("/api/coupons/mine", async (req, res) => {
 });
 
 app.post("/api/admin/coupons/assign", async (req, res) => {
-  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   try {
     const phone = normalizeCouponPhone(req.body.phone);
-    const code = String(req.body.code || "").trim().toUpperCase();
+    const code = String(req.body.code || "")
+      .trim()
+      .toUpperCase();
     const { coupon } = await getCouponDefinition(code);
-    if (!coupon?.active) return res.status(400).json({ ok: false, error: "Coupon code is not active" });
+    if (!coupon?.active)
+      return res
+        .status(400)
+        .json({ ok: false, error: "Coupon code is not active" });
     const usageLimit = parseUsageLimit(req.body.usageLimit, 1);
     const startsAt = parseCouponDate(req.body.startsAt, "Start date");
     const endsAt = parseCouponDate(req.body.endsAt, "End date");
-    if (startsAt && endsAt && endsAt <= startsAt) throw new Error("End date must be after start date");
+    if (startsAt && endsAt && endsAt <= startsAt)
+      throw new Error("End date must be after start date");
     const now = new Date();
-    const existing = await collections().couponAssignments.findOne({ phone, code });
-    if (Number(existing?.usedCount || 0) >= usageLimit) throw new Error("Usage limit must exceed the existing usage count");
+    const existing = await collections().couponAssignments.findOne({
+      phone,
+      code,
+    });
+    if (Number(existing?.usedCount || 0) >= usageLimit)
+      throw new Error("Usage limit must exceed the existing usage count");
     await collections().couponAssignments.updateOne(
       { phone, code },
       {
-        $set: { status: "available", active: true, usageLimit, startsAt, endsAt, assignedAt: now, assignedBy: "admin", updatedAt: now },
+        $set: {
+          status: "available",
+          active: true,
+          usageLimit,
+          startsAt,
+          endsAt,
+          assignedAt: now,
+          assignedBy: "admin",
+          updatedAt: now,
+        },
         $setOnInsert: { usedCount: 0 },
         $unset: { removedAt: "" },
       },
       { upsert: true },
     );
-    res.json({ ok: true, assignment: { phone, code, status: "available", usageLimit, startsAt, endsAt, assignedAt: now } });
+    res.json({
+      ok: true,
+      assignment: {
+        phone,
+        code,
+        status: "available",
+        usageLimit,
+        startsAt,
+        endsAt,
+        assignedAt: now,
+      },
+    });
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
 });
 
 app.post("/api/admin/coupons/universal", async (req, res) => {
-  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   try {
-    const code = String(req.body.code || "").trim().toUpperCase();
+    const code = String(req.body.code || "")
+      .trim()
+      .toUpperCase();
     const type = String(req.body.type || "").trim();
     const value = Number(req.body.value);
-    const minSubtotalPaise = Math.round(Number(req.body.minSubtotal || 0) * 100);
+    const minSubtotalPaise = Math.round(
+      Number(req.body.minSubtotal || 0) * 100,
+    );
     const usageLimit = parseUsageLimit(req.body.usageLimit, 1);
     const startsAt = parseCouponDate(req.body.startsAt, "Start date");
     const endsAt = parseCouponDate(req.body.endsAt, "End date");
-    if (!/^[A-Z0-9_-]{3,24}$/.test(code)) throw new Error("Coupon code must be 3-24 letters or numbers");
-    if (!['percent', 'fixed'].includes(type) || !Number.isFinite(value) || value <= 0) throw new Error("A valid coupon type and value are required");
-    if (type === "percent" && value > 100) throw new Error("Percentage cannot exceed 100");
-    if (!Number.isSafeInteger(minSubtotalPaise) || minSubtotalPaise < 0) throw new Error("Minimum subtotal is invalid");
-    if (startsAt && endsAt && endsAt <= startsAt) throw new Error("End date must be after start date");
+    if (!/^[A-Z0-9_-]{3,24}$/.test(code))
+      throw new Error("Coupon code must be 3-24 letters or numbers");
+    if (
+      !["percent", "fixed"].includes(type) ||
+      !Number.isFinite(value) ||
+      value <= 0
+    )
+      throw new Error("A valid coupon type and value are required");
+    if (type === "percent" && value > 100)
+      throw new Error("Percentage cannot exceed 100");
+    if (!Number.isSafeInteger(minSubtotalPaise) || minSubtotalPaise < 0)
+      throw new Error("Minimum subtotal is invalid");
+    if (startsAt && endsAt && endsAt <= startsAt)
+      throw new Error("End date must be after start date");
     const now = new Date();
     const definition = {
       code,
-      title: String(req.body.title || "Welcome offer").trim().slice(0, 80),
+      title: String(req.body.title || "Welcome offer")
+        .trim()
+        .slice(0, 80),
       type,
       active: true,
       usageLimit,
       startsAt,
       endsAt,
       minSubtotalPaise,
-      ...(type === "percent" ? { value } : { valuePaise: Math.round(value * 100) }),
+      ...(type === "percent"
+        ? { value }
+        : { valuePaise: Math.round(value * 100) }),
       updatedAt: now,
     };
     await collections().universalCoupons.updateOne(
@@ -6378,29 +7129,50 @@ app.post("/api/admin/coupons/universal", async (req, res) => {
 });
 
 app.delete("/api/admin/coupons/universal/:code", async (req, res) => {
-  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
-  const code = String(req.params.code || "").trim().toUpperCase();
+  const code = String(req.params.code || "")
+    .trim()
+    .toUpperCase();
   const result = await collections().universalCoupons.updateOne(
     { code },
     { $set: { active: false, removedAt: new Date(), updatedAt: new Date() } },
   );
-  res.status(result.matchedCount ? 200 : 404).json({ ok: Boolean(result.matchedCount), code });
+  res
+    .status(result.matchedCount ? 200 : 404)
+    .json({ ok: Boolean(result.matchedCount), code });
 });
 
 app.delete("/api/admin/coupons/assign/:phone/:code", async (req, res) => {
-  if (!process.env.ORDER_ADMIN_TOKEN || req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN) {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   try {
     const phone = normalizeCouponPhone(req.params.phone);
-    const code = String(req.params.code || "").trim().toUpperCase();
+    const code = String(req.params.code || "")
+      .trim()
+      .toUpperCase();
     const result = await collections().couponAssignments.updateOne(
       { phone, code },
-      { $set: { active: false, status: "removed", removedAt: new Date(), updatedAt: new Date() } },
+      {
+        $set: {
+          active: false,
+          status: "removed",
+          removedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
     );
-    res.status(result.matchedCount ? 200 : 404).json({ ok: Boolean(result.matchedCount), phone, code });
+    res
+      .status(result.matchedCount ? 200 : 404)
+      .json({ ok: Boolean(result.matchedCount), phone, code });
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
@@ -6415,19 +7187,26 @@ app.post("/api/customer-events", async (req, res) => {
     "checkout_started",
     "checkout_details_submitted",
   ]);
-  const event = String(req.body.event || "").trim().toLowerCase();
+  const event = String(req.body.event || "")
+    .trim()
+    .toLowerCase();
   const phone = normalizeWhatsappRecipient(req.body.phone);
   const rawProductId = String(req.body.productId || "").trim();
   const productId = normalizeWhatsappProductId(rawProductId);
   if (!allowedEvents.has(event)) {
-    return res.status(400).json({ ok: false, error: "Unsupported customer event" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Unsupported customer event" });
   }
   if (!phone) {
     return res.status(400).json({ ok: false, error: "Phone is required" });
   }
   let recordingStage = "initializing";
   try {
-    const eventId = String(req.body.eventId || crypto.randomUUID()).slice(0, 160);
+    const eventId = String(req.body.eventId || crypto.randomUUID()).slice(
+      0,
+      160,
+    );
     recordingStage = "loading_customer";
     const customer = await getOrCreateUser(phone);
     if (!customer?._id) {
@@ -6477,7 +7256,9 @@ app.post("/api/customer-events", async (req, res) => {
     }
     if (event === "checkout_details_submitted") {
       recordingStage = "scheduling_checkout_reminder";
-      const productName = String(req.body.productName || "your VALOUR order").slice(0, 160);
+      const productName = String(
+        req.body.productName || "your VALOUR order",
+      ).slice(0, 160);
       const orderValue = String(req.body.orderValue || "").slice(0, 40);
       if (orderValue) {
         await scheduleWhatsappJob({
@@ -6500,7 +7281,9 @@ app.post("/api/customer-events", async (req, res) => {
       error: err.message,
       stack: err.stack,
     });
-    res.status(500).json({ ok: false, error: "Unable to record customer event" });
+    res
+      .status(500)
+      .json({ ok: false, error: "Unable to record customer event" });
   }
 });
 
@@ -6535,12 +7318,19 @@ app.post("/api/checkout/quote", async (req, res) => {
 app.post("/api/orders/cod", async (req, res) => {
   const idempotencyKey = String(req.get("idempotency-key") || "").trim();
   if (!/^[A-Za-z0-9_-]{16,100}$/.test(idempotencyKey)) {
-    return res.status(400).json({ ok: false, error: "A valid checkout idempotency key is required" });
+    return res
+      .status(400)
+      .json({
+        ok: false,
+        error: "A valid checkout idempotency key is required",
+      });
   }
 
   try {
     const { orders } = collections();
-    let savedOrder = await orders.findOne({ checkoutIdempotencyKey: idempotencyKey });
+    let savedOrder = await orders.findOne({
+      checkoutIdempotencyKey: idempotencyKey,
+    });
     let created = false;
 
     if (!savedOrder) {
@@ -6562,7 +7352,8 @@ app.post("/api/orders/cod", async (req, res) => {
         ...phoneIdentity,
       };
       const validationError = validateOrderPayload(websiteOrder);
-      if (validationError) return res.status(400).json({ ok: false, error: validationError });
+      if (validationError)
+        return res.status(400).json({ ok: false, error: validationError });
 
       const now = new Date();
       const codOrder = {
@@ -6582,7 +7373,10 @@ app.post("/api/orders/cod", async (req, res) => {
       try {
         const inserted = await orders.insertOne(codOrder);
         const orderNumber = formatOrderNumber(inserted.insertedId);
-        await orders.updateOne({ _id: inserted.insertedId }, { $set: { orderNumber } });
+        await orders.updateOne(
+          { _id: inserted.insertedId },
+          { $set: { orderNumber } },
+        );
         savedOrder = { ...codOrder, _id: inserted.insertedId, orderNumber };
         created = true;
         try {
@@ -6597,7 +7391,9 @@ app.post("/api/orders/cod", async (req, res) => {
         }
       } catch (error) {
         if (error?.code !== 11000) throw error;
-        savedOrder = await orders.findOne({ checkoutIdempotencyKey: idempotencyKey });
+        savedOrder = await orders.findOne({
+          checkoutIdempotencyKey: idempotencyKey,
+        });
         if (!savedOrder) throw error;
       }
     }
@@ -6605,7 +7401,10 @@ app.post("/api/orders/cod", async (req, res) => {
     let confirmation = { scheduled: false, reason: "not_attempted" };
     try {
       await cancelWhatsappJobs(
-        { phone: normalizeWhatsappRecipient(savedOrder.phone), trigger: "checkout_reminder" },
+        {
+          phone: normalizeWhatsappRecipient(savedOrder.phone),
+          trigger: "checkout_reminder",
+        },
         "cod_order_placed",
       );
       confirmation = await scheduleWhatsappJob({
@@ -6640,7 +7439,9 @@ app.post("/api/orders/cod", async (req, res) => {
       order: { ...savedOrder, _id: String(savedOrder._id) },
     });
   } catch (error) {
-    const clientError = Boolean(error.statusCode) || /required|valid|unavailable|quantity|coupon/i.test(error.message);
+    const clientError =
+      Boolean(error.statusCode) ||
+      /required|valid|unavailable|quantity|coupon/i.test(error.message);
     console.error("COD checkout failed", {
       error: error.message,
       code: error.code || null,
@@ -6698,19 +7499,28 @@ app.post("/api/payment/create-order", async (req, res) => {
       failureNotifiedAt: null,
       createdAt: new Date(),
     };
-    const paymentAttemptResult = await collections().paymentAttempts.insertOne(paymentAttempt);
+    const paymentAttemptResult =
+      await collections().paymentAttempts.insertOne(paymentAttempt);
     await cancelWhatsappJobs(
-      { phone: normalizeWhatsappRecipient(paymentAttempt.phone), trigger: "checkout_reminder" },
+      {
+        phone: normalizeWhatsappRecipient(paymentAttempt.phone),
+        trigger: "checkout_reminder",
+      },
       "replaced_by_payment_attempt",
     );
     void scheduleWhatsappJob({
       event: "checkout_reminder",
       phone: paymentAttempt.phone,
       order: { ...paymentAttempt, _id: paymentAttemptResult.insertedId },
-      parameters: [getOrderProductName(paymentAttempt), `Rs. ${Math.round(Number(paymentAttempt.totalAmount) || 0).toLocaleString("en-IN")}`],
+      parameters: [
+        getOrderProductName(paymentAttempt),
+        `Rs. ${Math.round(Number(paymentAttempt.totalAmount) || 0).toLocaleString("en-IN")}`,
+      ],
       scheduledAt: new Date(Date.now() + 60 * 60_000),
       metadata: { razorpayOrderId: razorpayOrder.id },
-    }).catch((err) => console.error("Checkout reminder scheduling failed", err.message));
+    }).catch((err) =>
+      console.error("Checkout reminder scheduling failed", err.message),
+    );
 
     res.json({
       ok: true,
@@ -6916,7 +7726,10 @@ app.post("/api/payment/verify", async (req, res) => {
       whatsappConfirmation = notificationClaim
         ? await schedulePaidOrderAutomation(orderForResponse)
         : { sent: false, reason: "already_notified" };
-      console.log("WhatsApp order confirmation scheduling result", whatsappConfirmation);
+      console.log(
+        "WhatsApp order confirmation scheduling result",
+        whatsappConfirmation,
+      );
     } catch (whatsappErr) {
       whatsappConfirmation = { sent: false, reason: "send_failed" };
       console.error(
@@ -6948,8 +7761,13 @@ app.post("/api/payment/verify", async (req, res) => {
 });
 
 function isCodOrder(order = {}) {
-  const method = `${order.paymentMethod || ""} ${order.paymentMethodLabel || ""}`.toLowerCase();
-  return method === "cod " || method.includes("cash on delivery") || method.trim() === "cod";
+  const method =
+    `${order.paymentMethod || ""} ${order.paymentMethodLabel || ""}`.toLowerCase();
+  return (
+    method === "cod " ||
+    method.includes("cash on delivery") ||
+    method.trim() === "cod"
+  );
 }
 
 function getCodPaymentBlockReason(order = {}) {
@@ -6973,11 +7791,18 @@ async function getOrCreateCodPaymentLink(order) {
   const { orders } = collections();
   if (order.razorpayPaymentLinkUrl) return order.razorpayPaymentLinkUrl;
   if (order.razorpayPaymentLinkId) {
-    const existingLink = await razorpay.paymentLink.fetch(order.razorpayPaymentLinkId);
+    const existingLink = await razorpay.paymentLink.fetch(
+      order.razorpayPaymentLinkId,
+    );
     if (existingLink?.short_url) {
       await orders.updateOne(
         { _id: order._id },
-        { $set: { razorpayPaymentLinkUrl: existingLink.short_url, updatedAt: new Date() } },
+        {
+          $set: {
+            razorpayPaymentLinkUrl: existingLink.short_url,
+            updatedAt: new Date(),
+          },
+        },
       );
       return existingLink.short_url;
     }
@@ -6992,7 +7817,9 @@ async function getOrCreateCodPaymentLink(order) {
       shippingStatus: { $not: /cancelled|delivered/i },
       $or: [
         { paymentLinkCreationStartedAt: { $exists: false } },
-        { paymentLinkCreationStartedAt: { $lt: new Date(Date.now() - 60_000) } },
+        {
+          paymentLinkCreationStartedAt: { $lt: new Date(Date.now() - 60_000) },
+        },
       ],
     },
     {
@@ -7010,12 +7837,18 @@ async function getOrCreateCodPaymentLink(order) {
     const reason = getCodPaymentBlockReason(current || order);
     if (reason) throw Object.assign(new Error(reason), { statusCode: 409 });
     if (current?.razorpayPaymentLinkUrl) return current.razorpayPaymentLinkUrl;
-    throw Object.assign(new Error("Your payment link is being prepared. Please try again."), { statusCode: 409 });
+    throw Object.assign(
+      new Error("Your payment link is being prepared. Please try again."),
+      { statusCode: 409 },
+    );
   }
 
   try {
     const amount = toPaise(claimed.totalAmount);
-    if (!amount) throw Object.assign(new Error("This order has no payable amount."), { statusCode: 409 });
+    if (!amount)
+      throw Object.assign(new Error("This order has no payable amount."), {
+        statusCode: 409,
+      });
     const orderNumber = claimed.orderNumber || formatOrderNumber(claimed._id);
     const paymentLink = await razorpay.paymentLink.create({
       amount,
@@ -7025,12 +7858,17 @@ async function getOrCreateCodPaymentLink(order) {
       description: `VALOUR COD order ${orderNumber}`,
       customer: {
         name: claimed.customerName || "VALOUR customer",
-        contact: claimed.phone ? `+91${normalizeIndianPhone(claimed.phone)}` : undefined,
+        contact: claimed.phone
+          ? `+91${normalizeIndianPhone(claimed.phone)}`
+          : undefined,
         email: claimed.email || undefined,
       },
       notify: { sms: false, email: false },
       reminder_enable: true,
-      notes: { channel: "whatsapp_cod_conversion", order_id: String(claimed._id) },
+      notes: {
+        channel: "whatsapp_cod_conversion",
+        order_id: String(claimed._id),
+      },
     });
     await orders.updateOne(
       { _id: claimed._id, paymentLinkCreationId: claimId },
@@ -7047,7 +7885,9 @@ async function getOrCreateCodPaymentLink(order) {
   } catch (error) {
     await orders.updateOne(
       { _id: order._id, paymentLinkCreationId: claimId },
-      { $unset: { paymentLinkCreationId: "", paymentLinkCreationStartedAt: "" } },
+      {
+        $unset: { paymentLinkCreationId: "", paymentLinkCreationStartedAt: "" },
+      },
     );
     throw error;
   }
@@ -7056,14 +7896,21 @@ async function getOrCreateCodPaymentLink(order) {
 app.get("/api/cod-payment/:token", async (req, res) => {
   const orderReference = readOrderPaymentToken(req.params.token);
   if (!orderReference) {
-    return res.status(400).json({ ok: false, error: "This payment link is invalid or has expired." });
+    return res
+      .status(400)
+      .json({
+        ok: false,
+        error: "This payment link is invalid or has expired.",
+      });
   }
 
   try {
     const order = await findOrderByReference(orderReference);
-    if (!order) return res.status(404).json({ ok: false, error: "Order not found." });
+    if (!order)
+      return res.status(404).json({ ok: false, error: "Order not found." });
     const blockReason = getCodPaymentBlockReason(order);
-    if (blockReason) return res.status(409).json({ ok: false, error: blockReason });
+    if (blockReason)
+      return res.status(409).json({ ok: false, error: blockReason });
 
     const redirectUrl = await getOrCreateCodPaymentLink(order);
     res.json({
@@ -7078,10 +7925,15 @@ app.get("/api/cod-payment/:token", async (req, res) => {
       redirectUrl,
     });
   } catch (err) {
-    console.error("COD payment link resolution failed", err.response?.data || err.message);
+    console.error(
+      "COD payment link resolution failed",
+      err.response?.data || err.message,
+    );
     res.status(err.statusCode || 500).json({
       ok: false,
-      error: err.statusCode ? err.message : "Unable to prepare payment. Please try again shortly.",
+      error: err.statusCode
+        ? err.message
+        : "Unable to prepare payment. Please try again shortly.",
     });
   }
 });
@@ -7140,11 +7992,13 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     }
 
     updates.updatedAt = new Date();
-    const isDeliveredUpdate = String(updates.shippingStatus || "").toLowerCase() === "delivered";
+    const isDeliveredUpdate =
+      String(updates.shippingStatus || "").toLowerCase() === "delivered";
     if (isDeliveredUpdate) {
       updates.deliveredAt = new Date();
       updates.deliverySource = "internal";
-      if (req.body.deliveredBy) updates.deliveredBy = String(req.body.deliveredBy).slice(0, 120);
+      if (req.body.deliveredBy)
+        updates.deliveredBy = String(req.body.deliveredBy).slice(0, 120);
     }
 
     const { orders } = collections();
@@ -7153,7 +8007,8 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     const updatedOrder = { ...order, ...updates };
     let whatsappUpdate = { sent: false, reason: "not_requested" };
 
-    const isCodConfirmation = isCodOrder(updatedOrder) &&
+    const isCodConfirmation =
+      isCodOrder(updatedOrder) &&
       /confirmed|processing/i.test(String(updates.shippingStatus || ""));
     if (isCodConfirmation) {
       const codJob = await scheduleWhatsappJob({
@@ -7163,14 +8018,20 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         parameters: getCodTemplateParams(updatedOrder),
         scheduledAt: new Date(),
       });
-      whatsappUpdate = { sent: false, scheduled: codJob.scheduled, jobKey: codJob.jobKey };
+      whatsappUpdate = {
+        sent: false,
+        scheduled: codJob.scheduled,
+        jobKey: codJob.jobKey,
+      };
     } else if (isDeliveredUpdate) {
       const phone = updatedOrder.whatsappPhone || updatedOrder.phone;
       const deliveredJob = await scheduleWhatsappJob({
         event: "delivered_ready_to_cook",
         phone,
         order: updatedOrder,
-        parameters: [updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id)],
+        parameters: [
+          updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id),
+        ],
         scheduledAt: nextIstSendTime(
           new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS),
         ),
@@ -7184,7 +8045,11 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
           new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
         ),
       });
-      whatsappUpdate = { sent: false, scheduled: deliveredJob.scheduled, jobKey: deliveredJob.jobKey };
+      whatsappUpdate = {
+        sent: false,
+        scheduled: deliveredJob.scheduled,
+        jobKey: deliveredJob.jobKey,
+      };
     } else if (req.body.notifyWhatsapp !== false) {
       const statusJob = await scheduleWhatsappJob({
         event: "order_status_update",
@@ -7194,7 +8059,11 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         scheduledAt: new Date(),
         occurrence: `${String(updatedOrder.shippingStatus || "update").toLowerCase()}:${Date.now()}`,
       });
-      whatsappUpdate = { sent: false, scheduled: statusJob.scheduled, jobKey: statusJob.jobKey };
+      whatsappUpdate = {
+        sent: false,
+        scheduled: statusJob.scheduled,
+        jobKey: statusJob.jobKey,
+      };
     }
 
     res.json({
@@ -7246,19 +8115,33 @@ app.get("/api/order-tracking/:token", async (req, res) => {
     });
   } catch (err) {
     console.error("Public order tracking lookup failed", err.message);
-    res.status(500).json({ ok: false, error: "Tracking is temporarily unavailable" });
+    res
+      .status(500)
+      .json({ ok: false, error: "Tracking is temporarily unavailable" });
   }
 });
 
 app.get("/api/reviews/customer/:token", async (req, res) => {
+  if (isPublicReviewToken(req.params.token)) {
+    return res.json({ ok: true, generic: true });
+  }
+
   const orderReference = readReviewToken(req.params.token);
   if (!orderReference) {
-    return res.status(400).json({ ok: false, error: "This review link is invalid or has expired." });
+    return res
+      .status(400)
+      .json({
+        ok: false,
+        error: "This review link is invalid or has expired.",
+      });
   }
 
   try {
     const order = await findOrderByReference(orderReference);
-    if (!order) return res.status(404).json({ ok: false, error: "Customer details were not found." });
+    if (!order)
+      return res
+        .status(404)
+        .json({ ok: false, error: "Customer details were not found." });
 
     res.json({
       ok: true,
@@ -7272,34 +8155,82 @@ app.get("/api/reviews/customer/:token", async (req, res) => {
     });
   } catch (err) {
     console.error("Review customer lookup failed", err.message);
-    res.status(500).json({ ok: false, error: "Customer details are temporarily unavailable." });
+    res
+      .status(500)
+      .json({
+        ok: false,
+        error: "Customer details are temporarily unavailable.",
+      });
   }
 });
 
 app.post("/api/reviews/:token", async (req, res) => {
-  const orderReference = readReviewToken(req.params.token);
-  if (!orderReference) {
-    return res.status(400).json({ ok: false, error: "This review link is invalid or has expired." });
+  const isPublicReview = isPublicReviewToken(req.params.token);
+  const orderReference = isPublicReview
+    ? null
+    : readReviewToken(req.params.token);
+  if (!isPublicReview && !orderReference) {
+    return res
+      .status(400)
+      .json({
+        ok: false,
+        error: "This review link is invalid or has expired.",
+      });
   }
 
   const rating = Number(req.body.rating);
   const allowedFeedback = new Set([
-    "Easy to cook", "Loved the taste", "Good quantity", "Clear instructions",
-    "Would cook again", "Taste", "Spice level", "Texture", "Instructions",
-    "Quantity", "Something else",
+    "Easy to cook",
+    "Loved the taste",
+    "Good quantity",
+    "Clear instructions",
+    "Would cook again",
+    "Taste",
+    "Spice level",
+    "Texture",
+    "Instructions",
+    "Quantity",
+    "Something else",
   ]);
   const feedback = Array.isArray(req.body.feedback)
     ? req.body.feedback.filter((item) => allowedFeedback.has(item)).slice(0, 6)
     : [];
-  const reviewText = String(req.body.review || "").trim().slice(0, 2000);
+  const reviewText = String(req.body.review || "")
+    .trim()
+    .slice(0, 2000);
+  const customerName = String(req.body.name || "").trim().slice(0, 120);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return res.status(400).json({ ok: false, error: "Please choose a rating from 1 to 5." });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Please choose a rating from 1 to 5." });
   }
 
   try {
+    if (isPublicReview) {
+      const reviewId = crypto.randomUUID();
+      const now = new Date();
+      await collections().reviews.insertOne({
+        reviewId,
+        orderReference: `public:${reviewId}`,
+        rating,
+        feedback,
+        review: reviewText,
+        customerName,
+        phone: "",
+        showFirstName: false,
+        source: "public_review_link",
+        createdAt: now,
+        updatedAt: now,
+      });
+      return res.status(201).json({ ok: true, reviewId });
+    }
+
     const order = await findOrderByReference(orderReference);
-    if (!order) return res.status(404).json({ ok: false, error: "Customer details were not found." });
+    if (!order)
+      return res
+        .status(404)
+        .json({ ok: false, error: "Customer details were not found." });
 
     const { reviews } = collections();
     await reviews.updateOne(
@@ -7327,14 +8258,21 @@ app.post("/api/reviews/:token", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("Review submission failed", err.message);
-    res.status(500).json({ ok: false, error: "Your review could not be saved. Please try again." });
+    res
+      .status(500)
+      .json({
+        ok: false,
+        error: "Your review could not be saved. Please try again.",
+      });
   }
 });
 
 app.post("/api/orders/:orderReference/request-review", async (req, res) => {
   const adminToken = process.env.ORDER_ADMIN_TOKEN;
   if (!adminToken) {
-    return res.status(503).json({ ok: false, error: "Review messaging is not configured." });
+    return res
+      .status(503)
+      .json({ ok: false, error: "Review messaging is not configured." });
   }
   if (req.headers["x-admin-token"] !== adminToken) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -7342,12 +8280,18 @@ app.post("/api/orders/:orderReference/request-review", async (req, res) => {
 
   try {
     const order = await findOrderByReference(req.params.orderReference);
-    if (!order) return res.status(404).json({ ok: false, error: "Order not found" });
+    if (!order)
+      return res.status(404).json({ ok: false, error: "Order not found" });
     await sendReviewRequestWhatsapp(order);
     res.json({ ok: true });
   } catch (err) {
-    console.error("WhatsApp review request failed", err.response?.data || err.message);
-    res.status(500).json({ ok: false, error: "Unable to send the review request." });
+    console.error(
+      "WhatsApp review request failed",
+      err.response?.data || err.message,
+    );
+    res
+      .status(500)
+      .json({ ok: false, error: "Unable to send the review request." });
   }
 });
 
@@ -7400,6 +8344,9 @@ app.get("/admin", (req, res) => {
 });
 app.get("/privacy-policy", (req, res) => {
   res.sendFile(path.join(rootPath, "privacy-policy.html"));
+});
+app.get("/review", (req, res) => {
+  res.sendFile(path.join(rootPath, "review.html"));
 });
 // ======================
 // FALLBACK

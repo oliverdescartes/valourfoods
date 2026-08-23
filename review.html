@@ -376,6 +376,7 @@
         const response = await fetch(`/api/reviews/customer/${encodeURIComponent(token)}`);
         const data = await readApiResponse(response);
         if (!response.ok) throw new Error(data.error || 'Unable to load your details.');
+        if (data.generic) return;
         nameInput.value = data.customer.name;
         nameInput.readOnly = true;
         document.querySelector('#summary-name').textContent = data.customer.name;
@@ -424,7 +425,7 @@
           const data = await readApiResponse(response);
           if (!response.ok) throw new Error(data.error || 'Your review could not be saved.');
         } else {
-          localStorage.setItem('valour-latest-review', JSON.stringify(review));
+          throw new Error('A valid review link is required.');
         }
 
         form.hidden = true;
