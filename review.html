@@ -273,6 +273,11 @@
           <input id="customer-name" name="name" type="text" autocomplete="name" placeholder="Your name">
         </div>
 
+        <div class="field">
+          <label class="field-label" for="customer-phone">Phone number</label>
+          <input id="customer-phone" name="phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit phone number" required>
+        </div>
+
         <div class="customer-summary" id="customer-summary" aria-live="polite">
           <p class="customer-summary-title">Submitting as</p>
           <p class="customer-detail"><span>Name</span><strong id="summary-name"></strong></p>
@@ -300,6 +305,7 @@
     const ratingError = document.querySelector('#rating-error');
     const chipsContainer = document.querySelector('#feedback-chips');
     const nameInput = document.querySelector('#customer-name');
+    const phoneInput = document.querySelector('#customer-phone');
     const submitButton = form.querySelector('.submit');
     const customerSummary = document.querySelector('#customer-summary');
     const formStatus = document.querySelector('#form-status');
@@ -378,7 +384,7 @@
         if (!response.ok) throw new Error(data.error || 'Unable to load your details.');
         if (data.generic) return;
         nameInput.value = data.customer.name;
-        nameInput.readOnly = true;
+        phoneInput.value = String(data.customer.phone || '').replace(/\D/g, '').slice(-10);
         document.querySelector('#summary-name').textContent = data.customer.name;
         document.querySelector('#summary-phone').textContent = formatPhone(data.customer.phone);
         customerSummary.classList.add('is-visible');
@@ -408,6 +414,7 @@
         feedback: selectedFeedback,
         review: form.elements.review.value.trim(),
         name: form.elements.name.value.trim(),
+        phone: form.elements.phone.value.trim(),
         showName: false,
         submittedAt: new Date().toISOString()
       };

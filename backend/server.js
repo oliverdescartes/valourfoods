@@ -8199,11 +8199,18 @@ app.post("/api/reviews/:token", async (req, res) => {
     .trim()
     .slice(0, 2000);
   const customerName = String(req.body.name || "").trim().slice(0, 120);
+  const submittedPhone = normalizeIndianPhone(req.body.phone);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return res
       .status(400)
       .json({ ok: false, error: "Please choose a rating from 1 to 5." });
+  }
+  if (!/^[6-9]\d{9}$/.test(submittedPhone)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Please enter a valid 10-digit phone number.",
+    });
   }
 
   try {
@@ -8217,7 +8224,7 @@ app.post("/api/reviews/:token", async (req, res) => {
         feedback,
         review: reviewText,
         customerName,
-        phone: "",
+        phone: submittedPhone,
         showFirstName: false,
         source: "public_review_link",
         createdAt: now,
@@ -8240,8 +8247,8 @@ app.post("/api/reviews/:token", async (req, res) => {
           rating,
           feedback,
           review: reviewText,
-          customerName: order.customerName || "",
-          phone: order.phone || order.whatsappPhone || "",
+          customerName: customerName || order.customerName || "",
+          phone: submittedPhone,
           showFirstName: req.body.showName === true,
           updatedAt: new Date(),
         },
