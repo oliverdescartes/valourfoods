@@ -41,6 +41,7 @@ app.use(
 );
 
 const axios = require("axios");
+const { normalizeFast2SmsNumber, sendFast2SmsQuickSms } = require("./fast2sms");
 
 const OpenAI = require("openai");
 const PORT = Number(process.env.PORT) || 3000;
@@ -52,6 +53,7 @@ const REQUIRED_ENV = [
   "GUPSHUP_API_KEY",
   "GUPSHUP_APP_NAME",
   "GUPSHUP_SOURCE_NUMBER",
+  "FAST2SMS_API_KEY",
   "WHATSAPP_ORDER_TEMPLATE_NAME",
   "PUBLIC_SITE_URL",
   "TRACKING_TOKEN_SECRET",
@@ -115,6 +117,7 @@ function collections() {
     reviews: db.collection("reviews"),
     messageJobs: db.collection("message_jobs"),
     customerEvents: db.collection("customer_events"),
+    otpChallenges: db.collection("otp_challenges"),
   };
 }
 
@@ -137,11 +140,14 @@ async function connectDB() {
     couponAssignments,
     universalCoupons,
     couponUsages,
+    otpChallenges,
   } = collections();
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
     sessions.createIndex({ user_id: 1, active: 1 }),
     messages.createIndex({ message_id: 1 }, { unique: true, sparse: true }),
+    messages.createIndex({ phone: 1, created_at: -1 }),
+    messages.createIndex({ user_id: 1, created_at: -1 }),
     supportCases.createIndex({ case_id: 1 }, { unique: true }),
     supportCases.createIndex({ user_id: 1, status: 1, created_at: -1 }),
     orders.createIndex({ razorpayOrderId: 1 }, { unique: true }),
@@ -191,6 +197,9 @@ async function connectDB() {
     messageJobs.createIndex({ phone: 1, submittedAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
+    otpChallenges.createIndex({ challengeId: 1 }, { unique: true }),
+    otpChallenges.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    otpChallenges.createIndex({ phone: 1, createdAt: -1 }),
   ]);
 
   mongoReady = true;
@@ -224,6 +233,10 @@ function getMessageSignals(message = {}) {
   const signals = {
     source: referral.source_type || referral.source_url,
     campaign: referral.source_id || referral.headline,
+    profileName:
+      message.profileName ||
+      message.contacts?.[0]?.profile?.name ||
+      message.gupshupPayload?.sender?.name,
   };
 
   return compactSignalFields(signals);
@@ -309,6 +322,9 @@ function getFeedbackType(text = "") {
   const lower = normalizeText(text);
 
   if (lower === "1" || lower.includes("loved")) return "loved_it";
+  if (lower.includes("could be better") || lower.includes("could've been better")) {
+    return "could_be_better";
+  }
   if (lower === "2" || lower.includes("strong")) return "too_strong";
   if (lower === "3" || lower.includes("mild")) return "too_mild";
   if (lower === "4" || lower.includes("help")) return "need_help";
@@ -676,6 +692,13 @@ async function sendMessage(phone, body) {
       result: response.data,
     });
 
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "text",
+      content: body,
+      providerMessageId: getProviderMessageId(response.data),
+    });
+
     return response.data;
   } catch (err) {
     console.error(
@@ -712,6 +735,12 @@ async function sendListMessage(phone, message) {
     console.log("Gupshup WhatsApp list send accepted", {
       recipient,
       result: response.data,
+    });
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "list",
+      content: message.body || message.content?.text || "Interactive list sent",
+      providerMessageId: getProviderMessageId(response.data),
     });
     return response.data;
   } catch (err) {
@@ -756,6 +785,14 @@ async function sendImageMessage(phone, imageUrl, caption) {
       result: response.data,
     });
 
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "image",
+      content: caption || "Image sent",
+      mediaUrl: imageUrl,
+      providerMessageId: getProviderMessageId(response.data),
+    });
+
     return response.data;
   } catch (err) {
     console.error(
@@ -796,6 +833,14 @@ async function sendVideoMessage(phone, videoUrl, caption) {
     console.log("Gupshup WhatsApp video send accepted", {
       recipient,
       result: response.data,
+    });
+
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "video",
+      content: caption || "Video sent",
+      mediaUrl: videoUrl,
+      providerMessageId: getProviderMessageId(response.data),
     });
 
     return response.data;
@@ -859,6 +904,13 @@ async function sendTemplateMessage(
       result: response.data,
     });
 
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "template",
+      content: `Template: ${templateName}${bodyParams.length ? ` — ${bodyParams.join(" · ")}` : ""}`,
+      providerMessageId: getProviderMessageId(response.data),
+    });
+
     return response.data;
   } catch (err) {
     console.error(
@@ -901,6 +953,12 @@ async function sendQuickReplyMessage(phone, message) {
     console.log("Gupshup WhatsApp quick-reply send accepted", {
       recipient,
       result: response.data,
+    });
+    await saveOutboundWhatsappMessage({
+      phone: recipient,
+      type: "quick_reply",
+      content: message.content?.text || message.content?.caption || "Quick-reply message sent",
+      providerMessageId: getProviderMessageId(response.data),
     });
     return response.data;
   } catch (err) {
@@ -1361,6 +1419,7 @@ function parseGupshupV2Webhook(body = {}) {
       id: payload.id || `gupshup-${body.timestamp || Date.now()}`,
       type: payload.type || "text",
       text: { body: String(text) },
+      profileName: payload.sender?.name || inner.sender?.name || "",
       gupshupPayload: payload,
     },
   };
@@ -1370,6 +1429,7 @@ async function saveInboundMessage({
   messageId,
   userId,
   sessionId,
+  phone,
   content,
   signals = {},
 }) {
@@ -1381,6 +1441,7 @@ async function saveInboundMessage({
       user_id: userId,
       session_id: sessionId,
       role: "user",
+      phone: normalizeWhatsappRecipient(phone),
       content,
       ...compactSignalFields(signals),
       created_at: new Date(),
@@ -1418,6 +1479,14 @@ async function getOrCreateUser(phone, signals = {}) {
     throw new Error("Customer record could not be created or loaded");
   }
   return persistedUser;
+}
+
+async function findUserByPhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "").slice(-10);
+  if (!/^\d{10}$/.test(digits)) return null;
+  return collections().users.findOne({
+    phone: { $regex: `${digits}$` },
+  });
 }
 
 async function getOrCreateSession(userId) {
@@ -2062,6 +2131,33 @@ function isSupportedWhatsappImageUrl(imageUrl = "") {
   }
 }
 
+async function saveOutboundWhatsappMessage({
+  phone,
+  type = "text",
+  content = "",
+  mediaUrl = "",
+  providerMessageId = "",
+}) {
+  if (!mongoReady) return;
+  try {
+    await collections().messages.insertOne({
+      message_id: providerMessageId || `outbound-${crypto.randomUUID()}`,
+      phone: normalizeWhatsappRecipient(phone),
+      role: "assistant",
+      direction: "outbound",
+      type,
+      content: String(content || "").slice(0, 10000),
+      media_url: String(mediaUrl || "").slice(0, 2000),
+      provider_message_id: providerMessageId || null,
+      created_at: new Date(),
+    });
+  } catch (error) {
+    if (error?.code !== 11000) {
+      console.error("WhatsApp outbound conversation recording failed", error.message);
+    }
+  }
+}
+
 const WHATSAPP_MEDIA_TYPES = new Set(["image", "video", "document"]);
 
 function getWhatsappTemplateMediaConfig(rawValue = process.env.WHATSAPP_TEMPLATE_MEDIA) {
@@ -2112,6 +2208,24 @@ function getWhatsappTemplateMedia(templateName) {
   }
 
   return null;
+}
+
+function isHumanSupportRequest(text = "") {
+  const lower = normalizeText(text);
+  return matchesAny(lower, [
+    "help",
+    "need help",
+    "need help?",
+    "customer care",
+    "contact support",
+    "need support",
+    "human support",
+    "live agent",
+    "speak to an agent",
+    "talk to an agent",
+    "speak to a human",
+    "talk to a human",
+  ]) || lower.includes("customer care agent");
 }
 
 async function sendOrderConfirmationWhatsapp(order) {
@@ -3138,6 +3252,59 @@ async function handleProductSelection({ session, text, phone, userId }) {
   await beginTutorialCooking({ session, phone, userId, product });
 }
 
+async function sendQuickCookingDemo(phone) {
+  const product = PRODUCTS.velvety_butter;
+  const videoUrl = getCookingIntroVideoUrl(product);
+  const caption =
+    "Here’s a quick look at how easy it is to cook Butter Chicken with VALOUR.";
+
+  if (!videoUrl) {
+    console.warn("WhatsApp quick demo was not sent because WHATSAPP_VELVETY_BUTTER_VIDEO_URL is not configured.");
+    await sendMessage(
+      phone,
+      "The quick cooking demo is temporarily unavailable. Reply HELP if you’d like assistance.",
+    );
+    return { sent: false, reason: "missing_video_url" };
+  }
+
+  try {
+    const result = await sendVideoMessage(phone, videoUrl, caption);
+    return { sent: true, result };
+  } catch (error) {
+    console.error("WhatsApp quick cooking demo failed", {
+      recipient: maskWhatsappPhone(phone),
+      error: error.response?.data || error.message,
+    });
+    await sendMessage(phone, `${caption}\n\nWatch here: ${videoUrl}`);
+    return { sent: false, reason: "video_send_failed" };
+  }
+}
+
+const DEFAULT_LID_OPENING_VIDEO_URL =
+  "https://media.liquidspice.in/open_the_lid_vlr.mov";
+
+async function sendLidOpeningHelp(phone) {
+  const videoUrl = String(
+    process.env.WHATSAPP_LID_OPENING_VIDEO_URL || DEFAULT_LID_OPENING_VIDEO_URL,
+  ).trim();
+  const caption = `Lid Sealed Tight? Here’s the Easy Way to Open It.
+
+High-temperature vacuum sealing can make the lid feel unusually tight. If it’s difficult to open, gently tap around the edge of the lid with a wooden spatula to release the vacuum—then twist it open easily.
+
+Watch the video to see how.`;
+
+  try {
+    await sendVideoMessage(phone, videoUrl, caption);
+  } catch (error) {
+    console.error("WhatsApp lid-opening video failed", {
+      recipient: maskWhatsappPhone(phone),
+      videoUrl,
+      error: error.response?.data || error.message,
+    });
+    await sendMessage(phone, `${caption}\n\nVideo: ${videoUrl}`);
+  }
+}
+
 async function beginTutorialCooking({ session, phone, userId, product }) {
   const videoResult = await sendCookingIntro(phone, product);
 
@@ -3694,28 +3861,48 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
       { sessionId: session._id, trigger: "post_cook_feedback" },
       "feedback_received",
     );
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(phone), trigger: "review_request" },
+      "review_link_sent_in_feedback_response",
+    );
   }
 
   if (lower === "1" || lower.includes("loved")) {
     await recordPostCookFeedback({ session, userId, feedbackType });
-    await sendMessage(
-      phone,
-      "Glad to hear it. Reply MENU whenever you want to cook again.",
-    );
     const order = await collections().orders.findOne(
       { phone: { $regex: `${String(phone).slice(-10)}$` } },
       { sort: { createdAt: -1 } },
     );
-    if (order) {
-      void scheduleWhatsappJob({
-        event: "review_request",
-        phone,
-        customerId: userId,
-        order,
-        parameters: [],
-        scheduledAt: new Date(Date.now() + 5 * 60_000),
-      }).catch((err) => console.error("Review-request scheduling failed", err.message));
-    }
+    await sendMessage(
+      phone,
+      order
+        ? `That’s wonderful to hear! We’re glad VALOUR made your Butter Chicken easier and delicious.
+
+Would you leave us a quick review? It only takes a moment:
+${getReviewUrl(order)}`
+        : "That’s wonderful to hear! We’re glad VALOUR made your Butter Chicken easier and delicious. We could not find your order to create the review link—reply HELP and we’ll assist you.",
+    );
+    await resetToIdle(session._id);
+    return;
+  }
+
+  if (lower.includes("could be better") || lower.includes("could've been better")) {
+    await recordPostCookFeedback({ session, userId, feedbackType });
+    const order = await collections().orders.findOne(
+      { phone: { $regex: `${String(phone).slice(-10)}$` } },
+      { sort: { createdAt: -1 } },
+    );
+    await sendMessage(
+      phone,
+      order
+        ? `Thanks for telling us—we’d love to make your next cook better.
+
+Please tell us what we could improve in this quick review:
+${getReviewUrl(order)}
+
+If you’d like personal help, reply HELP and our team will assist you.`
+        : "Thanks for telling us—we’d love to make your next cook better. We could not find your order to create the review link—reply HELP and we’ll assist you.",
+    );
     await resetToIdle(session._id);
     return;
   }
@@ -3941,6 +4128,22 @@ function hashOrderOtp(code) {
     .digest("hex");
 }
 
+async function sendShippingPhoneOtp(phone, otp) {
+  const result = await sendFast2SmsQuickSms({
+    axiosClient: axios,
+    phone,
+    message: `Your VALOUR shipping phone verification code is ${otp}. It expires in 5 minutes. Do not share this code.`,
+    reference: "shipping_phone_otp",
+  });
+
+  console.log("[FAST2SMS][OTP_ACCEPTED]", {
+    requestId: result.request_id || null,
+    recipient: `******${String(phone).slice(-4)}`,
+    smsDetails: result.sms_details || null,
+  });
+  return result;
+}
+
 function getChatShippingPhone(phone) {
   return normalizeShippingPhone(phone);
 }
@@ -4049,7 +4252,7 @@ async function handleWhatsappOrderState({ session, text, phone }) {
     });
     return sendMessage(
       phone,
-      `Which mobile number should the courier use?\n\nReply USE THIS NUMBER to use your current WhatsApp number, or type a 10-digit Indian mobile number. A number you type will be verified by OTP on WhatsApp.`,
+      `Which mobile number should the courier use?\n\nReply USE THIS NUMBER to use your current WhatsApp number, or type a 10-digit Indian mobile number. A number you type will be verified by SMS OTP.`,
     );
   }
   if (session.current_state === "order_phone") {
@@ -4075,21 +4278,32 @@ async function handleWhatsappOrderState({ session, text, phone }) {
         "Please enter a valid 10-digit Indian mobile number beginning with 6, 7, 8, or 9, or reply USE THIS NUMBER.",
       );
     }
+
+    const existingUser = await findUserByPhone(shippingPhone);
+    if (existingUser) {
+      const draft = { ...(session.order_draft || {}), phone: shippingPhone };
+      await updateSession(session._id, {
+        current_state: "order_confirm",
+        order_draft: draft,
+        order_otp_hash: null,
+        order_otp_phone: null,
+        order_otp_chat: null,
+        order_otp_expires_at: null,
+      });
+      return sendOrderReview(phone, session, draft);
+    }
+
     const otp = String(crypto.randomInt(100000, 1000000));
-    const otpRecipient = String(phone);
     try {
-      await sendMessage(
-        otpRecipient,
-        `Your VALOUR shipping phone verification code is ${otp}. It expires in 5 minutes. Do not share this code.`,
-      );
+      await sendShippingPhoneOtp(shippingPhone, otp);
     } catch (err) {
       console.error(
         "Shipping phone OTP send failed",
-        err.response?.data || err.message,
+        err.response?.data || err.providerResponse || err.message,
       );
       return sendMessage(
         phone,
-        "We could not send an OTP to that number. Check that it is on WhatsApp, enter it again, or reply USE THIS NUMBER.",
+        "We could not send an SMS OTP to that number. Check it and enter it again, or reply USE THIS NUMBER.",
       );
     }
     await updateSession(session._id, {
@@ -4101,7 +4315,7 @@ async function handleWhatsappOrderState({ session, text, phone }) {
     });
     return sendMessage(
       phone,
-      `We sent a six-digit OTP in this WhatsApp chat to verify the shipping number +91 ${shippingPhone}. Reply with it within 5 minutes.`,
+      `We sent a six-digit OTP by SMS to +91 ${shippingPhone}. Reply here with it within 5 minutes.`,
     );
   }
   if (session.current_state === "order_phone_otp") {
@@ -4123,7 +4337,7 @@ async function handleWhatsappOrderState({ session, text, phone }) {
     }
     return sendMessage(
       phone,
-      `Please reply with the OTP sent in this chat to verify +91 ${session.order_otp_phone}. If you need to change the number, reply CANCEL and begin again.`,
+      `Please reply with the OTP sent by SMS to +91 ${session.order_otp_phone}. If you need to change the number, reply CANCEL and begin again.`,
     );
   }
   if (session.current_state === "order_confirm") {
@@ -4191,6 +4405,7 @@ async function processIncomingMessage(message) {
     messageId: message.id,
     userId: user._id,
     sessionId: session._id,
+    phone,
     content: text || `[${message.type || "unsupported"} message]`,
     signals: messageSignals,
   });
@@ -4263,6 +4478,52 @@ async function processIncomingMessage(message) {
       "customer_selected_not_now",
     );
     await sendMessage(phone, "No problem. You can review VALOUR whenever you are ready.");
+    return;
+  }
+
+  if (lower === "cooking video") {
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(phone), trigger: "cooking_reminder" },
+      "customer_requested_cooking_video",
+    );
+    await updateUserSignals(user._id, {
+      activationPreference: "guided_cooking",
+      segment: "active_cook",
+    });
+    await startCookingFlow({ session: activeSession, phone, userId: user._id });
+    return;
+  }
+
+  if (lower === "watch cooking demo" || lower === "watch video") {
+    await sendQuickCookingDemo(phone);
+    await updateUserSignals(user._id, {
+      activationPreference: "product_demo",
+      segment: "engaged_lead",
+    });
+    return;
+  }
+
+  if (lower === "how to open the lid" || lower === "how to open the lid?") {
+    await sendLidOpeningHelp(phone);
+    return;
+  }
+
+  if (isHumanSupportRequest(lower)) {
+    await updateSession(activeSession._id, {
+      current_state: "support_awaiting_details",
+      support_category: SUPPORT_CATEGORIES["5"],
+      support_order_id: null,
+      activationPreference: "customer_care",
+      segment: "support_intent",
+    });
+    await updateUserSignals(user._id, {
+      activationPreference: "customer_care",
+      segment: "support_intent",
+    });
+    await sendMessage(
+      phone,
+      "You’re in the right place. I’m connecting you with VALOUR Customer Care. Please describe what you need help with in one message, and a team member will follow up with you here on WhatsApp.",
+    );
     return;
   }
 
@@ -4704,6 +4965,9 @@ app.post("/webhook/gupshup", (req, res) => {
   const value = req.body?.entry?.[0]?.changes?.[0]?.value;
   const nativeGupshup = parseGupshupV2Webhook(req.body);
   const message = value?.messages?.[0] || nativeGupshup.message;
+  if (message && !message.profileName) {
+    message.profileName = value?.contacts?.[0]?.profile?.name || "";
+  }
   const wrappedStatus = value?.statuses?.[0];
   const isCallbackSetupEvent = wrappedStatus?.type === "set-callback";
   const status = wrappedStatus?.id && wrappedStatus?.status
@@ -5459,66 +5723,207 @@ function isAuthorizedAdminRequest(req) {
   );
 }
 
-async function verifyFirebasePhoneIdentity(idToken, expectedPhone) {
-  const apiKey = process.env.FIREBASE_WEB_API_KEY;
-  const maskedPhone = maskWhatsappPhone(expectedPhone);
-  console.info("[FIREBASE_AUTH][TOKEN_VERIFY_ATTEMPT]", {
-    recipient: maskedPhone,
-    tokenSupplied: Boolean(idToken),
-  });
-  if (!apiKey) {
-    console.error("[FIREBASE_AUTH][TOKEN_REJECTED]", {
-      recipient: maskedPhone,
-      reason: "firebase_not_configured",
-    });
-    const error = new Error("Firebase phone verification is not configured");
-    error.statusCode = 503;
-    throw error;
+const CHECKOUT_OTP_TTL_MS = 5 * 60 * 1000;
+const CHECKOUT_OTP_TOKEN_TTL_MS = 50 * 60 * 1000;
+const CHECKOUT_OTP_RESEND_MS = 60 * 1000;
+const CHECKOUT_OTP_MAX_SENDS_10_MIN = 3;
+const CHECKOUT_OTP_MAX_ATTEMPTS = 5;
+
+function getCheckoutOtpSecret() {
+  return process.env.CHECKOUT_OTP_SECRET || process.env.TRACKING_TOKEN_SECRET || "";
+}
+
+function hashCheckoutOtp(challengeId, phone, otp) {
+  return crypto
+    .createHmac("sha256", getCheckoutOtpSecret())
+    .update(`${challengeId}:${phone}:${otp}`)
+    .digest("hex");
+}
+
+function signCheckoutPhoneToken(phone, challengeId, now = Date.now()) {
+  const payload = Buffer.from(JSON.stringify({
+    phone,
+    challengeId,
+    issuedAt: now,
+    expiresAt: now + CHECKOUT_OTP_TOKEN_TTL_MS,
+  })).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", getCheckoutOtpSecret())
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function readCheckoutPhoneToken(token) {
+  try {
+    if (!getCheckoutOtpSecret()) return null;
+    const [payload, signature] = String(token || "").split(".");
+    if (!payload || !signature) return null;
+    const expected = crypto
+      .createHmac("sha256", getCheckoutOtpSecret())
+      .update(payload)
+      .digest();
+    const supplied = Buffer.from(signature, "base64url");
+    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) return null;
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (!parsed.phone || !parsed.challengeId || Number(parsed.expiresAt) <= Date.now()) return null;
+    return parsed;
+  } catch (_error) {
+    return null;
   }
-  if (!idToken || String(idToken).length > 5000) {
-    console.warn("[FIREBASE_AUTH][TOKEN_REJECTED]", {
-      recipient: maskedPhone,
-      reason: !idToken ? "token_missing" : "token_length_invalid",
+}
+
+async function verifyCheckoutPhoneIdentity(token, expectedPhone) {
+  const phone = normalizeFast2SmsNumber(expectedPhone);
+  const identity = readCheckoutPhoneToken(token);
+  console.info("[FAST2SMS_AUTH][TOKEN_VERIFY_ATTEMPT]", {
+    recipient: maskWhatsappPhone(phone),
+    tokenSupplied: Boolean(token),
+  });
+  if (!phone || !identity || identity.phone !== phone) {
+    console.warn("[FAST2SMS_AUTH][TOKEN_REJECTED]", {
+      recipient: maskWhatsappPhone(phone),
+      reason: !token ? "token_missing" : "token_invalid_or_phone_mismatch",
     });
-    const error = new Error("Phone verification is required before ordering");
+    const error = new Error("Phone verification expired or is invalid");
     error.statusCode = 401;
     throw error;
   }
-  try {
-    const response = await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
-      { idToken: String(idToken) },
-      { timeout: 10000 },
-    );
-    const firebaseUser = response.data?.users?.[0];
-    const verifiedPhone = String(firebaseUser?.phoneNumber || "").replace(/\D/g, "").slice(-10);
-    const requestedPhone = String(expectedPhone || "").replace(/\D/g, "").slice(-10);
-    if (!firebaseUser?.localId || !verifiedPhone || verifiedPhone !== requestedPhone) {
-      const error = new Error("Verified phone number does not match the delivery phone");
-      error.statusCode = 401;
-      throw error;
-    }
-    console.info("[FIREBASE_AUTH][TOKEN_VERIFIED]", {
-      recipient: maskWhatsappPhone(firebaseUser.phoneNumber),
-      firebaseUid: `${firebaseUser.localId.slice(0, 6)}...`,
-    });
-    return {
-      firebaseUid: firebaseUser.localId,
-      firebasePhoneNumber: firebaseUser.phoneNumber,
-      phoneVerifiedAt: new Date(),
-    };
-  } catch (error) {
-    const providerReason = error.response?.data?.error?.message || error.code || error.message;
-    console.warn("[FIREBASE_AUTH][TOKEN_REJECTED]", {
-      recipient: maskedPhone,
-      reason: String(providerReason || "firebase_verification_failed").slice(0, 160),
-    });
-    if (error.statusCode) throw error;
-    const authError = new Error("Phone verification expired or is invalid");
-    authError.statusCode = 401;
-    throw authError;
-  }
+  console.info("[FAST2SMS_AUTH][TOKEN_VERIFIED]", {
+    recipient: maskWhatsappPhone(phone),
+    challengeId: identity.challengeId,
+  });
+  return {
+    phoneVerificationProvider: "fast2sms",
+    phoneVerificationChallengeId: identity.challengeId,
+    phoneVerifiedAt: new Date(identity.issuedAt),
+  };
 }
+
+app.post("/api/auth/otp/send", async (req, res) => {
+  const phone = normalizeFast2SmsNumber(req.body?.phone);
+  if (!phone) return res.status(400).json({ ok: false, error: "Enter a valid Indian mobile number" });
+  if (!process.env.FAST2SMS_API_KEY || !getCheckoutOtpSecret()) {
+    return res.status(503).json({ ok: false, error: "SMS verification is not configured" });
+  }
+
+  try {
+    const existingUser = await findUserByPhone(phone);
+    if (existingUser) {
+      const verifiedAt = new Date();
+      const challengeId = crypto.randomUUID();
+      return res.json({
+        ok: true,
+        existingUser: true,
+        verificationToken: signCheckoutPhoneToken(phone, challengeId, verifiedAt.getTime()),
+        phone: `+91${phone}`,
+        verifiedAt: verifiedAt.toISOString(),
+      });
+    }
+
+    const { otpChallenges } = collections();
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const recent = await otpChallenges
+      .find({ phone, createdAt: { $gte: tenMinutesAgo } })
+      .sort({ createdAt: -1 })
+      .limit(CHECKOUT_OTP_MAX_SENDS_10_MIN)
+      .toArray();
+    if (recent[0] && Date.now() - new Date(recent[0].createdAt).getTime() < CHECKOUT_OTP_RESEND_MS) {
+      return res.status(429).json({ ok: false, error: "Please wait one minute before requesting another code" });
+    }
+    if (recent.length >= CHECKOUT_OTP_MAX_SENDS_10_MIN) {
+      return res.status(429).json({ ok: false, error: "Too many OTP requests. Please try again after 10 minutes" });
+    }
+
+    const challengeId = crypto.randomUUID();
+    const otp = String(crypto.randomInt(100000, 1000000));
+    const now = new Date();
+    await otpChallenges.insertOne({
+      challengeId,
+      phone,
+      otpHash: hashCheckoutOtp(challengeId, phone, otp),
+      attemptCount: 0,
+      status: "sending",
+      requestIp: String(req.ip || req.socket?.remoteAddress || "").slice(0, 100),
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + CHECKOUT_OTP_TTL_MS),
+    });
+
+    try {
+      const provider = await sendFast2SmsQuickSms({
+        axiosClient: axios,
+        phone,
+        message: `Your VALOUR verification code is ${otp}. It expires in 5 minutes. Do not share this code.`,
+        reference: `checkout_${challengeId}`,
+      });
+      await otpChallenges.updateOne(
+        { challengeId },
+        { $set: { status: "sent", providerRequestId: provider.request_id || null, sentAt: new Date() } },
+      );
+      console.info("[FAST2SMS_AUTH][OTP_SENT]", {
+        recipient: maskWhatsappPhone(phone),
+        challengeId,
+        providerRequestId: provider.request_id || null,
+      });
+    } catch (error) {
+      await otpChallenges.updateOne(
+        { challengeId },
+        { $set: { status: "failed", failedAt: new Date(), failureReason: String(error.message).slice(0, 200) } },
+      );
+      console.error("[FAST2SMS_AUTH][OTP_SEND_FAILED]", {
+        recipient: maskWhatsappPhone(phone),
+        challengeId,
+        error: error.response?.data || error.message,
+      });
+      return res.status(502).json({ ok: false, error: "Unable to send the verification code right now" });
+    }
+
+    return res.json({ ok: true, challengeId, expiresInSeconds: CHECKOUT_OTP_TTL_MS / 1000 });
+  } catch (error) {
+    console.error("[FAST2SMS_AUTH][OTP_SEND_ERROR]", { recipient: maskWhatsappPhone(phone), error: error.message });
+    return res.status(500).json({ ok: false, error: "Unable to start phone verification" });
+  }
+});
+
+app.post("/api/auth/otp/verify", async (req, res) => {
+  const phone = normalizeFast2SmsNumber(req.body?.phone);
+  const challengeId = String(req.body?.challengeId || "");
+  const otp = String(req.body?.otp || "").trim();
+  if (!phone || !/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{6}$/.test(otp)) {
+    return res.status(400).json({ ok: false, error: "Invalid verification request" });
+  }
+
+  try {
+    const { otpChallenges } = collections();
+    const challenge = await otpChallenges.findOne({ challengeId, phone });
+    if (!challenge || challenge.status !== "sent" || new Date(challenge.expiresAt) <= new Date()) {
+      return res.status(401).json({ ok: false, error: "This OTP has expired. Request a new code" });
+    }
+    if (Number(challenge.attemptCount) >= CHECKOUT_OTP_MAX_ATTEMPTS) {
+      return res.status(429).json({ ok: false, error: "Too many incorrect attempts. Request a new code" });
+    }
+
+    const expected = Buffer.from(challenge.otpHash, "hex");
+    const supplied = Buffer.from(hashCheckoutOtp(challengeId, phone, otp), "hex");
+    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
+      await otpChallenges.updateOne({ challengeId }, { $inc: { attemptCount: 1 }, $set: { lastAttemptAt: new Date() } });
+      console.warn("[FAST2SMS_AUTH][OTP_REJECTED]", { recipient: maskWhatsappPhone(phone), challengeId });
+      return res.status(401).json({ ok: false, error: "That OTP does not match" });
+    }
+
+    const verifiedAt = new Date();
+    await otpChallenges.updateOne(
+      { challengeId, status: "sent" },
+      { $set: { status: "verified", verifiedAt }, $unset: { otpHash: "" } },
+    );
+    const verificationToken = signCheckoutPhoneToken(phone, challengeId, verifiedAt.getTime());
+    console.info("[FAST2SMS_AUTH][OTP_VERIFIED]", { recipient: maskWhatsappPhone(phone), challengeId });
+    return res.json({ ok: true, verificationToken, phone: `+91${phone}`, verifiedAt: verifiedAt.toISOString() });
+  } catch (error) {
+    console.error("[FAST2SMS_AUTH][OTP_VERIFY_ERROR]", { recipient: maskWhatsappPhone(phone), error: error.message });
+    return res.status(500).json({ ok: false, error: "Unable to verify the code right now" });
+  }
+});
 
 function escapeMongoRegex(value = "") {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -5581,6 +5986,163 @@ function serializeAdminWhatsappJob(job = {}) {
     error: job.lastError || job.providerErrors || job.cancellationReason || "",
   };
 }
+
+function getAdminConversationName(user = {}, order = {}) {
+  return user.profileName || user.customerName || user.name || order.customerName || "WhatsApp customer";
+}
+
+function serializeAdminConversationMessage(message = {}) {
+  return {
+    id: String(message._id || message.message_id || ""),
+    direction: message.role === "user" ? "inbound" : "outbound",
+    type: message.type || "text",
+    content: message.content || "",
+    mediaUrl: message.media_url || "",
+    providerMessageId: message.provider_message_id || message.message_id || "",
+    createdAt: message.created_at || null,
+  };
+}
+
+app.get("/api/admin/whatsapp/conversations", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const limit = Math.min(100, Math.max(10, Number.parseInt(req.query.limit, 10) || 50));
+    const search = String(req.query.search || "").trim().toLowerCase().slice(0, 100);
+    const { messages, users, sessions, orders } = collections();
+    const recentMessages = await messages.find({}).sort({ created_at: -1 }).limit(3000).toArray();
+    const userIds = [...new Map(
+      recentMessages.filter((message) => message.user_id).map((message) => [String(message.user_id), message.user_id]),
+    ).values()];
+    const [userRows, sessionRows] = await Promise.all([
+      userIds.length ? users.find({ _id: { $in: userIds } }).toArray() : [],
+      userIds.length ? sessions.find({ user_id: { $in: userIds }, active: true }).toArray() : [],
+    ]);
+    const userById = new Map(userRows.map((user) => [String(user._id), user]));
+    const sessionByUserId = new Map(sessionRows.map((session) => [String(session.user_id), session]));
+    const grouped = new Map();
+
+    for (const message of recentMessages) {
+      const user = message.user_id ? userById.get(String(message.user_id)) : null;
+      const phone = normalizeWhatsappRecipient(message.phone || user?.phone);
+      if (!phone) continue;
+      if (!grouped.has(phone)) {
+        grouped.set(phone, {
+          phone,
+          user,
+          latestMessage: message,
+          messageCount: 0,
+          unreadCount: 0,
+          reachedOutbound: false,
+        });
+      }
+      const conversation = grouped.get(phone);
+      conversation.messageCount += 1;
+      if (!conversation.reachedOutbound && message.role === "user") conversation.unreadCount += 1;
+      if (message.role !== "user") conversation.reachedOutbound = true;
+      if (!conversation.user && user) conversation.user = user;
+    }
+
+    const phoneVariants = [...grouped.keys()].flatMap((phone) => {
+      const local = phone.slice(-10);
+      return [phone, local, `+91${local}`];
+    });
+    const orderRows = phoneVariants.length
+      ? await orders.find({
+          $or: [
+            { phone: { $in: phoneVariants } },
+            { whatsappPhone: { $in: phoneVariants } },
+          ],
+        }).sort({ createdAt: -1 }).toArray()
+      : [];
+    const orderByPhone = new Map();
+    for (const order of orderRows) {
+      const phone = normalizeWhatsappRecipient(order.whatsappPhone || order.phone);
+      if (phone && !orderByPhone.has(phone)) orderByPhone.set(phone, order);
+    }
+
+    const conversations = [...grouped.values()].map((conversation) => {
+      const order = orderByPhone.get(conversation.phone) || {};
+      const session = conversation.user ? sessionByUserId.get(String(conversation.user._id)) : null;
+      return {
+        phone: conversation.phone,
+        customerName: getAdminConversationName(conversation.user, order),
+        customerId: String(conversation.user?._id || ""),
+        orderNumber: order.orderNumber || "",
+        currentState: session?.current_state || "",
+        latestMessage: conversation.latestMessage.content || "",
+        latestDirection: conversation.latestMessage.role === "user" ? "inbound" : "outbound",
+        latestAt: conversation.latestMessage.created_at || null,
+        messageCount: conversation.messageCount,
+        unreadCount: conversation.unreadCount,
+      };
+    }).filter((conversation) => {
+      if (!search) return true;
+      return [conversation.customerName, conversation.phone, conversation.orderNumber, conversation.latestMessage]
+        .some((value) => String(value || "").toLowerCase().includes(search));
+    }).slice(0, limit);
+
+    return res.json({ ok: true, conversations });
+  } catch (error) {
+    console.error("Admin WhatsApp conversations load failed", error.message);
+    return res.status(500).json({ ok: false, error: "Unable to load WhatsApp conversations" });
+  }
+});
+
+app.get("/api/admin/whatsapp/conversations/:phone/messages", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const phone = normalizeWhatsappRecipient(req.params.phone);
+  if (!phone) return res.status(400).json({ ok: false, error: "Invalid WhatsApp phone number" });
+  try {
+    const localPhone = phone.slice(-10);
+    const { messages, users, orders, messageJobs } = collections();
+    const userRows = await users.find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }).toArray();
+    const userIds = userRows.map((user) => user._id);
+    const [messageRows, jobRows, order] = await Promise.all([
+      messages.find({
+        $or: [
+          { phone: { $in: [phone, localPhone, `+91${localPhone}`] } },
+          ...(userIds.length ? [{ user_id: { $in: userIds } }] : []),
+        ],
+      }).sort({ created_at: -1 }).limit(300).toArray(),
+      messageJobs.find({ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }).sort({ createdAt: -1 }).limit(100).toArray(),
+      orders.findOne(
+        { $or: [{ phone: { $regex: `${escapeMongoRegex(localPhone)}$` } }, { whatsappPhone: { $regex: `${escapeMongoRegex(localPhone)}$` } }] },
+        { sort: { createdAt: -1 } },
+      ),
+    ]);
+    const existingProviderIds = new Set(messageRows.map((message) => message.provider_message_id || message.message_id).filter(Boolean));
+    const historicalJobs = jobRows.filter((job) => !existingProviderIds.has(job.providerMessageId)).map((job) => ({
+      _id: job._id,
+      role: "assistant",
+      type: "template",
+      content: `Template: ${job.templateName || job.trigger}${job.parameters?.length ? ` — ${job.parameters.join(" · ")}` : ""}`,
+      provider_message_id: job.providerMessageId || "",
+      created_at: job.submittedAt || job.sentAt || job.createdAt,
+    }));
+    const timeline = [...messageRows, ...historicalJobs]
+      .sort((left, right) => new Date(left.created_at) - new Date(right.created_at))
+      .slice(-300)
+      .map(serializeAdminConversationMessage);
+    const user = userRows[0] || {};
+    return res.json({
+      ok: true,
+      customer: {
+        name: getAdminConversationName(user, order || {}),
+        phone,
+        customerId: String(user._id || ""),
+        orderNumber: order?.orderNumber || "",
+      },
+      messages: timeline,
+    });
+  } catch (error) {
+    console.error("Admin WhatsApp message history load failed", error.message);
+    return res.status(500).json({ ok: false, error: "Unable to load WhatsApp message history" });
+  }
+});
 
 app.get("/api/admin/dashboard", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
@@ -5984,8 +6546,8 @@ app.post("/api/orders/cod", async (req, res) => {
     if (!savedOrder) {
       const rawOrder = req.body.order || {};
       const customerOrder = normalizeOrderPayload(rawOrder);
-      const firebaseIdentity = await verifyFirebasePhoneIdentity(
-        rawOrder.firebaseIdToken,
+      const phoneIdentity = await verifyCheckoutPhoneIdentity(
+        rawOrder.phoneVerificationToken,
         customerOrder.phone,
       );
       const quote = await buildAuthoritativeQuote({
@@ -5997,7 +6559,7 @@ app.post("/api/orders/cod", async (req, res) => {
       const websiteOrder = {
         ...customerOrder,
         ...quoteToOrderFields(quote),
-        ...firebaseIdentity,
+        ...phoneIdentity,
       };
       const validationError = validateOrderPayload(websiteOrder);
       if (validationError) return res.status(400).json({ ok: false, error: validationError });
@@ -6096,8 +6658,8 @@ app.post("/api/payment/create-order", async (req, res) => {
     assertRazorpayConfig();
     const rawOrder = req.body.order || {};
     const customerOrder = normalizeOrderPayload(rawOrder);
-    const firebaseIdentity = await verifyFirebasePhoneIdentity(
-      rawOrder.firebaseIdToken,
+    const phoneIdentity = await verifyCheckoutPhoneIdentity(
+      rawOrder.phoneVerificationToken,
       customerOrder.phone,
     );
     const quote = await buildAuthoritativeQuote({
@@ -6109,7 +6671,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     const websiteOrder = {
       ...customerOrder,
       ...quoteToOrderFields(quote),
-      ...firebaseIdentity,
+      ...phoneIdentity,
     };
     const validationError = validateOrderPayload(websiteOrder);
     if (validationError) {
@@ -6794,9 +7356,34 @@ app.post("/api/orders/:orderReference/request-review", async (req, res) => {
 // ======================
 const rootPath = path.join(__dirname, "../");
 
-app.use(express.static(rootPath));
+// Never expose the repository root. Only explicitly public asset directories
+// and named browser files are reachable over HTTP.
 app.use("/assets", express.static(path.join(rootPath, "assets")));
 app.use("/vendor", express.static(path.join(rootPath, "vendor")));
+
+const publicRootFiles = new Set([
+  "admin-dashboard.html",
+  "cart.html",
+  "checkout-script.js",
+  "checkout-styles.css",
+  "checkout.html",
+  "coupon-admin.html",
+  "firebase-auth.js",
+  "index.html",
+  "order-success.html",
+  "pay-order.html",
+  "payment-failed.html",
+  "privacy-policy.html",
+  "review.html",
+  "robots.txt",
+  "sitemap.xml",
+  "track-order.html",
+]);
+
+app.get("/:publicFile", (req, res, next) => {
+  if (!publicRootFiles.has(req.params.publicFile)) return next();
+  return res.sendFile(path.join(rootPath, req.params.publicFile));
+});
 
 // ======================
 // ROUTES
@@ -6879,6 +7466,8 @@ module.exports = {
     parseQuantity,
     parseProductSelection,
     parseTrackingLookupDetails,
+    isHumanSupportRequest,
+    getFeedbackType,
     getFeedbackPrompt,
     getInboundMessageText,
     createOrderTrackingToken,

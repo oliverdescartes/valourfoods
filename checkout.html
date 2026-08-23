@@ -637,12 +637,14 @@
             </button>
           </div>
           <p class="field-error" data-otp-error aria-live="polite"></p>
-          <div id="firebase-recaptcha-container"></div>
+          <div class="otp-resend-row" aria-live="polite">
+            <span data-otp-resend-status>Resend SMS available in 01:00</span>
+            <button type="button" data-resend-otp disabled>Resend SMS</button>
+          </div>
         </form>
       </div>
     </div>
 
-    <script type="module" src="firebase-auth.js"></script>
     <script src="checkout-script.js" defer></script>
   </body>
 </html>

@@ -1447,6 +1447,34 @@ img {
   min-height: 52px;
 }
 
+.otp-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.otp-resend-row button {
+  border: 0;
+  background: transparent;
+  color: var(--deep);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 6px 0;
+  text-decoration: underline;
+}
+
+.otp-resend-row button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
 [hidden] {
   display: none !important;
 }

@@ -1,6 +1,12 @@
 const assert = require("assert");
 const { _test } = require("./server");
 
+assert.equal(_test.getFeedbackType("Loved it"), "loved_it");
+assert.equal(_test.getFeedbackType("Could be better"), "could_be_better");
+assert.equal(_test.isHumanSupportRequest("Need Help"), true);
+assert.equal(_test.isHumanSupportRequest("I need a customer care agent"), true);
+assert.equal(_test.isHumanSupportRequest("Watch Video"), false);
+
 assert.deepEqual(
   _test.parseTrackingLookupDetails("9233054806, 799003"),
   { phone: "9233054806", pincode: "799003" },

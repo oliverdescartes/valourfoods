@@ -22,7 +22,7 @@ Successful and failed Razorpay attempts send WhatsApp status messages for both w
 
 The single delivery message requires six values in order: name, locality/area, city, state, six-digit pincode, and house/street. Customers may use labels but do not have to copy exact syntax. House/street must be present, but its contents are not validated; location-format validation focuses on locality, city, state, and pincode. Invalid or missing fields are listed back to the customer, who is asked to resend all six values.
 
-After the address passes validation, the customer chooses the courier phone number. `USE THIS NUMBER` uses the current WhatsApp number immediately. A separately entered Indian mobile number is validated, then a six-digit OTP is sent in the current WhatsApp chat. The code expires after five minutes, and the supplied number is added to billing and shipping details only after the customer returns that code in the same chat.
+After the address passes validation, the customer chooses the courier phone number. `USE THIS NUMBER` uses the current WhatsApp number immediately. A separately entered Indian mobile number is validated, then a six-digit OTP is sent to that number through Fast2SMS Quick SMS. The code expires after five minutes, and the supplied number is added to billing and shipping details only after the customer returns that code in the WhatsApp chat.
 
 Run `npm test` from `backend` for the catalog, quantity, shipping, and cart-total checks.
 

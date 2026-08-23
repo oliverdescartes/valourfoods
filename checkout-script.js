@@ -109,14 +109,19 @@ const dom = {
   otpInput: document.querySelector("[data-otp-input]"),
   otpMessage: document.querySelector("[data-otp-message]"),
   otpError: document.querySelector("[data-otp-error]"),
+  otpResendButton: document.querySelector("[data-resend-otp]"),
+  otpResendStatus: document.querySelector("[data-otp-resend-status]"),
   mobileBar: document.querySelector("[data-mobile-bar]"),
 };
 
 const otpState = {
   phone: "",
+  challengeId: "",
   pendingUser: null,
   nextAction: null,
   sending: false,
+  resendAvailableAt: 0,
+  countdownTimer: null,
 };
 
 function money(value) {
@@ -152,7 +157,7 @@ function hasVerifiedUser(phone = getFormValues().phone) {
   return Boolean(
     user &&
     user.phone === String(phone || "").trim() &&
-    user.firebaseIdToken &&
+    user.phoneVerificationToken &&
     Number.isFinite(verifiedAt) &&
     Date.now() - verifiedAt < 50 * 60 * 1000,
   );
@@ -522,7 +527,7 @@ function buildOrderPayload() {
     })),
     totals: { ...state.totals },
     coupon: state.coupon,
-    firebaseIdToken: getStoredUser()?.firebaseIdToken || "",
+    phoneVerificationToken: getStoredUser()?.phoneVerificationToken || "",
     tracking,
     delivery: {
       estimate:
@@ -1065,31 +1070,69 @@ function handleFloatingStep() {
   placeOrder();
 }
 
-async function getFirebaseAuthClient() {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (window.valourFirebaseAuth) return window.valourFirebaseAuth;
-    await new Promise((resolve) => window.setTimeout(resolve, 100));
-  }
-  throw new Error("Phone verification could not load. Check your connection and try again.");
-}
-
-function getFirebaseOtpError(error) {
-  const code = String(error?.code || "");
-  if (code.includes("invalid-phone-number")) return "Enter a valid Indian mobile number.";
-  if (code.includes("too-many-requests")) return "Too many attempts. Please wait before trying again.";
-  if (code.includes("quota-exceeded")) return "SMS verification is temporarily unavailable.";
-  if (code.includes("invalid-verification-code")) return "That OTP does not match. Please try again.";
-  if (code.includes("code-expired")) return "This OTP has expired. Request a new code.";
-  if (code.includes("unauthorized-domain")) return "This website domain is not authorized in Firebase.";
-  return error?.message || "Phone verification failed. Please try again.";
-}
-
 async function sendOtp(phone) {
-  const firebaseAuth = await getFirebaseAuthClient();
   otpState.phone = phone;
-  await firebaseAuth.sendCode(phone);
+  const result = await postJSON(`${API_BASE}/api/auth/otp/send`, { phone });
+  if (result.existingUser) return result;
+  otpState.challengeId = result.challengeId;
+  console.info("[FAST2SMS_AUTH][OTP_REQUEST_ACCEPTED]", {
+    recipient: `***${String(phone).replace(/\D/g, "").slice(-4)}`,
+    challengeId: result.challengeId,
+  });
   trackEvent("valour_otp_send", { phone });
   showToast(`OTP sent to ${phone}.`);
+  return result;
+}
+
+function saveVerifiedUser(verification) {
+  const verifiedUser = {
+    ...otpState.pendingUser,
+    verifiedPhoneNumber: verification.phone,
+    phoneVerificationToken: verification.verificationToken,
+    verifiedAt: verification.verifiedAt,
+  };
+  localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
+  saveDraft();
+  otpState.pendingUser = null;
+  setOrderButtonLabels();
+  loadUserCoupons();
+}
+
+function updateOtpResendCountdown() {
+  const seconds = Math.max(0, Math.ceil((otpState.resendAvailableAt - Date.now()) / 1000));
+  dom.otpResendButton.disabled = seconds > 0 || otpState.sending;
+  dom.otpResendStatus.textContent = seconds > 0
+    ? `Resend SMS available in 00:${String(seconds).padStart(2, "0")}`
+    : "Didn't receive the code?";
+  if (seconds === 0 && otpState.countdownTimer) {
+    window.clearInterval(otpState.countdownTimer);
+    otpState.countdownTimer = null;
+  }
+}
+
+function startOtpResendCountdown() {
+  if (otpState.countdownTimer) window.clearInterval(otpState.countdownTimer);
+  otpState.resendAvailableAt = Date.now() + 60_000;
+  updateOtpResendCountdown();
+  otpState.countdownTimer = window.setInterval(updateOtpResendCountdown, 250);
+}
+
+async function resendOtp() {
+  if (otpState.sending || Date.now() < otpState.resendAvailableAt) return;
+  otpState.sending = true;
+  dom.otpError.textContent = "";
+  updateOtpResendCountdown();
+  try {
+    await sendOtp(otpState.phone);
+    dom.otpInput.value = "";
+    startOtpResendCountdown();
+    dom.otpInput.focus();
+  } catch (error) {
+    dom.otpError.textContent = error?.message || "Unable to resend the SMS. Please try again.";
+  } finally {
+    otpState.sending = false;
+    updateOtpResendCountdown();
+  }
 }
 
 function openOtpModal() {
@@ -1098,6 +1141,7 @@ function openOtpModal() {
   dom.otpInput.value = "";
   dom.otpError.textContent = "";
   dom.otpMessage.textContent = `We sent a 6-digit OTP to ${otpState.phone}.`;
+  startOtpResendCountdown();
   window.setTimeout(() => dom.otpInput.focus(), 50);
 }
 
@@ -1123,10 +1167,17 @@ async function startOtpVerification(nextAction = null) {
   otpState.sending = true;
   showToast("Sending verification code...");
   try {
-    await sendOtp(values.phone);
+    const result = await sendOtp(values.phone);
+    if (result.existingUser) {
+      saveVerifiedUser(result);
+      showToast("Welcome back. Your details have been saved.");
+      if (otpState.nextAction === "review") showReviewStep();
+      otpState.nextAction = null;
+      return;
+    }
     openOtpModal();
   } catch (error) {
-    showToast(getFirebaseOtpError(error), "error");
+    showToast(error?.message || "Phone verification failed. Please try again.", "error");
   } finally {
     otpState.sending = false;
   }
@@ -1145,32 +1196,24 @@ async function verifyOtp(event) {
 
   const verifyButton = dom.otpForm.querySelector("[data-verify-otp]");
   setLoading(verifyButton, true);
-  let firebaseUser;
+  let verification;
   try {
-    const firebaseAuth = await getFirebaseAuthClient();
-    firebaseUser = await firebaseAuth.confirmCode(enteredOtp);
+    verification = await postJSON(`${API_BASE}/api/auth/otp/verify`, {
+      phone: otpState.phone,
+      challengeId: otpState.challengeId,
+      otp: enteredOtp,
+    });
   } catch (error) {
-    dom.otpError.textContent = getFirebaseOtpError(error);
+    dom.otpError.textContent = error?.message || "Phone verification failed. Please try again.";
     setLoading(verifyButton, false);
     return;
   }
 
-  const verifiedUser = {
-    ...otpState.pendingUser,
-    firebaseUid: firebaseUser.uid,
-    firebasePhoneNumber: firebaseUser.phoneNumber,
-    firebaseIdToken: firebaseUser.idToken,
-    verifiedAt: new Date().toISOString(),
-  };
-  localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
-  saveDraft();
-  otpState.pendingUser = null;
+  saveVerifiedUser(verification);
   setLoading(verifyButton, false);
   closeOtpModal();
-  setOrderButtonLabels();
   trackEvent("valour_user_verified", { phone: otpState.phone });
   showToast("Mobile verified.");
-  loadUserCoupons();
 
   if (otpState.nextAction === "review") {
     otpState.nextAction = null;
@@ -1501,6 +1544,7 @@ function bindEvents() {
     .querySelector("[data-action='close-otp']")
     .addEventListener("click", closeOtpModal);
   dom.otpForm.addEventListener("submit", verifyOtp);
+  dom.otpResendButton.addEventListener("click", resendOtp);
 }
 
 function init() {

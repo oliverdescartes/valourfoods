@@ -101,7 +101,7 @@
 }
 
 .nav-right span {
-  font-size: 22px;
+  font-size: 31px;
   cursor: pointer;
   color: rgb(0, 0, 0);
 }
@@ -213,5 +213,9 @@ footer .nav-logo {
 
   .nav-right {
     display: flex;
+  }
+
+  .nav-right span {
+    font-size: 25px;
   }
 }

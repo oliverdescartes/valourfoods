@@ -1,0 +1,44 @@
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*api*key*
+*API*key*
+*secret*
+*credential*
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Runtime logs and process output
+*.log
+*.log.*
+*.pid
+*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local databases and customer data
+backend/db/*.json
+!backend/db/.gitkeep
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary, generated, and backup files
+tmp/
+*.bak
+*.tmp
+*.temp
+*.swp
+*.swo
+

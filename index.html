@@ -39,8 +39,6 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://media.liquidspice.in" crossorigin>
   <link rel="dns-prefetch" href="//media.liquidspice.in">
-  <link rel="preload" href="https://media.liquidspice.in/valour_ads_x1.mp4" as="video" type="video/mp4" crossorigin>
-  <link rel="preload" href="https://media.liquidspice.in/valour_ads_x2.mp4" as="video" type="video/mp4" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
     rel="stylesheet">
@@ -266,8 +264,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   }
 
   /* VIDEO */
-  .cf-popup-content video {
+  .cf-popup-content video,
+  .cf-popup-content iframe {
     width: 100%;
+    aspect-ratio: 9 / 16;
+    display: block;
+    border: 0;
     border-radius: 16px;
   }
 
@@ -295,7 +297,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   .cf-wrapper {
     position: relative;
     width: min(100%, 1100px);
-    height: clamp(390px, 38vw, 520px);
+    height: clamp(430px, 42vw, 590px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -371,8 +373,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   /* CAROUSEL */
   .cf-carousel {
     position: relative;
-    width: clamp(240px, 22vw, 320px);
-    aspect-ratio: 2 / 3;
+    width: clamp(230px, 20vw, 290px);
+    aspect-ratio: 9 / 16;
     height: auto;
     flex: 0 0 auto;
   }
@@ -399,13 +401,26 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     transition: all 0.6s ease;
   }
 
-  .cf-card video {
+  .cf-card video,
+  .cf-card iframe,
+  .cf-card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     pointer-events: none;
+    border: 0;
     opacity: 1;
     transition: opacity 0.45s ease;
+  }
+
+  /* Match the card to the native 9:16 YouTube Shorts player. */
+  .cf-card iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    transform: none;
   }
 
   .cf-card::before,
@@ -438,7 +453,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     animation: cf-loading-spin 0.8s linear infinite;
   }
 
-  .cf-card:not(.cf-video-ready) video {
+  .cf-card:not(.cf-video-ready) video,
+  .cf-card:not(.cf-video-ready) iframe,
+  .cf-card:not(.cf-video-ready) img {
     opacity: 0;
   }
 
@@ -513,7 +530,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
   @media (max-width: 760px) {
     .cf-wrapper {
       width: 100%;
-      height: clamp(360px, 126vw, 500px);
+      height: clamp(410px, 145vw, 550px);
     }
 
     .cf-carousel {
@@ -1297,12 +1314,12 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     transition: none;
   }
 
-  .main-image-panel {
+.main-image-panel {
     min-width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+    display: block;
+    /* align-items: center; */
+    /* justify-content: center; */
+}
 
   .thumbnails img.active {
     opacity: 1;
@@ -2044,7 +2061,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
       position: relative;
       width: min(78%, 280px);
       margin-inline: auto;
-      margin-top: 16px;
+      margin-top: -26px;
     }
 
     .product_slide .thumbnail-strip-wrap .thumbnails {
@@ -2135,7 +2152,7 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
   .nav-logo img {
     display: block;
-    width: clamp(100px, 10vw, 145px);
+    width: clamp(100px, 20vw, 195px);
     height: auto;   
 
   }
@@ -4809,78 +4826,48 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
 
 
-  .valour-hero__scroll-cue {
+  .valour-hero__cta {
     width: fit-content;
     margin: clamp(1.75rem, 4.5svh, 3rem) auto 0;
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.65rem;
-    color: inherit;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.85rem 1.35rem;
+    border: 1px solid rgba(255, 248, 239, 0.92);
+    border-radius: 999px;
+    background: #fff8ef;
+    color: #831a1a;
+    box-shadow: 0 8px 24px rgba(50, 5, 5, 0.16);
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
-    line-height: 1;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    font-size: clamp(0.82rem, 2.8vw, 0.92rem);
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: 0.04em;
     text-decoration: none;
     cursor: pointer;
     opacity: 0;
     transform: translateY(1rem);
     animation: valour-hero-cue-reveal 800ms cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+      box-shadow 180ms ease, transform 180ms ease;
   }
 
-  .valour-hero__scroll-cue > span:first-child {
-    padding-bottom: 0.28rem;
-    border-bottom: 1px solid rgba(255, 248, 239, 0.72);
-    transition: letter-spacing 220ms ease, border-color 220ms ease;
-    opacity: 1;
-    letter-spacing: 0.2em;
-    animation: valour-hero-cue-label 700ms cubic-bezier(0.22, 1, 0.36, 1) 1.45s backwards;
+  .valour-hero__cta:hover {
+    background: transparent;
+    color: #fff8ef;
+    border-color: #fff8ef;
+    box-shadow: 0 10px 28px rgba(50, 5, 5, 0.25);
+    transform: translateY(-2px);
   }
 
-  .valour-hero__scroll-cue:hover > span:first-child {
-    letter-spacing: 0.27em;
-    border-color: currentColor;
+  .valour-hero__cta:focus-visible {
+    outline: 2px solid #fff8ef;
+    outline-offset: 4px;
   }
 
-  .valour-hero__scroll-cue:focus-visible {
-    outline: 1px dashed currentColor;
-    outline-offset: 0.5rem;
-  }
-
-  .valour-hero__scroll-line {
-    width: 1px;
-    height: clamp(1.6rem, 4svh, 2.4rem);
-    background: currentColor;
-    opacity: 0.55;
-    transform: scaleY(1);
-    transform-origin: top center;
-    transition: transform 220ms ease, opacity 220ms ease;
-    animation: valour-hero-line-grow 650ms cubic-bezier(0.22, 1, 0.36, 1) 1.72s backwards;
-  }
-
-  .valour-hero__scroll-icon {
-    transition: transform 220ms ease;
-  }
-
-  .valour-hero__scroll-cue:hover .valour-hero__scroll-line {
-    transform: scaleY(1.18);
-    opacity: 0.9;
-  }
-
-  .valour-hero__scroll-cue:hover .valour-hero__scroll-icon {
-    transform: translateY(4px);
-  }
-
-  .valour-hero__scroll-icon {
-    margin-top: -0.55rem;
-    font-size: 1.25rem;
-    font-variation-settings: "wght" 300;
-    opacity: 0;
-    animation:
-      valour-hero-icon-reveal 500ms ease-out 2.05s forwards,
-      valour-scroll-cue 1.8s ease-in-out 2.45s infinite;
+  .valour-hero__cta:active {
+    transform: translateY(0);
   }
 
   @keyframes valour-hero-title-settle {
@@ -4925,43 +4912,16 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     }
   }
 
-  @keyframes valour-hero-cue-label {
-    from {
-      opacity: 0;
-      letter-spacing: 0.34em;
-    }
-  }
-
-  @keyframes valour-hero-line-grow {
-    from { transform: scaleY(0); }
-  }
-
-  @keyframes valour-hero-icon-reveal {
-    to { opacity: 1; }
-  }
-
-  @keyframes valour-scroll-cue {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(0.3rem); }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .valour-hero__title,
     .valour-hero__title-main,
     .valour-hero__title-accent,
-    .valour-hero__scroll-cue,
-    .valour-hero__scroll-cue > span:first-child,
-    .valour-hero__scroll-line,
-    .valour-hero__scroll-icon {
+    .valour-hero__cta {
       animation: none;
       opacity: 1;
       clip-path: none;
       filter: none;
       transform: none;
-    }
-
-    .valour-hero__scroll-cue > span:first-child {
-      letter-spacing: 0.2em;
     }
   }
 
@@ -5067,8 +5027,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
     </div>
     <div class="announcement-bar" role="region" aria-label="Store announcements">
       <div class="announcement-track" id="track-xf" aria-live="polite">
-        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders over <span class="material-symbols-outlined" aria-hidden="true">currency_rupee</span> 500</div>
-        <div class="announcement-text">LIMITED TIME DEAL: Save 25% on orders</div>
+        <div class="announcement-text" aria-label="Free shipping on all orders over rupees 500"><span class="material-symbols-outlined" aria-hidden="true">local_shipping</span> Free shipping on all orders</div>
+        <div class="announcement-text" aria-label="Limited time deal: Flat 75 rupees off on all orders"><span class="material-symbols-outlined" aria-hidden="true">sell</span> LIMITED TIME DEAL: Flat ₹75 off on all orders</div>
       </div>
 
 
@@ -5115,13 +5075,9 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
         <header class="valour-hero__header">
           <h1 class="valour-hero__title" id="valour-hero-title">
             <span class="valour-hero__title-main">Cook what you usually order,</span>
-            <span class="valour-hero__title-accent">With Liquid Spice</span>
+            <span class="valour-hero__title-accent">with Liquid Spice</span>
           </h1>
-          <a class="valour-hero__scroll-cue" href="#looks-tastes-section" aria-label="See how Valour works">
-            <span>See how</span>
-            <span class="valour-hero__scroll-line" aria-hidden="true"></span>
-            <span class="material-symbols-outlined valour-hero__scroll-icon" aria-hidden="true">arrow_downward</span>
-          </a>
+          <a class="valour-hero__cta" href="#looks-tastes-section">Watch How</a>
         </header>
       </div>
     </section>
@@ -5176,11 +5132,13 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
                   <div class="thumbnails">
 
                     <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" width="1024" height="1024" loading="lazy" decoding="async">
-                                        <!-- <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" alt="How to cook coconut mustard fish using Milky Mustard" loading="lazy" decoding="async"> -->
-                    <img src="vendor/cdn/cdn/shop/files/imagetab2.webp" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 4.png" alt="Velvety Butter Chicken product slide 2" loading="lazy" decoding="async">
+                                        <img src="vendor/cdn/cdn/shop/files/image_2_prod.webp" alt="VALOUR Liquid Spice product detail" loading="lazy" decoding="async">
 
-                    <img src="vendor/cdn/cdn/shop/files/image_2_prod.webp" alt="VALOUR Liquid Spice product detail" loading="lazy" decoding="async">
-                                        <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" alt="Restaurant-style Butter Chicken prepared with VALOUR" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 3.png" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 5.png" alt="Velvety Butter Chicken product slide 4" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 6.png" alt="Velvety Butter Chicken product slide 5" loading="lazy" decoding="async">
+
 
                   </div>
                 </div>
@@ -5357,8 +5315,8 @@ src="https://www.facebook.com/tr?id=1298297025090943&ev=PageView&noscript=1"
 
               <div class="cf-carousel">
 
-                <div class="cf-card"><video src="https://media.liquidspice.in/valour_ads_x1.mp4" muted loop playsinline preload="auto"></video></div>
-                <div class="cf-card cf-active"><video src="https://media.liquidspice.in/valour_ads_x2.mp4" muted loop playsinline preload="auto"></video></div>
+                <div class="cf-card" data-youtube-id="JBeEyuDUPzs"><iframe title="Valour recipe video preview" src="https://www.youtube-nocookie.com/embed/JBeEyuDUPzs?autoplay=1&mute=1&controls=0&loop=1&playlist=JBeEyuDUPzs&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0" allow="autoplay; encrypted-media" loading="lazy"></iframe></div>
+                <div class="cf-card cf-active" data-youtube-id="wrJOfk3BB04"><iframe title="Valour recipe video preview" src="https://www.youtube-nocookie.com/embed/wrJOfk3BB04?autoplay=1&mute=1&controls=0&loop=1&playlist=wrJOfk3BB04&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0" allow="autoplay; encrypted-media" loading="lazy"></iframe></div>
 
               </div>
 
@@ -5586,7 +5544,7 @@ Prepare less.</h2>
   <div class="cf-popup-overlay" id="cfPopupOverlay">
     <div class="cf-popup-content">
 
-      <video id="cfPopupVideo" controls autoplay></video>
+      <div id="cfPopupVideoHost"></div>
 
       <button class="cf-popup-close" id="cfPopupClose">&times;</button>
 
@@ -5595,35 +5553,25 @@ Prepare less.</h2>
   <script>
 
     const cfPopupOverlay = document.getElementById('cfPopupOverlay');
-    const cfPopupVideo = document.getElementById('cfPopupVideo');
+    const cfPopupVideoHost = document.getElementById('cfPopupVideoHost');
     const cfPopupClose = document.getElementById('cfPopupClose');
+    let cfPopupVideo = null;
 
     /* 🎬 OPEN POPUP */
-    document.querySelectorAll('.cf-card video').forEach((video) => {
-
-      const card = video.parentElement;
+    document.querySelectorAll('.cf-card').forEach((card) => {
+      const video = card.querySelector('iframe');
       const showVideo = () => card.classList.add('cf-video-ready');
-      const showLoader = () => card.classList.remove('cf-video-ready');
-
-      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        showVideo();
-      } else {
-        video.addEventListener('loadeddata', showVideo, { once: true });
-        video.addEventListener('canplay', showVideo, { once: true });
-      }
-
-      video.addEventListener('waiting', showLoader);
-      video.addEventListener('stalled', showLoader);
-      video.addEventListener('playing', showVideo);
+      video.addEventListener('load', showVideo, { once: true });
 
       card.addEventListener('click', () => {
-
-        const source = video.querySelector('source')?.src || video.src;
-
-        cfPopupVideo.src = source;
+        const youtubeId = card.dataset.youtubeId;
+        cfPopupVideo = document.createElement('iframe');
+        cfPopupVideo.title = 'Valour recipe video';
+        cfPopupVideo.src = `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&playsinline=1&rel=0`;
+        cfPopupVideo.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        cfPopupVideo.allowFullscreen = true;
+        cfPopupVideoHost.replaceChildren(cfPopupVideo);
         cfPopupOverlay.style.display = 'flex';
-
-        cfPopupVideo.play();
       });
 
     });
@@ -5631,8 +5579,9 @@ Prepare less.</h2>
     /* ❌ CLOSE POPUP */
     function closePopup() {
       cfPopupOverlay.style.display = 'none';
-      cfPopupVideo.pause();
-      cfPopupVideo.src = "";
+      if (!cfPopupVideo) return;
+      cfPopupVideoHost.replaceChildren();
+      cfPopupVideo = null;
     }
 
     cfPopupClose.onclick = closePopup;
@@ -5687,8 +5636,6 @@ Prepare less.</h2>
       cf3d_cards.forEach((cf3d_card, cf3d_i) => {
 
         const cf3d_diff = cf3d_i - cf3d_currentIndex;
-        const cf3d_video = cf3d_card.querySelector('video');
-
         cf3d_card.classList.remove('cf-active');
 
         if (cf3d_diff === 0) {
@@ -5699,21 +5646,12 @@ Prepare less.</h2>
       `;
           cf3d_card.classList.add('cf-active');
 
-          // Play only while the carousel itself meets the visibility threshold.
-          if (cf3d_isInView && !document.hidden) {
-            cf3d_video.play().catch(() => { });
-          } else {
-            cf3d_video.pause();
-          }
-
         } else {
           cf3d_card.style.transform = `
         translateX(${cf3d_diff * cf3d_offsetX}px)
         scale(0.85)
         rotateY(${cf3d_diff > 0 ? -cf3d_rotateY : cf3d_rotateY}deg)
       `;
-          cf3d_video.pause();
-          cf3d_video.currentTime = 0;
         }
 
       });
@@ -5812,7 +5750,6 @@ Prepare less.</h2>
           cf3d_startAutoSlide();
         } else {
           cf3d_clearAutoSlide();
-          cf3d_cards.forEach((card) => card.querySelector('video')?.pause());
         }
       });
     }, { rootMargin: '0px', threshold: [0, 0.6] });
@@ -6275,7 +6212,14 @@ if (looksTastesSection && looksTastesVideo) {
     controlLooksTastesVideo("playVideo");
   };
 
-  document.querySelectorAll(".valour-hero__scroll-cue, .product-video-link").forEach((link) => {
+  const restartLooksTastesVideoWithSound = () => {
+    looksTastesVideo.currentTime = 0;
+    playLooksTastesVideoWithSound();
+  };
+
+  document.querySelector(".valour-hero__cta")?.addEventListener("click", restartLooksTastesVideoWithSound);
+
+  document.querySelectorAll(".product-video-link").forEach((link) => {
     link.addEventListener("click", playLooksTastesVideoWithSound);
   });
 
