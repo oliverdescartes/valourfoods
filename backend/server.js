@@ -118,8 +118,70 @@ function collections() {
     messageJobs: db.collection("message_jobs"),
     customerEvents: db.collection("customer_events"),
     otpChallenges: db.collection("otp_challenges"),
+    accordionContent: db.collection("accordion_content"),
+    carouselVideos: db.collection("carousel_videos"),
   };
 }
+
+const DEFAULT_ACCORDION_CONTENT = [
+  {
+    key: "ingredients",
+    title: "Ingredients",
+    contentType: "paragraph",
+    content: {
+      text: "Made with fresh tomatoes, natural sugar, vinegar, and a blend of premium spices. No artificial preservatives or colors added.",
+    },
+    order: 1,
+    active: true,
+  },
+  {
+    key: "what-you-pay-for",
+    title: "What am I paying for?",
+    contentType: "paragraphs",
+    content: {
+      paragraphs: [
+        "The hardest part of the dish — already done.",
+        "Including getting the taste right — every time.",
+        "It’s not spices. It’s the entire cooking base.",
+      ],
+    },
+    order: 2,
+    active: true,
+  },
+  {
+    key: "jar-serving",
+    title: "How much does one jar serve?",
+    contentType: "serving-guide",
+    content: {
+      intro: "Depends on how you use it. But typically:",
+      servings: [
+        { size: "250 ml", detail: "Cooks about 2–3 people (500–700 g fish/chicken)" },
+        { size: "525 ml (1 jar)", detail: "Cooks about 3–5 people (up to 1 kg)" },
+      ],
+    },
+    order: 3,
+    active: true,
+  },
+];
+
+const DEFAULT_CAROUSEL_VIDEOS = [
+  {
+    key: "recipe-preview-1",
+    provider: "youtube",
+    videoId: "JBeEyuDUPzs",
+    title: "Valour recipe video preview",
+    order: 1,
+    active: true,
+  },
+  {
+    key: "recipe-preview-2",
+    provider: "youtube",
+    videoId: "wrJOfk3BB04",
+    title: "Valour recipe video preview",
+    order: 2,
+    active: true,
+  },
+];
 
 async function connectDB() {
   await mongoClient.connect();
@@ -141,6 +203,8 @@ async function connectDB() {
     universalCoupons,
     couponUsages,
     otpChallenges,
+    accordionContent,
+    carouselVideos,
   } = collections();
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
@@ -203,6 +267,24 @@ async function connectDB() {
     otpChallenges.createIndex({ challengeId: 1 }, { unique: true }),
     otpChallenges.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     otpChallenges.createIndex({ phone: 1, createdAt: -1 }),
+    accordionContent.createIndex({ key: 1 }, { unique: true }),
+    accordionContent.createIndex({ active: 1, order: 1 }),
+    ...DEFAULT_ACCORDION_CONTENT.map((item) =>
+      accordionContent.updateOne(
+        { key: item.key },
+        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        { upsert: true },
+      ),
+    ),
+    carouselVideos.createIndex({ key: 1 }, { unique: true }),
+    carouselVideos.createIndex({ active: 1, order: 1 }),
+    ...DEFAULT_CAROUSEL_VIDEOS.map((item) =>
+      carouselVideos.updateOne(
+        { key: item.key },
+        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        { upsert: true },
+      ),
+    ),
   ]);
 
   mongoReady = true;
@@ -8299,6 +8381,49 @@ app.post("/api/orders/:orderReference/request-review", async (req, res) => {
     res
       .status(500)
       .json({ ok: false, error: "Unable to send the review request." });
+  }
+});
+
+app.get("/api/accordion-content", async (_req, res) => {
+  if (!mongoReady) {
+    return res.status(503).json({ ok: false, error: "Content is temporarily unavailable." });
+  }
+
+  try {
+    const items = await collections().accordionContent
+      .find(
+        { active: true },
+        { projection: { _id: 0, key: 1, title: 1, contentType: 1, content: 1, order: 1 } },
+      )
+      .sort({ order: 1, key: 1 })
+      .toArray();
+
+    return res.json({ ok: true, items });
+  } catch (err) {
+    console.error("Accordion content lookup failed", err.message);
+    return res.status(500).json({ ok: false, error: "Unable to load page content." });
+  }
+});
+
+app.get("/api/carousel-videos", async (_req, res) => {
+  if (!mongoReady) {
+    return res.status(503).json({ ok: false, error: "Videos are temporarily unavailable." });
+  }
+
+  try {
+    const items = await collections().carouselVideos
+      .find(
+        { active: true, provider: "youtube", videoId: { $type: "string" } },
+        { projection: { _id: 0, key: 1, provider: 1, videoId: 1, title: 1, order: 1 } },
+      )
+      .sort({ order: 1, key: 1 })
+      .toArray();
+
+    const videos = items.filter((item) => /^[A-Za-z0-9_-]{6,20}$/.test(item.videoId));
+    return res.json({ ok: true, items: videos });
+  } catch (err) {
+    console.error("Carousel video lookup failed", err.message);
+    return res.status(500).json({ ok: false, error: "Unable to load videos." });
   }
 });
 
