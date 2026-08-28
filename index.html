@@ -4754,7 +4754,6 @@
 
   .valour-hero .container_slider {
     width: 100%;
-    margin-top: 20vh;
     padding: 0 0 clamp(7rem, 14vh, 12rem);
     background: transparent;
   }
@@ -5003,7 +5002,7 @@
   .valour-stack-story__title-word:last-child { margin-right: 0; }
   .valour-stack-story__scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(15rem, 0.8fr) minmax(19rem, 1fr); align-items: center; gap: clamp(2rem, 8vw, 8rem); opacity: 1; visibility: visible; }
   .valour-stack-story__copy { position: relative; min-height: 14rem; padding-left: clamp(2rem, 3vw, 2.75rem); }
-  .valour-stack-story__progress { position: absolute; top: 50%; left: 0; z-index: 3; width: 16px; height: min(11rem, 76%); display: flex; flex-direction: column; gap: 10px; transform: translateY(-50%); }
+  .valour-stack-story__progress { position: absolute; top: 50%; left: 0; z-index: 3; width: 16px; height: min(11rem, 76%); display: none; flex-direction: column; gap: 10px; transform: translateY(-50%); }
   .valour-stack-story__progress-step { width: 4px; min-height: 0; flex: 1; margin: 0; padding: 0; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.3); cursor: pointer; transition: width 280ms ease, background-color 280ms ease, box-shadow 280ms ease, transform 280ms ease; }
   .valour-stack-story__progress-step:hover, .valour-stack-story__progress-step:focus-visible { width: 6px; background: rgba(255, 255, 255, 0.72); outline: none; }
   .valour-stack-story__progress-step.is-active { width: 6px; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.24); }
@@ -5012,27 +5011,29 @@
   .valour-stack-story__step-label { margin: 0 0 0.8rem; color: #b86b42; font-family: Inter, sans-serif; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
   .valour-stack-story__step h3 { max-width: 10ch; margin: 0; color: inherit; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(3rem, 6vw, 6rem); font-weight: 600; line-height: 0.86; letter-spacing: -0.045em; text-wrap: balance; }
   .valour-stack-story__step p:last-child { max-width: 27rem; margin: 1.1rem 0 0; color: currentColor; font-family: Inter, sans-serif; font-size: clamp(0.9rem, 1.3vw, 1.05rem); line-height: 1.55; opacity: 0.68; }
-  .valour-stack-story__deck { position: relative; width: min(36vw, 28rem); aspect-ratio: 4 / 5; justify-self: center; }
-  .valour-stack-card { position: absolute; inset: 0; margin: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.28); border-radius: clamp(1.25rem, 2.4vw, 2.2rem); background: #831a1a; box-shadow: 0 1.8rem 4.5rem rgba(50, 8, 8, 0.2); opacity: 0; transform-origin: 50% 100%; will-change: transform, opacity; backface-visibility: hidden; }
+  .valour-stack-story__deck { position: relative; width: min(36vw, 28rem, calc(62svh * 0.8)); max-width: 100%; min-width: 0; aspect-ratio: 4 / 5; justify-self: center; contain: layout; }
+  .valour-stack-card { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; box-sizing: border-box; overflow: hidden; isolation: isolate; border: 1px solid rgba(255,255,255,0.28); border-radius: clamp(1.25rem, 2.4vw, 2.2rem); background: #831a1a; box-shadow: 0 1.8rem 4.5rem rgba(50, 8, 8, 0.2); opacity: 0; transform-origin: 50% 100%; will-change: transform, opacity; backface-visibility: hidden; }
   .valour-stack-card:first-child { opacity: 1; transform: translate(-14px, -64px) rotate(-2.5deg) scale(0.96, 0.96); }
   .valour-stack-card:nth-child(1) { z-index: 1; }
   .valour-stack-card:nth-child(2) { z-index: 2; }
   .valour-stack-card:nth-child(3) { z-index: 3; }
-  .valour-stack-card img, .valour-stack-card video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .valour-stack-card img, .valour-stack-card video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; }
   .valour-stack-card video { opacity: 0; transition: opacity 300ms ease; }
   .valour-stack-card.is-video-ready video { opacity: 1; }
   .valour-stack-card::before, .valour-stack-card::after { content: ""; position: absolute; pointer-events: none; transition: opacity 300ms ease, visibility 300ms ease; }
-  .valour-stack-card::before { inset: 0; z-index: 4; background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.28) 45%, transparent 65%), linear-gradient(145deg, #4a4a4a, #747474 48%, #454545); background-size: 220% 100%, 100% 100%; animation: cf-loading-shimmer 1.35s ease-in-out infinite; }
-  .valour-stack-card::after { top: 50%; left: 50%; z-index: 5; width: clamp(30px, 3vw, 42px); aspect-ratio: 1; border: 3px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: cf-loading-spin 0.8s linear infinite; }
+  .valour-stack-card::before { inset: 0; z-index: 4; border-radius: inherit; background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.28) 45%, transparent 65%), linear-gradient(145deg, #4a4a4a, #747474 48%, #454545); background-size: 220% 100%, 100% 100%; animation: cf-loading-shimmer 1.35s ease-in-out infinite; }
+  .valour-stack-card::after { top: 50%; left: 50%; z-index: 5; width: clamp(1.75rem, 8%, 2.6rem); aspect-ratio: 1; box-sizing: border-box; border: clamp(2px, 0.3vw, 3px) solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; transform-origin: center; animation: cf-loading-spin 0.8s linear infinite; }
   .valour-stack-card.is-video-ready::before, .valour-stack-card.is-video-ready::after { opacity: 0; visibility: hidden; }
   @media (max-width: 700px) {
     .valour-hero .container_slider { padding-bottom: 1.5rem; }
-    .valour-stack-story { height: 240svh; min-height: 78rem; }
+    .valour-stack-story { height: 180svh; min-height: 64rem; }
     .valour-stack-story__sticky { top: 8svh; height: 84svh; min-height: 32rem; }
-    .valour-stack-story__scene { grid-template-columns: 1fr; gap: 1rem; align-content: center; }
-    .valour-stack-story__copy { min-height: 10rem; padding-left: 1.6rem; order: 2; }
-    .valour-stack-story__progress { left: 0; height: 10rem; gap: 8px; }
-    .valour-stack-story__deck { width: min(68vw, 20rem); max-height: 48svh; order: 1; }
+    .valour-stack-story__scene { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(11rem, auto); gap: 20px; align-content: start; padding: clamp(2rem, 15svh, 13rem) 0.35rem 1.5rem 1.35rem; box-sizing: border-box; }
+    .valour-stack-story__copy { position: relative; z-index: 4; grid-column: 1; grid-row: 2; width: calc(100% - 1rem); min-height: 11rem; margin: 0; padding: 0; justify-self: center; order: initial; }
+    .valour-stack-story__progress { top: 50%; left: 0; display: flex; height: 9.5rem; gap: 8px; transform: translate(-0.35rem, -50%); }
+    .valour-stack-story__deck { z-index: 1; grid-column: 1; grid-row: 1; width: min(66vw, 19rem, calc(42svh * 0.8)); max-width: calc(100vw - 6rem); margin: 0; justify-self: center; order: initial; }
+    .valour-stack-story__deck.is-loading { overflow: clip; border-radius: clamp(1.25rem, 5vw, 2rem); }
+    .valour-stack-card:not(.is-video-ready) { transform: none !important; border-radius: inherit; box-shadow: none; }
     .valour-stack-card:first-child { transform: translate(0, 0) rotate(-1.4deg) scale(0.98); }
     .valour-stack-story__step { inset: 0 0 auto; transform: none; text-align: center;        margin-top: 13px; }
     .valour-stack-story__step h3 { max-width: 12ch; margin-inline: auto; font-size: clamp(2.7rem, 13vw, 4.1rem); }
@@ -5187,10 +5188,10 @@
               <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 02 · Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></article>
               <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 03 · Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></article>
             </div>
-            <div class="valour-stack-story__deck" aria-hidden="true">
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_one.mp4" muted loop playsinline preload="metadata"></video></figure>
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_two.mp4" muted loop playsinline preload="metadata"></video></figure>
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_three.mp4" muted loop playsinline preload="metadata"></video></figure>
+            <div class="valour-stack-story__deck is-loading" aria-hidden="true">
+              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_one.mp4" muted loop playsinline preload="auto"></video></figure>
+              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_two.mp4" muted loop playsinline preload="auto"></video></figure>
+              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_three.mp4" muted loop playsinline preload="auto"></video></figure>
             </div>
           </div>
         </div>
@@ -7373,6 +7374,7 @@ function initValourStackStory() {
 
   gsap.registerPlugin(ScrollTrigger);
   const scene = section.querySelector(".valour-stack-story__scene");
+  const deck = section.querySelector(".valour-stack-story__deck");
   const progressSteps = Array.from(
     section.querySelectorAll(".valour-stack-story__progress-step"),
   );
@@ -7383,29 +7385,66 @@ function initValourStackStory() {
   const firstCardRestState = useSequencedMobileSteps
     ? { x: 0, y: 0, scale: 0.98, rotation: -1.4 }
     : { x: -14, y: -64, scale: 0.96, rotation: -2.5 };
-  let activeVideoIndex = -1;
+  let activeVideoIndex = 0;
+
+  function playActiveVideo() {
+    const video = videos[activeVideoIndex];
+    if (!video || document.hidden) return;
+
+    video.muted = true;
+    video.playsInline = true;
+    if (video.ended) video.currentTime = 0;
+
+    const playAttempt = video.play();
+    if (playAttempt?.catch) {
+      playAttempt.catch(() => {
+        // A step can become active before its clip has buffered. Retry as
+        // soon as that same clip is playable instead of leaving it paused.
+        video.addEventListener("canplay", playActiveVideo, { once: true });
+      });
+    }
+  }
 
   videos.forEach((video, index) => {
     if (!video) return;
-    const markReady = () => cards[index]?.classList.add("is-video-ready");
+    const markReady = () => {
+      cards[index]?.classList.add("is-video-ready");
+      if (cards.every((card) => card.classList.contains("is-video-ready"))) {
+        deck?.classList.remove("is-loading");
+      }
+      if (index === activeVideoIndex) playActiveVideo();
+    };
     if (video.readyState >= 2) markReady();
     else {
       video.addEventListener("loadeddata", markReady, { once: true });
       video.addEventListener("canplay", markReady, { once: true });
     }
+
+    video.addEventListener("ended", () => {
+      if (index !== activeVideoIndex) return;
+      video.currentTime = 0;
+      playActiveVideo();
+    });
+
+    video.addEventListener("pause", () => {
+      if (index !== activeVideoIndex || document.hidden) return;
+      window.setTimeout(playActiveVideo, 80);
+    });
   });
 
   function setActiveVideo(index) {
-    activeVideoIndex = index;
+    activeVideoIndex = index < 0 ? 0 : index;
     videos.forEach((video, videoIndex) => {
       if (!video) return;
-      // Before the story is active, start the first loop. Once a step is
-      // active, play only its video and pause every card underneath it.
-      const shouldPlay = index < 0 ? videoIndex === 0 : videoIndex === index;
-      if (shouldPlay) video.play().catch(() => {});
-      else video.pause();
+      if (videoIndex !== activeVideoIndex) video.pause();
     });
+    playActiveVideo();
   }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) videos.forEach((video) => video?.pause());
+    else playActiveVideo();
+  });
 
   setActiveVideo(-1);
 
@@ -7429,7 +7468,13 @@ function initValourStackStory() {
     [
       { autoAlpha: 1, x: -30, y: -30, scale: 0.9, rotation: -2.5 },
       { autoAlpha: 1, x: -8, y: -8, scale: 0.95, rotation: 1.4 },
-      { autoAlpha: 1, x: 14, y: 14, scale: 1, rotation: -0.8 }
+      {
+        autoAlpha: 1,
+        x: useSequencedMobileSteps ? 0 : 14,
+        y: useSequencedMobileSteps ? 0 : 14,
+        scale: 1,
+        rotation: useSequencedMobileSteps ? 0 : -0.8,
+      }
     ]
   ];
   let activeStepIndex = 0;
@@ -7443,26 +7488,58 @@ function initValourStackStory() {
     const previousIndex = activeStepIndex;
     const direction = Math.sign(nextIndex - previousIndex) || 1;
     activeStepIndex = nextIndex;
+    gsap.killTweensOf(cards);
+    gsap.killTweensOf(steps);
     progressSteps.forEach((stepControl, controlIndex) => {
       const isActive = controlIndex === nextIndex;
       stepControl.classList.toggle("is-active", isActive);
       if (isActive) stepControl.setAttribute("aria-current", "step");
       else stepControl.removeAttribute("aria-current");
     });
-    const cardDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.46 : 0.38);
-    const copyDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.32 : 0.26);
+    const cardDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.96 : 0.72);
+    const copyDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.44 : 0.5);
+    const travelDistance = useSequencedMobileSteps ? 48 : 58;
 
     cards.forEach((card, cardIndex) => {
-      gsap.to(card, { ...cardStates[nextIndex][cardIndex], duration: cardDuration, ease: "power3.out", overwrite: "auto" });
+      const targetState = cardStates[nextIndex][cardIndex];
+      const isIncomingCard = cardIndex === nextIndex && !immediate;
+
+      if (isIncomingCard) {
+        gsap.fromTo(
+          card,
+          {
+            autoAlpha: 0,
+            x: targetState.x || 0,
+            y: (targetState.y || 0) + direction * travelDistance,
+            scale: targetState.scale || 1,
+            rotation: targetState.rotation || 0,
+          },
+          {
+            ...targetState,
+            duration: cardDuration,
+            ease: "power3.out",
+            overwrite: "auto",
+          },
+        );
+      } else {
+        gsap.to(card, {
+          ...targetState,
+          duration: cardDuration,
+          ease: "power3.out",
+          overwrite: "auto",
+        });
+      }
     });
     steps.forEach((step, stepIndex) => {
       const isActive = stepIndex === nextIndex;
-      if (isActive && !immediate) gsap.set(step, { y: direction > 0 ? 18 : -18 });
+      if (isActive && !immediate) {
+        gsap.set(step, { y: direction * 34, autoAlpha: 0 });
+      }
       gsap.to(step, {
         autoAlpha: isActive ? 1 : 0,
-        y: isActive ? 0 : (direction > 0 ? -14 : 14),
+        y: isActive ? 0 : -direction * 28,
         duration: copyDuration,
-        ease: "power2.out",
+        ease: "power3.out",
         overwrite: "auto"
       });
     });
@@ -7470,9 +7547,17 @@ function initValourStackStory() {
   }
 
   function stepFromProgress(progress, direction) {
-    // Direct progress zones keep the active card synchronized with the page.
-    // The small directional offset prevents flicker near a boundary without
-    // making the user scroll again to complete a transition.
+    if (useSequencedMobileSteps) {
+      if (direction < 0) {
+        if (progress < 0.19) return 0;
+        if (progress < 0.41) return 1;
+        return 2;
+      }
+      if (progress < 0.23) return 0;
+      if (progress < 0.46) return 1;
+      return 2;
+    }
+
     if (direction < 0) {
       if (progress < 0.20) return 0;
       if (progress < 0.50) return 1;
@@ -7486,7 +7571,8 @@ function initValourStackStory() {
   function requestStep(index) {
     const targetIndex = Math.max(0, Math.min(2, index));
     if (targetIndex === activeStepIndex) return;
-    showStep(targetIndex);
+    const sequentialIndex = activeStepIndex + Math.sign(targetIndex - activeStepIndex);
+    showStep(sequentialIndex);
   }
 
   showStep(0, true);
@@ -7512,7 +7598,9 @@ function initValourStackStory() {
     }
   });
 
-  const stepScrollProgress = [0.08, 0.43, 0.72];
+  const stepScrollProgress = useSequencedMobileSteps
+    ? [0.05, 0.30, 0.50]
+    : [0.08, 0.43, 0.72];
   progressSteps.forEach((stepControl, index) => {
     stepControl.addEventListener("click", () => {
       const targetScroll = storyScrollTrigger.start +
