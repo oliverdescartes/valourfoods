@@ -1199,7 +1199,7 @@
     padding: 0;
     border-radius: 20px;
     margin: auto;
-    margin-top: 49px;
+    margin-top: 19px;
     box-shadow: -4px 9px 20px 0 rgba(0, 0, 0, 0.19);
     min-height: 560px;
     align-items: stretch;
@@ -5002,7 +5002,11 @@
   .valour-stack-story__title-word { display: inline-block; margin-right: 0.2em; white-space: nowrap; will-change: transform, opacity, filter; }
   .valour-stack-story__title-word:last-child { margin-right: 0; }
   .valour-stack-story__scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(15rem, 0.8fr) minmax(19rem, 1fr); align-items: center; gap: clamp(2rem, 8vw, 8rem); opacity: 1; visibility: visible; }
-  .valour-stack-story__copy { position: relative; min-height: 14rem; }
+  .valour-stack-story__copy { position: relative; min-height: 14rem; padding-left: clamp(2rem, 3vw, 2.75rem); }
+  .valour-stack-story__progress { position: absolute; top: 50%; left: 0; z-index: 3; width: 16px; height: min(11rem, 76%); display: flex; flex-direction: column; gap: 10px; transform: translateY(-50%); }
+  .valour-stack-story__progress-step { width: 4px; min-height: 0; flex: 1; margin: 0; padding: 0; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.3); cursor: pointer; transition: width 280ms ease, background-color 280ms ease, box-shadow 280ms ease, transform 280ms ease; }
+  .valour-stack-story__progress-step:hover, .valour-stack-story__progress-step:focus-visible { width: 6px; background: rgba(255, 255, 255, 0.72); outline: none; }
+  .valour-stack-story__progress-step.is-active { width: 6px; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.24); }
   .valour-stack-story__step { position: absolute; inset: 50% 0 auto; transform: translateY(-38%); opacity: 0; visibility: hidden; }
   .valour-stack-story__step:first-child { opacity: 1; visibility: visible; transform: translateY(-50%); }
   .valour-stack-story__step-label { margin: 0 0 0.8rem; color: #b86b42; font-family: Inter, sans-serif; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
@@ -5023,11 +5027,13 @@
   .valour-stack-card.is-video-ready::before, .valour-stack-card.is-video-ready::after { opacity: 0; visibility: hidden; }
   @media (max-width: 700px) {
     .valour-hero .container_slider { padding-bottom: 1.5rem; }
-    .valour-stack-story { height: 185svh; min-height: 65rem; }
+    .valour-stack-story { height: 240svh; min-height: 78rem; }
     .valour-stack-story__sticky { top: 8svh; height: 84svh; min-height: 32rem; }
     .valour-stack-story__scene { grid-template-columns: 1fr; gap: 1rem; align-content: center; }
-    .valour-stack-story__copy { min-height: 10rem; order: 2; }
+    .valour-stack-story__copy { min-height: 10rem; padding-left: 1.6rem; order: 2; }
+    .valour-stack-story__progress { left: 0; height: 10rem; gap: 8px; }
     .valour-stack-story__deck { width: min(68vw, 20rem); max-height: 48svh; order: 1; }
+    .valour-stack-card:first-child { transform: translate(0, 0) rotate(-1.4deg) scale(0.98); }
     .valour-stack-story__step { inset: 0 0 auto; transform: none; text-align: center;        margin-top: 13px; }
     .valour-stack-story__step h3 { max-width: 12ch; margin-inline: auto; font-size: clamp(2.7rem, 13vw, 4.1rem); }
     .valour-stack-story__step p:last-child { margin: 0.75rem auto 0; font-size: 0.86rem; }
@@ -5039,6 +5045,7 @@
     .valour-stack-story__intro { position: relative; min-height: 20rem; }
     .valour-stack-story__scene { position: relative; display: block; opacity: 1; visibility: visible; }
     .valour-stack-story__copy { display: grid; gap: 1rem; }
+    .valour-stack-story__progress { display: none; }
     .valour-stack-story__step { position: relative; inset: auto; opacity: 1; visibility: visible; transform: none; padding-block: 1rem; }
     .valour-stack-story__deck { display: none; }
     .valour-stack-card::before, .valour-stack-card::after { animation: none; }
@@ -5170,8 +5177,13 @@
       <div class="valour-stack-story__sticky">
         <div class="valour-stack-story__inner">
           <div class="valour-stack-story__scene">
+            <nav class="valour-stack-story__progress" aria-label="Choose a cooking step">
+              <button class="valour-stack-story__progress-step is-active" type="button" data-story-step="0" aria-label="Go to step 1: Fry" aria-current="step"></button>
+              <button class="valour-stack-story__progress-step" type="button" data-story-step="1" aria-label="Go to step 2: Pour"></button>
+              <button class="valour-stack-story__progress-step" type="button" data-story-step="2" aria-label="Go to step 3: Simmer"></button>
+            </nav>
             <div class="valour-stack-story__copy" aria-live="polite">
-              <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 01 · Sear</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></article>
+              <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 01 · FRY</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></article>
               <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 02 · Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></article>
               <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 03 · Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></article>
             </div>
@@ -5289,12 +5301,12 @@
                   <div class="title-price">
                     <h2 id="velvety-butter-chicken-title">Velvety Butter Chicken</h2>
                     <p class="product-kicker">Turn 1 kg chicken into the Butter Chicken you’d usually order.</p>
-                    <div class="product-offer" aria-label="Pay 275 rupees with code VALOUR75. Original price 350 rupees. You save 75 rupees.">
-                      <span class="price">&#8377;275</span>
+                    <div class="product-offer" aria-label="Loading current product price">
+                      <span class="price">Loading price...</span>
                       <span class="product-offer__code">with code <strong>VALOUR75</strong></span>
                       <div class="product-offer__secondary">
-                        <span class="product-offer__original-price" aria-hidden="true">&#8377;350</span>
-                        <span class="product-offer__saving">You save &#8377;75</span>
+                        <span class="product-offer__original-price" aria-hidden="true"></span>
+                        <span class="product-offer__saving"></span>
                       </div>
                     </div>
                   </div>
@@ -5332,9 +5344,10 @@
                       data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg chicken · Serves 6–8"
-                      data-product-price="275"
-                      data-product-compare-at="350"
+                      data-product-price=""
+                      data-product-compare-at=""
                       data-product-image="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp"
+                      disabled
                     >BUY NOW</button>
                                        <button
                       class="product-action-btn product-action-btn--cart"
@@ -5344,9 +5357,10 @@
                       data-product-descriptor="Make restaurant-style Butter Chicken at home. Just add chicken."
                       data-product-size="520 ml"
                       data-product-serves="Makes 1 kg chicken · Serves 6–8"
-                      data-product-price="275"
-                      data-product-compare-at="350"
+                      data-product-price=""
+                      data-product-compare-at=""
                       data-product-image="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp"
+                      disabled
                     >ADD TO CART</button>
                     <a class="product-action-btn product-video-link" href="#looks-tastes-title">Watch 2-min Recipe</a>
  
@@ -6409,6 +6423,164 @@ if (productSliderSection && valourHeroInner) {
   }
 }
 
+// Meta Pixel: count a product view when the Velvety Butter Chicken slide
+// is actually visible, rather than as soon as the homepage loads.
+const velvetyButterChickenSlide = document.querySelector(
+  ".container_slider #velvety-butter-chicken",
+);
+
+const homepageOfferCode = "VALOUR75";
+const authoritativeProductRequests = new Map();
+
+const loadAuthoritativeProduct = async (productSku, quantity = 1) => {
+  const requestKey = `${productSku}:${quantity}`;
+  if (authoritativeProductRequests.has(requestKey)) {
+    return authoritativeProductRequests.get(requestKey);
+  }
+
+  const request = (async () => {
+    const response = await fetch("/api/checkout/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: [{ sku: productSku, quantity }],
+        couponCode: homepageOfferCode,
+      }),
+    });
+    const result = await response.json();
+    const product = result?.quote?.items?.find((item) => item.sku === productSku);
+    const compareAt = Number(product?.compareAtPaise ?? product?.unitPricePaise) / 100;
+    const discountedSubtotal =
+      (Number(result?.quote?.subtotalPaise) - Number(result?.quote?.discountPaise)) / 100;
+    const value = discountedSubtotal / quantity;
+
+    if (
+      !response.ok ||
+      result.ok === false ||
+      !Number.isFinite(value) ||
+      !Number.isFinite(compareAt)
+    ) {
+      throw new Error(result.error || "Database product price is unavailable");
+    }
+
+    return {
+      name: product.name || "Velvety Butter Chicken",
+      value,
+      compareAt,
+      savings: Math.max(compareAt - value, 0),
+      lineValue: discountedSubtotal,
+      currency: result.quote.currency || "INR",
+      couponCode: result.quote.couponCode,
+    };
+  })();
+
+  authoritativeProductRequests.set(requestKey, request);
+  return request;
+};
+
+const formatHomepagePrice = (value) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+  }).format(value);
+
+async function syncHomepageProductPricing() {
+  if (!velvetyButterChickenSlide) return;
+
+  const offer = velvetyButterChickenSlide.querySelector(".product-offer");
+  const price = offer?.querySelector(".price");
+  const offerCode = offer?.querySelector(".product-offer__code");
+  const originalPrice = offer?.querySelector(".product-offer__original-price");
+  const saving = offer?.querySelector(".product-offer__saving");
+  const productButtons = velvetyButterChickenSlide.querySelectorAll(
+    "[data-product-id='velvety-butter-chicken']",
+  );
+
+  try {
+    const product = await loadAuthoritativeProduct("velvety-butter-chicken");
+    const hasDiscount = product.savings > 0 && Boolean(product.couponCode);
+
+    if (price) price.textContent = formatHomepagePrice(product.value);
+    if (originalPrice) {
+      originalPrice.textContent = hasDiscount
+        ? formatHomepagePrice(product.compareAt)
+        : "";
+    }
+    if (saving) {
+      saving.textContent = hasDiscount
+        ? `You save ${formatHomepagePrice(product.savings)}`
+        : "";
+    }
+    if (offerCode) {
+      offerCode.hidden = !hasDiscount;
+      const code = offerCode.querySelector("strong");
+      if (code && product.couponCode) code.textContent = product.couponCode;
+    }
+    if (offer) {
+      offer.setAttribute(
+        "aria-label",
+        hasDiscount
+          ? `Pay ${product.value} rupees with code ${product.couponCode}. Original price ${product.compareAt} rupees. You save ${product.savings} rupees.`
+          : `Current price ${product.value} rupees.`,
+      );
+    }
+
+    productButtons.forEach((button) => {
+      button.dataset.productPrice = String(product.value);
+      button.dataset.productCompareAt = String(product.compareAt);
+      button.disabled = false;
+    });
+
+    const productSchema = document.querySelector('script[type="application/ld+json"]');
+    if (productSchema) {
+      const schema = JSON.parse(productSchema.textContent);
+      const productNode = schema["@graph"]?.find((node) => node["@type"] === "Product");
+      if (productNode?.offers) productNode.offers.price = product.value.toFixed(2);
+      productSchema.textContent = JSON.stringify(schema);
+    }
+  } catch (error) {
+    if (price) price.textContent = "Price unavailable";
+    if (offerCode) offerCode.hidden = true;
+    if (offer) offer.setAttribute("aria-label", "Current product price is unavailable");
+    console.error("Unable to load homepage product pricing", error);
+  }
+}
+
+syncHomepageProductPricing();
+
+if (velvetyButterChickenSlide && "IntersectionObserver" in window) {
+  const productSku = "velvety-butter-chicken";
+
+  const viewContentObserver = new IntersectionObserver(
+    async (entries, observer) => {
+      const productIsVisible = entries.some(
+        (entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5,
+      );
+
+      if (!productIsVisible || typeof window.fbq !== "function") return;
+      observer.disconnect();
+
+      try {
+        const product = await loadAuthoritativeProduct(productSku);
+        window.fbq("track", "ViewContent", {
+          content_ids: [productSku],
+          content_name: product.name,
+          content_type: "product",
+          contents: [{ id: productSku, quantity: 1 }],
+          value: product.value,
+          currency: product.currency,
+        });
+      } catch (error) {
+        console.warn("Unable to send Meta ViewContent with database pricing", error);
+      }
+    },
+    { threshold: 0.5 },
+  );
+
+  viewContentObserver.observe(velvetyButterChickenSlide);
+}
+
 // Place the sachet video carousel directly before the looks-and-tastes section.
 const looksTastesSection = document.querySelector(".looks-tastes-section");
 const sachetVideoSection = document.querySelector("#shopify-section-template--19781511708886__sachet_video_gjfm3w");
@@ -6957,10 +7129,29 @@ function initValourCartActions() {
     };
   }
 
-  function addProductToCart(button) {
+  async function trackMetaAddToCart(product, quantity) {
+    if (typeof window.fbq !== "function") return;
+
+    try {
+      const pricedProduct = await loadAuthoritativeProduct(product.id, quantity);
+      window.fbq("track", "AddToCart", {
+        content_ids: [product.id],
+        content_name: pricedProduct.name,
+        content_type: "product",
+        contents: [{ id: product.id, quantity }],
+        value: pricedProduct.lineValue,
+        currency: pricedProduct.currency,
+      });
+    } catch (error) {
+      console.warn("Unable to send Meta AddToCart with database pricing", error);
+    }
+  }
+
+  async function addProductToCart(button) {
     const product = getProductFromButton(button);
     addProduct(product, 1);
     showAddedToCartToast(product.name, getCartQuantity());
+    await trackMetaAddToCart(product, 1);
   }
 
   function addProduct(product, quantity) {
@@ -7030,10 +7221,11 @@ function initValourCartActions() {
     });
   });
 
-  document.querySelector("[data-buy-sheet-checkout]")?.addEventListener("click", () => {
+  document.querySelector("[data-buy-sheet-checkout]")?.addEventListener("click", async () => {
     if (!selectedBuyProduct) return;
 
     addProduct(selectedBuyProduct, selectedBuyQuantity);
+    await trackMetaAddToCart(selectedBuyProduct, selectedBuyQuantity);
     window.location.href = "checkout.html";
   });
 
@@ -7079,6 +7271,15 @@ function initValourWhatsappSupport() {
   closeButton?.addEventListener("click", () => {
     window.clearTimeout(bubbleCloseTimer);
     support.classList.add("is-bubble-closed");
+  });
+
+  support.querySelector(".valour-whatsapp-support__button")?.addEventListener("click", () => {
+    if (typeof window.fbq !== "function") return;
+    window.fbq("track", "Contact", {
+      content_name: "VALOUR WhatsApp support",
+      contact_channel: "whatsapp",
+      source: "floating_support_cta",
+    });
   });
 
   window.addEventListener("scroll", handleScroll, { passive: true });
@@ -7172,9 +7373,16 @@ function initValourStackStory() {
 
   gsap.registerPlugin(ScrollTrigger);
   const scene = section.querySelector(".valour-stack-story__scene");
+  const progressSteps = Array.from(
+    section.querySelectorAll(".valour-stack-story__progress-step"),
+  );
   const cards = gsap.utils.toArray(section.querySelectorAll(".valour-stack-card"));
   const steps = gsap.utils.toArray(section.querySelectorAll(".valour-stack-story__step"));
   const videos = cards.map((card) => card.querySelector("video"));
+  const useSequencedMobileSteps = window.matchMedia("(max-width: 700px)").matches;
+  const firstCardRestState = useSequencedMobileSteps
+    ? { x: 0, y: 0, scale: 0.98, rotation: -1.4 }
+    : { x: -14, y: -64, scale: 0.96, rotation: -2.5 };
   let activeVideoIndex = -1;
 
   videos.forEach((video, index) => {
@@ -7188,11 +7396,13 @@ function initValourStackStory() {
   });
 
   function setActiveVideo(index) {
-    if (index === activeVideoIndex) return;
     activeVideoIndex = index;
     videos.forEach((video, videoIndex) => {
       if (!video) return;
-      if (videoIndex === index) video.play().catch(() => {});
+      // Before the story is active, start the first loop. Once a step is
+      // active, play only its video and pause every card underneath it.
+      const shouldPlay = index < 0 ? videoIndex === 0 : videoIndex === index;
+      if (shouldPlay) video.play().catch(() => {});
       else video.pause();
     });
   }
@@ -7202,12 +7412,12 @@ function initValourStackStory() {
   gsap.set(scene, { autoAlpha: 1 });
   gsap.set(cards, { autoAlpha: 0, y: 90, scale: 0.92, rotation: 5 });
   gsap.set(steps, { autoAlpha: 0, y: 28 });
-  gsap.set(cards[0], { autoAlpha: 1, y: -64, x: -14, scaleX: 0.96, scaleY: 0.96, rotation: -2.5 });
+  gsap.set(cards[0], { autoAlpha: 1, ...firstCardRestState });
   gsap.set(steps[0], { autoAlpha: 1, y: 0 });
 
   const cardStates = [
     [
-      { autoAlpha: 1, x: -14, y: -64, scale: 0.96, rotation: -2.5 },
+      { autoAlpha: 1, ...firstCardRestState },
       { autoAlpha: 0, x: 0, y: 90, scale: 0.92, rotation: 5 },
       { autoAlpha: 0, x: 0, y: 90, scale: 0.92, rotation: 5 }
     ],
@@ -7222,10 +7432,7 @@ function initValourStackStory() {
       { autoAlpha: 1, x: 14, y: 14, scale: 1, rotation: -0.8 }
     ]
   ];
-  const useSequencedMobileSteps = window.matchMedia("(max-width: 700px)").matches;
   let activeStepIndex = 0;
-  let queuedStepIndex = 0;
-  let mobileTransitionTimer;
 
   function showStep(index, immediate = false) {
     const nextIndex = Math.max(0, Math.min(2, index));
@@ -7233,66 +7440,85 @@ function initValourStackStory() {
       setActiveVideo(nextIndex);
       return;
     }
+    const previousIndex = activeStepIndex;
+    const direction = Math.sign(nextIndex - previousIndex) || 1;
     activeStepIndex = nextIndex;
-    const duration = immediate ? 0 : 0.32;
+    progressSteps.forEach((stepControl, controlIndex) => {
+      const isActive = controlIndex === nextIndex;
+      stepControl.classList.toggle("is-active", isActive);
+      if (isActive) stepControl.setAttribute("aria-current", "step");
+      else stepControl.removeAttribute("aria-current");
+    });
+    const cardDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.46 : 0.38);
+    const copyDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.32 : 0.26);
 
     cards.forEach((card, cardIndex) => {
-      gsap.to(card, { ...cardStates[nextIndex][cardIndex], duration, ease: "power3.out", overwrite: "auto" });
+      gsap.to(card, { ...cardStates[nextIndex][cardIndex], duration: cardDuration, ease: "power3.out", overwrite: "auto" });
     });
     steps.forEach((step, stepIndex) => {
       const isActive = stepIndex === nextIndex;
-      gsap.to(step, { autoAlpha: isActive ? 1 : 0, y: isActive ? 0 : -18, duration: immediate ? 0 : 0.2, ease: "power2.out", overwrite: "auto" });
+      if (isActive && !immediate) gsap.set(step, { y: direction > 0 ? 18 : -18 });
+      gsap.to(step, {
+        autoAlpha: isActive ? 1 : 0,
+        y: isActive ? 0 : (direction > 0 ? -14 : 14),
+        duration: copyDuration,
+        ease: "power2.out",
+        overwrite: "auto"
+      });
     });
     setActiveVideo(nextIndex);
   }
 
-  function stepFromProgress(progress) {
-    if (progress < 0.42) return 0;
-    if (progress < 0.72) return 1;
+  function stepFromProgress(progress, direction) {
+    // Direct progress zones keep the active card synchronized with the page.
+    // The small directional offset prevents flicker near a boundary without
+    // making the user scroll again to complete a transition.
+    if (direction < 0) {
+      if (progress < 0.20) return 0;
+      if (progress < 0.50) return 1;
+      return 2;
+    }
+    if (progress < 0.28) return 0;
+    if (progress < 0.58) return 1;
     return 2;
   }
 
   function requestStep(index) {
     const targetIndex = Math.max(0, Math.min(2, index));
-    queuedStepIndex = targetIndex;
-
-    if (!useSequencedMobileSteps) {
-      showStep(targetIndex);
-      return;
-    }
-
-    if (mobileTransitionTimer || targetIndex === activeStepIndex) return;
-
-    const nextIndex = activeStepIndex + Math.sign(targetIndex - activeStepIndex);
-    showStep(nextIndex);
-    mobileTransitionTimer = window.setTimeout(() => {
-      mobileTransitionTimer = null;
-      if (queuedStepIndex !== activeStepIndex) requestStep(queuedStepIndex);
-    }, 380);
+    if (targetIndex === activeStepIndex) return;
+    showStep(targetIndex);
   }
 
   showStep(0, true);
   setActiveVideo(-1);
 
-  ScrollTrigger.create({
+  const storyScrollTrigger = ScrollTrigger.create({
     trigger: section,
-    start: "top 82%",
-    end: "bottom 88%",
+    // On mobile, animate only while the CSS sticky stage is actually pinned.
+    // This keeps the cards stationary on screen as they stack.
+    start: useSequencedMobileSteps ? "top 8%" : "top 82%",
+    end: useSequencedMobileSteps ? "bottom 92%" : "bottom 88%",
     invalidateOnRefresh: true,
-    onEnter: (self) => requestStep(stepFromProgress(self.progress)),
-    onEnterBack: (self) => requestStep(stepFromProgress(self.progress)),
-    onUpdate: (self) => requestStep(stepFromProgress(self.progress)),
+    onEnter: (self) => requestStep(stepFromProgress(self.progress, 1)),
+    onEnterBack: (self) => requestStep(stepFromProgress(self.progress, -1)),
+    onUpdate: (self) => requestStep(stepFromProgress(self.progress, self.direction)),
     onLeave: () => {
-      requestStep(2);
-      if (!useSequencedMobileSteps) setActiveVideo(2);
+      showStep(2);
+      setActiveVideo(2);
     },
     onLeaveBack: () => {
-      queuedStepIndex = 0;
-      window.clearTimeout(mobileTransitionTimer);
-      mobileTransitionTimer = null;
       showStep(0);
       setActiveVideo(-1);
     }
+  });
+
+  const stepScrollProgress = [0.08, 0.43, 0.72];
+  progressSteps.forEach((stepControl, index) => {
+    stepControl.addEventListener("click", () => {
+      const targetScroll = storyScrollTrigger.start +
+        (storyScrollTrigger.end - storyScrollTrigger.start) * stepScrollProgress[index];
+      window.scrollTo({ top: targetScroll, behavior: "smooth" });
+    });
   });
 
   videos.forEach((video) => {

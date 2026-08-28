@@ -269,6 +269,50 @@ function trackEvent(name, payload = {}) {
   }
 }
 
+let metaInitiateCheckoutTracked = false;
+
+function getMetaContents(items = []) {
+  return items.map((item) => ({
+    id: String(item.sku || item.id || ""),
+    quantity: Number(item.quantity) || 1,
+    item_price: Number(
+      item.unitPricePaise != null ? item.unitPricePaise / 100 : item.price,
+    ) || 0,
+  }));
+}
+
+function trackMetaInitiateCheckout(quote) {
+  if (metaInitiateCheckoutTracked || typeof window.fbq !== "function") return;
+
+  const contents = getMetaContents(quote.items);
+  if (!contents.length) return;
+
+  metaInitiateCheckoutTracked = true;
+  window.fbq("track", "InitiateCheckout", {
+    content_ids: contents.map((item) => item.id),
+    content_type: "product",
+    contents,
+    num_items: contents.reduce((total, item) => total + item.quantity, 0),
+    value: Number(quote.totalPaise) / 100,
+    currency: quote.currency || "INR",
+  });
+}
+
+function trackMetaPurchase({ value, currency = "INR", items, orderId }) {
+  if (typeof window.fbq !== "function" || !Number.isFinite(Number(value))) return;
+
+  const contents = getMetaContents(items);
+  window.fbq("track", "Purchase", {
+    content_ids: contents.map((item) => item.id),
+    content_type: "product",
+    contents,
+    num_items: contents.reduce((total, item) => total + item.quantity, 0),
+    value: Number(value),
+    currency,
+    order_id: String(orderId || ""),
+  });
+}
+
 function showToast(message, type = "success") {
   const toast = document.createElement("div");
   toast.className = `toast ${type === "error" ? "is-error" : ""}`;
@@ -621,6 +665,7 @@ async function refreshServerPricing() {
       shipping: quote.shippingPaise / 100,
       total: quote.totalPaise / 100,
     };
+    trackMetaInitiateCheckout(quote);
     applyQuoteDelivery(quote);
     renderCart();
     renderSummary();
@@ -1346,6 +1391,12 @@ async function placeOrder(event) {
         items: codOrder.order.products,
         payment_method: "COD",
       });
+      trackMetaPurchase({
+        value: codOrder.order.totalAmount,
+        currency: codOrder.order.currency || "INR",
+        items: codOrder.order.products,
+        orderId: codOrder.orderId,
+      });
       rememberUsedUniversalCoupon(state.coupon);
       state.cart = [];
       state.coupon = null;
@@ -1405,6 +1456,12 @@ async function placeOrder(event) {
       currency: "INR",
       items: state.cart,
       razorpay_order_id: verifiedOrder.order?.razorpayOrderId,
+    });
+    trackMetaPurchase({
+      value: state.totals.total,
+      currency: verifiedOrder.order?.currency || "INR",
+      items: state.cart,
+      orderId: verifiedOrder.orderId,
     });
 
     rememberUsedUniversalCoupon(state.coupon);
