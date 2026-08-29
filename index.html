@@ -31,16 +31,22 @@
 <!-- End Meta Pixel Code -->
 
 
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" rel="stylesheet"></noscript>
 
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://media.liquidspice.in" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//media.liquidspice.in">
-  <link
+  <link rel="preload"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
-    rel="stylesheet">
+    as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
+    rel="stylesheet"></noscript>
+  <link rel="preload" href="vendor/cdn/cdn/shop/files/step_one-poster.webp" as="image" type="image/webp" fetchpriority="high">
   <link href="vendor/cdn/cdn/shop/t/8/assets/critical.css" rel="stylesheet" type="text/css" media="all" />
 
 
@@ -83,11 +89,6 @@
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
 
   <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-
-
 </head>
 <style>
   html {
@@ -116,20 +117,6 @@
     vertical-align: -0.12em;
   }
 
-  .loader-logo {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .loader-logo img {
-    display: block;
-    width: clamp(190px, 28vw, 330px);
-    height: auto;
-    opacity: 0;
-    clip-path: inset(0 100% 0 0);
-    transform: translateY(12px);
-    animation: loaderLogoReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-  }
   .valour-hero__title {
     max-width: 11ch;
     margin: 0 auto;
@@ -153,94 +140,6 @@
     line-height: 1;
     letter-spacing: 0.02em;
   }
-  .loader-logo::after {
-    content: "";
-    position: absolute;
-    inset: -35% -20%;
-    pointer-events: none;
-    background: linear-gradient(110deg,
-        transparent 38%,
-        rgba(255, 241, 194, 0.15) 45%,
-        rgba(255, 246, 216, 0.72) 50%,
-        rgba(255, 241, 194, 0.15) 55%,
-        transparent 62%);
-    transform: translateX(-120%);
-    animation: loaderLogoShine 0.6s ease-in-out 0.75s forwards;
-  }
-
-  .loading-phase-container {
-    will-change: transform;
-    transition: transform 0.65s cubic-bezier(0.76, 0, 0.24, 1),
-      visibility 0s linear 0.65s;
-    z-index: 999999;
-  }
-
-  .loading-phase-container.is-exiting {
-    transform: translateY(-100%);
-    visibility: hidden;
-  }
-
-  #loading-phase > div {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  #loading-phase .loading-bar-container {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    width: min(60vw, 360px);
-    height: 3px;
-    max-width: 360px;
-    margin-top: 48px;
-    overflow: hidden;
-    transform: none;
-  }
-
-  #loading-phase .loading-bar {
-    animation-duration: 1.35s;
-  }
-
-  @keyframes loaderLogoReveal {
-    to {
-      opacity: 1;
-      clip-path: inset(0 0 0 0);
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes loaderLogoShine {
-    to {
-      transform: translateX(120%);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .loader-logo img,
-    .loader-logo::after,
-    .loading-bar {
-      animation: none;
-    }
-
-    .loader-logo img {
-      opacity: 1;
-      clip-path: none;
-      transform: none;
-    }
-
-    .loading-phase-container {
-      transition-duration: 0.25s;
-    }
-  }
-
-  @media (max-width: 550px) {
-    #loading-phase .loading-bar-container {
-      width: min(72vw, 280px);
-      margin-top: 38px;
-    }
-  }
-
   /* OVERLAY */
   .cf-popup-overlay {
     position: fixed;
@@ -4653,57 +4552,6 @@
     color: var(--hero-foreground);
   }
 
-  /* Four-part scroll story immediately following the hero. */
-  .valour-scroll-story { --story-cream: #fff7e9; --story-ink: #3a0b0b; position: relative; height: 320svh; background: var(--story-cream); color: var(--story-ink); }
-  .valour-scroll-story__sticky { position: sticky; top: 0; height: 100svh; min-height: 36rem; overflow: hidden; isolation: isolate; }
-  .valour-scroll-story__media { position: absolute; z-index: 1; top: 50%; right: clamp(1.5rem, 7vw, 7rem); width: min(48vw, 42rem); aspect-ratio: 4 / 5; max-height: 76svh; overflow: hidden; transform: translateY(-50%); border-radius: clamp(1.25rem, 3vw, 2.75rem); background: #8b171b; box-shadow: 0 2rem 5rem rgba(58, 11, 11, 0.2); opacity: 0; transition: opacity 400ms ease, transform 600ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .valour-scroll-story__media.is-visible { opacity: 1; transform: translateY(-50%) scale(1); }
-  .valour-scroll-story__shade, .valour-scroll-story__frame { position: absolute; inset: 0; }
-  .valour-scroll-story__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.045); transition: opacity 650ms ease, transform 900ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .valour-scroll-story__image.is-active { opacity: 1; transform: scale(1); }
-  .valour-scroll-story__image--contain { object-fit: contain; padding: clamp(2.5rem, 5vw, 5rem); background: #8b171b; }
-  .valour-scroll-story__shade { z-index: 0; background: radial-gradient(circle at 75% 50%, rgba(229, 180, 91, 0.18), transparent 32%), var(--story-cream); pointer-events: none; }
-  .valour-scroll-story__frame { z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem; padding: clamp(6rem, 10vw, 9rem) clamp(1.5rem, 7vw, 7rem); }
-  .valour-scroll-story__copy { position: relative; width: min(38vw, 34rem); min-height: 20rem; }
-  .valour-scroll-story__intro { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; padding: 2rem; text-align: center; opacity: 0; transform: translateY(1.5rem); transition: opacity 450ms ease, transform 650ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .valour-scroll-story__intro.is-active { opacity: 1; transform: translateY(0); }
-  .valour-scroll-story__intro h2 { max-width: 10ch; margin: 0; color: #831a1a; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(4.2rem, 10vw, 9rem); font-weight: 600; line-height: 0.84; letter-spacing: -0.055em; text-wrap: balance; }
-  .valour-scroll-story__chapter { position: absolute; inset: 50% 0 auto; color: #831a1a; opacity: 0; transform: translateY(calc(-50% + 1.25rem)); pointer-events: none; transition: opacity 450ms ease, transform 650ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .valour-scroll-story__chapter.is-active { opacity: 1; transform: translateY(-50%); }
-  .valour-scroll-story__eyebrow { margin: 0 0 0.8rem; font-family: Inter, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
-  .valour-scroll-story__chapter h2 { max-width: 11ch; margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(3.3rem, 8vw, 7.5rem); font-weight: 600; line-height: 0.85; letter-spacing: -0.045em; text-wrap: balance; }
-  .valour-scroll-story__chapter p:last-child { max-width: 34rem; margin: 1.2rem 0 0; font-family: Inter, sans-serif; font-size: clamp(0.95rem, 1.4vw, 1.15rem); line-height: 1.55; }
-  .valour-scroll-story__progress { display: grid; gap: 0.7rem; align-self: center; }
-  .valour-scroll-story__dot { width: 0.45rem; height: 2.25rem; padding: 0; border: 0; border-radius: 999px; background: rgba(131, 26, 26, 0.28); cursor: pointer; transition: height 220ms ease, background-color 220ms ease, transform 220ms ease; }
-  .valour-scroll-story__dot.is-active { height: 4.5rem; background: #831a1a; }
-  .valour-scroll-story__dot:hover { background: #b86b42; transform: scaleX(1.35); }
-  .valour-scroll-story__dot:focus-visible { outline: 2px solid #831a1a; outline-offset: 5px; }
-  .valour-scroll-story__hint { position: absolute; z-index: 4; bottom: 2rem; left: 50%; margin: 0; color: rgba(131, 26, 26, 0.72); font-family: Inter, sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; transform: translateX(-50%); }
-
-  @media (max-width: 42rem) {
-    .valour-scroll-story__sticky { min-height: 32rem; }
-    .valour-scroll-story__media { top: 11%; right: 1.25rem; left: 1.25rem; width: auto; height: min(52svh, 30rem); aspect-ratio: auto; transform: translateY(1rem); }
-    .valour-scroll-story__media.is-visible { transform: translateY(0); }
-    .valour-scroll-story__frame { align-items: end; padding: 2rem 1.25rem 4.5rem; }
-    .valour-scroll-story__copy { min-height: 11rem; width: calc(100vw - 4.5rem); }
-    .valour-scroll-story__chapter { inset: auto 0 0; transform: translateY(1.25rem); }
-    .valour-scroll-story__chapter.is-active { transform: translateY(0); }
-    .valour-scroll-story__chapter h2 { font-size: clamp(2.8rem, 13vw, 4rem); }
-    .valour-scroll-story__chapter p:last-child { margin-top: 0.7rem; }
-    .valour-scroll-story__image--contain { padding: 2.5rem; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .valour-scroll-story { height: auto; display: grid; }
-    .valour-scroll-story__sticky { position: relative; height: auto; overflow: visible; }
-    .valour-scroll-story__media, .valour-scroll-story__shade, .valour-scroll-story__progress, .valour-scroll-story__hint { display: none; }
-    .valour-scroll-story__frame { position: relative; display: block; padding: 2rem 1.25rem; }
-    .valour-scroll-story__intro { position: relative; opacity: 1; transform: none; min-height: 70svh; }
-    .valour-scroll-story__copy { width: 100%; min-height: 0; display: grid; gap: 1rem; }
-    .valour-scroll-story__chapter { position: relative; opacity: 1; transform: none; padding: 2rem; border-radius: 1.25rem; background: #831a1a; color: white; }
-    .valour-scroll-story__chapter h2 { font-size: clamp(2.8rem, 12vw, 4.5rem); }
-  }
-
   .valour-hero__inner {
     --hero-story-gap: 142px;
     position: relative;
@@ -4957,67 +4805,24 @@
       display: none;
     }
   }
-  /* Compact, unpinned three-step story. */
-  .valour-scroll-story, .valour-steps { display: none; }
-  .valour-steps { padding: clamp(4.5rem, 8vw, 7.5rem) clamp(1.25rem, 5vw, 5rem); background: transparent; overflow: hidden; color: inherit; }
-  .valour-steps__inner { width: min(100%, 76rem); margin-inline: auto; }
-  .valour-steps__header { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: clamp(2rem, 4vw, 3.5rem); }
-  .valour-steps__kicker { margin: 0 0 0.7rem; color: #b86b42; font-family: Inter, sans-serif; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.18em; text-transform: uppercase; }
-  .valour-steps__title { max-width: 10ch; margin: 0; color: inherit; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(3.25rem, 6.5vw, 6.4rem); font-weight: 600; line-height: 0.86; letter-spacing: -0.05em; text-wrap: balance; }
-  .valour-steps__aside { max-width: 22rem; margin: 0 0 0.5rem; color: currentColor; font-family: Inter, sans-serif; font-size: 0.95rem; line-height: 1.55; opacity: 0.68; }
-  .valour-steps__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(0.85rem, 2vw, 1.5rem); perspective: 1000px; }
-  .valour-step-card { position: relative; min-width: 0; overflow: hidden; border: 1px solid rgba(131, 26, 26, 0.13); border-radius: clamp(1.15rem, 2.2vw, 2rem); background: rgba(255, 255, 255, 0.08); box-shadow: 0 1.25rem 3rem rgba(55, 10, 10, 0.08); opacity: 0; transform: translateY(3rem) rotate(var(--card-tilt, 0deg)) scale(0.95); transition: opacity 650ms ease var(--card-delay, 0ms), transform 850ms cubic-bezier(0.16, 1, 0.3, 1) var(--card-delay, 0ms), box-shadow 300ms ease; }
-  .valour-steps.is-revealed .valour-step-card { opacity: 1; transform: translateY(0) rotate(var(--card-tilt, 0deg)) scale(1); }
-  .valour-step-card:nth-child(1) { --card-tilt: -1.2deg; --card-delay: 0ms; }
-  .valour-step-card:nth-child(2) { --card-tilt: 0.8deg; --card-delay: 110ms; }
-  .valour-step-card:nth-child(3) { --card-tilt: -0.5deg; --card-delay: 220ms; }
-  .valour-step-card:hover { z-index: 2; box-shadow: 0 1.75rem 4rem rgba(55, 10, 10, 0.15); transform: translateY(-0.55rem) rotate(0deg) scale(1.015) !important; }
-  .valour-step-card__media { position: relative; aspect-ratio: 5 / 4; overflow: hidden; background: #831a1a; }
-  .valour-step-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .valour-step-card__media--product img { object-fit: contain; padding: 1.5rem; }
-  .valour-step-card:hover .valour-step-card__media img { transform: scale(1.045); }
-  .valour-step-card__number { position: absolute; top: 1rem; left: 1rem; z-index: 1; display: grid; width: 2.5rem; aspect-ratio: 1; place-items: center; border-radius: 50%; background: #ffdb8c; color: #831a1a; font-family: Inter, sans-serif; font-size: 0.75rem; font-weight: 800; }
-  .valour-step-card__body { padding: clamp(1.25rem, 2.2vw, 1.8rem); }
-  .valour-step-card__verb { margin: 0; color: #b86b42; font-family: Inter, sans-serif; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
-  .valour-step-card h3 { margin: 0.45rem 0 0; color: inherit; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(1.9rem, 3vw, 2.8rem); line-height: 0.95; }
-  .valour-step-card__body p:last-child { margin: 0.7rem 0 0; color: currentColor; font-family: Inter, sans-serif; font-size: 0.86rem; line-height: 1.5; opacity: 0.7; }
-  @media (max-width: 700px) {
-    .valour-steps { padding-block: 4rem; }
-    .valour-steps__header { display: block; margin-bottom: 1.8rem; }
-    .valour-steps__aside { margin-top: 1.25rem; }
-    .valour-steps__cards { grid-template-columns: repeat(3, minmax(15rem, 78vw)); overflow-x: auto; padding: 0.5rem 1.25rem 1.75rem; margin-inline: -1.25rem; scroll-snap-type: x mandatory; scrollbar-width: none; }
-    .valour-steps__cards::-webkit-scrollbar { display: none; }
-    .valour-step-card { scroll-snap-align: center; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .valour-step-card { opacity: 1; transform: none; transition: none; }
-    .valour-step-card:hover { transform: none !important; }
-    .valour-step-card__media img { transition: none; }
-  }
-  .valour-stack-story { position: relative; width: 100%; height: 195svh; min-height: 76rem; flex: 0 0 auto; margin-top: var(--hero-story-gap, 72px); background: transparent; color: #fff; }
-  .valour-stack-story__sticky { position: sticky; top: 11svh; height: 78svh; min-height: 34rem; display: grid; place-items: center; overflow: clip; will-change: transform; }
-  .valour-stack-story__inner { position: relative; width: min(100% - 2.5rem, 72rem); height: 100%; margin-inline: auto; }
-  .valour-stack-story__intro { position: absolute; inset: 0; z-index: 4; display: grid; place-items: start center; padding-top: clamp(2rem, 6svh, 4rem); text-align: center; }
-  .valour-stack-story__intro h2 { max-width: 10ch; margin: 0; color: inherit; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(3.8rem, 9vw, 8.5rem); font-weight: 600; line-height: 0.84; letter-spacing: -0.055em; text-wrap: balance; }
-  .valour-stack-story__title-word { display: inline-block; margin-right: 0.2em; white-space: nowrap; will-change: transform, opacity, filter; }
-  .valour-stack-story__title-word:last-child { margin-right: 0; }
-  .valour-stack-story__scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(15rem, 0.8fr) minmax(19rem, 1fr); align-items: center; gap: clamp(2rem, 8vw, 8rem); opacity: 1; visibility: visible; }
-  .valour-stack-story__copy { position: relative; min-height: 14rem; padding-left: clamp(2rem, 3vw, 2.75rem); }
-  .valour-stack-story__progress { position: absolute; top: 50%; left: 0; z-index: 3; width: 16px; height: min(11rem, 76%); display: none; flex-direction: column; gap: 10px; transform: translateY(-50%); }
-  .valour-stack-story__progress-step { width: 4px; min-height: 0; flex: 1; margin: 0; padding: 0; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.3); cursor: pointer; transition: width 280ms ease, background-color 280ms ease, box-shadow 280ms ease, transform 280ms ease; }
-  .valour-stack-story__progress-step:hover, .valour-stack-story__progress-step:focus-visible { width: 6px; background: rgba(255, 255, 255, 0.72); outline: none; }
-  .valour-stack-story__progress-step.is-active { width: 6px; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.24); }
-  .valour-stack-story__step { position: absolute; inset: 50% 0 auto; transform: translateY(-38%); opacity: 0; visibility: hidden; }
-  .valour-stack-story__step:first-child { opacity: 1; visibility: visible; transform: translateY(-50%); }
+  .valour-stack-story { position: relative; width: 100%; flex: 0 0 auto; margin-top: var(--hero-story-gap, 72px); background: transparent; color: #fff; }
+  .valour-stack-story__track { position: relative; width: min(100% - 2.5rem, 72rem); margin-inline: auto; padding-bottom: 58svh; }
+  .valour-stack-story__item { position: sticky; top: 11svh; height: 78svh; min-height: 34rem; margin-bottom: 24svh; display: grid; grid-template-columns: minmax(15rem, 0.8fr) minmax(19rem, 1fr); align-items: center; gap: clamp(2rem, 8vw, 8rem); pointer-events: none; }
+  .valour-stack-story__item:nth-of-type(1) { z-index: 1; }
+  .valour-stack-story__item:nth-of-type(2) { z-index: 2; }
+  .valour-stack-story__item:nth-of-type(3) { z-index: 3; margin-bottom: 0; }
+  .valour-stack-story__copy { position: relative; z-index: 5; min-height: 14rem; padding-left: clamp(2rem, 3vw, 2.75rem); opacity: 1; transform: translateY(0); transition: opacity 260ms ease, transform 360ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .valour-stack-story__item.is-past .valour-stack-story__copy { opacity: 0; transform: translateY(-1rem); }
+  .valour-stack-story__item.is-future .valour-stack-story__copy { opacity: 0; transform: translateY(1.25rem); }
+  .valour-stack-story__step { text-align: left; }
   .valour-stack-story__step-label { margin: 0 0 0.8rem; color: #b86b42; font-family: Inter, sans-serif; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
   .valour-stack-story__step h3 { max-width: 10ch; margin: 0; color: inherit; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(3rem, 6vw, 6rem); font-weight: 600; line-height: 0.86; letter-spacing: -0.045em; text-wrap: balance; }
   .valour-stack-story__step p:last-child { max-width: 27rem; margin: 1.1rem 0 0; color: currentColor; font-family: Inter, sans-serif; font-size: clamp(0.9rem, 1.3vw, 1.05rem); line-height: 1.55; opacity: 0.68; }
   .valour-stack-story__deck { position: relative; width: min(36vw, 28rem, calc(62svh * 0.8)); max-width: 100%; min-width: 0; aspect-ratio: 4 / 5; justify-self: center; contain: layout; }
-  .valour-stack-card { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; box-sizing: border-box; overflow: hidden; isolation: isolate; border: 1px solid rgba(255,255,255,0.28); border-radius: clamp(1.25rem, 2.4vw, 2.2rem); background: #831a1a; box-shadow: 0 1.8rem 4.5rem rgba(50, 8, 8, 0.2); opacity: 0; transform-origin: 50% 100%; will-change: transform, opacity; backface-visibility: hidden; }
-  .valour-stack-card:first-child { opacity: 1; transform: translate(-14px, -64px) rotate(-2.5deg) scale(0.96, 0.96); }
-  .valour-stack-card:nth-child(1) { z-index: 1; }
-  .valour-stack-card:nth-child(2) { z-index: 2; }
-  .valour-stack-card:nth-child(3) { z-index: 3; }
+  .valour-stack-card { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; box-sizing: border-box; overflow: hidden; isolation: isolate; border: 1px solid rgba(255,255,255,0.28); border-radius: clamp(1.25rem, 2.4vw, 2.2rem); background: #831a1a; box-shadow: 0 1.8rem 4.5rem rgba(50, 8, 8, 0.2); transform: translate3d(0, 0, 0) scale(1); transform-origin: 50% 100%; transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 420ms ease; will-change: transform; backface-visibility: hidden; }
+  .valour-stack-story[data-active-step="1"] .valour-stack-story__item[data-story-index="0"] .valour-stack-card { transform: translate3d(-18px, -16px, 0) rotate(-2.4deg) scale(0.95); }
+  .valour-stack-story[data-active-step="2"] .valour-stack-story__item[data-story-index="0"] .valour-stack-card { transform: translate3d(-28px, -26px, 0) rotate(-2.5deg) scale(0.91); }
+  .valour-stack-story[data-active-step="2"] .valour-stack-story__item[data-story-index="1"] .valour-stack-card { transform: translate3d(-9px, -8px, 0) rotate(1.3deg) scale(0.96); }
   .valour-stack-card img, .valour-stack-card video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; }
   .valour-stack-card video { opacity: 0; transition: opacity 300ms ease; }
   .valour-stack-card.is-video-ready video { opacity: 1; }
@@ -5027,29 +4832,23 @@
   .valour-stack-card.is-video-ready::before, .valour-stack-card.is-video-ready::after { opacity: 0; visibility: hidden; }
   @media (max-width: 700px) {
     .valour-hero .container_slider { padding-bottom: 1.5rem; }
-    .valour-stack-story { height: 260svh; min-height: 82rem; }
-    .valour-stack-story__sticky { top: 8svh; height: 84svh; min-height: 32rem; }
-    .valour-stack-story__scene { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(1.5rem, 4svh, 2.25rem); padding: max(1rem, env(safe-area-inset-top)) 1.25rem max(1rem, env(safe-area-inset-bottom)); box-sizing: border-box; }
-    .valour-stack-story__copy { position: relative; z-index: 4; order: 2; flex: 0 0 clamp(10.5rem, 23svh, 12.5rem); width: 100%; min-height: 0; margin: 0; padding: 0; }
-    .valour-stack-story__progress { top: 50%; left: 0; display: flex; height: 9.5rem; gap: 8px; transform: translate(-0.35rem, -50%); }
-    .valour-stack-story__deck { z-index: 1; order: 1; flex: 0 0 auto; width: min(66vw, 19rem, calc(40svh * 0.8)); max-width: calc(100vw - 5.5rem); margin: 0 auto; overflow: visible; }
-    .valour-stack-story__deck.is-loading { border-radius: clamp(1.25rem, 5vw, 2rem); }
-    .valour-stack-card:not(.is-video-ready) { border-radius: inherit; }
-    .valour-stack-card:first-child { transform: translate(0, 0) rotate(-1.4deg) scale(0.98); }
-    .valour-stack-story__step, .valour-stack-story__step:first-child { inset: 0 0 auto; transform: none; text-align: center; margin-top: 0; }
+    .valour-stack-story__track { width: min(100% - 2.5rem, 32rem); padding-bottom: 2svh; }
+    .valour-stack-story__item { top: 8svh; height: 84svh; min-height: 32rem; margin-bottom: 20svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(1.4rem, 3.5svh, 2rem); padding: max(0.75rem, env(safe-area-inset-top)) 1.1rem max(0.75rem, env(safe-area-inset-bottom)); box-sizing: border-box; }
+    .valour-stack-story__copy { order: 2; flex: 0 0 clamp(10rem, 21svh, 12rem); width: 100%; min-height: 0; margin: 0; padding: 0; text-align: center; }
+    .valour-stack-story__deck { order: 1; flex: 0 0 auto; width: min(66vw, 19rem, calc(40svh * 0.8)); max-width: calc(100vw - 5.5rem); margin: 0 auto; overflow: visible; }
+    .valour-stack-story__step { text-align: center; }
     .valour-stack-story__step h3 { max-width: 12ch; margin-inline: auto; font-size: clamp(2.7rem, 13vw, 4.1rem); }
     .valour-stack-story__step p:last-child { margin: 0.75rem auto 0; font-size: 0.86rem; }
+    .valour-stack-story[data-active-step="1"] .valour-stack-story__item[data-story-index="0"] .valour-stack-card { transform: translate3d(-14px, -12px, 0) rotate(-2.2deg) scale(0.955); }
+    .valour-stack-story[data-active-step="2"] .valour-stack-story__item[data-story-index="0"] .valour-stack-card { transform: translate3d(-22px, -20px, 0) rotate(-2.4deg) scale(0.92); }
+    .valour-stack-story[data-active-step="2"] .valour-stack-story__item[data-story-index="1"] .valour-stack-card { transform: translate3d(-7px, -6px, 0) rotate(1.2deg) scale(0.965); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .valour-stack-story { height: auto; min-height: 0; padding: 4rem 1.25rem; margin-top: var(--hero-story-gap, 72px); }
-    .valour-stack-story__sticky { position: relative; top: auto; height: auto; min-height: 0; overflow: visible; }
-    .valour-stack-story__inner { width: min(100%, 42rem); height: auto; }
-    .valour-stack-story__intro { position: relative; min-height: 20rem; }
-    .valour-stack-story__scene { position: relative; display: block; opacity: 1; visibility: visible; }
-    .valour-stack-story__copy { display: grid; gap: 1rem; }
-    .valour-stack-story__progress { display: none; }
-    .valour-stack-story__step { position: relative; inset: auto; opacity: 1; visibility: visible; transform: none; padding-block: 1rem; }
-    .valour-stack-story__deck { display: none; }
+    .valour-stack-story { padding-block: 4rem; }
+    .valour-stack-story__track { width: min(100% - 2.5rem, 42rem); padding-bottom: 0; }
+    .valour-stack-story__item { position: relative; top: auto; height: auto; min-height: 0; margin-bottom: 4rem; display: grid; opacity: 1; }
+    .valour-stack-story__copy, .valour-stack-story__item.is-past .valour-stack-story__copy, .valour-stack-story__item.is-future .valour-stack-story__copy { opacity: 1; transform: none; }
+    .valour-stack-card { transition: none; transform: none !important; }
     .valour-stack-card::before, .valour-stack-card::after { animation: none; }
   }
 </style>
@@ -5058,25 +4857,6 @@
 
 
 
-
-
-  <link href="vendor/cdn/cdn/shop/t/8/assets/login-logo.css?v=36613430775416838161755792980" rel="stylesheet"
-    type="text/css" media="all" />
-  <!-- Loading Phase (temporarily disabled)
-  <div id="loading-phase" class="loading-phase-container">
-
-    <div>
-
-      <div class="loader-logo">
-        <img src="vendor/cdn/cdn/shop/files/valourlogo_load.webp" alt="Valour" fetchpriority="high">
-      </div>
-      <div class="loading-bar-container">
-        <div class="loading-bar"></div>
-      </div>
-    </div>
-
-  </div>
-  -->
 
 
   <!-- Main Content -->
@@ -5101,8 +4881,8 @@
 
         <!-- LOGO -->
         <a class="nav-logo" href="/" aria-label="VALOUR home">
-          <img class="nav-logo__default" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour">
-          <img class="nav-logo__sticky" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="" aria-hidden="true">
+          <img class="nav-logo__default" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour" width="755" height="330" decoding="async">
+          <img class="nav-logo__sticky" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="" aria-hidden="true" width="755" height="330" decoding="async">
         </a>
         <!-- RIGHT -->
         <div class="nav-right">
@@ -5175,73 +4955,25 @@
         </header>
       </div>
     </section>
-    <section class="valour-stack-story" id="valour-stack-story" data-valour-stack-story aria-label="Cook in three steps">
-      <div class="valour-stack-story__sticky">
-        <div class="valour-stack-story__inner">
-          <div class="valour-stack-story__scene">
-            <nav class="valour-stack-story__progress" aria-label="Choose a cooking step">
-              <button class="valour-stack-story__progress-step is-active" type="button" data-story-step="0" aria-label="Go to step 1: Fry" aria-current="step"></button>
-              <button class="valour-stack-story__progress-step" type="button" data-story-step="1" aria-label="Go to step 2: Pour"></button>
-              <button class="valour-stack-story__progress-step" type="button" data-story-step="2" aria-label="Go to step 3: Simmer"></button>
-            </nav>
-            <div class="valour-stack-story__copy" aria-live="polite">
-              <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 01 · FRY</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></article>
-              <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 02 · Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></article>
-              <article class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 03 · Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></article>
-            </div>
-            <div class="valour-stack-story__deck is-loading" aria-hidden="true">
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_one.mp4" muted loop playsinline preload="auto"></video></figure>
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_two.mp4" muted loop playsinline preload="auto"></video></figure>
-              <figure class="valour-stack-card"><video src="vendor/cdn/cdn/shop/files/step_three.mp4" muted loop playsinline preload="auto"></video></figure>
-            </div>
-          </div>
-        </div>
+    <section class="valour-stack-story" id="valour-stack-story" data-valour-stack-story data-active-step="0" aria-label="Cook in three steps">
+      <div class="valour-stack-story__track">
+        <article class="valour-stack-story__item is-current" id="valour-stack-step-1" data-story-index="0">
+          <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 01 · FRY</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></div></div>
+          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="metadata" poster="vendor/cdn/cdn/shop/files/step_one-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.webm" type="video/webm"></video></figure></div>
+        </article>
+        <article class="valour-stack-story__item is-future" id="valour-stack-step-2" data-story-index="1">
+          <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 02 · Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></div></div>
+          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="auto" poster="vendor/cdn/cdn/shop/files/step_two-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.webm" type="video/webm"></video></figure></div>
+        </article>
+        <article class="valour-stack-story__item is-future" id="valour-stack-step-3" data-story-index="2">
+          <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 03 · Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></div></div>
+          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="none" poster="vendor/cdn/cdn/shop/files/step_three-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_three-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_three-optimized.webm" type="video/webm"></video></figure></div>
+        </article>
       </div>
     </section>
-    <section class="valour-steps" data-valour-steps aria-labelledby="valour-steps-title">
-      <div class="valour-steps__inner">
-        <header class="valour-steps__header">
-          <div><p class="valour-steps__kicker">Dinner, minus the drama</p><h2 class="valour-steps__title" id="valour-steps-title">Cook in 3 simple steps.</h2></div>
-          <p class="valour-steps__aside">No twelve-item spice list. No mysterious chef moves. Just sear, pour and let dinner happen.</p>
-        </header>
-        <div class="valour-steps__cards">
-          <article class="valour-step-card"><div class="valour-step-card__media"><span class="valour-step-card__number">01</span><img src="vendor/cdn/cdn/shop/files/img_1_timeline.png" alt="Fish searing in a pan" loading="lazy" decoding="async"></div><div class="valour-step-card__body"><p class="valour-step-card__verb">Sear</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></div></article>
-          <article class="valour-step-card"><div class="valour-step-card__media valour-step-card__media--product"><span class="valour-step-card__number">02</span><img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken Liquid Spice jar" loading="lazy" decoding="async"></div><div class="valour-step-card__body"><p class="valour-step-card__verb">Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></div></article>
-          <article class="valour-step-card"><div class="valour-step-card__media"><span class="valour-step-card__number">03</span><img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" alt="Finished butter chicken ready to serve" loading="lazy" decoding="async"></div><div class="valour-step-card__body"><p class="valour-step-card__verb">Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></div></article>
-        </div>
-      </div>
-    </section>
-    <section class="valour-scroll-story" data-scroll-story aria-label="From jar to dinner in four moments">
-      <div class="valour-scroll-story__sticky">
-        <div class="valour-scroll-story__intro is-active">
-          <h2>Cook in 3 simple steps.</h2>
-        </div>
-        <div class="valour-scroll-story__media" aria-hidden="true">
-          <img class="valour-scroll-story__image" src="vendor/cdn/cdn/shop/files/img_1_timeline.png" alt="" loading="eager" decoding="async">
-          <img class="valour-scroll-story__image valour-scroll-story__image--contain" src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="" loading="lazy" decoding="async">
-          <img class="valour-scroll-story__image" src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" alt="" loading="lazy" decoding="async">
-        </div>
-        <div class="valour-scroll-story__shade" aria-hidden="true"></div>
-        <div class="valour-scroll-story__frame">
-          <div class="valour-scroll-story__copy" aria-live="polite">
-            <article class="valour-scroll-story__chapter"><p class="valour-scroll-story__eyebrow">01 / Sear</p><h2>Sear what you love.</h2><p>Chicken, paneer, fish or vegetables. Start with the ingredient already waiting in your kitchen.</p></article>
-            <article class="valour-scroll-story__chapter"><p class="valour-scroll-story__eyebrow">02 / Pour</p><h2>Open one jar.</h2><p>Pour in VALOUR. The slow work—balanced spice, body and depth—is already done.</p></article>
-            <article class="valour-scroll-story__chapter"><p class="valour-scroll-story__eyebrow">03 / Simmer</p><h2>Give it ten minutes.</h2><p>Let everything come together, then serve an order-worthy dish made at home.</p></article>
-          </div>
-          <div class="valour-scroll-story__progress" aria-label="Choose a cooking step"><button class="valour-scroll-story__dot" type="button" data-story-index="1" aria-label="Show step 1"></button><button class="valour-scroll-story__dot" type="button" data-story-index="2" aria-label="Show step 2"></button><button class="valour-scroll-story__dot" type="button" data-story-index="3" aria-label="Show step 3"></button></div>
-        </div>
-        <p class="valour-scroll-story__hint">Scroll to begin</p>
-      </div>
-    </section>
-    <link href="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-stylesheet.css" rel="stylesheet" type="text/css"
-      media="all" />
-
     </section>
     <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
       class=" shopify-section text-scrolling-parent">
-      <link href="//cheffin.com/cdn/shop/t/8/assets/text-scrolling-stylesheet.CSS" rel="stylesheet" type="text/css"
-        media="all">
-
       <div class="prod_section_ind" id="shop">
 
 
@@ -5420,10 +5152,6 @@
         <div id="how-it-works"
           class="shopify-section text-scrolling-parent">
 
-          <script src="vendor/cdn/cdn/shop/t/8/assets/text-scrolling-javascript.js" defer></script>
-          <script src="vendor/cdn/cdn/shop/t/8/assets/packets-dishes-data.js" defer></script>
-
-
         </div>
         <div id="shopify-section-template--19781511708886__sachet_video_gjfm3w"
           class="shopify-section sachet-video-parent">
@@ -5561,10 +5289,6 @@
 
           <div id="shopify-section-template--19781511708886__faq_section_tnj3kT"
             class="shopify-section faq-section-parent">
-            <link rel="stylesheet" href="vendor/cdn/cdn/shop/t/8/assets/faq-section-stylesheet.css" media="print"
-              onload="this.media='all'">
-            <script src="vendor/cdn/cdn/shop/t/8/assets/faq-section-animation.js" defer></script>
-
           </div>
           <!-- <section class="final-cta-section" aria-labelledby="final-cta-title">
             <div class="final-cta-inner">
@@ -5664,6 +5388,8 @@ Prepare less.</h2>
 
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script>
 
     const cfPopupOverlay = document.getElementById('cfPopupOverlay');
@@ -5932,6 +5658,7 @@ Prepare less.</h2>
 
 
 
+    function initProductGalleries() {
     document.querySelectorAll('.product_slide .left').forEach((gallery) => {
       const thumbnails = Array.from(gallery.querySelectorAll('.thumbnails img'));
       const thumbnailStrip = gallery.querySelector('.thumbnails');
@@ -6089,6 +5816,17 @@ Prepare less.</h2>
 
       updateGallery(activeIndex, false);
     });
+    }
+
+    const productGallerySection = document.querySelector('.container_slider');
+    if (productGallerySection) {
+      const productGalleryObserver = new IntersectionObserver((entries, observer) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        initProductGalleries();
+      }, { rootMargin: '600px 0px', threshold: 0 });
+      productGalleryObserver.observe(productGallerySection);
+    }
 
 
     const track = document.getElementById("track");
@@ -6227,7 +5965,15 @@ Prepare less.</h2>
       }
     }
 
-    loadAccordionContent();
+    const firstAccordion = document.querySelector('.accordion[data-accordion-key]');
+    if (firstAccordion) {
+      const accordionObserver = new IntersectionObserver((entries, observer) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadAccordionContent();
+      }, { rootMargin: '500px 0px', threshold: 0 });
+      accordionObserver.observe(firstAccordion);
+    }
 
 
     // slidier beign
@@ -6386,32 +6132,6 @@ Prepare less.</h2>
 
     // slidier end
 
-
-    document.addEventListener('DOMContentLoaded', function () {
-      const loadingPhase = document.getElementById('loading-phase');
-      const mainContent = document.getElementById('main-content');
-      const loaderStartedAt = performance.now();
-      const minimumDisplayTime = 1400;
-      let hasRevealed = false;
-
-      function revealMainContent() {
-        if (hasRevealed || !loadingPhase || !mainContent) return;
-        hasRevealed = true;
-
-        const remainingTime = Math.max(0, minimumDisplayTime - (performance.now() - loaderStartedAt));
-
-        setTimeout(function () {
-          mainContent.style.display = 'block';
-          loadingPhase.classList.add('is-exiting');
-
-          setTimeout(function () {
-            loadingPhase.style.display = 'none';
-          }, 700);
-        }, remainingTime);
-      }
-
-      revealMainContent();
-    });
 
 // Put the product slider inside the hero before ScrollTrigger measures it.
 const productSliderSection = document.querySelector(".container_slider");
@@ -6653,10 +6373,7 @@ function initProductStoryAnimations() {
   const looksVideo = document.querySelector(".looks-tastes-video");
   const rawReadySection = document.querySelector(".raw-ready-section");
   const baseMessageSection = document.querySelector(".base-message-section");
-  const cfWrapperMain = document.querySelector(".cf-wrapper-main");
   const processHeading = document.querySelector(".valour-banner__title_sec2");
-  const activeProductSlide = document.querySelector(".product_slide.active");
-  const productMainImage = document.querySelector(".product_slide.active .main-image");
 
   if (reduceMotion) {
     const animatedElements = [
@@ -6664,10 +6381,7 @@ function initProductStoryAnimations() {
       looksVideo,
       rawReadySection,
       baseMessageSection,
-      cfWrapperMain,
       processHeading,
-      activeProductSlide,
-      productMainImage,
       ...document.querySelectorAll(".raw-ready-heading, .raw-ready-item, .base-message-kicker, .base-message-heading")
     ].filter(Boolean);
 
@@ -6679,19 +6393,18 @@ function initProductStoryAnimations() {
 
   if (looksHeading) {
     gsap.fromTo(looksHeading,
-      {
-        autoAlpha: 0,
-        y: 48
-      },
+      { autoAlpha: 0, y: 32 },
       {
         autoAlpha: 1,
         y: 0,
-        duration: 1,
+        duration: 0.72,
         ease: "power3.out",
         scrollTrigger: {
           trigger: looksHeading,
-          start: "top 82%",
-          toggleActions: "play reverse play reverse"
+          start: "top 94%",
+          toggleActions: "play none none none",
+          once: true,
+          invalidateOnRefresh: true
         }
       }
     );
@@ -6699,21 +6412,19 @@ function initProductStoryAnimations() {
 
   if (looksVideo) {
     gsap.fromTo(looksVideo,
-      {
-        autoAlpha: 0,
-        y: 64,
-        scale: 0.96
-      },
+      { autoAlpha: 0, y: 38, scale: 0.975 },
       {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: 1.1,
+        duration: 0.78,
         ease: "power3.out",
         scrollTrigger: {
           trigger: looksVideo,
-          start: "top 82%",
-          toggleActions: "play reverse play reverse"
+          start: "top 96%",
+          toggleActions: "play none none none",
+          once: true,
+          invalidateOnRefresh: true
         }
       }
     );
@@ -6764,64 +6475,38 @@ function initProductStoryAnimations() {
     const baseMessageParts = baseMessageSection.querySelectorAll(".base-message-kicker, .base-message-heading");
 
     gsap.fromTo(baseMessageSection,
-      {
-        autoAlpha: 0,
-        y: 54,
-        scale: 0.985
-      },
+      { autoAlpha: 0, y: 36, scale: 0.992 },
       {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: 0.95,
+        duration: 0.76,
         ease: "power3.out",
         scrollTrigger: {
           trigger: baseMessageSection,
-          start: "top 84%",
-          toggleActions: "play reverse play reverse"
+          start: "top 94%",
+          toggleActions: "play none none none",
+          once: true,
+          invalidateOnRefresh: true
         }
       }
     );
 
     gsap.fromTo(baseMessageParts,
-      {
-        autoAlpha: 0,
-        y: 36,
-        filter: "blur(8px)"
-      },
+      { autoAlpha: 0, y: 24, filter: "blur(5px)" },
       {
         autoAlpha: 1,
         y: 0,
         filter: "blur(0px)",
-        duration: 0.9,
+        duration: 0.7,
         ease: "power3.out",
-        stagger: 0.16,
+        stagger: 0.1,
         scrollTrigger: {
           trigger: baseMessageSection,
-          start: "top 76%",
-          toggleActions: "play reverse play reverse"
-        }
-      }
-    );
-  }
-
-  if (cfWrapperMain) {
-    gsap.fromTo(cfWrapperMain,
-      {
-        autoAlpha: 0,
-        y: 56,
-        scale: 0.97
-      },
-      {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.9,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: cfWrapperMain,
-          start: "top 82%",
-          toggleActions: "play reverse play reverse"
+          start: "top 90%",
+          toggleActions: "play none none none",
+          once: true,
+          invalidateOnRefresh: true
         }
       }
     );
@@ -6847,44 +6532,21 @@ function initProductStoryAnimations() {
     );
   }
 
-  if (productMainImage) {
-    gsap.fromTo(productMainImage,
-      {
-        autoAlpha: 0,
-        y: 38,
-        scale: 0.94
-      },
-      {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        duration: 1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: activeProductSlide || productMainImage,
-          start: "top 78%",
-          toggleActions: "play reverse play reverse"
-        }
-      }
-    );
-  }
 }
 
-window.addEventListener("load", () => {
-  const runProductStoryAnimations = () => {
+const productStoryAnimationTarget = document.querySelector(".looks-tastes-section");
+if (productStoryAnimationTarget) {
+  const productStoryObserver = new IntersectionObserver((entries, observer) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
     initProductStoryAnimations();
     ScrollTrigger.refresh();
-  };
-  const mainContent = document.getElementById("main-content");
-
-  if (mainContent && window.getComputedStyle(mainContent).display === "none") {
-    setTimeout(runProductStoryAnimations, 2600);
-  } else {
-    runProductStoryAnimations();
-  }
-});
+  }, { rootMargin: "150% 0px", threshold: 0 });
+  productStoryObserver.observe(productStoryAnimationTarget);
+}
 
 let ctx;
+let spotlightInitialized = false;
 
 function init() {
   const spotlight = document.querySelector("#spotlight");
@@ -6895,6 +6557,8 @@ function init() {
 
   // 🚨 CRITICAL: sync counts
   const total = Math.min(panels.length, cards.length);
+  if (!spotlight || !mediaStage || !total) return;
+  spotlightInitialized = true;
 
   ctx = gsap.context(() => {
 
@@ -6983,15 +6647,21 @@ function destroy() {
 }
 
 
-// INIT
-window.addEventListener("load", () => {
-  destroy();
-  init();
-});
+// Initialize this below-fold story only shortly before it is needed.
+const spotlightSection = document.querySelector("#spotlight");
+if (spotlightSection) {
+  const spotlightObserver = new IntersectionObserver((entries, observer) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    destroy();
+    init();
+  }, { rootMargin: "700px 0px", threshold: 0 });
+  spotlightObserver.observe(spotlightSection);
+}
 
 // BFCACHE FIX
 window.addEventListener("pageshow", (e) => {
-  if (e.persisted) {
+  if (e.persisted && spotlightInitialized) {
     destroy();
     init();
   }
@@ -6999,6 +6669,7 @@ window.addEventListener("pageshow", (e) => {
 
 // OPTIONAL: resize safety
 window.addEventListener("resize", () => {
+  if (!spotlightInitialized) return;
   destroy();
   init();
 });
@@ -7042,7 +6713,15 @@ function initValourComparisonSlider() {
   });
 }
 
-window.addEventListener("load", initValourComparisonSlider);
+const firstComparisonSlider = document.querySelector("[data-comparison-slider]");
+if (firstComparisonSlider) {
+  const comparisonObserver = new IntersectionObserver((entries, observer) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    initValourComparisonSlider();
+  }, { rootMargin: "500px 0px", threshold: 0 });
+  comparisonObserver.observe(firstComparisonSlider);
+}
 
 function initStickyNavbar() {
   const navbar = document.querySelector(".navbar");
@@ -7369,338 +7048,241 @@ function initAnnouncementCarousel() {
 
 window.addEventListener("load", initAnnouncementCarousel);
 
+
 function initValourStackStory() {
   const section = document.querySelector("[data-valour-stack-story]");
-  if (!section || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !window.gsap || !window.ScrollTrigger) return;
+  if (!section) return;
 
-  gsap.registerPlugin(ScrollTrigger);
-  const scene = section.querySelector(".valour-stack-story__scene");
-  const deck = section.querySelector(".valour-stack-story__deck");
-  const progressSteps = Array.from(section.querySelectorAll(".valour-stack-story__progress-step"));
-  const cards = gsap.utils.toArray(section.querySelectorAll(".valour-stack-card"));
-  const steps = gsap.utils.toArray(section.querySelectorAll(".valour-stack-story__step"));
-  const videos = cards.map((card) => card.querySelector("video"));
-  let activeVideoIndex = 0;
-  let activeStepIndex = -1;
+  const items = Array.from(section.querySelectorAll(".valour-stack-story__item"));
+  const cards = items.map((item) => item.querySelector(".valour-stack-card"));
+  const videos = cards.map((card) => card?.querySelector("video"));
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let activeIndex = 0;
+  let activeCopyIndex = 0;
+  let activeVideoIndices = new Set([0]);
+  let triggerPositions = [];
+  let copyTriggerPositions = [];
+  let videoTriggerPositions = [];
+  let scrollFrame = 0;
+  const pendingPlayIndices = new Set();
+  const playbackHealth = videos.map(() => ({ currentTime: 0, advancedAt: performance.now() }));
 
-  function playActiveVideo() {
-    const video = videos[activeVideoIndex];
-    if (!video || document.hidden) return;
-
+  function playVideo(index) {
+    const video = videos[index];
+    if (!video || document.hidden || reducedMotion || pendingPlayIndices.has(index) || !video.paused) return;
     video.muted = true;
     video.playsInline = true;
-    if (video.ended) video.currentTime = 0;
-
-    const playAttempt = video.play();
-    if (playAttempt?.catch) {
-      playAttempt.catch(() => {
-        // A step can become active before its clip has buffered. Retry as
-        // soon as that same clip is playable instead of leaving it paused.
-        video.addEventListener("canplay", playActiveVideo, { once: true });
-      });
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    if (video.readyState < 2) {
+      // `preload="none"` is commonly reported as NETWORK_IDLE on mobile,
+      // not NETWORK_EMPTY. Explicitly request the deferred source once when
+      // its card becomes relevant without repeatedly resetting the download.
+      if (video.networkState !== HTMLMediaElement.NETWORK_LOADING && video.dataset.loadRequested !== "true") {
+        video.dataset.loadRequested = "true";
+        video.load();
+      }
+      return;
     }
+
+    pendingPlayIndices.add(index);
+    const attempt = video.play();
+    if (attempt?.then) {
+      attempt.catch(() => {}).finally(() => pendingPlayIndices.delete(index));
+    } else {
+      pendingPlayIndices.delete(index);
+    }
+  }
+
+  function setPlayingVideos(indices) {
+    const nextIndices = new Set(indices.map((index) => Math.max(0, Math.min(videos.length - 1, index))));
+    const activatedAt = performance.now();
+    nextIndices.forEach((index) => {
+      if (!activeVideoIndices.has(index) && playbackHealth[index]) {
+        playbackHealth[index].advancedAt = activatedAt;
+      }
+    });
+    activeVideoIndices = nextIndices;
+    videos.forEach((video, videoIndex) => {
+      if (!video) return;
+      if (nextIndices.has(videoIndex)) {
+        if (video.paused) playVideo(videoIndex);
+      }
+      else video.pause();
+    });
+  }
+
+  function setActiveStep(index, force = false) {
+    const nextIndex = Math.max(0, Math.min(items.length - 1, index));
+    if (!force && nextIndex === activeIndex) return;
+
+    activeIndex = nextIndex;
+    section.dataset.activeStep = String(nextIndex);
+  }
+
+  function setActiveCopy(index, force = false) {
+    const nextIndex = Math.max(0, Math.min(items.length - 1, index));
+    if (!force && nextIndex === activeCopyIndex) return;
+
+    activeCopyIndex = nextIndex;
+    items.forEach((item, itemIndex) => {
+      item.classList.toggle("is-past", itemIndex < nextIndex);
+      item.classList.toggle("is-current", itemIndex === nextIndex);
+      item.classList.toggle("is-future", itemIndex > nextIndex);
+    });
   }
 
   videos.forEach((video, index) => {
     if (!video) return;
-    const markReady = () => {
-      cards[index]?.classList.add("is-video-ready");
-      if (cards.every((card) => card.classList.contains("is-video-ready"))) {
-        deck?.classList.remove("is-loading");
-      }
-      if (index === activeVideoIndex) playActiveVideo();
-    };
+    const markReady = () => cards[index]?.classList.add("is-video-ready");
     if (video.readyState >= 2) markReady();
     else {
       video.addEventListener("loadeddata", markReady, { once: true });
       video.addEventListener("canplay", markReady, { once: true });
     }
-
-    video.addEventListener("ended", () => {
-      if (index !== activeVideoIndex) return;
-      video.currentTime = 0;
-      playActiveVideo();
-    });
-
     video.addEventListener("canplay", () => {
-      if (index === activeVideoIndex) playActiveVideo();
+      if (activeVideoIndices.has(index)) playVideo(index);
     });
+    video.addEventListener("loadeddata", () => {
+      if (activeVideoIndices.has(index)) playVideo(index);
+    });
+    video.addEventListener("pause", () => {
+      if (!activeVideoIndices.has(index) || document.hidden || reducedMotion) return;
+      window.requestAnimationFrame(() => playVideo(index));
+    });
+    const markPlaybackProgress = () => {
+      const health = playbackHealth[index];
+      if (!health) return;
+      const currentTime = video.currentTime || 0;
+      if (Math.abs(currentTime - health.currentTime) > 0.025 || currentTime < health.currentTime) {
+        health.currentTime = currentTime;
+        health.advancedAt = performance.now();
+      }
+    };
+    video.addEventListener("playing", markPlaybackProgress);
+    video.addEventListener("timeupdate", markPlaybackProgress);
   });
 
-  function setActiveVideo(index) {
-    const nextVideoIndex = Math.max(0, Math.min(videos.length - 1, index));
-    if (nextVideoIndex === activeVideoIndex && !videos[activeVideoIndex]?.paused) return;
-    activeVideoIndex = nextVideoIndex;
-    videos.forEach((video, videoIndex) => {
-      if (!video) return;
-      if (videoIndex !== activeVideoIndex) video.pause();
+  function ensureActiveVideosPlaying() {
+    if (document.hidden || reducedMotion) return;
+    const sectionRect = section.getBoundingClientRect();
+    if (sectionRect.bottom < 0 || sectionRect.top > window.innerHeight) return;
+
+    const now = performance.now();
+    activeVideoIndices.forEach((index) => {
+      const video = videos[index];
+      const health = playbackHealth[index];
+      if (!video || !health) return;
+      if (video.paused) {
+        pendingPlayIndices.delete(index);
+        playVideo(index);
+        return;
+      }
+      // Some mobile browsers suspend a decoder during momentum scrolling
+      // without changing `paused`. Restart only when playback has genuinely
+      // stopped advancing, leaving normally playing clips untouched.
+      if (video.readyState >= 2 && now - health.advancedAt > 1800) {
+        health.advancedAt = now;
+        pendingPlayIndices.delete(index);
+        video.pause();
+        window.requestAnimationFrame(() => playVideo(index));
+      }
     });
-    playActiveVideo();
+  }
+
+  // Step 2 is only ~148 KB after optimization. Warm it immediately so a
+  // normal mobile swipe never reaches the second card before it can play.
+  // Step 3 remains deferred to protect the initial page payload.
+  if (videos[1] && videos[1].readyState < 2) {
+    videos[1].dataset.loadRequested = "true";
+    videos[1].load();
+  }
+
+  function measureSteps() {
+    const trackTop = section.querySelector(".valour-stack-story__track")?.getBoundingClientRect().top + window.scrollY || section.offsetTop;
+    const stickyTop = Number.parseFloat(window.getComputedStyle(items[0]).top) || 0;
+    // Stack depth changes only when the incoming card reaches the shared
+    // sticky position. Copy timing follows the real copy-block positions.
+    const activationLine = stickyTop + 8;
+    triggerPositions = items.map((item) => trackTop + item.offsetTop - activationLine);
+    copyTriggerPositions = items.map((item, index) => {
+      if (index === 0) return Number.NEGATIVE_INFINITY;
+      const incomingCopyTop = item.querySelector(".valour-stack-story__copy")?.offsetTop || 0;
+      const previousCopyTop = items[index - 1].querySelector(".valour-stack-story__copy")?.offsetTop || 0;
+      const previousStickyCopyPosition = stickyTop + previousCopyTop;
+      const readingLead = window.innerHeight * 0.12;
+      return trackTop + item.offsetTop + incomingCopyTop - previousStickyCopyPosition - readingLead;
+    });
+    videoTriggerPositions = items.map((item) => trackTop + item.offsetTop - window.innerHeight * 0.82);
+  }
+
+  function updateFromScroll() {
+    scrollFrame = 0;
+    let nextIndex = 0;
+    for (let index = 1; index < triggerPositions.length; index += 1) {
+      if (window.scrollY >= triggerPositions[index]) nextIndex = index;
+    }
+    let nextCopyIndex = 0;
+    for (let index = 1; index < copyTriggerPositions.length; index += 1) {
+      if (window.scrollY >= copyTriggerPositions[index]) nextCopyIndex = index;
+    }
+    let nextVideoIndex = 0;
+    for (let index = 1; index < videoTriggerPositions.length; index += 1) {
+      if (window.scrollY >= videoTriggerPositions[index]) nextVideoIndex = index;
+    }
+    setActiveStep(nextIndex);
+    setActiveCopy(nextCopyIndex);
+    setPlayingVideos(nextVideoIndex === nextCopyIndex
+      ? [nextVideoIndex]
+      : [nextCopyIndex, nextVideoIndex]);
+  }
+
+  function requestScrollUpdate() {
+    if (scrollFrame) return;
+    scrollFrame = window.requestAnimationFrame(updateFromScroll);
   }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) videos.forEach((video) => video?.pause());
-    else playActiveVideo();
+    else ensureActiveVideosPlaying();
   });
 
-  setActiveVideo(-1);
-
-  gsap.set(scene, { autoAlpha: 1 });
-
-  function updateActiveStep(index) {
-    const nextIndex = Math.max(0, Math.min(2, index));
-    if (nextIndex === activeStepIndex) return;
-    activeStepIndex = nextIndex;
-    progressSteps.forEach((stepControl, controlIndex) => {
-      const isActive = controlIndex === nextIndex;
-      stepControl.classList.toggle("is-active", isActive);
-      if (isActive) stepControl.setAttribute("aria-current", "step");
-      else stepControl.removeAttribute("aria-current");
-    });
-    setActiveVideo(nextIndex);
-  }
-
-  updateActiveStep(0);
-
-  const media = gsap.matchMedia();
-  media.add(
-    {
-      isMobile: "(max-width: 700px)",
-      isDesktop: "(min-width: 701px)"
-    },
-    (context) => {
-      const isMobile = context.conditions.isMobile;
-      const firstCardState = isMobile
-        ? { autoAlpha: 1, x: 0, y: 0, scale: 0.98, rotation: -1.4 }
-        : { autoAlpha: 1, x: -14, y: -64, scale: 0.96, rotation: -2.5 };
-      const incomingY = isMobile ? 54 : 72;
-      const phase = {
-        stepOneHold: 1.15,
-        firstTransition: 0.55,
-        stepTwoHold: 1.15,
-        secondTransition: 0.55,
-        stepThreeHold: 1.4
-      };
-      const firstTransitionAt = phase.stepOneHold;
-      const stepTwoAt = firstTransitionAt + phase.firstTransition;
-      const secondTransitionAt = stepTwoAt + phase.stepTwoHold;
-      const stepThreeAt = secondTransitionAt + phase.secondTransition;
-      const totalDuration = stepThreeAt + phase.stepThreeHold;
-      const firstActiveSwitch = (firstTransitionAt + phase.firstTransition * 0.5) / totalDuration;
-      const secondActiveSwitch = (secondTransitionAt + phase.secondTransition * 0.5) / totalDuration;
-      const timelineClock = { value: 0 };
-
-      gsap.set(cards, { autoAlpha: 0, x: 0, y: incomingY, scale: 0.92, rotation: 4 });
-      gsap.set(cards[0], firstCardState);
-      gsap.set(steps, { autoAlpha: 0, y: 24 });
-      gsap.set(steps[0], { autoAlpha: 1, y: 0 });
-
-      const storyTimeline = gsap.timeline({ defaults: { ease: "none" } });
-      storyTimeline
-        .addLabel("step1", 0)
-        .to(timelineClock, { value: 1, duration: totalDuration }, 0)
-        .addLabel("toStep2", firstTransitionAt)
-        .to(cards[0], {
-          x: isMobile ? -18 : -24,
-          y: isMobile ? -18 : -24,
-          scale: 0.93,
-          rotation: -2.5,
-          duration: phase.firstTransition,
-          ease: "power2.inOut"
-        }, firstTransitionAt)
-        .to(cards[1], {
-          autoAlpha: 1,
-          x: 0,
-          y: 0,
-          scale: 0.98,
-          rotation: 1.4,
-          duration: phase.firstTransition,
-          ease: "power2.out"
-        }, firstTransitionAt)
-        .to(steps[0], {
-          autoAlpha: 0,
-          y: -18,
-          duration: phase.firstTransition * 0.48,
-          ease: "power1.in"
-        }, firstTransitionAt)
-        .to(steps[1], {
-          autoAlpha: 1,
-          y: 0,
-          duration: phase.firstTransition * 0.55,
-          ease: "power1.out"
-        }, firstTransitionAt + phase.firstTransition * 0.45)
-        .addLabel("step2", stepTwoAt)
-        .addLabel("toStep3", secondTransitionAt)
-        .to(cards[0], {
-          x: isMobile ? -28 : -30,
-          y: isMobile ? -28 : -30,
-          scale: 0.9,
-          rotation: -2.5,
-          duration: phase.secondTransition,
-          ease: "power2.inOut"
-        }, secondTransitionAt)
-        .to(cards[1], {
-          x: -8,
-          y: -8,
-          scale: 0.95,
-          rotation: 1.4,
-          duration: phase.secondTransition,
-          ease: "power2.inOut"
-        }, secondTransitionAt)
-        .to(cards[2], {
-          autoAlpha: 1,
-          x: isMobile ? 0 : 14,
-          y: isMobile ? 0 : 14,
-          scale: 1,
-          rotation: isMobile ? 0 : -0.8,
-          duration: phase.secondTransition,
-          ease: "power2.out"
-        }, secondTransitionAt)
-        .to(steps[1], {
-          autoAlpha: 0,
-          y: -18,
-          duration: phase.secondTransition * 0.48,
-          ease: "power1.in"
-        }, secondTransitionAt)
-        .to(steps[2], {
-          autoAlpha: 1,
-          y: 0,
-          duration: phase.secondTransition * 0.55,
-          ease: "power1.out"
-        }, secondTransitionAt + phase.secondTransition * 0.45)
-        .addLabel("step3", stepThreeAt);
-
-      storyTimeline.eventCallback("onUpdate", () => {
-        const timelineProgress = storyTimeline.progress();
-        updateActiveStep(
-          timelineProgress < firstActiveSwitch ? 0 :
-          timelineProgress < secondActiveSwitch ? 1 : 2
-        );
-      });
-
-      const storyScrollTrigger = ScrollTrigger.create({
-        trigger: section,
-        animation: storyTimeline,
-        start: isMobile ? "top 8%" : "top 82%",
-        end: isMobile ? "bottom 92%" : "bottom 88%",
-        scrub: isMobile ? 0.32 : 0.45,
-        invalidateOnRefresh: true,
-        onLeave: () => updateActiveStep(2),
-        onLeaveBack: () => updateActiveStep(0)
-      });
-
-      const stepScrollProgress = [
-        (phase.stepOneHold * 0.5) / totalDuration,
-        (stepTwoAt + phase.stepTwoHold * 0.5) / totalDuration,
-        (stepThreeAt + phase.stepThreeHold * 0.5) / totalDuration
-      ];
-      const progressHandlers = progressSteps.map((stepControl, index) => {
-        const handler = () => {
-          const targetScroll = storyScrollTrigger.start +
-            (storyScrollTrigger.end - storyScrollTrigger.start) * stepScrollProgress[index];
-          window.scrollTo({ top: targetScroll, behavior: "smooth" });
-        };
-        stepControl.addEventListener("click", handler);
-        return handler;
-      });
-
-      return () => {
-        progressSteps.forEach((stepControl, index) => {
-          stepControl.removeEventListener("click", progressHandlers[index]);
-        });
-        storyScrollTrigger.kill();
-        storyTimeline.kill();
-      };
-    });
-
-  videos.forEach((video) => {
-    video?.addEventListener("loadedmetadata", () => ScrollTrigger.refresh(), { once: true });
-  });
-  let lastLayoutWidth = window.innerWidth;
-  const refreshStoryLayout = () => {
-    if (window.innerWidth === lastLayoutWidth) return;
-    lastLayoutWidth = window.innerWidth;
-    window.requestAnimationFrame(() => ScrollTrigger.refresh());
-  };
-  window.addEventListener("resize", refreshStoryLayout);
-  window.requestAnimationFrame(() => ScrollTrigger.refresh());
-}
-
-window.addEventListener("load", initValourStackStory);
-
-function initCompactValourSteps() {
-  const section = document.querySelector("[data-valour-steps]");
-  if (!section) return;
-
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    section.classList.add("is-revealed");
+  if (reducedMotion) {
+    videos.forEach((video) => video?.pause());
     return;
   }
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      section.classList.add("is-revealed");
-      observer.disconnect();
-    });
-  }, { threshold: 0.18 });
-
-  observer.observe(section);
-}
-
-window.addEventListener("load", initCompactValourSteps);
-
-function initValourScrollStory() {
-  const story = document.querySelector("[data-scroll-story]");
-  if (!story || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const images = Array.from(story.querySelectorAll(".valour-scroll-story__image"));
-  const chapters = Array.from(story.querySelectorAll(".valour-scroll-story__chapter"));
-  const dots = Array.from(story.querySelectorAll(".valour-scroll-story__dot"));
-  const intro = story.querySelector(".valour-scroll-story__intro");
-  const media = story.querySelector(".valour-scroll-story__media");
-  const totalStages = chapters.length + 1;
-  let activeIndex = -1;
-  function setActive(index) {
-    const nextIndex = Math.max(0, Math.min(totalStages - 1, index));
-    if (nextIndex === activeIndex) return;
-    activeIndex = nextIndex;
-    intro?.classList.toggle("is-active", nextIndex === 0);
-    media?.classList.toggle("is-visible", nextIndex > 0);
-    images.forEach((image, itemIndex) => image.classList.toggle("is-active", itemIndex === nextIndex - 1));
-    chapters.forEach((chapter, itemIndex) => chapter.classList.toggle("is-active", itemIndex === nextIndex - 1));
-    dots.forEach((dot, itemIndex) => {
-      const isActive = itemIndex === nextIndex - 1;
-      dot.classList.toggle("is-active", isActive);
-      if (isActive) dot.setAttribute("aria-current", "step");
-      else dot.removeAttribute("aria-current");
-    });
-  }
-  function updateStory() {
-    const rect = story.getBoundingClientRect();
-    const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-    const progress = Math.max(0, Math.min(0.999, -rect.top / travel));
-    setActive(Math.floor(progress * totalStages));
-  }
-  let ticking = false;
-  window.addEventListener("scroll", () => {
-    if (ticking) return;
-    ticking = true;
-    window.requestAnimationFrame(() => { updateStory(); ticking = false; });
+  window.addEventListener("scroll", requestScrollUpdate, { passive: true });
+  window.addEventListener("touchend", ensureActiveVideosPlaying, { passive: true });
+  window.addEventListener("pointerup", ensureActiveVideosPlaying, { passive: true });
+  window.addEventListener("scrollend", ensureActiveVideosPlaying, { passive: true });
+  window.addEventListener("focus", ensureActiveVideosPlaying);
+  window.setInterval(ensureActiveVideosPlaying, 900);
+  window.addEventListener("resize", () => {
+    measureSteps();
+    requestScrollUpdate();
   }, { passive: true });
-  window.addEventListener("resize", updateStory, { passive: true });
-  dots.forEach((dot) => {
-    dot.addEventListener("click", () => {
-      const travel = Math.max(1, story.offsetHeight - window.innerHeight);
-      const stageIndex = Number(dot.dataset.storyIndex);
-      const targetProgress = (stageIndex + 0.5) / totalStages;
-      window.scrollTo({ top: story.offsetTop + (travel * targetProgress), behavior: "smooth" });
-    });
-  });
-  setActive(0);
-  updateStory();
+  measureSteps();
+  setActiveStep(0, true);
+  setActiveCopy(0, true);
+  setPlayingVideos([0]);
+  updateFromScroll();
+  const directTarget = window.location.hash === "#valour-stack-story"
+    ? section
+    : items.find((item) => `#${item.id}` === window.location.hash);
+  if (directTarget) {
+    window.requestAnimationFrame(() => directTarget.scrollIntoView({ block: "start" }));
+  }
 }
 
-window.addEventListener("load", initValourScrollStory);
+// Start the first story video as soon as the markup is available. Waiting for
+// window.load made this above-the-fold visual depend on every page asset.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initValourStackStory, { once: true });
+} else {
+  initValourStackStory();
+}
+
   </script>
 
 </body>
