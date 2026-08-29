@@ -5027,16 +5027,16 @@
   .valour-stack-card.is-video-ready::before, .valour-stack-card.is-video-ready::after { opacity: 0; visibility: hidden; }
   @media (max-width: 700px) {
     .valour-hero .container_slider { padding-bottom: 1.5rem; }
-    .valour-stack-story { height: 180svh; min-height: 64rem; }
+    .valour-stack-story { height: 260svh; min-height: 82rem; }
     .valour-stack-story__sticky { top: 8svh; height: 84svh; min-height: 32rem; }
-    .valour-stack-story__scene { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(11rem, auto); gap: 20px; align-content: start; padding: clamp(2rem, 15svh, 13rem) 0.35rem 1.5rem 1.35rem; box-sizing: border-box; }
-    .valour-stack-story__copy { position: relative; z-index: 4; grid-column: 1; grid-row: 2; width: calc(100% - 1rem); min-height: 11rem; margin: 0; padding: 0; justify-self: center; order: initial; }
+    .valour-stack-story__scene { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(1.5rem, 4svh, 2.25rem); padding: max(1rem, env(safe-area-inset-top)) 1.25rem max(1rem, env(safe-area-inset-bottom)); box-sizing: border-box; }
+    .valour-stack-story__copy { position: relative; z-index: 4; order: 2; flex: 0 0 clamp(10.5rem, 23svh, 12.5rem); width: 100%; min-height: 0; margin: 0; padding: 0; }
     .valour-stack-story__progress { top: 50%; left: 0; display: flex; height: 9.5rem; gap: 8px; transform: translate(-0.35rem, -50%); }
-    .valour-stack-story__deck { z-index: 1; grid-column: 1; grid-row: 1; width: min(66vw, 19rem, calc(42svh * 0.8)); max-width: calc(100vw - 6rem); margin: 0; justify-self: center; order: initial; }
-    .valour-stack-story__deck.is-loading { overflow: clip; border-radius: clamp(1.25rem, 5vw, 2rem); }
-    .valour-stack-card:not(.is-video-ready) { transform: none !important; border-radius: inherit; box-shadow: none; }
+    .valour-stack-story__deck { z-index: 1; order: 1; flex: 0 0 auto; width: min(66vw, 19rem, calc(40svh * 0.8)); max-width: calc(100vw - 5.5rem); margin: 0 auto; overflow: visible; }
+    .valour-stack-story__deck.is-loading { border-radius: clamp(1.25rem, 5vw, 2rem); }
+    .valour-stack-card:not(.is-video-ready) { border-radius: inherit; }
     .valour-stack-card:first-child { transform: translate(0, 0) rotate(-1.4deg) scale(0.98); }
-    .valour-stack-story__step { inset: 0 0 auto; transform: none; text-align: center;        margin-top: 13px; }
+    .valour-stack-story__step, .valour-stack-story__step:first-child { inset: 0 0 auto; transform: none; text-align: center; margin-top: 0; }
     .valour-stack-story__step h3 { max-width: 12ch; margin-inline: auto; font-size: clamp(2.7rem, 13vw, 4.1rem); }
     .valour-stack-story__step p:last-child { margin: 0.75rem auto 0; font-size: 0.86rem; }
   }
@@ -5175,7 +5175,7 @@
         </header>
       </div>
     </section>
-    <section class="valour-stack-story" data-valour-stack-story aria-label="Cook in three steps">
+    <section class="valour-stack-story" id="valour-stack-story" data-valour-stack-story aria-label="Cook in three steps">
       <div class="valour-stack-story__sticky">
         <div class="valour-stack-story__inner">
           <div class="valour-stack-story__scene">
@@ -7376,17 +7376,12 @@ function initValourStackStory() {
   gsap.registerPlugin(ScrollTrigger);
   const scene = section.querySelector(".valour-stack-story__scene");
   const deck = section.querySelector(".valour-stack-story__deck");
-  const progressSteps = Array.from(
-    section.querySelectorAll(".valour-stack-story__progress-step"),
-  );
+  const progressSteps = Array.from(section.querySelectorAll(".valour-stack-story__progress-step"));
   const cards = gsap.utils.toArray(section.querySelectorAll(".valour-stack-card"));
   const steps = gsap.utils.toArray(section.querySelectorAll(".valour-stack-story__step"));
   const videos = cards.map((card) => card.querySelector("video"));
-  const useSequencedMobileSteps = window.matchMedia("(max-width: 700px)").matches;
-  const firstCardRestState = useSequencedMobileSteps
-    ? { x: 0, y: 0, scale: 0.98, rotation: -1.4 }
-    : { x: -14, y: -64, scale: 0.96, rotation: -2.5 };
   let activeVideoIndex = 0;
+  let activeStepIndex = -1;
 
   function playActiveVideo() {
     const video = videos[activeVideoIndex];
@@ -7427,14 +7422,15 @@ function initValourStackStory() {
       playActiveVideo();
     });
 
-    video.addEventListener("pause", () => {
-      if (index !== activeVideoIndex || document.hidden) return;
-      window.setTimeout(playActiveVideo, 80);
+    video.addEventListener("canplay", () => {
+      if (index === activeVideoIndex) playActiveVideo();
     });
   });
 
   function setActiveVideo(index) {
-    activeVideoIndex = index < 0 ? 0 : index;
+    const nextVideoIndex = Math.max(0, Math.min(videos.length - 1, index));
+    if (nextVideoIndex === activeVideoIndex && !videos[activeVideoIndex]?.paused) return;
+    activeVideoIndex = nextVideoIndex;
     videos.forEach((video, videoIndex) => {
       if (!video) return;
       if (videoIndex !== activeVideoIndex) video.pause();
@@ -7450,171 +7446,184 @@ function initValourStackStory() {
   setActiveVideo(-1);
 
   gsap.set(scene, { autoAlpha: 1 });
-  gsap.set(cards, { autoAlpha: 0, y: 90, scale: 0.92, rotation: 5 });
-  gsap.set(steps, { autoAlpha: 0, y: 28 });
-  gsap.set(cards[0], { autoAlpha: 1, ...firstCardRestState });
-  gsap.set(steps[0], { autoAlpha: 1, y: 0 });
 
-  const cardStates = [
-    [
-      { autoAlpha: 1, ...firstCardRestState },
-      { autoAlpha: 0, x: 0, y: 90, scale: 0.92, rotation: 5 },
-      { autoAlpha: 0, x: 0, y: 90, scale: 0.92, rotation: 5 }
-    ],
-    [
-      { autoAlpha: 1, x: -24, y: -24, scale: 0.93, rotation: -2.5 },
-      { autoAlpha: 1, x: 0, y: 0, scale: 0.98, rotation: 1.4 },
-      { autoAlpha: 0, x: 0, y: 90, scale: 0.92, rotation: 5 }
-    ],
-    [
-      { autoAlpha: 1, x: -30, y: -30, scale: 0.9, rotation: -2.5 },
-      { autoAlpha: 1, x: -8, y: -8, scale: 0.95, rotation: 1.4 },
-      {
-        autoAlpha: 1,
-        x: useSequencedMobileSteps ? 0 : 14,
-        y: useSequencedMobileSteps ? 0 : 14,
-        scale: 1,
-        rotation: useSequencedMobileSteps ? 0 : -0.8,
-      }
-    ]
-  ];
-  let activeStepIndex = 0;
-
-  function showStep(index, immediate = false) {
+  function updateActiveStep(index) {
     const nextIndex = Math.max(0, Math.min(2, index));
-    if (!immediate && nextIndex === activeStepIndex) {
-      setActiveVideo(nextIndex);
-      return;
-    }
-    const previousIndex = activeStepIndex;
-    const direction = Math.sign(nextIndex - previousIndex) || 1;
+    if (nextIndex === activeStepIndex) return;
     activeStepIndex = nextIndex;
-    gsap.killTweensOf(cards);
-    gsap.killTweensOf(steps);
     progressSteps.forEach((stepControl, controlIndex) => {
       const isActive = controlIndex === nextIndex;
       stepControl.classList.toggle("is-active", isActive);
       if (isActive) stepControl.setAttribute("aria-current", "step");
       else stepControl.removeAttribute("aria-current");
     });
-    const cardDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.96 : 0.72);
-    const copyDuration = immediate ? 0 : (useSequencedMobileSteps ? 0.44 : 0.5);
-    const travelDistance = useSequencedMobileSteps ? 48 : 58;
-
-    cards.forEach((card, cardIndex) => {
-      const targetState = cardStates[nextIndex][cardIndex];
-      const isIncomingCard = cardIndex === nextIndex && !immediate;
-
-      if (isIncomingCard) {
-        gsap.fromTo(
-          card,
-          {
-            autoAlpha: 0,
-            x: targetState.x || 0,
-            y: (targetState.y || 0) + direction * travelDistance,
-            scale: targetState.scale || 1,
-            rotation: targetState.rotation || 0,
-          },
-          {
-            ...targetState,
-            duration: cardDuration,
-            ease: "power3.out",
-            overwrite: "auto",
-          },
-        );
-      } else {
-        gsap.to(card, {
-          ...targetState,
-          duration: cardDuration,
-          ease: "power3.out",
-          overwrite: "auto",
-        });
-      }
-    });
-    steps.forEach((step, stepIndex) => {
-      const isActive = stepIndex === nextIndex;
-      if (isActive && !immediate) {
-        gsap.set(step, { y: direction * 34, autoAlpha: 0 });
-      }
-      gsap.to(step, {
-        autoAlpha: isActive ? 1 : 0,
-        y: isActive ? 0 : -direction * 28,
-        duration: copyDuration,
-        ease: "power3.out",
-        overwrite: "auto"
-      });
-    });
     setActiveVideo(nextIndex);
   }
 
-  function stepFromProgress(progress, direction) {
-    if (useSequencedMobileSteps) {
-      if (direction < 0) {
-        if (progress < 0.19) return 0;
-        if (progress < 0.41) return 1;
-        return 2;
-      }
-      if (progress < 0.23) return 0;
-      if (progress < 0.46) return 1;
-      return 2;
-    }
+  updateActiveStep(0);
 
-    if (direction < 0) {
-      if (progress < 0.20) return 0;
-      if (progress < 0.50) return 1;
-      return 2;
-    }
-    if (progress < 0.28) return 0;
-    if (progress < 0.58) return 1;
-    return 2;
-  }
-
-  function requestStep(index) {
-    const targetIndex = Math.max(0, Math.min(2, index));
-    if (targetIndex === activeStepIndex) return;
-    const sequentialIndex = activeStepIndex + Math.sign(targetIndex - activeStepIndex);
-    showStep(sequentialIndex);
-  }
-
-  showStep(0, true);
-  setActiveVideo(-1);
-
-  const storyScrollTrigger = ScrollTrigger.create({
-    trigger: section,
-    // On mobile, animate only while the CSS sticky stage is actually pinned.
-    // This keeps the cards stationary on screen as they stack.
-    start: useSequencedMobileSteps ? "top 8%" : "top 82%",
-    end: useSequencedMobileSteps ? "bottom 92%" : "bottom 88%",
-    invalidateOnRefresh: true,
-    onEnter: (self) => requestStep(stepFromProgress(self.progress, 1)),
-    onEnterBack: (self) => requestStep(stepFromProgress(self.progress, -1)),
-    onUpdate: (self) => requestStep(stepFromProgress(self.progress, self.direction)),
-    onLeave: () => {
-      showStep(2);
-      setActiveVideo(2);
+  const media = gsap.matchMedia();
+  media.add(
+    {
+      isMobile: "(max-width: 700px)",
+      isDesktop: "(min-width: 701px)"
     },
-    onLeaveBack: () => {
-      showStep(0);
-      setActiveVideo(-1);
-    }
-  });
+    (context) => {
+      const isMobile = context.conditions.isMobile;
+      const firstCardState = isMobile
+        ? { autoAlpha: 1, x: 0, y: 0, scale: 0.98, rotation: -1.4 }
+        : { autoAlpha: 1, x: -14, y: -64, scale: 0.96, rotation: -2.5 };
+      const incomingY = isMobile ? 54 : 72;
+      const phase = {
+        stepOneHold: 1.15,
+        firstTransition: 0.55,
+        stepTwoHold: 1.15,
+        secondTransition: 0.55,
+        stepThreeHold: 1.4
+      };
+      const firstTransitionAt = phase.stepOneHold;
+      const stepTwoAt = firstTransitionAt + phase.firstTransition;
+      const secondTransitionAt = stepTwoAt + phase.stepTwoHold;
+      const stepThreeAt = secondTransitionAt + phase.secondTransition;
+      const totalDuration = stepThreeAt + phase.stepThreeHold;
+      const firstActiveSwitch = (firstTransitionAt + phase.firstTransition * 0.5) / totalDuration;
+      const secondActiveSwitch = (secondTransitionAt + phase.secondTransition * 0.5) / totalDuration;
+      const timelineClock = { value: 0 };
 
-  const stepScrollProgress = useSequencedMobileSteps
-    ? [0.05, 0.30, 0.50]
-    : [0.08, 0.43, 0.72];
-  progressSteps.forEach((stepControl, index) => {
-    stepControl.addEventListener("click", () => {
-      const targetScroll = storyScrollTrigger.start +
-        (storyScrollTrigger.end - storyScrollTrigger.start) * stepScrollProgress[index];
-      window.scrollTo({ top: targetScroll, behavior: "smooth" });
+      gsap.set(cards, { autoAlpha: 0, x: 0, y: incomingY, scale: 0.92, rotation: 4 });
+      gsap.set(cards[0], firstCardState);
+      gsap.set(steps, { autoAlpha: 0, y: 24 });
+      gsap.set(steps[0], { autoAlpha: 1, y: 0 });
+
+      const storyTimeline = gsap.timeline({ defaults: { ease: "none" } });
+      storyTimeline
+        .addLabel("step1", 0)
+        .to(timelineClock, { value: 1, duration: totalDuration }, 0)
+        .addLabel("toStep2", firstTransitionAt)
+        .to(cards[0], {
+          x: isMobile ? -18 : -24,
+          y: isMobile ? -18 : -24,
+          scale: 0.93,
+          rotation: -2.5,
+          duration: phase.firstTransition,
+          ease: "power2.inOut"
+        }, firstTransitionAt)
+        .to(cards[1], {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          scale: 0.98,
+          rotation: 1.4,
+          duration: phase.firstTransition,
+          ease: "power2.out"
+        }, firstTransitionAt)
+        .to(steps[0], {
+          autoAlpha: 0,
+          y: -18,
+          duration: phase.firstTransition * 0.48,
+          ease: "power1.in"
+        }, firstTransitionAt)
+        .to(steps[1], {
+          autoAlpha: 1,
+          y: 0,
+          duration: phase.firstTransition * 0.55,
+          ease: "power1.out"
+        }, firstTransitionAt + phase.firstTransition * 0.45)
+        .addLabel("step2", stepTwoAt)
+        .addLabel("toStep3", secondTransitionAt)
+        .to(cards[0], {
+          x: isMobile ? -28 : -30,
+          y: isMobile ? -28 : -30,
+          scale: 0.9,
+          rotation: -2.5,
+          duration: phase.secondTransition,
+          ease: "power2.inOut"
+        }, secondTransitionAt)
+        .to(cards[1], {
+          x: -8,
+          y: -8,
+          scale: 0.95,
+          rotation: 1.4,
+          duration: phase.secondTransition,
+          ease: "power2.inOut"
+        }, secondTransitionAt)
+        .to(cards[2], {
+          autoAlpha: 1,
+          x: isMobile ? 0 : 14,
+          y: isMobile ? 0 : 14,
+          scale: 1,
+          rotation: isMobile ? 0 : -0.8,
+          duration: phase.secondTransition,
+          ease: "power2.out"
+        }, secondTransitionAt)
+        .to(steps[1], {
+          autoAlpha: 0,
+          y: -18,
+          duration: phase.secondTransition * 0.48,
+          ease: "power1.in"
+        }, secondTransitionAt)
+        .to(steps[2], {
+          autoAlpha: 1,
+          y: 0,
+          duration: phase.secondTransition * 0.55,
+          ease: "power1.out"
+        }, secondTransitionAt + phase.secondTransition * 0.45)
+        .addLabel("step3", stepThreeAt);
+
+      storyTimeline.eventCallback("onUpdate", () => {
+        const timelineProgress = storyTimeline.progress();
+        updateActiveStep(
+          timelineProgress < firstActiveSwitch ? 0 :
+          timelineProgress < secondActiveSwitch ? 1 : 2
+        );
+      });
+
+      const storyScrollTrigger = ScrollTrigger.create({
+        trigger: section,
+        animation: storyTimeline,
+        start: isMobile ? "top 8%" : "top 82%",
+        end: isMobile ? "bottom 92%" : "bottom 88%",
+        scrub: isMobile ? 0.32 : 0.45,
+        invalidateOnRefresh: true,
+        onLeave: () => updateActiveStep(2),
+        onLeaveBack: () => updateActiveStep(0)
+      });
+
+      const stepScrollProgress = [
+        (phase.stepOneHold * 0.5) / totalDuration,
+        (stepTwoAt + phase.stepTwoHold * 0.5) / totalDuration,
+        (stepThreeAt + phase.stepThreeHold * 0.5) / totalDuration
+      ];
+      const progressHandlers = progressSteps.map((stepControl, index) => {
+        const handler = () => {
+          const targetScroll = storyScrollTrigger.start +
+            (storyScrollTrigger.end - storyScrollTrigger.start) * stepScrollProgress[index];
+          window.scrollTo({ top: targetScroll, behavior: "smooth" });
+        };
+        stepControl.addEventListener("click", handler);
+        return handler;
+      });
+
+      return () => {
+        progressSteps.forEach((stepControl, index) => {
+          stepControl.removeEventListener("click", progressHandlers[index]);
+        });
+        storyScrollTrigger.kill();
+        storyTimeline.kill();
+      };
     });
-  });
 
   videos.forEach((video) => {
     video?.addEventListener("loadedmetadata", () => ScrollTrigger.refresh(), { once: true });
   });
+  let lastLayoutWidth = window.innerWidth;
+  const refreshStoryLayout = () => {
+    if (window.innerWidth === lastLayoutWidth) return;
+    lastLayoutWidth = window.innerWidth;
+    window.requestAnimationFrame(() => ScrollTrigger.refresh());
+  };
+  window.addEventListener("resize", refreshStoryLayout);
   window.requestAnimationFrame(() => ScrollTrigger.refresh());
-  window.setTimeout(() => ScrollTrigger.refresh(), 2800);
 }
 
 window.addEventListener("load", initValourStackStory);
