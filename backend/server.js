@@ -911,7 +911,7 @@ async function sendVideoMessage(phone, videoUrl, caption) {
         message: {
           type: "video",
           url: videoUrl,
-          caption,
+          ...(caption ? { caption } : {}),
         },
       }),
       {
@@ -1923,7 +1923,7 @@ async function sendMainMenu(phone) {
     type: "list",
     title: "Welcome to VALOUR",
     body: "Choose what you would like to do.",
-    footer: "Send MENU at any time to return here.",
+    footer: "Choose an option below.",
     msgid: "valour_main_menu",
     globalButtons: [{ type: "text", title: "Choose an option" }],
     items: [
@@ -2159,14 +2159,14 @@ function formatPaymentFailureMessage(order, reason = "") {
     order.razorpayOrderId ||
     "your order";
   const reasonLine = reason ? `\nReason: ${String(reason).slice(0, 180)}` : "";
-  return `Your VALOUR payment was not successful.\n\nOrder: ${reference}\nAmount: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}${reasonLine}\n\nNo order has been confirmed. You can retry the payment or reply MENU for help.`;
+  return `Your VALOUR payment was not successful.\n\nOrder: ${reference}\nAmount: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}${reasonLine}\n\nNo order has been confirmed. You can retry using the payment page.`;
 }
 
 async function sendPaymentFailureWhatsapp(order, reason) {
   const recipients = getWhatsappOrderRecipients(order);
   await Promise.allSettled(
     recipients.map((recipient) =>
-      sendMessage(recipient, formatPaymentFailureMessage(order, reason)),
+      sendMainMenuButton(recipient, formatPaymentFailureMessage(order, reason)),
     ),
   );
 }
@@ -2452,6 +2452,24 @@ function readReviewToken(token = "", now = Date.now()) {
   } catch (_err) {
     return null;
   }
+}
+
+async function sendActionButtons(phone, text, options, msgid = "valour_actions") {
+  return sendQuickReplyMessage(phone, {
+    type: "quick_reply",
+    msgid,
+    content: { type: "text", text },
+    options,
+  });
+}
+
+async function sendMainMenuButton(phone, text) {
+  return sendActionButtons(
+    phone,
+    text,
+    [{ type: "text", title: "Main menu", postbackText: "MENU" }],
+    "valour_return_to_menu",
+  );
 }
 
 function createPublicReviewToken() {
@@ -2892,7 +2910,7 @@ async function startSupportFlow({ session, phone }) {
     type: "list",
     title: "VALOUR Customer Care",
     body: "How can we help? Choose the option that best matches your request.",
-    footer: "Send MENU at any time to return to the main menu.",
+    footer: "Choose a help topic below.",
     msgid: "valour_customer_care_menu",
     globalButtons: [{ type: "text", title: "Choose help topic" }],
     items: [{
@@ -2912,7 +2930,10 @@ async function handleSupportCategory({ session, text, phone }) {
   const category = parseSupportCategory(text);
 
   if (!category) {
-    await sendMessage(phone, "Please choose a Customer Care option from the list above, or send MENU to return.");
+    await sendMainMenuButton(
+      phone,
+      "Please choose a Customer Care option from the list above.",
+    );
     return;
   }
 
@@ -3123,12 +3144,20 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
         language,
         parameters,
       );
-      results.push({ recipient, sent: true, providerMessageId: getProviderMessageId(result) });
+      const providerMessageId = getProviderMessageId(result);
+      const providerStatus = String(result?.status || "").toLowerCase();
+      if (!providerMessageId || ["error", "failed", "rejected"].includes(providerStatus)) {
+        throw new Error(
+          `Gupshup did not accept the Customer Care alert: ${JSON.stringify(result).slice(0, 700)}`,
+        );
+      }
+      results.push({ recipient, sent: true, providerMessageId });
       console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_SENT]", {
         caseId,
         recipient: maskWhatsappPhone(recipient),
         customer: maskWhatsappPhone(phone),
-        providerMessageId: getProviderMessageId(result),
+        providerMessageId,
+        providerStatus: providerStatus || "submitted",
       });
     } catch (error) {
       results.push({ recipient, sent: false, error: String(error.message).slice(0, 300) });
@@ -3215,10 +3244,10 @@ async function createSupportCase({ session, user, phone, details }) {
 Reference: ${caseId}
 Issue: ${session.support_category?.label || "Customer care request"}
 
-Our team will review it and follow up on WhatsApp. Please keep the product and packaging until the request is resolved.
-
-Reply MENU to return.`,
+Our team will review it and follow up on WhatsApp. Please keep the product and packaging until the request is resolved.`,
   );
+
+  await sendMainMenuButton(phone, "What would you like to do next?");
 }
 
 function sanitizeReassuranceText(text = "") {
@@ -3396,7 +3425,7 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "guided_cooking") {
-    return "Your VALOUR tutorial is above. Send VIDEO only if you would like to receive it again, or MENU for other options.";
+    return "Your VALOUR tutorial is above. Use the available buttons to watch it again or choose another option.";
   }
 
   if (session.current_state === "post_cook_feedback") {
@@ -3404,7 +3433,7 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "support_select_category") {
-    return "To continue with Customer Care, choose a help topic from the list above, or send MENU to leave support.";
+    return "To continue with Customer Care, choose a help topic from the list above.";
   }
 
   if (session.current_state === "support_awaiting_order_id") {
@@ -3419,7 +3448,7 @@ async function getResumePrompt(session) {
     return "To continue with Customer Care, describe the issue in one message.";
   }
 
-  return "Reply MENU to see all options.";
+  return "Choose an option from the main menu.";
 }
 
 function isValidBrandUnderstanding(result) {
@@ -3678,17 +3707,12 @@ async function sendProductDetails(phone, product) {
 
 ${product.name} is made for ${product.recipeName}.
 
-${description}
-
-1. Start cooking
-2. Order online
-3. Back`;
+${description}`;
   const imageUrl = getWhatsappProductImageUrl();
 
   if (imageUrl) {
     try {
       await sendImageMessage(phone, imageUrl, content);
-      return;
     } catch (error) {
       console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
         recipient: maskWhatsappPhone(phone),
@@ -3696,9 +3720,39 @@ ${description}
         error: error.response?.data || error.message,
         fallback: "text",
       });
+      await sendMessage(phone, content);
     }
+  } else {
+    await sendMessage(phone, content);
   }
-  await sendMessage(phone, content);
+
+  await sendQuickReplyMessage(phone, {
+    type: "quick_reply",
+    msgid: "valour_product_actions",
+    content: {
+      type: "text",
+      header: "Velvety Butter Chicken",
+      text: "What would you like to do next?",
+      caption: "Choose an option below.",
+    },
+    options: [
+      {
+        type: "text",
+        title: "Start cooking",
+        postbackText: "PRODUCT_START_COOKING",
+      },
+      {
+        type: "url",
+        title: "Order online",
+        url: getProductSectionUrl(),
+      },
+      {
+        type: "text",
+        title: "Back",
+        postbackText: "PRODUCT_BACK",
+      },
+    ],
+  });
 }
 
 async function handleProductCatalog({ session, text, phone }) {
@@ -3746,7 +3800,7 @@ async function handleProductDetails({ session, text, phone, userId }) {
     return;
   }
 
-  if (lower === "1" || lower.includes("start")) {
+  if (lower === "product_start_cooking" || lower === "1" || lower.includes("start")) {
     await updateSession(session._id, { current_state: "product_selection" });
     await handleProductSelection({
       session: { ...session, current_state: "product_selection" },
@@ -3760,9 +3814,9 @@ async function handleProductDetails({ session, text, phone, userId }) {
     await sendProductOrderLink({ session, phone });
     return;
   }
-  if (lower === "3" || lower.includes("back")) {
-    await updateSession(session._id, { current_state: "product_catalog" });
-    await sendProductCatalog(phone);
+  if (lower === "product_back" || lower === "3" || lower.includes("back")) {
+    await resetToIdle(session._id);
+    await sendMainMenu(phone);
     return;
   }
 
@@ -3790,7 +3844,7 @@ function getCookingIntroVideoUrl(product) {
   return configuredUrl || compatibleMp4Url;
 }
 
-async function sendCookingIntro(phone, product) {
+async function sendCookingIntro(phone, product, { includeCaption = true } = {}) {
   const videoUrl = getCookingIntroVideoUrl(product);
 
   if (!videoUrl) {
@@ -3806,8 +3860,9 @@ async function sendCookingIntro(phone, product) {
       videoUrl,
       format: /\.mp4(?:\?|$)/i.test(videoUrl) ? "mp4" : "unknown",
     });
-    const caption =
-      "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice.";
+    const caption = includeCaption
+      ? "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice."
+      : "";
     const result = await sendVideoMessage(phone, videoUrl, caption);
     return { sent: true, result };
   } catch (err) {
@@ -3820,15 +3875,15 @@ async function sendCookingIntro(phone, product) {
 }
 
 async function sendQuantityQuestion(phone, product) {
-  await sendMessage(
+  await sendActionButtons(
     phone,
-    `How much ${product?.primaryIngredient || "primary ingredient"} are you cooking?
-
-1. 250g
-2. 500g
-3. 1kg
-
-Reply MENU to return.`,
+    `How much ${product?.primaryIngredient || "primary ingredient"} are you cooking?`,
+    [
+      { type: "text", title: "250g", postbackText: "250g" },
+      { type: "text", title: "500g", postbackText: "500g" },
+      { type: "text", title: "1kg", postbackText: "1kg" },
+    ],
+    "valour_quantity_options",
   );
 }
 
@@ -3935,8 +3990,16 @@ Watch the video to see how.`;
   }
 }
 
-async function beginTutorialCooking({ session, phone, userId, product }) {
-  const videoResult = await sendCookingIntro(phone, product);
+async function beginTutorialCooking({
+  session,
+  phone,
+  userId,
+  product,
+  suppressVideoCaption = false,
+}) {
+  const videoResult = await sendCookingIntro(phone, product, {
+    includeCaption: !suppressVideoCaption,
+  });
 
   await updateSession(session._id, {
     current_state: "guided_cooking",
@@ -4169,15 +4232,15 @@ async function askQuantityAfterScenario({ session, phone }) {
     current_step_index: 0,
   });
 
-  await sendMessage(
+  await sendActionButtons(
     phone,
-    `How much chicken are you cooking?
-
-1. 250g
-2. 500g
-3. 1kg
-
-Reply MENU to go back.`,
+    "How much chicken are you cooking?",
+    [
+      { type: "text", title: "250g", postbackText: "250g" },
+      { type: "text", title: "500g", postbackText: "500g" },
+      { type: "text", title: "1kg", postbackText: "1kg" },
+    ],
+    "valour_chicken_quantity",
   );
 }
 
@@ -4256,7 +4319,12 @@ async function handleCookingScenario({ session, text, phone, userId }) {
   await askQuantityAfterScenario({ session, phone });
 }
 
-async function startCookingFlow({ session, phone, userId }) {
+async function startCookingFlow({
+  session,
+  phone,
+  userId,
+  suppressVideoCaption = false,
+}) {
   const product = PRODUCTS.velvety_butter;
   await updateSession(session._id, {
     current_state: "guided_cooking",
@@ -4286,7 +4354,13 @@ async function startCookingFlow({ session, phone, userId }) {
     sessionId: session._id,
     leadScoreDelta: getLeadScoreDelta("", "viewed_cooking_demo"),
   });
-  await beginTutorialCooking({ session, phone, userId, product });
+  await beginTutorialCooking({
+    session,
+    phone,
+    userId,
+    product,
+    suppressVideoCaption,
+  });
 }
 
 function parseQuantity(text) {
@@ -4476,9 +4550,15 @@ async function handleGuidedCooking({ session, text, phone, userId }) {
     await completeCooking({ session, phone, userId });
     return;
   }
-  await sendMessage(
+  await sendActionButtons(
     phone,
-    "I’m here if you need anything. Send VIDEO to receive the tutorial again, HELP for assistance, or MENU for other options.",
+    "What would you like to do?",
+    [
+      { type: "text", title: "Watch video", postbackText: "VIDEO" },
+      { type: "text", title: "Need help", postbackText: "HELP" },
+      { type: "text", title: "Main menu", postbackText: "MENU" },
+    ],
+    "valour_cooking_actions",
   );
 }
 
@@ -4583,11 +4663,9 @@ If you’d like personal help, reply HELP and our team will assist you.`
 
   if (lower === "2" || lower.includes("strong")) {
     await recordPostCookFeedback({ session, userId, feedbackType });
-    await sendMessage(
+    await sendMainMenuButton(
       phone,
-      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.
-
-Reply MENU to return.`,
+      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.`,
     );
     await resetToIdle(session._id);
     return;
@@ -4595,11 +4673,9 @@ Reply MENU to return.`,
 
   if (lower === "3" || lower.includes("mild")) {
     await recordPostCookFeedback({ session, userId, feedbackType });
-    await sendMessage(
+    await sendMainMenuButton(
       phone,
-      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.
-
-Reply MENU to return.`,
+      `Thank you. We have recorded your feedback for ${PRODUCTS[session.selected_product]?.name || "this VALOUR product"}.`,
     );
     await resetToIdle(session._id);
     return;
@@ -5031,9 +5107,14 @@ async function handleWhatsappOrderState({ session, text, phone }) {
         "WhatsApp payment link creation failed",
         err.response?.data || err.message,
       );
-      return sendMessage(
+      return sendActionButtons(
         phone,
-        "We could not create the payment link right now. Please try PAY again in a moment or reply MENU for help.",
+        "We could not create the payment link right now. What would you like to do?",
+        [
+          { type: "text", title: "Try payment again", postbackText: "PAY" },
+          { type: "text", title: "Main menu", postbackText: "MENU" },
+        ],
+        "valour_payment_retry",
       );
     }
   }
@@ -5143,7 +5224,12 @@ async function handleMainMenuAction({ action, session, user, phone }) {
       { phone: normalizeWhatsappRecipient(phone), trigger: "cooking_reminder" },
       "customer_started_cooking",
     );
-    await startCookingFlow({ session, phone, userId: user._id });
+    await startCookingFlow({
+      session,
+      phone,
+      userId: user._id,
+      suppressVideoCaption: true,
+    });
     return true;
   }
   if (action === "explore") {
@@ -5252,10 +5338,50 @@ async function processIncomingMessage(message) {
   });
 
   if (!text) {
-    await sendMessage(
+    await sendMainMenuButton(
       phone,
-      "Please send a text reply. Reply MENU for options.",
+      "We could not read that message. Choose Main menu to continue.",
     );
+    return;
+  }
+
+  // Navigation overrides every flow. Once support is active, its replies must
+  // be handled before generic intent detection; otherwise an issue such as
+  // "need help" restarts support instead of creating the case.
+  if (matchesAny(lower, ["menu", "restart", "start over", "stop", "cancel"])) {
+    await resetToIdle(session._id);
+    await sendMainMenu(phone);
+    return;
+  }
+
+  const earlyMainMenuAction = getMainMenuAction(text);
+  if (earlyMainMenuAction) {
+    await handleMainMenuAction({
+      action: earlyMainMenuAction,
+      session: activeSession,
+      user,
+      phone,
+    });
+    return;
+  }
+
+  if (activeSession.current_state === "support_select_category") {
+    await handleSupportCategory({ session: activeSession, text, phone });
+    return;
+  }
+
+  if (activeSession.current_state === "support_awaiting_order_id") {
+    await handleSupportOrderId({ session: activeSession, text, phone });
+    return;
+  }
+
+  if (activeSession.current_state === "support_awaiting_details") {
+    await createSupportCase({
+      session: activeSession,
+      user,
+      phone,
+      details: text,
+    });
     return;
   }
 
