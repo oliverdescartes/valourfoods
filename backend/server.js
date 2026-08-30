@@ -300,6 +300,8 @@ function matchesAny(text, options) {
   return options.includes(normalizeText(text));
 }
 
+const WHATSAPP_ROUTER_VERSION = "menu-routing-v3";
+
 function compactSignalFields(fields = {}) {
   return Object.fromEntries(
     Object.entries(fields)
@@ -357,6 +359,7 @@ function isStartCookingIntent(text = "") {
 
   return (
     matchesAny(lower, [
+      "menu_cook",
       "1",
       "start",
       "start cooking",
@@ -1713,9 +1716,17 @@ function parseGupshupV2Webhook(body = {}) {
     payload.sender?.phone ||
     payload.phone ||
     inner.sender?.phone;
+  const menuPostback = resolveMainMenuPostback(
+    inner.title,
+    inner.text,
+    inner.postbackText,
+    inner.body,
+    inner.payload,
+  );
   const text =
-    inner.text ||
+    menuPostback ||
     inner.postbackText ||
+    inner.text ||
     inner.title ||
     inner.body ||
     inner.payload ||
@@ -1906,31 +1917,31 @@ async function sendMainMenu(phone) {
             type: "text",
             title: "Cook Butter Chicken",
             description: "Watch the VALOUR cooking tutorial",
-            postbackText: "1",
+            postbackText: "MENU_COOK",
           },
           {
             type: "text",
             title: "Explore the product",
             description: "Discover the Liquid Spice",
-            postbackText: "2",
+            postbackText: "MENU_EXPLORE",
           },
           {
             type: "text",
             title: "Buy now",
             description: "Start a WhatsApp order",
-            postbackText: "3",
+            postbackText: "MENU_BUY",
           },
           {
             type: "text",
             title: "Track an order",
             description: "View an existing order update",
-            postbackText: "4",
+            postbackText: "MENU_TRACK",
           },
           {
             type: "text",
             title: "Customer care",
             description: "Get help from VALOUR",
-            postbackText: "5",
+            postbackText: "MENU_SUPPORT",
           },
         ],
       },
@@ -3452,13 +3463,18 @@ async function sendProductCatalog(phone) {
   await sendProductDetails(phone, PRODUCTS.velvety_butter);
 }
 
+function getWhatsappProductImageUrl() {
+  if (process.env.WHATSAPP_PRODUCT_IMAGE_URL) {
+    return String(process.env.WHATSAPP_PRODUCT_IMAGE_URL).trim();
+  }
+  if (!process.env.PUBLIC_SITE_URL) return "";
+  return `${process.env.PUBLIC_SITE_URL.replace(/\/$/, "")}/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp`;
+}
+
 async function sendProductDetails(phone, product) {
   const description =
     "You still cook the chicken and finish the dish. VALOUR simplifies the curry-base preparation and helps create a rich, balanced gravy.";
-
-  await sendMessage(
-    phone,
-    `${product.name}
+  const content = `${product.name}
 
 ${product.name} is made for ${product.recipeName}.
 
@@ -3466,8 +3482,23 @@ ${description}
 
 1. Start cooking
 2. Buy now
-3. Back`,
-  );
+3. Back`;
+  const imageUrl = getWhatsappProductImageUrl();
+
+  if (imageUrl) {
+    try {
+      await sendImageMessage(phone, imageUrl, content);
+      return;
+    } catch (error) {
+      console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
+        recipient: maskWhatsappPhone(phone),
+        imageUrl,
+        error: error.response?.data || error.message,
+        fallback: "text",
+      });
+    }
+  }
+  await sendMessage(phone, content);
 }
 
 async function handleProductCatalog({ session, text, phone }) {
@@ -3749,10 +3780,10 @@ async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
     msgid: "valour_cooking_complete",
     content: {
       type: "text",
-      header: "Cook Butter Chicken with VALOUR",
+      header: "Your VALOUR cooking tutorial",
       text: videoWasSent
-        ? "Follow the tutorial above and enjoy an easier way to cook rich, delicious Butter Chicken. Tap Done when your dish is ready."
-        : "The tutorial video is temporarily unavailable. Tap Done only after you have finished cooking, or send VIDEO to try the tutorial again.",
+        ? "Watch the video above to cook Butter Chicken with VALOUR. When your dish is ready, tap Done below. Reply VIDEO anytime to receive the tutorial again."
+        : "The tutorial video is temporarily unavailable. Reply VIDEO to try again.",
       caption: "VALOUR makes the curry. You make it yours.",
     },
     options: [
@@ -4785,26 +4816,141 @@ async function handleWhatsappOrderState({ session, text, phone }) {
 }
 
 function getInboundMessageText(message = {}) {
+  const gupshupInner = message.gupshupPayload?.payload || {};
+  const menuPostback = resolveMainMenuPostback(
+    message.interactive?.list_reply,
+    message.interactive?.button_reply,
+    message.button,
+    message.text?.body,
+    gupshupInner,
+  );
+  if (menuPostback) return menuPostback;
+
   const value =
-    message.text?.body ||
     message.interactive?.list_reply?.id ||
     message.interactive?.list_reply?.title ||
     message.interactive?.button_reply?.id ||
     message.interactive?.button_reply?.title ||
     message.button?.payload ||
     message.button?.text ||
+    message.text?.body ||
     "";
-  const normalized = String(value).trim();
+  return String(value).trim();
+}
+
+function resolveMainMenuPostback(...values) {
   const menuSelections = {
-    "start guided cooking": "1",
-    "explore products": "2",
-    "explore valour products": "2",
-    "buy now": "3",
-    "track an order": "4",
-    "customer care": "5",
+    menu_cook: "MENU_COOK",
+    "start guided cooking": "MENU_COOK",
+    "cook butter chicken": "MENU_COOK",
+    "watch the valour cooking tutorial": "MENU_COOK",
+    menu_explore: "MENU_EXPLORE",
+    "explore the product": "MENU_EXPLORE",
+    "explore products": "MENU_EXPLORE",
+    "explore valour products": "MENU_EXPLORE",
+    menu_buy: "MENU_BUY",
+    "buy now": "MENU_BUY",
+    menu_track: "MENU_TRACK",
+    "track an order": "MENU_TRACK",
+    menu_support: "MENU_SUPPORT",
+    "customer care": "MENU_SUPPORT",
   };
 
-  return menuSelections[normalized.toLowerCase()] || normalized;
+  const candidates = [];
+  const collect = (value, depth = 0) => {
+    if (depth > 3 || value == null) return;
+    if (typeof value === "string" || typeof value === "number") {
+      candidates.push(String(value));
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item) => collect(item, depth + 1));
+      return;
+    }
+    if (typeof value === "object") {
+      ["id", "title", "text", "body", "postbackText", "description", "payload"]
+        .forEach((key) => collect(value[key], depth + 1));
+    }
+  };
+  values.forEach((value) => collect(value));
+
+  for (const value of candidates) {
+    const normalized = normalizeText(value);
+    if (menuSelections[normalized]) return menuSelections[normalized];
+    for (const [label, postback] of Object.entries(menuSelections)) {
+      if (!label.startsWith("menu_") && normalized.startsWith(`${label} `)) {
+        return postback;
+      }
+    }
+  }
+  return null;
+}
+
+function getMainMenuAction(text = "") {
+  return {
+    menu_cook: "cook",
+    menu_explore: "explore",
+    menu_buy: "buy",
+    menu_track: "track",
+    menu_support: "support",
+  }[normalizeText(text)] || null;
+}
+
+async function handleMainMenuAction({ action, session, user, phone }) {
+  console.log("[WHATSAPP][MENU_ROUTE]", {
+    routerVersion: WHATSAPP_ROUTER_VERSION,
+    recipient: maskWhatsappPhone(phone),
+    action,
+    previousState: session.current_state || "idle",
+  });
+
+  if (action === "cook") {
+    await cancelWhatsappJobs(
+      { phone: normalizeWhatsappRecipient(phone), trigger: "cooking_reminder" },
+      "customer_started_cooking",
+    );
+    await startCookingFlow({ session, phone, userId: user._id });
+    return true;
+  }
+  if (action === "explore") {
+    await updateSession(session._id, {
+      current_state: "product_catalog",
+      activationPreference: "learn_about_valour",
+      segment: "education_intent",
+    });
+    await updateUserSignals(user._id, {
+      activationPreference: "learn_about_valour",
+      segment: "education_intent",
+    });
+    await sendProductCatalog(phone);
+    return true;
+  }
+  if (action === "buy") {
+    await updateUserSignals(user._id, {
+      activationPreference: "buy_now",
+      purchaseIntent: "high",
+      segment: "buyer_intent",
+    });
+    await startWhatsappOrder({ session, phone });
+    return true;
+  }
+  if (action === "track") {
+    await startOrderTrackingFlow({ session, phone });
+    await updateUserSignals(user._id, {
+      activationPreference: "track_order",
+      segment: "tracking_intent",
+    });
+    return true;
+  }
+  if (action === "support") {
+    await startSupportFlow({ session, phone });
+    await updateUserSignals(user._id, {
+      activationPreference: "customer_care",
+      segment: "support_intent",
+    });
+    return true;
+  }
+  return false;
 }
 
 async function processIncomingMessage(message) {
@@ -4861,9 +5007,11 @@ async function processIncomingMessage(message) {
   });
 
   console.log("Incoming WhatsApp message", {
+    routerVersion: WHATSAPP_ROUTER_VERSION,
     phone,
     state: activeSession.current_state,
     text,
+    providerType: message.type || null,
   });
 
   if (!text) {
@@ -4995,12 +5143,23 @@ async function processIncomingMessage(message) {
     return;
   }
 
+  const mainMenuAction = getMainMenuAction(text);
+  if (mainMenuAction) {
+    await handleMainMenuAction({
+      action: mainMenuAction,
+      session: activeSession,
+      user,
+      phone,
+    });
+    return;
+  }
+
   if (activeSession.current_state.startsWith("order_")) {
     await handleWhatsappOrderState({ session: activeSession, text, phone });
     return;
   }
 
-  if (directOrderItems.length) {
+  if (activeSession.current_state === "idle" && directOrderItems.length) {
     await updateSession(session._id, {
       current_state: "order_delivery",
       order_cart: directOrderItems,
@@ -8613,6 +8772,9 @@ module.exports = {
     getFeedbackType,
     getFeedbackPrompt,
     getInboundMessageText,
+    getMainMenuAction,
+    resolveMainMenuPostback,
+    getWhatsappProductImageUrl,
     createOrderTrackingToken,
     createOrderPaymentToken,
     createReviewToken,
