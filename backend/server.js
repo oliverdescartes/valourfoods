@@ -8434,8 +8434,17 @@ const rootPath = path.join(__dirname, "../");
 
 // Never expose the repository root. Only explicitly public asset directories
 // and named browser files are reachable over HTTP.
-app.use("/assets", express.static(path.join(rootPath, "assets")));
-app.use("/vendor", express.static(path.join(rootPath, "vendor")));
+const staticAssetOptions = {
+  etag: true,
+  immutable: true,
+  maxAge: "1y",
+  setHeaders(res) {
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  },
+};
+
+app.use("/assets", express.static(path.join(rootPath, "assets"), staticAssetOptions));
+app.use("/vendor", express.static(path.join(rootPath, "vendor"), staticAssetOptions));
 
 const publicRootFiles = new Set([
   "admin-dashboard.html",
@@ -8458,6 +8467,9 @@ const publicRootFiles = new Set([
 
 app.get("/:publicFile", (req, res, next) => {
   if (!publicRootFiles.has(req.params.publicFile)) return next();
+  // HTML and root application files must revalidate so deployments are seen
+  // immediately; their referenced assets carry the long-lived cache policy.
+  res.setHeader("Cache-Control", "no-cache");
   return res.sendFile(path.join(rootPath, req.params.publicFile));
 });
 
@@ -8465,19 +8477,24 @@ app.get("/:publicFile", (req, res, next) => {
 // ROUTES
 // ======================
 app.get("/", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(rootPath, "index.html"));
 });
 
 app.get("/checkout", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(rootPath, "checkout.html"));
 });
 app.get("/admin", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(rootPath, "admin-dashboard.html"));
 });
 app.get("/privacy-policy", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(rootPath, "privacy-policy.html"));
 });
 app.get("/review", (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(rootPath, "review.html"));
 });
 // ======================
