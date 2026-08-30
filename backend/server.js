@@ -1668,17 +1668,34 @@ async function recordWhatsappJobStatus(status = {}) {
     { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
     { $set: updates },
   );
+  const outboundIds = [status.id, status.whatsappMessageId].filter(Boolean);
+  const outboundResult = outboundIds.length
+    ? await collections().messages.updateOne(
+        { provider_message_id: { $in: outboundIds }, direction: "outbound" },
+        {
+          $set: {
+            delivery_status: normalized,
+            delivery_status_updated_at: timestamp,
+            ...(normalized === "sent" ? { sent_at: timestamp } : {}),
+            ...(normalized === "delivered" ? { delivered_at: timestamp } : {}),
+            ...(normalized === "read" ? { read_at: timestamp } : {}),
+            ...(normalized === "failed" ? { failed_at: timestamp, provider_errors: status.errors || null } : {}),
+          },
+        },
+      )
+    : { matchedCount: 0 };
   const label = normalized === "failed" ? "FAILED" : "CALLBACK";
   console.log(`[WHATSAPP][${label}]`, {
     providerMessageId: status.id,
     whatsappMessageId: status.whatsappMessageId || null,
     status: normalized,
     matchedJob: result.matchedCount === 1,
+    matchedOutbound: outboundResult.matchedCount === 1,
     recipient: maskWhatsappPhone(status.destination || status.recipient_id),
     errors: status.errors || null,
     timestamp: timestamp.toISOString(),
   });
-  if (!result.matchedCount) {
+  if (!result.matchedCount && !outboundResult.matchedCount) {
     console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
       providerMessageId: status.id,
       status: normalized,
@@ -2983,6 +3000,149 @@ For damaged or leaking products, include what arrived and the condition of the p
   );
 }
 
+const DEFAULT_CUSTOMER_CARE_PHONES = ["917005328132", "919233054806"];
+
+function getCustomerCareAlertRecipients() {
+  const configured = String(process.env.WHATSAPP_CUSTOMER_CARE_PHONES || "")
+    .split(",")
+    .map((value) => normalizeWhatsappRecipient(value))
+    .filter(Boolean);
+  return [...new Set([...configured, ...DEFAULT_CUSTOMER_CARE_PHONES])];
+}
+
+function buildCustomerCareAlertParams({ caseId, customerName, phone, details }) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  const reference = String(caseId || "").slice(0, 100);
+  const issue = String(details || "").trim().replace(/\s+/g, " ").slice(0, 550);
+  const guide = [
+    issue,
+    "",
+    "Admin guide:",
+    `Resolved: DONE ${reference}`,
+    `Waiting: PENDING ${reference}`,
+    `Reopen: REOPEN ${reference}`,
+    `Check: STATUS ${reference}`,
+  ].join("\n").slice(0, 900);
+  return [
+    reference,
+    String(customerName || "WhatsApp customer").trim().slice(0, 200),
+    recipient ? `+${recipient}` : String(phone || "").slice(0, 30),
+    guide,
+    recipient,
+  ];
+}
+
+function parseCustomerCareAdminCommand(text = "") {
+  const match = String(text || "")
+    .trim()
+    .match(/^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\s+(VLR-[A-Z0-9-]+)$/i);
+  if (!match) return null;
+  return {
+    action: match[1].toUpperCase() === "RESOLVED" ? "DONE" : match[1].toUpperCase(),
+    caseId: match[2].toUpperCase(),
+  };
+}
+
+async function handleCustomerCareAdminCommand({ phone, text }) {
+  const sender = normalizeWhatsappRecipient(phone);
+  if (!getCustomerCareAlertRecipients().includes(sender)) return false;
+  const command = parseCustomerCareAdminCommand(text);
+  const looksLikeCommand = /^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\b/i.test(
+    String(text || "").trim(),
+  );
+  if (!command) {
+    if (!looksLikeCommand) return false;
+    await sendMessage(sender, "Use the command followed by its case reference, for example: DONE VLR-ABC123");
+    return true;
+  }
+
+  const supportCase = await collections().supportCases.findOne({ case_id: command.caseId });
+  if (!supportCase) {
+    await sendMessage(sender, `Case ${command.caseId} was not found.`);
+    return true;
+  }
+  if (command.action === "STATUS") {
+    await sendMessage(
+      sender,
+      `Case ${command.caseId}\nStatus: ${supportCase.status || "open"}\nCustomer: +${normalizeWhatsappRecipient(supportCase.phone)}\nIssue: ${String(supportCase.details || "Not recorded").slice(0, 900)}`,
+    );
+    return true;
+  }
+
+  const nextStatus = { DONE: "resolved", PENDING: "pending", REOPEN: "open" }[command.action];
+  const now = new Date();
+  await collections().supportCases.updateOne(
+    { _id: supportCase._id },
+    {
+      $set: {
+        status: nextStatus,
+        updated_at: now,
+        last_admin_action: command.action,
+        last_admin_action_by: sender,
+        last_admin_action_at: now,
+        resolved_at: nextStatus === "resolved" ? now : null,
+        resolved_by_phone: nextStatus === "resolved" ? sender : null,
+      },
+      $push: {
+        status_history: {
+          status: nextStatus,
+          action: command.action,
+          changed_by_phone: sender,
+          changed_at: now,
+        },
+      },
+    },
+  );
+  console.log("[WHATSAPP][CUSTOMER_CARE_CASE_UPDATED]", {
+    caseId: command.caseId,
+    status: nextStatus,
+    admin: maskWhatsappPhone(sender),
+  });
+  await sendMessage(sender, `Case ${command.caseId} has been marked as ${nextStatus}.`);
+  return true;
+}
+
+async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
+  const templateName =
+    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_ID ||
+    "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
+  const language = process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_LANGUAGE || "en_US";
+  const parameters = buildCustomerCareAlertParams({
+    caseId,
+    customerName: user?.profileName || user?.customerName || user?.name,
+    phone,
+    details,
+  });
+  const results = [];
+
+  for (const recipient of getCustomerCareAlertRecipients()) {
+    try {
+      const result = await sendTemplateMessage(
+        recipient,
+        templateName,
+        language,
+        parameters,
+      );
+      results.push({ recipient, sent: true, providerMessageId: getProviderMessageId(result) });
+      console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_SENT]", {
+        caseId,
+        recipient: maskWhatsappPhone(recipient),
+        customer: maskWhatsappPhone(phone),
+        providerMessageId: getProviderMessageId(result),
+      });
+    } catch (error) {
+      results.push({ recipient, sent: false, error: String(error.message).slice(0, 300) });
+      console.error("[WHATSAPP][CUSTOMER_CARE_ALERT_FAILED]", {
+        caseId,
+        recipient: maskWhatsappPhone(recipient),
+        customer: maskWhatsappPhone(phone),
+        error: error.response?.data || error.message,
+      });
+    }
+  }
+  return results;
+}
+
 async function createSupportCase({ session, user, phone, details }) {
   const { supportCases } = collections();
 
@@ -3031,6 +3191,19 @@ async function createSupportCase({ session, user, phone, details }) {
       session.support_category?.key === "damaged_missing" ? "high" : "normal",
     created_at: new Date(),
     updated_at: new Date(),
+  });
+
+  const adminAlerts = await notifyCustomerCareAdmins({
+    caseId,
+    user,
+    phone,
+    details,
+  });
+  console.log("[WHATSAPP][CUSTOMER_CARE_CASE_CREATED]", {
+    caseId,
+    customer: maskWhatsappPhone(phone),
+    alertRecipients: adminAlerts.length,
+    alertsAccepted: adminAlerts.filter((result) => result.sent).length,
   });
 
   await resetToIdle(session._id);
@@ -5033,6 +5206,10 @@ async function processIncomingMessage(message) {
   });
 
   if (!isNewMessage) {
+    return;
+  }
+
+  if (await handleCustomerCareAdminCommand({ phone, text })) {
     return;
   }
 
@@ -8828,6 +9005,9 @@ module.exports = {
     parseProductSelection,
     parseTrackingLookupDetails,
     parseSupportCategory,
+    parseCustomerCareAdminCommand,
+    getCustomerCareAlertRecipients,
+    buildCustomerCareAlertParams,
     isHumanSupportRequest,
     getFeedbackType,
     getFeedbackPrompt,
