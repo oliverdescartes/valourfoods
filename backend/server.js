@@ -1927,9 +1927,9 @@ async function sendMainMenu(phone) {
           },
           {
             type: "text",
-            title: "Buy now",
-            description: "Start a WhatsApp order",
-            postbackText: "MENU_BUY",
+            title: "Order now",
+            description: "Open the VALOUR product page",
+            postbackText: "MENU_ORDER",
           },
           {
             type: "text",
@@ -1976,6 +1976,14 @@ const SUPPORT_CATEGORIES = {
 function parseSupportCategory(text) {
   const lower = normalizeText(text);
 
+  const supportPostbacks = {
+    support_order_status: SUPPORT_CATEGORIES["1"],
+    support_return_refund: SUPPORT_CATEGORIES["2"],
+    support_damaged_item: SUPPORT_CATEGORIES["3"],
+    support_product_help: SUPPORT_CATEGORIES["4"],
+    support_customer_care: SUPPORT_CATEGORIES["5"],
+  };
+  if (supportPostbacks[lower]) return supportPostbacks[lower];
   if (SUPPORT_CATEGORIES[lower]) return SUPPORT_CATEGORIES[lower];
   if (
     lower.includes("deliver") ||
@@ -2863,27 +2871,31 @@ async function startSupportFlow({ session, phone }) {
     segment: "support_intent",
   });
 
-  await sendMessage(
-    phone,
-    `VALOUR Customer Care
-
-How can we help?
-
-1. Order status or delivery
-2. Return or refund
-3. Damaged, leaking, or missing item
-4. Product or cooking help
-5. Speak with customer care
-
-Reply with a number. You can reply MENU to leave support.`,
-  );
+  await sendListMessage(phone, {
+    type: "list",
+    title: "VALOUR Customer Care",
+    body: "How can we help? Choose the option that best matches your request.",
+    footer: "Send MENU at any time to return to the main menu.",
+    msgid: "valour_customer_care_menu",
+    globalButtons: [{ type: "text", title: "Choose help topic" }],
+    items: [{
+      title: "Customer Care",
+      options: [
+        { type: "text", title: "Order status", description: "Delivery or tracking help", postbackText: "SUPPORT_ORDER_STATUS" },
+        { type: "text", title: "Return or refund", description: "Help with a return or refund", postbackText: "SUPPORT_RETURN_REFUND" },
+        { type: "text", title: "Damaged or missing", description: "Leaking, damaged, or missing item", postbackText: "SUPPORT_DAMAGED_ITEM" },
+        { type: "text", title: "Product or cooking", description: "Help using your VALOUR product", postbackText: "SUPPORT_PRODUCT_HELP" },
+        { type: "text", title: "Speak to Customer Care", description: "Describe your issue to our team", postbackText: "SUPPORT_CUSTOMER_CARE" },
+      ],
+    }],
+  });
 }
 
 async function handleSupportCategory({ session, text, phone }) {
   const category = parseSupportCategory(text);
 
   if (!category) {
-    await sendMessage(phone, "Please reply with a support option from 1 to 5.");
+    await sendMessage(phone, "Please choose a Customer Care option from the list above, or send MENU to return.");
     return;
   }
 
@@ -3211,8 +3223,7 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "guided_cooking") {
-    const product = PRODUCTS[session.selected_product];
-    return `You are cooking ${product?.recipeName || "your recipe"}. Reply VIDEO to receive the tutorial again, or DONE after you finish cooking.`;
+    return "Your VALOUR tutorial is above. Send VIDEO only if you would like to receive it again, or MENU for other options.";
   }
 
   if (session.current_state === "post_cook_feedback") {
@@ -3220,7 +3231,7 @@ async function getResumePrompt(session) {
   }
 
   if (session.current_state === "support_select_category") {
-    return "To continue with Customer Care, reply with a support option from 1 to 5.";
+    return "To continue with Customer Care, choose a help topic from the list above, or send MENU to leave support.";
   }
 
   if (session.current_state === "support_awaiting_order_id") {
@@ -3465,10 +3476,26 @@ async function sendProductCatalog(phone) {
 
 function getWhatsappProductImageUrl() {
   if (process.env.WHATSAPP_PRODUCT_IMAGE_URL) {
-    return String(process.env.WHATSAPP_PRODUCT_IMAGE_URL).trim();
+    const configuredUrl = String(process.env.WHATSAPP_PRODUCT_IMAGE_URL).trim();
+    if (!/\.webp(?:\?|$)/i.test(configuredUrl)) return configuredUrl;
   }
   if (!process.env.PUBLIC_SITE_URL) return "";
-  return `${process.env.PUBLIC_SITE_URL.replace(/\/$/, "")}/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp`;
+  return `${process.env.PUBLIC_SITE_URL.replace(/\/$/, "")}/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.png`;
+}
+
+function getProductSectionUrl() {
+  const baseUrl = String(process.env.PUBLIC_SITE_URL || "https://liquidspice.in")
+    .trim()
+    .replace(/\/$/, "");
+  return `${baseUrl}/#velvety-butter-chicken`;
+}
+
+async function sendProductOrderLink({ session, phone }) {
+  await resetToIdle(session._id);
+  await sendMessage(
+    phone,
+    `Order Velvety Butter Chicken Liquid Spice from the VALOUR website:\n${getProductSectionUrl()}`,
+  );
 }
 
 async function sendProductDetails(phone, product) {
@@ -3481,7 +3508,7 @@ ${product.name} is made for ${product.recipeName}.
 ${description}
 
 1. Start cooking
-2. Buy now
+2. Order online
 3. Back`;
   const imageUrl = getWhatsappProductImageUrl();
 
@@ -3556,8 +3583,8 @@ async function handleProductDetails({ session, text, phone, userId }) {
     });
     return;
   }
-  if (lower === "2" || lower.includes("buy")) {
-    await startWhatsappOrder({ session, phone });
+  if (lower === "2" || lower.includes("buy") || lower.includes("order")) {
+    await sendProductOrderLink({ session, phone });
     return;
   }
   if (lower === "3" || lower.includes("back")) {
@@ -3792,15 +3819,29 @@ async function beginTutorialCooking({ session, phone, userId, product }) {
 }
 
 async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
+  if (!videoWasSent) {
+    return sendMessage(
+      phone,
+      "The tutorial video is temporarily unavailable. Send VIDEO whenever you would like us to try again.",
+    );
+  }
+
+  const configuredDelay = Number(process.env.WHATSAPP_TUTORIAL_FOLLOWUP_DELAY_MS || 12000);
+  const followupDelayMs = Math.min(20_000, Math.max(2_000, configuredDelay));
+  console.log("[WHATSAPP][COOKING_FOLLOWUP_WAIT]", {
+    recipient: maskWhatsappPhone(phone),
+    delayMs: followupDelayMs,
+    reason: "allow_video_to_arrive_before_done_prompt",
+  });
+  await new Promise((resolve) => setTimeout(resolve, followupDelayMs));
+
   return sendQuickReplyMessage(phone, {
     type: "quick_reply",
     msgid: "valour_cooking_complete",
     content: {
       type: "text",
       header: "Your VALOUR cooking tutorial",
-      text: videoWasSent
-        ? "Watch the video above to cook Butter Chicken with VALOUR. When your dish is ready, tap Done below. Reply VIDEO anytime to receive the tutorial again."
-        : "The tutorial video is temporarily unavailable. Reply VIDEO to try again.",
+      text: "Enjoy the tutorial above. You can tap Done when your dish is ready, but you do not need to reply to continue.",
       caption: "VALOUR makes the curry. You make it yours.",
     },
     options: [
@@ -4264,7 +4305,7 @@ async function handleGuidedCooking({ session, text, phone, userId }) {
   }
   await sendMessage(
     phone,
-    `Use the tutorial video to cook ${product?.recipeName || "your dish"}. Reply VIDEO to receive it again, or DONE after you finish cooking.`,
+    "I’m here if you need anything. Send VIDEO to receive the tutorial again, HELP for assistance, or MENU for other options.",
   );
 }
 
@@ -4867,6 +4908,8 @@ function resolveMainMenuPostback(...values) {
     "explore valour products": "MENU_EXPLORE",
     menu_buy: "MENU_BUY",
     "buy now": "MENU_BUY",
+    menu_order: "MENU_ORDER",
+    "order now": "MENU_ORDER",
     menu_track: "MENU_TRACK",
     "track an order": "MENU_TRACK",
     menu_support: "MENU_SUPPORT",
@@ -4907,7 +4950,8 @@ function getMainMenuAction(text = "") {
   return {
     menu_cook: "cook",
     menu_explore: "explore",
-    menu_buy: "buy",
+    menu_buy: "order_link",
+    menu_order: "order_link",
     menu_track: "track",
     menu_support: "support",
   }[normalizeText(text)] || null;
@@ -4931,7 +4975,6 @@ async function handleMainMenuAction({ action, session, user, phone }) {
   }
   if (action === "explore") {
     await updateSession(session._id, {
-      current_state: "product_catalog",
       activationPreference: "learn_about_valour",
       segment: "education_intent",
     });
@@ -4939,16 +4982,16 @@ async function handleMainMenuAction({ action, session, user, phone }) {
       activationPreference: "learn_about_valour",
       segment: "education_intent",
     });
-    await sendProductCatalog(phone);
+    await handleProductCatalog({ session, text: "", phone });
     return true;
   }
-  if (action === "buy") {
+  if (action === "order_link") {
     await updateUserSignals(user._id, {
       activationPreference: "buy_now",
       purchaseIntent: "high",
       segment: "buyer_intent",
     });
-    await startWhatsappOrder({ session, phone });
+    await sendProductOrderLink({ session, phone });
     return true;
   }
   if (action === "track") {
@@ -5367,14 +5410,13 @@ async function processIncomingMessage(message) {
   if (matchesAny(lower, ["2", "what is valour", "what is velvety butter"])) {
     await updateSession(session._id, {
       activationPreference: "learn_about_valour",
-      current_state: "product_catalog",
       segment: "education_intent",
     });
     await updateUserSignals(user._id, {
       activationPreference: "learn_about_valour",
       segment: "education_intent",
     });
-    await sendProductCatalog(phone);
+    await handleProductCatalog({ session: activeSession, text, phone });
     return;
   }
 
@@ -5397,7 +5439,7 @@ async function processIncomingMessage(message) {
       },
       leadScoreDelta: getLeadScoreDelta("", "clicked_purchase"),
     });
-    await startWhatsappOrder({ session: activeSession, phone });
+    await sendProductOrderLink({ session: activeSession, phone });
     return;
   }
 
@@ -8785,6 +8827,7 @@ module.exports = {
     parseQuantity,
     parseProductSelection,
     parseTrackingLookupDetails,
+    parseSupportCategory,
     isHumanSupportRequest,
     getFeedbackType,
     getFeedbackPrompt,
@@ -8793,6 +8836,7 @@ module.exports = {
     resolveMainMenuPostback,
     getWhatsappProductImageUrl,
     getCookingIntroVideoUrl,
+    getProductSectionUrl,
     createOrderTrackingToken,
     createOrderPaymentToken,
     createReviewToken,
