@@ -541,6 +541,11 @@ function getCheckoutAttribution() {
       params.get("campaign") ||
       stored.campaign ||
       "",
+    medium: params.get("utm_medium") || stored.medium || "",
+    content: params.get("utm_content") || stored.content || "",
+    term: params.get("utm_term") || stored.term || "",
+    landingPage: stored.landingPage || "",
+    capturedAt: stored.capturedAt || "",
     cookingType: "fish",
     purchaseIntent: "high",
     activationPreference: "custom_checkout",
@@ -710,9 +715,10 @@ function renderCart() {
       <div class="product-info">
         <h3>${item.name}</h3>
         <p>${item.descriptor}</p>
-        <div class="product-meta">
-          <span>${item.size}</span>
-          <span>${item.serves}</span>
+        <div class="cart-trust" aria-label="Product assurances">
+          <span>✓ No added preservatives</span>
+          <span>✓ Quality checked</span>
+          <span>✓ Safety-sealed</span>
         </div>
         </div>
         <div class="item-controls">

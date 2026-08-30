@@ -1,468 +1,858 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <!-- Meta Pixel Code -->
-  <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window,document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '2927690960901306');
-    fbq('track', 'PageView');
-  </script>
-  <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
-    alt="" /></noscript>
-  <!-- End Meta Pixel Code -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Share your VALOUR Velvety Butter Chicken cooking experience.">
-  <meta name="robots" content="noindex,follow">
-  <title>Share your cooking experience | VALOUR</title>
-  <link rel="icon" type="image/png" href="vendor/cdn/cdn/shop/files/valourlogobrowser.png">
-  <style>
-    @font-face {
-      font-family: "Parkinsans";
-      src: url("assets/images/Parkinsans-Regular.ttf") format("truetype");
-      font-weight: 400;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Parkinsans";
-      src: url("assets/images/Parkinsans-Medium.ttf") format("truetype");
-      font-weight: 500;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Parkinsans";
-      src: url("assets/images/Parkinsans-Bold.ttf") format("truetype");
-      font-weight: 700;
-      font-display: swap;
-    }
+  <head>
+    <!-- Meta Pixel Code -->
+    <script>
+      !(function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod
+            ? n.callMethod.apply(n, arguments)
+            : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = !0;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = !0;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(
+        window,
+        document,
+        "script",
+        "https://connect.facebook.net/en_US/fbevents.js",
+      );
+      fbq("init", "2927690960901306");
+      fbq("track", "PageView");
+    </script>
+    <noscript
+      ><img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
+        alt=""
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Share your VALOUR Velvety Butter Chicken cooking experience."
+    />
+    <meta name="robots" content="noindex,follow" />
+    <title>Share your cooking experience | VALOUR</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="vendor/cdn/cdn/shop/files/valourlogobrowser.png"
+    />
+    <style>
+      @font-face {
+        font-family: "Parkinsans";
+        src: url("assets/images/Parkinsans-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Parkinsans";
+        src: url("assets/images/Parkinsans-Medium.ttf") format("truetype");
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Parkinsans";
+        src: url("assets/images/Parkinsans-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: swap;
+      }
 
-    :root {
-      --ink: #24170f;
-      --muted: #74675d;
-      --cream: #fffaf0;
-      --paper: #fffdf8;
-      --line: #e7dccb;
-      --brand: #6d1f19;
-      --brand-dark: #4e120f;
-      --gold: #e49b22;
-    }
+      :root {
+        --ink: #24170f;
+        --muted: #74675d;
+        --cream: #fffaf0;
+        --paper: #fffdf8;
+        --line: #e7dccb;
+        --brand: #6d1f19;
+        --brand-dark: #4e120f;
+        --gold: #e49b22;
+      }
 
-    * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 8% 4%, rgba(228, 155, 34, .12), transparent 28rem),
-        radial-gradient(circle at 92% 85%, rgba(109, 31, 25, .08), transparent 30rem),
-        var(--cream);
-      font-family: "Parkinsans", Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at 8% 4%,
+            rgba(228, 155, 34, 0.12),
+            transparent 28rem
+          ),
+          radial-gradient(
+            circle at 92% 85%,
+            rgba(109, 31, 25, 0.08),
+            transparent 30rem
+          ),
+          var(--cream);
+        font-family: "Parkinsans", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
 
-    button, input, textarea { font: inherit; }
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
 
-    .site-header {
-      height: 76px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-bottom: 1px solid rgba(109, 31, 25, .12);
-      background: rgba(255, 250, 240, .88);
-      backdrop-filter: blur(12px);
-    }
+      .site-header {
+        height: 76px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-bottom: 1px solid rgba(109, 31, 25, 0.12);
+        background: rgba(255, 250, 240, 0.88);
+        backdrop-filter: blur(12px);
+      }
 
-    .logo img { display: block; width: 132px; height: auto; }
+      .logo img {
+        display: block;
+        width: 132px;
+        height: auto;
+      }
 
-    main {
-      width: min(100% - 32px, 680px);
-      margin: 0 auto;
-      padding: 52px 0 64px;
-    }
+      main {
+        width: min(100% - 32px, 680px);
+        margin: 0 auto;
+        padding: 52px 0 64px;
+      }
 
-    .eyebrow {
-      margin: 0 0 10px;
-      color: var(--brand);
-      font-size: .76rem;
-      font-weight: 700;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--brand);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
 
-    h1 {
-      max-width: 540px;
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(2.35rem, 7vw, 4rem);
-      font-weight: 500;
-      line-height: 1.02;
-      letter-spacing: -.035em;
-    }
+      h1 {
+        max-width: 540px;
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2.35rem, 7vw, 4rem);
+        font-weight: 500;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+      }
 
-    .intro {
-      margin: 16px 0 32px;
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.6;
-    }
+      .intro {
+        margin: 16px 0 32px;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.6;
+      }
 
-    .review-card {
-      padding: clamp(24px, 6vw, 42px);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: rgba(255, 253, 248, .94);
-      box-shadow: 0 24px 70px rgba(67, 38, 17, .08);
-    }
+      .review-card {
+        padding: clamp(24px, 6vw, 42px);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 253, 248, 0.94);
+        box-shadow: 0 24px 70px rgba(67, 38, 17, 0.08);
+      }
 
-    .field + .field { margin-top: 32px; }
-    .field-label, legend {
-      display: block;
-      margin: 0 0 5px;
-      padding: 0;
-      color: var(--ink);
-      font-size: 1rem;
-      font-weight: 700;
-    }
-    fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-    .helper { margin: 0 0 14px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+      .field + .field {
+        margin-top: 32px;
+        margin-bottom: 17px;
+      }
+      .field-label,
+      legend {
+        display: block;
+        margin: 0 0 5px;
+        padding: 0;
+        color: var(--ink);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+      fieldset {
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+      .helper {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      .rating-apology {
+        margin: 32px 0 0;
+        padding: 16px 18px;
+        border-radius: 14px;
+        color: var(--ink);
+        background: rgba(139, 31, 31, 0.07);
+        font-size: 0.92rem;
+        line-height: 1.55;
+        margin-bottom: 12px;
+      }
 
-    .stars {
-      display: inline-flex;
-      gap: 4px;
-      margin: 2px 0 8px;
-      border-radius: 10px;
-    }
-    .star {
-      width: 54px;
-      height: 58px;
-      padding: 0;
-      border: 0;
-      color: #c8b9a1;
-      background: transparent;
-      font-family: Arial, sans-serif;
-      font-size: 3.1rem;
-      line-height: 1;
-      cursor: pointer;
-      transition: color .16s ease, transform .16s ease;
-    }
-    .star:hover { transform: translateY(-2px); }
-    .star.is-filled { color: var(--gold); }
-    .star:focus-visible, .chip:focus-visible, .submit:focus-visible, input:focus-visible, textarea:focus-visible {
-      outline: 3px solid rgba(228, 155, 34, .34);
-      outline-offset: 3px;
-    }
-    .rating-copy { min-height: 24px; margin: 0; color: var(--brand); font-size: .92rem; font-weight: 700; }
-    .rating-error { margin: 6px 0 0; color: #a12018; font-size: .82rem; }
+      .stars {
+        display: inline-flex;
+        gap: 4px;
+        margin: 2px 0 8px;
+        border-radius: 10px;
+      }
+      .star {
+        width: 54px;
+        height: 58px;
+        padding: 0;
+        border: 0;
+        color: #c8b9a1;
+        background: transparent;
+        font-family: Arial, sans-serif;
+        font-size: 3.1rem;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          color 0.16s ease,
+          transform 0.16s ease;
+      }
+      .star:hover {
+        transform: translateY(-2px);
+      }
+      .star.is-filled {
+        color: var(--gold);
+      }
+      .star:focus-visible,
+      .chip:focus-visible,
+      .submit:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid rgba(228, 155, 34, 0.34);
+        outline-offset: 3px;
+      }
+      .rating-copy {
+        min-height: 24px;
+        margin: 0;
+        color: var(--brand);
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+      .rating-error {
+        margin: 6px 0 0;
+        color: #a12018;
+        font-size: 0.82rem;
+      }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-    .chip {
-      min-height: 42px;
-      padding: 9px 15px;
-      border: 1px solid #d9cbb7;
-      border-radius: 999px;
-      color: #4d3c30;
-      background: #fff;
-      cursor: pointer;
-      transition: border-color .15s ease, background .15s ease, color .15s ease;
-    }
-    .chip:hover { border-color: var(--brand); }
-    .chip[aria-pressed="true"] { border-color: var(--brand); color: #fff; background: var(--brand); }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .chip {
+        min-height: 42px;
+        padding: 9px 15px;
+        border: 1px solid #d9cbb7;
+        border-radius: 999px;
+        color: #4d3c30;
+        background: #fff;
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      .chip:hover {
+        border-color: var(--brand);
+      }
+      .chip[aria-pressed="true"] {
+        border-color: var(--brand);
+        color: #fff;
+        background: var(--brand);
+      }
 
-    input[type="text"], input[type="tel"], textarea {
-      width: 100%;
-      border: 1px solid #d9cbb7;
-      border-radius: 12px;
-      color: var(--ink);
-      background: #fff;
-    }
-    input[type="text"], input[type="tel"] { height: 50px; padding: 0 14px; }
-    textarea { min-height: 104px; padding: 13px 14px; line-height: 1.5; resize: vertical; }
-    input::placeholder, textarea::placeholder { color: #a19487; }
+      input[type="text"],
+      input[type="tel"],
+      textarea {
+        width: 100%;
+        border: 1px solid #d9cbb7;
+        border-radius: 12px;
+        color: var(--ink);
+        background: #fff;
+      }
+      input[type="text"],
+      input[type="tel"] {
+        height: 50px;
+        padding: 0 14px;
+      }
+      textarea {
+        min-height: 104px;
+        padding: 13px 14px;
+        line-height: 1.5;
+        resize: vertical;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #a19487;
+      }
+      input[readonly] {
+        cursor: default;
+        color: var(--ink);
+        background: #f5efe6;
+      }
 
-    .customer-summary {
-      display: none;
-      margin-top: 30px;
-      padding: 16px 18px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #faf3e6;
-    }
-    .customer-summary.is-visible { display: block; }
-    .customer-summary-title { margin: 0 0 10px; font-size: .8rem; font-weight: 700; color: var(--muted); }
-    .customer-detail { display: flex; justify-content: space-between; gap: 18px; margin: 5px 0; font-size: .86rem; }
-    .customer-detail span { color: var(--muted); }
-    .customer-detail strong { text-align: right; font-weight: 600; }
-    .form-status { margin: 12px 0 0; color: #a12018; font-size: .82rem; line-height: 1.45; }
+      .customer-summary {
+        display: none;
+        margin-top: 30px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #faf3e6;
+      }
+      .customer-summary.is-visible {
+        display: block;
+      }
+      .customer-summary-title {
+        margin: 0 0 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .customer-detail {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 5px 0;
+        font-size: 0.86rem;
+      }
+      .customer-detail span {
+        color: var(--muted);
+      }
+      .customer-detail strong {
+        text-align: right;
+        font-weight: 600;
+      }
+      .form-status {
+        margin: 12px 0 0;
+        color: #a12018;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
 
-    .submit {
-      width: 100%;
-      min-height: 54px;
-      margin-top: 34px;
-      border: 1px solid var(--brand);
-      border-radius: 999px;
-      color: #fff;
-      background: var(--brand);
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(109, 31, 25, .18);
-      transition: background .16s ease, transform .16s ease;
-    }
-    .submit:hover { background: var(--brand-dark); transform: translateY(-1px); }
+      .submit {
+        width: 100%;
+        min-height: 54px;
+        margin-top: 34px;
+        border: 1px solid var(--brand);
+        border-radius: 999px;
+        color: #fff;
+        background: var(--brand);
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(109, 31, 25, 0.18);
+        transition:
+          background 0.16s ease,
+          transform 0.16s ease;
+      }
+      .submit:hover {
+        background: var(--brand-dark);
+        transform: translateY(-1px);
+      }
 
-    .thank-you { display: none; padding: 18px 0 8px; text-align: center; }
-    .thank-you.is-visible { display: block; }
-    .thank-you-mark {
-      display: grid;
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 20px;
-      place-items: center;
-      border-radius: 50%;
-      color: #fff;
-      background: var(--brand);
-      font-size: 1.75rem;
-    }
-    .thank-you h2 { margin: 0 0 10px; font-family: Georgia, serif; font-size: 2rem; font-weight: 500; }
-    .thank-you p { max-width: 430px; margin: 0 auto; color: var(--muted); line-height: 1.65; }
-    .home-link { display: inline-block; margin-top: 24px; color: var(--brand); font-size: .9rem; font-weight: 700; }
+      .thank-you {
+        display: none;
+        padding: 18px 0 8px;
+        text-align: center;
+      }
+      .thank-you.is-visible {
+        display: block;
+      }
+      .thank-you-mark {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        place-items: center;
+        border-radius: 50%;
+        color: #fff;
+        background: var(--brand);
+        font-size: 1.75rem;
+      }
+      .thank-you h2 {
+        margin: 0 0 10px;
+        font-family: Georgia, serif;
+        font-size: 2rem;
+        font-weight: 500;
+      }
+      .thank-you p {
+        max-width: 430px;
+        margin: 0 auto;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      .home-link {
+        display: inline-block;
+        margin-top: 24px;
+        color: var(--brand);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
 
-    @media (max-width: 520px) {
-      .site-header { height: 66px; }
-      .logo img { width: 116px; }
-      main { padding-top: 36px; }
-      .review-card { border-radius: 18px; }
-      .stars { width: 100%; justify-content: space-between; gap: 0; }
-      .star { width: 20%; max-width: 52px; font-size: 2.85rem; }
-    }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <a class="logo" href="index.html" aria-label="VALOUR home">
-      <img src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="VALOUR">
-    </a>
-  </header>
+      @media (max-width: 520px) {
+        .site-header {
+          height: 66px;
+        }
+        .logo img {
+          width: 116px;
+        }
+        main {
+          padding-top: 36px;
+        }
+        .review-card {
+          border-radius: 18px;
+        }
+        .stars {
+          width: 100%;
+          justify-content: space-between;
+          gap: 0;
+        }
+        .star {
+          width: 20%;
+          max-width: 52px;
+          font-size: 2.85rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="logo" href="index.html" aria-label="VALOUR home">
+        <img
+          src="vendor/cdn/cdn/shop/files/valourblacklogom.png"
+          alt="VALOUR"
+        />
+      </a>
+    </header>
 
-  <main>
-    <p class="eyebrow">Customer cooking experience</p>
-    <h1>How was your VALOUR cook?</h1>
-    <p class="intro">Rate your overall experience with Velvety Butter Chicken.</p>
+    <main>
+      <h1>How was your VALOUR cooking experience?</h1>
+      <p class="intro">Rate your overall experience with VALOUR.</p>
 
-    <section class="review-card" aria-label="Review form">
-      <form id="review-form" novalidate>
-        <fieldset class="field">
-          <legend>Your rating</legend>
-          <div class="stars" role="radiogroup" aria-label="Your rating">
-            <button class="star" type="button" role="radio" aria-checked="false" aria-label="1 star" data-rating="1">☆</button>
-            <button class="star" type="button" role="radio" aria-checked="false" aria-label="2 stars" data-rating="2">☆</button>
-            <button class="star" type="button" role="radio" aria-checked="false" aria-label="3 stars" data-rating="3">☆</button>
-            <button class="star" type="button" role="radio" aria-checked="false" aria-label="4 stars" data-rating="4">☆</button>
-            <button class="star" type="button" role="radio" aria-checked="false" aria-label="5 stars" data-rating="5">☆</button>
+      <section class="review-card" aria-label="Review form">
+        <form id="review-form" novalidate>
+          <fieldset class="field">
+            <legend>Your rating</legend>
+            <div class="stars" role="radiogroup" aria-label="Your rating">
+              <button
+                class="star"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                aria-label="1 star"
+                data-rating="1"
+              >
+                ☆
+              </button>
+              <button
+                class="star"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                aria-label="2 stars"
+                data-rating="2"
+              >
+                ☆
+              </button>
+              <button
+                class="star"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                aria-label="3 stars"
+                data-rating="3"
+              >
+                ☆
+              </button>
+              <button
+                class="star"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                aria-label="4 stars"
+                data-rating="4"
+              >
+                ☆
+              </button>
+              <button
+                class="star"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                aria-label="5 stars"
+                data-rating="5"
+              >
+                ☆
+              </button>
+            </div>
+            <p class="rating-copy" id="rating-copy" aria-live="polite">
+              Select a rating
+            </p>
+            <p class="rating-error" id="rating-error" hidden>
+              Please choose a star rating.
+            </p>
+            <input type="hidden" name="rating" id="rating-value" />
+          </fieldset>
+
+          <fieldset class="field" id="stood-out-field">
+            <legend>What stood out?</legend>
+            <p class="helper">Optional — select any that apply.</p>
+            <div class="chips" id="feedback-chips"></div>
+          </fieldset>
+
+          <p class="rating-apology" id="rating-apology" role="status" hidden>
+            We’re sorry your experience didn’t meet expectations. Your feedback
+            will help us understand what went wrong and improve.
+          </p>
+
+          <fieldset class="field">
+            <legend>Would you buy VALOUR again?</legend>
+            <p class="helper">
+              Optional — choose the answer that best describes you.
+            </p>
+            <div
+              class="chips"
+              id="repurchase-chips"
+              role="radiogroup"
+              aria-label="Would you buy VALOUR again?"
+            ></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>What could we improve?</legend>
+            <p class="helper">Optional — select any that apply.</p>
+            <div class="chips" id="product-improvement-chips"></div>
+          </fieldset>
+
+          <div class="field">
+            <label class="field-label" for="review"
+              >Anything else you'd like to share?</label
+            >
+            <p class="helper">Optional</p>
+            <textarea
+              id="review"
+              name="review"
+              rows="3"
+              placeholder="Tell us about your cooking experience..."
+            ></textarea>
           </div>
-          <p class="rating-copy" id="rating-copy" aria-live="polite">Select a rating</p>
-          <p class="rating-error" id="rating-error" hidden>Please choose a star rating.</p>
-          <input type="hidden" name="rating" id="rating-value">
-        </fieldset>
 
-        <fieldset class="field">
-          <legend>What stood out?</legend>
-          <p class="helper">Optional — select any that apply.</p>
-          <div class="chips" id="feedback-chips"></div>
-        </fieldset>
+          <div class="field">
+            <label class="field-label" for="customer-name">Your name</label>
+            <input
+              id="customer-name"
+              name="name"
+              type="text"
+              autocomplete="name"
+              placeholder="Your name"
+            />
+          </div>
 
-        <div class="field">
-          <label class="field-label" for="review">Anything else you'd like to share?</label>
-          <p class="helper">Optional</p>
-          <textarea id="review" name="review" rows="3" placeholder="Tell us about your cooking experience..."></textarea>
+          <div class="field">
+            <label class="field-label" for="customer-phone">Phone number</label>
+            <input
+              id="customer-phone"
+              name="phone"
+              type="tel"
+              autocomplete="tel"
+              inputmode="numeric"
+              maxlength="10"
+              pattern="[6-9][0-9]{9}"
+              placeholder="10-digit phone number"
+              required
+            />
+          </div>
+
+          <div
+            class="customer-summary"
+            id="customer-summary"
+            aria-live="polite"
+          >
+            <p class="customer-summary-title">Submitting as</p>
+            <p class="customer-detail">
+              <span>Name</span><strong id="summary-name"></strong>
+            </p>
+            <p class="customer-detail">
+              <span>Phone</span><strong id="summary-phone"></strong>
+            </p>
+          </div>
+          <p class="form-status" id="form-status" role="alert" hidden></p>
+
+          <button class="submit" type="submit">Submit review</button>
+        </form>
+
+        <div class="thank-you" id="thank-you" tabindex="-1">
+          <div class="thank-you-mark" aria-hidden="true">✓</div>
+          <h2>Thank you for your review.</h2>
+          <p>
+            It helps us make VALOUR better and helps other home cooks know what
+            to expect.
+          </p>
+          <a class="home-link" href="index.html">Back to VALOUR</a>
         </div>
+      </section>
+    </main>
 
-        <div class="field">
-          <label class="field-label" for="customer-name">Your name</label>
-          <input id="customer-name" name="name" type="text" autocomplete="name" placeholder="Your name">
-        </div>
+    <script>
+      const form = document.querySelector("#review-form");
+      const stars = [...document.querySelectorAll(".star")];
+      const ratingValue = document.querySelector("#rating-value");
+      const ratingCopy = document.querySelector("#rating-copy");
+      const ratingError = document.querySelector("#rating-error");
+      const chipsContainer = document.querySelector("#feedback-chips");
+      const stoodOutField = document.querySelector("#stood-out-field");
+      const ratingApology = document.querySelector("#rating-apology");
+      const repurchaseChipsContainer =
+        document.querySelector("#repurchase-chips");
+      const productImprovementChipsContainer = document.querySelector(
+        "#product-improvement-chips",
+      );
+      const nameInput = document.querySelector("#customer-name");
+      const phoneInput = document.querySelector("#customer-phone");
+      const submitButton = form.querySelector(".submit");
+      const customerSummary = document.querySelector("#customer-summary");
+      const formStatus = document.querySelector("#form-status");
+      const token = new URLSearchParams(window.location.search).get("token");
 
-        <div class="field">
-          <label class="field-label" for="customer-phone">Phone number</label>
-          <input id="customer-phone" name="phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" placeholder="10-digit phone number" required>
-        </div>
-
-        <div class="customer-summary" id="customer-summary" aria-live="polite">
-          <p class="customer-summary-title">Submitting as</p>
-          <p class="customer-detail"><span>Name</span><strong id="summary-name"></strong></p>
-          <p class="customer-detail"><span>Phone</span><strong id="summary-phone"></strong></p>
-        </div>
-        <p class="form-status" id="form-status" role="alert" hidden></p>
-
-        <button class="submit" type="submit">Submit review</button>
-      </form>
-
-      <div class="thank-you" id="thank-you" tabindex="-1">
-        <div class="thank-you-mark" aria-hidden="true">✓</div>
-        <h2>Thank you for your review.</h2>
-        <p>It helps us make VALOUR better and helps other home cooks know what to expect.</p>
-        <a class="home-link" href="index.html">Back to VALOUR</a>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const form = document.querySelector('#review-form');
-    const stars = [...document.querySelectorAll('.star')];
-    const ratingValue = document.querySelector('#rating-value');
-    const ratingCopy = document.querySelector('#rating-copy');
-    const ratingError = document.querySelector('#rating-error');
-    const chipsContainer = document.querySelector('#feedback-chips');
-    const nameInput = document.querySelector('#customer-name');
-    const phoneInput = document.querySelector('#customer-phone');
-    const submitButton = form.querySelector('.submit');
-    const customerSummary = document.querySelector('#customer-summary');
-    const formStatus = document.querySelector('#form-status');
-    const token = new URLSearchParams(window.location.search).get('token');
-
-    const labels = {
-      1: 'Not for me',
-      2: 'Could be better',
-      3: 'Good',
-      4: 'Really good',
-      5: 'Loved it'
-    };
-    const positiveChips = ['Easy to cook', 'Loved the taste', 'Good quantity', 'Clear instructions', 'Would cook again'];
-    const improvementChips = ['Taste', 'Spice level', 'Texture', 'Instructions', 'Quantity', 'Something else'];
-
-    function renderChips(items) {
-      chipsContainer.replaceChildren(...items.map((text) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'chip';
-        button.textContent = text;
-        button.setAttribute('aria-pressed', 'false');
-        button.addEventListener('click', () => {
-          const selected = button.getAttribute('aria-pressed') === 'true';
-          button.setAttribute('aria-pressed', String(!selected));
-        });
-        return button;
-      }));
-    }
-
-    function setRating(rating) {
-      ratingValue.value = rating;
-      ratingCopy.textContent = `${rating} ${rating === 1 ? 'star' : 'stars'} — ${labels[rating]}`;
-      ratingError.hidden = true;
-      stars.forEach((star, index) => {
-        const selected = index < rating;
-        star.classList.toggle('is-filled', selected);
-        star.textContent = selected ? '★' : '☆';
-        star.setAttribute('aria-checked', String(index + 1 === rating));
-      });
-      renderChips(rating <= 3 ? improvementChips : positiveChips);
-    }
-
-    stars.forEach((star, index) => {
-      star.addEventListener('click', () => setRating(Number(star.dataset.rating)));
-      star.addEventListener('keydown', (event) => {
-        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
-        event.preventDefault();
-        const direction = ['ArrowRight', 'ArrowUp'].includes(event.key) ? 1 : -1;
-        const nextIndex = Math.max(0, Math.min(stars.length - 1, index + direction));
-        stars[nextIndex].focus();
-        setRating(nextIndex + 1);
-      });
-    });
-
-    function formatPhone(phone) {
-      const digits = String(phone || '').replace(/\D/g, '');
-      const local = digits.length > 10 ? digits.slice(-10) : digits;
-      return local.length === 10 ? `+91 ${local.slice(0, 5)} ${local.slice(5)}` : phone;
-    }
-
-    async function readApiResponse(response) {
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) return response.json();
-      const message = (await response.text()).replace(/^❌\s*/, '').trim();
-      return { ok: false, error: message || 'The review service is unavailable.' };
-    }
-
-    async function loadCustomer() {
-      if (!token) return;
-      submitButton.disabled = true;
-      submitButton.textContent = 'Loading your details…';
-      try {
-        const response = await fetch(`/api/reviews/customer/${encodeURIComponent(token)}`);
-        const data = await readApiResponse(response);
-        if (!response.ok) throw new Error(data.error || 'Unable to load your details.');
-        if (data.generic) return;
-        nameInput.value = data.customer.name;
-        phoneInput.value = String(data.customer.phone || '').replace(/\D/g, '').slice(-10);
-        document.querySelector('#summary-name').textContent = data.customer.name;
-        document.querySelector('#summary-phone').textContent = formatPhone(data.customer.phone);
-        customerSummary.classList.add('is-visible');
-      } catch (error) {
-        formStatus.textContent = error.message;
-        formStatus.hidden = false;
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Submit review';
-      }
-    }
-
-    renderChips(positiveChips);
-    loadCustomer();
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      if (!ratingValue.value) {
-        ratingError.hidden = false;
-        stars[0].focus();
-        return;
-      }
-
-      const selectedFeedback = [...chipsContainer.querySelectorAll('[aria-pressed="true"]')].map((chip) => chip.textContent);
-      const review = {
-        rating: Number(ratingValue.value),
-        feedback: selectedFeedback,
-        review: form.elements.review.value.trim(),
-        name: form.elements.name.value.trim(),
-        phone: form.elements.phone.value.trim(),
-        showName: false,
-        submittedAt: new Date().toISOString()
+      const labels = {
+        1: "Not for me",
+        2: "Could be better",
+        3: "Good",
+        4: "Really good",
+        5: "Loved it",
       };
-      submitButton.disabled = true;
-      submitButton.textContent = 'Submitting…';
-      formStatus.hidden = true;
+      const positiveChips = [
+        "Easy to cook",
+        "Loved the taste",
+        "Good quantity",
+        "Clear instructions",
+        "Would cook again",
+      ];
+      const repurchaseChips = [
+        "Yes — when I’m craving butter chicken",
+        "Yes — when I’m hosting a get-together",
+        "No — the price feels too high",
+        "No — I have concerns about food safety",
+      ];
+      const productImprovementChips = [
+        "Jar size",
+        "Taste",
+        "Confidence in product quality and safety",
+      ];
 
-      try {
-        if (token) {
-          const response = await fetch(`/api/reviews/${encodeURIComponent(token)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(review)
-          });
+      function renderChips(container, items, singleChoice = false) {
+        container.replaceChildren(
+          ...items.map((text) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "chip";
+            button.textContent = text;
+            button.setAttribute("aria-pressed", "false");
+            if (singleChoice) {
+              button.setAttribute("role", "radio");
+              button.setAttribute("aria-checked", "false");
+            }
+            button.addEventListener("click", () => {
+              const selected = button.getAttribute("aria-pressed") === "true";
+              if (singleChoice) {
+                container.querySelectorAll(".chip").forEach((chip) => {
+                  chip.setAttribute("aria-pressed", "false");
+                  chip.setAttribute("aria-checked", "false");
+                });
+              }
+              button.setAttribute("aria-pressed", String(!selected));
+              if (singleChoice)
+                button.setAttribute("aria-checked", String(!selected));
+            });
+            return button;
+          }),
+        );
+      }
+
+      function setRating(rating) {
+        ratingValue.value = rating;
+        ratingCopy.textContent = `${rating} ${rating === 1 ? "star" : "stars"} — ${labels[rating]}`;
+        ratingError.hidden = true;
+        const isLowRating = rating < 3;
+        stoodOutField.hidden = isLowRating;
+        ratingApology.hidden = !isLowRating;
+        if (isLowRating) {
+          chipsContainer
+            .querySelectorAll('[aria-pressed="true"]')
+            .forEach((chip) => {
+              chip.setAttribute("aria-pressed", "false");
+            });
+        }
+        stars.forEach((star, index) => {
+          const selected = index < rating;
+          star.classList.toggle("is-filled", selected);
+          star.textContent = selected ? "★" : "☆";
+          star.setAttribute("aria-checked", String(index + 1 === rating));
+        });
+        if (!isLowRating) renderChips(chipsContainer, positiveChips);
+      }
+
+      stars.forEach((star, index) => {
+        star.addEventListener("click", () =>
+          setRating(Number(star.dataset.rating)),
+        );
+        star.addEventListener("keydown", (event) => {
+          if (
+            !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(
+              event.key,
+            )
+          )
+            return;
+          event.preventDefault();
+          const direction = ["ArrowRight", "ArrowUp"].includes(event.key)
+            ? 1
+            : -1;
+          const nextIndex = Math.max(
+            0,
+            Math.min(stars.length - 1, index + direction),
+          );
+          stars[nextIndex].focus();
+          setRating(nextIndex + 1);
+        });
+      });
+
+      function formatPhone(phone) {
+        const digits = String(phone || "").replace(/\D/g, "");
+        const local = digits.length > 10 ? digits.slice(-10) : digits;
+        return local.length === 10
+          ? `+91 ${local.slice(0, 5)} ${local.slice(5)}`
+          : phone;
+      }
+
+      async function readApiResponse(response) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) return response.json();
+        const message = (await response.text()).replace(/^❌\s*/, "").trim();
+        return {
+          ok: false,
+          error: message || "The review service is unavailable.",
+        };
+      }
+
+      async function loadCustomer() {
+        if (!token) return;
+        submitButton.disabled = true;
+        submitButton.textContent = "Loading your details…";
+        try {
+          const response = await fetch(
+            `/api/reviews/customer/${encodeURIComponent(token)}`,
+          );
           const data = await readApiResponse(response);
-          if (!response.ok) throw new Error(data.error || 'Your review could not be saved.');
-        } else {
-          throw new Error('A valid review link is required.');
+          if (!response.ok)
+            throw new Error(data.error || "Unable to load your details.");
+          if (data.generic) return;
+          nameInput.value = data.customer.name;
+          phoneInput.value = String(data.customer.phone || "")
+            .replace(/\D/g, "")
+            .slice(-10);
+          nameInput.readOnly = true;
+          phoneInput.readOnly = true;
+          nameInput.setAttribute("aria-readonly", "true");
+          phoneInput.setAttribute("aria-readonly", "true");
+          document.querySelector("#summary-name").textContent =
+            data.customer.name;
+          document.querySelector("#summary-phone").textContent = formatPhone(
+            data.customer.phone,
+          );
+          customerSummary.classList.add("is-visible");
+        } catch (error) {
+          formStatus.textContent = error.message;
+          formStatus.hidden = false;
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "Submit review";
+        }
+      }
+
+      renderChips(chipsContainer, positiveChips);
+      renderChips(repurchaseChipsContainer, repurchaseChips, true);
+      renderChips(productImprovementChipsContainer, productImprovementChips);
+      loadCustomer();
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!ratingValue.value) {
+          ratingError.hidden = false;
+          stars[0].focus();
+          return;
         }
 
-        form.hidden = true;
-        const thankYou = document.querySelector('#thank-you');
-        thankYou.classList.add('is-visible');
-        thankYou.focus();
-      } catch (error) {
-        formStatus.textContent = error.message;
-        formStatus.hidden = false;
-        submitButton.disabled = false;
-        submitButton.textContent = 'Submit review';
-      }
-    });
-  </script>
-</body>
+        const selectedFeedback = [
+          ...chipsContainer.querySelectorAll('[aria-pressed="true"]'),
+        ].map((chip) => chip.textContent);
+        const selectedRepurchase =
+          repurchaseChipsContainer.querySelector('[aria-pressed="true"]')
+            ?.textContent || "";
+        const selectedProductImprovements = [
+          ...productImprovementChipsContainer.querySelectorAll(
+            '[aria-pressed="true"]',
+          ),
+        ].map((chip) => chip.textContent);
+        const review = {
+          rating: Number(ratingValue.value),
+          feedback: selectedFeedback,
+          repurchaseIntent: selectedRepurchase,
+          productImprovements: selectedProductImprovements,
+          review: form.elements.review.value.trim(),
+          name: form.elements.name.value.trim(),
+          phone: form.elements.phone.value.trim(),
+          showName: false,
+          submittedAt: new Date().toISOString(),
+        };
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting…";
+        formStatus.hidden = true;
+
+        try {
+          if (token) {
+            const response = await fetch(
+              `/api/reviews/${encodeURIComponent(token)}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(review),
+              },
+            );
+            const data = await readApiResponse(response);
+            if (!response.ok)
+              throw new Error(data.error || "Your review could not be saved.");
+          } else {
+            throw new Error("A valid review link is required.");
+          }
+
+          form.hidden = true;
+          const thankYou = document.querySelector("#thank-you");
+          thankYou.classList.add("is-visible");
+          thankYou.focus();
+        } catch (error) {
+          formStatus.textContent = error.message;
+          formStatus.hidden = false;
+          submitButton.disabled = false;
+          submitButton.textContent = "Submit review";
+        }
+      });
+    </script>
+  </body>
 </html>

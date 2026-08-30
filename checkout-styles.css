@@ -369,13 +369,16 @@ img {
   line-height: 1.5;
 }
 
-.product-meta {
+.cart-trust {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px 14px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.product-meta span,
 .savings-pill {
   display: inline-flex;
   align-items: center;

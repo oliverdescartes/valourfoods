@@ -5904,6 +5904,15 @@ function normalizeOrderPayload(order = {}) {
     leadScore: Number(order.leadScore || tracking.leadScore) || undefined,
     segment: order.segment || tracking.segment,
   });
+  const campaignAttribution = compactSignalFields({
+    utmSource: tracking.source,
+    utmMedium: tracking.medium,
+    utmCampaign: tracking.campaign,
+    utmContent: tracking.content,
+    utmTerm: tracking.term,
+    landingPage: tracking.landingPage,
+    attributionCapturedAt: tracking.capturedAt,
+  });
 
   return {
     customerName: String(checkout.name || "").trim(),
@@ -5928,6 +5937,7 @@ function normalizeOrderPayload(order = {}) {
     shippingCharge: Number(totals.shipping) || 0,
     totalAmount: Number(totals.total) || 0,
     ...signals,
+    ...campaignAttribution,
   };
 }
 
@@ -8277,10 +8287,30 @@ app.post("/api/reviews/:token", async (req, res) => {
   const feedback = Array.isArray(req.body.feedback)
     ? req.body.feedback.filter((item) => allowedFeedback.has(item)).slice(0, 6)
     : [];
+  const allowedRepurchaseIntents = new Set([
+    "Yes — when I’m craving butter chicken",
+    "Yes — when I’m hosting a get-together",
+    "No — the price feels too high",
+    "No — I have concerns about food safety",
+  ]);
+  const requestedRepurchaseIntent = String(req.body.repurchaseIntent || "");
+  const repurchaseIntent = allowedRepurchaseIntents.has(requestedRepurchaseIntent)
+    ? requestedRepurchaseIntent
+    : "";
+  const allowedProductImprovements = new Set([
+    "Jar size",
+    "Taste",
+    "Confidence in product quality and safety",
+  ]);
+  const productImprovements = Array.isArray(req.body.productImprovements)
+    ? req.body.productImprovements
+        .filter((item) => allowedProductImprovements.has(item))
+        .slice(0, 3)
+    : [];
   const reviewText = String(req.body.review || "")
     .trim()
     .slice(0, 2000);
-  const customerName = String(req.body.name || "").trim().slice(0, 120);
+  const submittedCustomerName = String(req.body.name || "").trim().slice(0, 120);
   const submittedPhone = normalizeIndianPhone(req.body.phone);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -8288,7 +8318,7 @@ app.post("/api/reviews/:token", async (req, res) => {
       .status(400)
       .json({ ok: false, error: "Please choose a rating from 1 to 5." });
   }
-  if (!/^[6-9]\d{9}$/.test(submittedPhone)) {
+  if (isPublicReview && !/^[6-9]\d{9}$/.test(submittedPhone)) {
     return res.status(400).json({
       ok: false,
       error: "Please enter a valid 10-digit phone number.",
@@ -8304,8 +8334,10 @@ app.post("/api/reviews/:token", async (req, res) => {
         orderReference: `public:${reviewId}`,
         rating,
         feedback,
+        repurchaseIntent,
+        productImprovements,
         review: reviewText,
-        customerName,
+        customerName: submittedCustomerName,
         phone: submittedPhone,
         showFirstName: false,
         source: "public_review_link",
@@ -8321,6 +8353,19 @@ app.post("/api/reviews/:token", async (req, res) => {
         .status(404)
         .json({ ok: false, error: "Customer details were not found." });
 
+    const orderPhone = normalizeIndianPhone(order.phone || order.whatsappPhone);
+    if (!/^[6-9]\d{9}$/.test(orderPhone)) {
+      return res.status(422).json({
+        ok: false,
+        error: "The phone number associated with this order is invalid.",
+      });
+    }
+    const orderCustomerName = String(
+      order.customerName || "VALOUR customer",
+    )
+      .trim()
+      .slice(0, 120);
+
     const { reviews } = collections();
     await reviews.updateOne(
       { orderReference },
@@ -8328,9 +8373,11 @@ app.post("/api/reviews/:token", async (req, res) => {
         $set: {
           rating,
           feedback,
+          repurchaseIntent,
+          productImprovements,
           review: reviewText,
-          customerName: customerName || order.customerName || "",
-          phone: submittedPhone,
+          customerName: orderCustomerName,
+          phone: orderPhone,
           showFirstName: req.body.showName === true,
           updatedAt: new Date(),
         },
