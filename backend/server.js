@@ -3575,7 +3575,19 @@ function parseProductSelection(text = "") {
 }
 
 function getCookingIntroVideoUrl(product) {
-  return product ? process.env[product.videoEnvKey] || "" : "";
+  if (!product) return "";
+  const configuredUrl = String(process.env[product.videoEnvKey] || "").trim();
+  const publicSiteUrl = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
+  const compatibleMp4Url = publicSiteUrl
+    ? `${publicSiteUrl}/vendor/cdn/cdn/shop/files/cook_btr_chick_vlr_final.mp4`
+    : "";
+
+  // WhatsApp/Gupshup may accept a .mov request but later fail its delivery.
+  // Use the bundled H.264/AAC MP4 whenever the configured media is QuickTime.
+  if (/\.mov(?:\?|$)/i.test(configuredUrl) && compatibleMp4Url) {
+    return compatibleMp4Url;
+  }
+  return configuredUrl || compatibleMp4Url;
 }
 
 async function sendCookingIntro(phone, product) {
@@ -3589,6 +3601,11 @@ async function sendCookingIntro(phone, product) {
   }
 
   try {
+    console.log("[WHATSAPP][COOKING_VIDEO_SELECTED]", {
+      recipient: maskWhatsappPhone(phone),
+      videoUrl,
+      format: /\.mp4(?:\?|$)/i.test(videoUrl) ? "mp4" : "unknown",
+    });
     const caption =
       "Before you begin, watch how to use Velvety Butter Chicken Liquid Spice.";
     const result = await sendVideoMessage(phone, videoUrl, caption);
@@ -8775,6 +8792,7 @@ module.exports = {
     getMainMenuAction,
     resolveMainMenuPostback,
     getWhatsappProductImageUrl,
+    getCookingIntroVideoUrl,
     createOrderTrackingToken,
     createOrderPaymentToken,
     createReviewToken,
