@@ -1353,9 +1353,12 @@ function handleFloatingStep() {
   placeOrder();
 }
 
-async function sendOtp(phone) {
+async function sendOtp(phone, checkoutDetails = otpState.pendingUser) {
   otpState.phone = phone;
-  const result = await postJSON(`${API_BASE}/api/auth/otp/send`, { phone });
+  const result = await postJSON(`${API_BASE}/api/auth/otp/send`, {
+    phone,
+    checkoutDetails,
+  });
   if (result.existingUser) return result;
   otpState.challengeId = result.challengeId;
   console.info("[FAST2SMS_AUTH][OTP_REQUEST_ACCEPTED]", {

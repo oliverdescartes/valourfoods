@@ -208,6 +208,12 @@ async function connectDB() {
     accordionContent,
     carouselVideos,
   } = collections();
+  try {
+    await otpChallenges.dropIndex("expiresAt_1");
+    console.log("MongoDB OTP TTL migrated from expiresAt to cleanupAt");
+  } catch (error) {
+    if (error?.code !== 27 && error?.codeName !== "IndexNotFound") throw error;
+  }
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
     sessions.createIndex({ user_id: 1, active: 1 }),
@@ -269,8 +275,12 @@ async function connectDB() {
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
     otpChallenges.createIndex({ challengeId: 1 }, { unique: true }),
-    otpChallenges.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    otpChallenges.createIndex({ cleanupAt: 1 }, { expireAfterSeconds: 0 }),
     otpChallenges.createIndex({ phone: 1, createdAt: -1 }),
+    supportCases.createIndex(
+      { otp_challenge_id: 1 },
+      { unique: true, sparse: true },
+    ),
     accordionContent.createIndex({ key: 1 }, { unique: true }),
     accordionContent.createIndex({ active: 1, order: 1 }),
     ...DEFAULT_ACCORDION_CONTENT.map((item) =>
@@ -290,6 +300,18 @@ async function connectDB() {
       ),
     ),
   ]);
+  await otpChallenges.updateMany(
+    { cleanupAt: { $exists: false }, expiresAt: { $type: "date" } },
+    [
+      {
+        $set: {
+          cleanupAt: {
+            $add: ["$expiresAt", CHECKOUT_OTP_RECORD_RETENTION_MS],
+          },
+        },
+      },
+    ],
+  );
 
   mongoReady = true;
   console.log("MongoDB connected");
@@ -1648,11 +1670,17 @@ async function recoverStuckWhatsappJobs() {
 function startWhatsappJobWorker() {
   if (whatsappJobTimer) return;
   void recoverStuckWhatsappJobs()
-    .then(processDueWhatsappJobs)
+    .then(() => Promise.all([
+      processDueWhatsappJobs(),
+      processAbandonedCheckoutOtpAlerts(),
+    ]))
     .catch((err) => console.error("WhatsApp job worker failed", err.message));
   whatsappJobTimer = setInterval(() => {
     void processDueWhatsappJobs().catch((err) =>
       console.error("WhatsApp job worker failed", err.message),
+    );
+    void processAbandonedCheckoutOtpAlerts().catch((err) =>
+      console.error("Checkout OTP alert worker failed", err.message),
     );
   }, WHATSAPP_JOB_POLL_MS);
 }
@@ -7306,6 +7334,143 @@ const CHECKOUT_OTP_TOKEN_TTL_MS = 50 * 60 * 1000;
 const CHECKOUT_OTP_RESEND_MS = 60 * 1000;
 const CHECKOUT_OTP_MAX_SENDS_10_MIN = 3;
 const CHECKOUT_OTP_MAX_ATTEMPTS = 5;
+const CHECKOUT_OTP_ADMIN_ALERT_DELAY_MS = 4 * 60 * 1000;
+const CHECKOUT_OTP_RECORD_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+function cleanCheckoutOtpDetail(value, maxLength = 300) {
+  return String(value || "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function getCheckoutOtpDetails(body = {}) {
+  const details = body.checkoutDetails || {};
+  return {
+    name: cleanCheckoutOtpDetail(details.name, 200),
+    email: cleanCheckoutOtpDetail(details.email, 250).toLowerCase(),
+    address: cleanCheckoutOtpDetail(details.address, 400),
+    landmark: cleanCheckoutOtpDetail(details.landmark, 200),
+    city: cleanCheckoutOtpDetail(details.city, 100),
+    state: cleanCheckoutOtpDetail(details.state, 100),
+    pincode: cleanCheckoutOtpDetail(details.pincode, 6),
+  };
+}
+
+async function processAbandonedCheckoutOtpAlerts() {
+  if (!mongoReady) return;
+  while (true) {
+    const challenge = await collections().otpChallenges.findOneAndUpdate(
+      {
+        status: "sent",
+        alertDueAt: { $lte: new Date() },
+        $or: [
+          { adminAlertStatus: { $exists: false } },
+          { adminAlertStatus: "pending" },
+          {
+            adminAlertStatus: "processing",
+            adminAlertProcessingAt: {
+              $lt: new Date(Date.now() - 2 * 60 * 1000),
+            },
+          },
+        ],
+      },
+      {
+        $set: {
+          adminAlertStatus: "processing",
+          adminAlertProcessingAt: new Date(),
+        },
+      },
+      { sort: { alertDueAt: 1 }, returnDocument: "after" },
+    );
+    if (!challenge) break;
+
+    const phone = normalizeFast2SmsNumber(challenge.phone);
+    try {
+      const [freshChallenge, existingUser] = await Promise.all([
+        collections().otpChallenges.findOne({ _id: challenge._id }),
+        findUserByPhone(phone),
+      ]);
+      if (freshChallenge?.status !== "sent" || existingUser) {
+        await collections().otpChallenges.updateOne(
+          { _id: challenge._id },
+          {
+            $set: {
+              adminAlertStatus: "cancelled",
+              adminAlertCancelledAt: new Date(),
+              adminAlertCancellationReason: existingUser
+                ? "matching_user_found"
+                : "otp_no_longer_pending",
+            },
+          },
+        );
+        continue;
+      }
+
+      const caseId = `VLR-OTP-${String(challenge.challengeId).slice(0, 8).toUpperCase()}`;
+      const checkout = challenge.checkoutDetails || {};
+      const supportCase = {
+        case_id: caseId,
+        otp_challenge_id: challenge.challengeId,
+        phone: `91${phone}`,
+        category: { key: "checkout_otp", label: "Checkout OTP not received" },
+        details: "Customer requested a checkout OTP but did not complete phone verification within 4 minutes.",
+        checkout_details: checkout,
+        source: "website_checkout",
+        status: "open",
+        priority: "high",
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      await collections().supportCases.updateOne(
+        { otp_challenge_id: challenge.challengeId },
+        { $setOnInsert: supportCase },
+        { upsert: true },
+      );
+      const alertResults = await notifyCustomerCareAdmins({
+        caseId,
+        user: { name: checkout.name || "Website checkout customer" },
+        phone,
+        details: supportCase.details,
+      });
+      const acceptedAlertCount = alertResults.filter(
+        (result) => result.sent,
+      ).length;
+      await collections().otpChallenges.updateOne(
+        { _id: challenge._id },
+        {
+          $set: {
+            adminAlertStatus:
+              acceptedAlertCount === alertResults.length ? "sent" : "partial",
+            adminAlertedAt: new Date(),
+            adminAlertRecipients: alertResults,
+            supportCaseId: caseId,
+          },
+          $unset: { adminAlertProcessingAt: "" },
+        },
+      );
+      console.log("[FAST2SMS_AUTH][OTP_ADMIN_ALERT_SENT]", {
+        recipient: maskWhatsappPhone(phone),
+        challengeId: challenge.challengeId,
+        caseId,
+        alertsAccepted: acceptedAlertCount,
+      });
+    } catch (error) {
+      await collections().otpChallenges.updateOne(
+        { _id: challenge._id },
+        {
+          $set: {
+            adminAlertStatus: "pending",
+            adminAlertError: String(error.message).slice(0, 500),
+          },
+          $unset: { adminAlertProcessingAt: "" },
+        },
+      );
+      throw error;
+    }
+  }
+}
 
 function getCheckoutOtpSecret() {
   return (
@@ -7395,6 +7560,7 @@ async function verifyCheckoutPhoneIdentity(token, expectedPhone) {
 
 app.post("/api/auth/otp/send", async (req, res) => {
   const phone = normalizeFast2SmsNumber(req.body?.phone);
+  const checkoutDetails = getCheckoutOtpDetails(req.body);
   if (!phone)
     return res
       .status(400)
@@ -7464,8 +7630,12 @@ app.post("/api/auth/otp/send", async (req, res) => {
         0,
         100,
       ),
+      checkoutDetails,
+      alertDueAt: new Date(now.getTime() + CHECKOUT_OTP_ADMIN_ALERT_DELAY_MS),
+      adminAlertStatus: "pending",
       createdAt: now,
       expiresAt: new Date(now.getTime() + CHECKOUT_OTP_TTL_MS),
+      cleanupAt: new Date(now.getTime() + CHECKOUT_OTP_RECORD_RETENTION_MS),
     });
 
     try {
@@ -7482,6 +7652,17 @@ app.post("/api/auth/otp/send", async (req, res) => {
             status: "sent",
             providerRequestId: provider.request_id || null,
             sentAt: new Date(),
+          },
+        },
+      );
+      await otpChallenges.updateMany(
+        { phone, challengeId: { $ne: challengeId }, status: "sent" },
+        {
+          $set: {
+            status: "superseded",
+            supersededAt: new Date(),
+            adminAlertStatus: "cancelled",
+            adminAlertCancellationReason: "newer_otp_requested",
           },
         },
       );
@@ -7586,7 +7767,15 @@ app.post("/api/auth/otp/verify", async (req, res) => {
     const verifiedAt = new Date();
     await otpChallenges.updateOne(
       { challengeId, status: "sent" },
-      { $set: { status: "verified", verifiedAt }, $unset: { otpHash: "" } },
+      {
+        $set: {
+          status: "verified",
+          verifiedAt,
+          adminAlertStatus: "cancelled",
+          adminAlertCancellationReason: "otp_verified",
+        },
+        $unset: { otpHash: "" },
+      },
     );
     const verificationToken = signCheckoutPhoneToken(
       phone,
@@ -9329,10 +9518,11 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     const updatedOrder = { ...order, ...updates };
     let whatsappUpdate = { sent: false, reason: "not_requested" };
 
+    const notifyWhatsapp = req.body.notifyWhatsapp !== false;
     const isCodConfirmation =
       isCodOrder(updatedOrder) &&
       /confirmed|processing/i.test(String(updates.shippingStatus || ""));
-    if (isCodConfirmation) {
+    if (notifyWhatsapp && isCodConfirmation) {
       const codJob = await scheduleWhatsappJob({
         event: "cod_confirmation",
         phone: updatedOrder.whatsappPhone || updatedOrder.phone,
@@ -9344,10 +9534,33 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         sent: false,
         scheduled: codJob.scheduled,
         jobKey: codJob.jobKey,
+        reason: codJob.reason || null,
       };
-    } else if (isDeliveredUpdate) {
+    }
+
+    // A COD confirmation has a stable, one-time job key. If it was already
+    // sent, create a fresh status-update job so every checked fulfilment save
+    // still notifies the customer.
+    if (notifyWhatsapp && (!isCodConfirmation || !whatsappUpdate.scheduled)) {
+      const statusJob = await scheduleWhatsappJob({
+        event: "order_status_update",
+        phone: updatedOrder.whatsappPhone || updatedOrder.phone,
+        order: updatedOrder,
+        parameters: getOrderStatusTemplateParams(updatedOrder),
+        scheduledAt: new Date(),
+        occurrence: `${String(updatedOrder.shippingStatus || "update").toLowerCase()}:${Date.now()}`,
+      });
+      whatsappUpdate = {
+        sent: false,
+        scheduled: statusJob.scheduled,
+        jobKey: statusJob.jobKey,
+        reason: statusJob.reason || null,
+      };
+    }
+
+    if (notifyWhatsapp && isDeliveredUpdate) {
       const phone = updatedOrder.whatsappPhone || updatedOrder.phone;
-      const deliveredJob = await scheduleWhatsappJob({
+      await scheduleWhatsappJob({
         event: "delivered_ready_to_cook",
         phone,
         order: updatedOrder,
@@ -9367,25 +9580,6 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
           new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
         ),
       });
-      whatsappUpdate = {
-        sent: false,
-        scheduled: deliveredJob.scheduled,
-        jobKey: deliveredJob.jobKey,
-      };
-    } else if (req.body.notifyWhatsapp !== false) {
-      const statusJob = await scheduleWhatsappJob({
-        event: "order_status_update",
-        phone: updatedOrder.whatsappPhone || updatedOrder.phone,
-        order: updatedOrder,
-        parameters: getOrderStatusTemplateParams(updatedOrder),
-        scheduledAt: new Date(),
-        occurrence: `${String(updatedOrder.shippingStatus || "update").toLowerCase()}:${Date.now()}`,
-      });
-      whatsappUpdate = {
-        sent: false,
-        scheduled: statusJob.scheduled,
-        jobKey: statusJob.jobKey,
-      };
     }
 
     res.json({

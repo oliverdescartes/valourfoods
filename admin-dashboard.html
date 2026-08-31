@@ -1188,13 +1188,21 @@
         message.className = "notice";
         message.textContent = "Saving…";
         try {
-          await api(
+          const result = await api(
             `/api/orders/${encodeURIComponent(form.dataset.orderForm)}/shipping-status`,
             { method: "POST", body: JSON.stringify(payload) },
           );
-          message.className = "notice success";
-          message.textContent =
-            "Order updated and WhatsApp workflow processed.";
+          const whatsapp = result.whatsappUpdate || {};
+          if (!payload.notifyWhatsapp) {
+            message.className = "notice success";
+            message.textContent = "Order updated without a WhatsApp message.";
+          } else if (whatsapp.scheduled) {
+            message.className = "notice success";
+            message.textContent = "Order updated and WhatsApp message queued.";
+          } else {
+            message.className = "notice error";
+            message.textContent = `Order updated, but WhatsApp was not queued${whatsapp.reason ? `: ${whatsapp.reason}` : "."}`;
+          }
           await loadDashboard();
         } catch (error) {
           message.className = "notice error";
