@@ -650,6 +650,9 @@
           Delivery monitor</button
         ><button class="btn ghost tab" data-tab="coupons">
           Customer coupons
+        </button
+        ><button class="btn ghost tab" data-tab="delivery">
+          Delivery settings
         </button>
       </nav>
       <section class="panel" id="orders-panel">
@@ -682,6 +685,38 @@
           ><span id="page-label">Page 1</span
           ><button class="btn ghost" id="next">Next</button>
         </div>
+      </section>
+      <section class="panel" id="delivery-settings-panel" hidden>
+        <h2>Checkout delivery timing</h2>
+        <p class="muted">
+          This promise appears at checkout and in customer order tracking.
+        </p>
+        <form id="delivery-timing-form" class="form-grid">
+          <div class="field">
+            <label for="delivery-time-value">Delivery within</label>
+            <input
+              id="delivery-time-value"
+              type="number"
+              min="1"
+              max="30"
+              step="1"
+              value="1"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="delivery-time-unit">Time unit</label>
+            <select id="delivery-time-unit" required>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+            </select>
+          </div>
+          <div class="field full">
+            <p class="muted">Current promise: <strong id="delivery-timing-current">Within 1 hour</strong></p>
+            <button class="btn" type="submit">Save delivery timing</button>
+            <p class="notice" id="delivery-timing-message"></p>
+          </div>
+        </form>
       </section>
       <section class="panel" id="conversations-panel" hidden>
         <h2>WhatsApp conversations</h2>
@@ -927,6 +962,16 @@
           )
           .join("");
       }
+      function renderDeliveryTiming() {
+        const timing = dashboard.deliveryTiming || {
+          value: 1,
+          unit: "hours",
+          label: "Within 1 hour",
+        };
+        $("#delivery-time-value").value = timing.value;
+        $("#delivery-time-unit").value = timing.unit;
+        $("#delivery-timing-current").textContent = timing.label;
+      }
       const statusOptions = [
         "Order confirmed",
         "Processing",
@@ -1121,6 +1166,7 @@
           params.set("paymentStatus", $("#payment-filter").value);
         dashboard = await api(`/api/admin/dashboard?${params}`);
         renderMetrics(dashboard.metrics);
+        renderDeliveryTiming();
         renderOrders();
         renderCoupons();
         renderWhatsapp();
@@ -1200,6 +1246,7 @@
           $("#conversations-panel").hidden = activeTab !== "conversations";
           $("#whatsapp-panel").hidden = activeTab !== "whatsapp";
           $("#coupons-panel").hidden = activeTab !== "coupons";
+          $("#delivery-settings-panel").hidden = activeTab !== "delivery";
           if (activeTab === "conversations")
             loadConversations().catch(showLoadError);
         }),
@@ -1208,6 +1255,28 @@
         event.preventDefault();
         selectedConversationPhone = "";
         loadConversations().catch(showLoadError);
+      });
+      $("#delivery-timing-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = $("#delivery-timing-message");
+        const payload = {
+          value: Number($("#delivery-time-value").value),
+          unit: $("#delivery-time-unit").value,
+        };
+        message.className = "notice";
+        message.textContent = "Saving...";
+        try {
+          const data = await api("/api/admin/delivery-timing", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          message.className = "notice success";
+          message.textContent = `${data.deliveryTiming.label} saved.`;
+          await loadDashboard();
+        } catch (error) {
+          message.className = "notice error";
+          message.textContent = error.message;
+        }
       });
       $("#coupon-form").addEventListener("submit", async (event) => {
         event.preventDefault();

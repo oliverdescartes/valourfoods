@@ -2277,21 +2277,43 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
   return `${formatter.format(firstDay)} – ${formatter.format(secondDay)}`;
 }
 
-function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
-  const deliveryWithinHours = Number(rules.deliveryWithinHours);
+function getDeliveryTimingFromRules(rules = {}) {
+  const configuredValue = Number(rules.deliveryTimeValue);
+  const configuredUnit = String(rules.deliveryTimeUnit || "").toLowerCase();
   if (
-    Number.isFinite(deliveryWithinHours) &&
-    deliveryWithinHours > 0 &&
-    deliveryWithinHours <= 24
+    Number.isSafeInteger(configuredValue) &&
+    configuredValue >= 1 &&
+    configuredValue <= 30 &&
+    ["hours", "days"].includes(configuredUnit)
   ) {
     return {
-      expectedDeliveryAt: new Date(
-        now.getTime() + deliveryWithinHours * 60 * 60_000,
-      ).toISOString(),
-      deliveryWithinHours,
-      estimatedDelivery: `Within ${deliveryWithinHours} ${
-        deliveryWithinHours === 1 ? "hour" : "hours"
-      }`,
+      value: configuredValue,
+      unit: configuredUnit,
+    };
+  }
+
+  const legacyHours = Number(rules.deliveryWithinHours);
+  if (Number.isSafeInteger(legacyHours) && legacyHours >= 1 && legacyHours <= 24)
+    return { value: legacyHours, unit: "hours" };
+
+  return null;
+}
+
+function formatDeliveryTiming(value, unit) {
+  const singular = unit === "hours" ? "hour" : "day";
+  return `Within ${value} ${value === 1 ? singular : unit}`;
+}
+
+function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
+  const timing = getDeliveryTimingFromRules(rules);
+  if (timing) {
+    const durationMs =
+      timing.value * (timing.unit === "hours" ? 60 * 60_000 : 24 * 60 * 60_000);
+    return {
+      expectedDeliveryAt: new Date(now.getTime() + durationMs).toISOString(),
+      deliveryTimeValue: timing.value,
+      deliveryTimeUnit: timing.unit,
+      estimatedDelivery: formatDeliveryTiming(timing.value, timing.unit),
     };
   }
 
@@ -6941,7 +6963,8 @@ function quoteToOrderFields(quote) {
     couponCode: quote.couponCode,
     couponScope: quote.couponScope,
     expectedDeliveryAt: quote.expectedDeliveryAt,
-    deliveryWithinHours: quote.deliveryWithinHours,
+    deliveryTimeValue: quote.deliveryTimeValue,
+    deliveryTimeUnit: quote.deliveryTimeUnit,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
@@ -6990,6 +7013,13 @@ function parseUsageLimit(value, fallback = 1) {
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new Error("Usage limit must be a positive integer");
   return limit;
+}
+
+function checkoutClientError(message, code) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  error.code = code;
+  return error;
 }
 
 async function recordCouponRedemption(order, orderId) {
@@ -7169,8 +7199,14 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
       const perAccountLimit = Number(
         hiddenCoupon.usageLimitPerAccount || hiddenCoupon.usageLimit || 1,
       );
-      if (couponUsageCount(previousUse) >= perAccountLimit)
-        throw new Error("This coupon has already been used by this user");
+      if (couponUsageCount(previousUse) >= perAccountLimit) {
+        throw checkoutClientError(
+          perAccountLimit === 1
+            ? "You've already used this coupon. It can only be used once per account."
+            : `You've reached this coupon's limit of ${perAccountLimit} uses per account.`,
+          "COUPON_ACCOUNT_LIMIT_REACHED",
+        );
+      }
     }
     couponScope = "hidden";
   } else if (normalizedCode && universalCoupon) {
@@ -7180,8 +7216,12 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
         phone: normalizedPhone,
         code: normalizedCode,
       });
-      if (previousUse)
-        throw new Error("This coupon has already been used by this user");
+      if (previousUse) {
+        throw checkoutClientError(
+          "You've already used this coupon. It can only be used once per account.",
+          "COUPON_ACCOUNT_LIMIT_REACHED",
+        );
+      }
     }
     couponScope = "universal";
   } else if (normalizedCode) {
@@ -7975,6 +8015,10 @@ app.get("/api/admin/dashboard", async (req, res) => {
         minSubtotal: Number(definition.minSubtotalPaise || 0) / 100,
       }),
     );
+    const deliveryTiming = getDeliveryTimingFromRules(rules) || {
+      value: Number(rules?.deliveryMaxDays) || 1,
+      unit: "days",
+    };
 
     return res.json({
       ok: true,
@@ -7994,6 +8038,10 @@ app.get("/api/admin/dashboard", async (req, res) => {
         pages: Math.max(1, Math.ceil(filteredCount / limit)),
       },
       couponDefinitions,
+      deliveryTiming: {
+        ...deliveryTiming,
+        label: formatDeliveryTiming(deliveryTiming.value, deliveryTiming.unit),
+      },
       assignments: assignments.map((assignment) => ({
         id: String(assignment._id),
         phone: assignment.phone,
@@ -8148,6 +8196,48 @@ app.get("/api/coupons/mine", async (req, res) => {
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
+});
+
+app.post("/api/admin/delivery-timing", async (req, res) => {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const value = Number(req.body.value);
+  const unit = String(req.body.unit || "").trim().toLowerCase();
+  if (!Number.isSafeInteger(value) || value < 1 || value > 30) {
+    return res.status(400).json({
+      ok: false,
+      error: "Delivery time must be a whole number from 1 to 30",
+    });
+  }
+  if (!["hours", "days"].includes(unit)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Delivery time unit must be hours or days",
+    });
+  }
+
+  const now = new Date();
+  await collections().pricingRules.updateOne(
+    { _id: "checkout" },
+    {
+      $set: {
+        deliveryTimeValue: value,
+        deliveryTimeUnit: unit,
+        updatedAt: now,
+      },
+      $setOnInsert: { createdAt: now },
+    },
+    { upsert: true },
+  );
+  return res.json({
+    ok: true,
+    deliveryTiming: { value, unit, label: formatDeliveryTiming(value, unit) },
+  });
 });
 
 app.post("/api/admin/coupons/assign", async (req, res) => {
@@ -8526,11 +8616,13 @@ app.post("/api/checkout/quote", async (req, res) => {
     });
     res.json({ ok: true, quote });
   } catch (error) {
-    const status = /unavailable|requires|quantity|required|configured/i.test(
-      error.message,
-    )
-      ? 400
-      : 500;
+    const status =
+      error.statusCode ||
+      (/unavailable|requires|quantity|required|configured|coupon/i.test(
+        error.message,
+      )
+        ? 400
+        : 500);
     res.status(status).json({
       ok: false,
       error: status === 400 ? error.message : "Unable to calculate checkout",
@@ -9322,10 +9414,22 @@ app.get("/api/order-tracking/:token", async (req, res) => {
   }
 
   try {
-    const order = await findOrderByReference(orderReference);
+    const [order, rules] = await Promise.all([
+      findOrderByReference(orderReference),
+      collections().pricingRules.findOne({ _id: "checkout" }),
+    ]);
     if (!order) {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }
+    const hasManualDeliveryDate = Boolean(
+      order.deliverySource === "internal" || order.expectedDeliveryDate,
+    );
+    const expectedDelivery = hasManualDeliveryDate
+      ? getExpectedDeliveryText(order)
+      : getDefaultExpectedDeliveryFields(
+          new Date(order.createdAt || Date.now()),
+          rules || {},
+        ).estimatedDelivery;
 
     res.json({
       ok: true,
@@ -9338,7 +9442,7 @@ app.get("/api/order-tracking/:token", async (req, res) => {
         shippingStatus: order.shippingStatus || "Order confirmed",
         courierName: order.courierName || null,
         trackingUrl: order.trackingUrl || null,
-        expectedDelivery: getExpectedDeliveryText(order),
+        expectedDelivery,
         items: getPublicOrderItems(order),
         updatedAt: order.updatedAt || order.paidAt || order.createdAt || null,
       },
@@ -9788,6 +9892,7 @@ module.exports = {
     getOrderStatusTemplateParams,
     getDefaultExpectedDeliveryFields,
     getExpectedDeliveryText,
+    validateOrderPayload,
     getPublicOrderItems,
     parseGupshupV2Webhook,
     getWhatsappTemplateMediaConfig,

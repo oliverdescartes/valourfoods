@@ -815,6 +815,17 @@ async function refreshServerPricing() {
     renderSummary();
   } catch (error) {
     console.error("Server pricing unavailable", error);
+    if (state.coupon && /coupon|already used|usage limit/i.test(error.message)) {
+      const rejectedCode = state.coupon;
+      delete coupons[rejectedCode];
+      state.coupon = null;
+      localStorage.removeItem(COUPON_KEY);
+      dom.couponInput.value = rejectedCode;
+      renderCart();
+      renderSummary();
+      setCouponError(error.message);
+      showToast(error.message, "error");
+    }
   }
 }
 
@@ -942,7 +953,8 @@ function applyQuoteDelivery(quote = {}) {
   if (!quote.estimatedDelivery) return;
   state.delivery = {
     expectedDeliveryAt: quote.expectedDeliveryAt,
-    deliveryWithinHours: quote.deliveryWithinHours,
+    deliveryTimeValue: quote.deliveryTimeValue,
+    deliveryTimeUnit: quote.deliveryTimeUnit,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
