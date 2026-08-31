@@ -48,7 +48,7 @@ const state = {
   pricingRequestId: 0,
   pricingTimer: null,
   delivery: null,
-  step: CHECKOUT_STEPS.CART,
+  step: CHECKOUT_STEPS.DETAILS,
   paymentMethod: "upi",
 };
 
@@ -201,7 +201,7 @@ function updateFloatingSubtotalBar() {
 }
 
 function setCheckoutStep(step) {
-  if (!state.cart.length) {
+  if (!state.cart.length && step === CHECKOUT_STEPS.REVIEW) {
     state.step = CHECKOUT_STEPS.CART;
   } else {
     state.step = step;
@@ -223,15 +223,14 @@ function navigateToProgressStep(progressStep) {
   const destination = destinations[progressStep];
   if (!destination) return;
 
-  if (!state.cart.length && destination.step !== CHECKOUT_STEPS.CART) {
+  if (!state.cart.length && destination.step === CHECKOUT_STEPS.REVIEW) {
     showToast("Add an item before continuing.", "error");
     setCheckoutStep(CHECKOUT_STEPS.CART);
     return;
   }
 
-  if (destination.step === CHECKOUT_STEPS.REVIEW && !validateForm(true)) {
-    setCheckoutStep(CHECKOUT_STEPS.DETAILS);
-    dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (destination.step === CHECKOUT_STEPS.REVIEW) {
+    continueToReview();
     return;
   }
 
@@ -251,14 +250,16 @@ function renderCheckoutStage() {
 
   dom.cartPanel.hidden = !isCartStep || isSuccessStep;
   dom.couponPanel.hidden = isEmpty || !isCartStep;
-  dom.form.hidden = isEmpty || !isDetailsStep;
+  dom.form.hidden = !isDetailsStep;
   dom.deliveryPanel.hidden = true;
   dom.trustStrip.hidden = !isSuccessStep;
   dom.mobileSummaryPanel.hidden = isEmpty || !isReviewStep;
   dom.successPanel.hidden = !isSuccessStep;
   dom.mobileBar.hidden = isEmpty || isSuccessStep;
   dom.stepActions.forEach((action) => {
-    action.hidden = isEmpty || action.dataset.stepActions !== state.step;
+    action.hidden =
+      action.dataset.stepActions !== state.step ||
+      (isEmpty && action.dataset.stepActions === CHECKOUT_STEPS.CART);
   });
   dom.checkoutLayout.classList.add("is-single-column");
   updateFloatingSubtotalBar();
@@ -824,7 +825,6 @@ async function refreshServerPricing() {
       renderCart();
       renderSummary();
       setCouponError(error.message);
-      showToast(error.message, "error");
     }
   }
 }
@@ -892,7 +892,9 @@ function renderCart() {
   const isEmpty = state.cart.length === 0;
   dom.emptyState.hidden = !isEmpty;
   dom.cartItems.hidden = isEmpty;
-  if (isEmpty) state.step = CHECKOUT_STEPS.CART;
+  if (isEmpty && state.step === CHECKOUT_STEPS.REVIEW) {
+    state.step = CHECKOUT_STEPS.CART;
+  }
   renderCheckoutStage();
 }
 
@@ -980,8 +982,8 @@ function updateProgress() {
     );
     step.classList.toggle(
       "is-complete",
-      (name === "cart" && hasCart && !isCartStep) ||
-        (name === "details" && hasAddress && (isReviewStep || isSuccessStep)) ||
+      (name === "details" && hasAddress && !isDetailsStep) ||
+        (name === "cart" && hasCart && (isReviewStep || isSuccessStep)) ||
         (name === "payment" && isSuccessStep),
     );
     if (step.classList.contains("is-active")) {
@@ -995,8 +997,8 @@ function updateProgress() {
     line.classList.toggle(
       "is-complete",
       index === 0
-        ? !isCartStep && hasCart
-        : (isReviewStep || isSuccessStep) && hasAddress,
+        ? (isCartStep || isReviewStep || isSuccessStep) && hasAddress
+        : (isReviewStep || isSuccessStep) && hasCart,
     );
   });
 }
@@ -1124,7 +1126,7 @@ async function applyCoupon(rawCode) {
 function setCouponError(message) {
   dom.couponRow.classList.add("is-invalid");
   dom.couponMessage.textContent = message;
-  dom.couponMessage.classList.add("is-error");
+  dom.couponMessage.className = "field-message is-error";
   showToast(message, "error");
 }
 
@@ -1279,15 +1281,30 @@ function renderSuccessOrderItems() {
   dom.successTotal.textContent = money(state.totals.total);
 }
 
-function continueToDetails() {
-  if (!state.cart.length) {
-    showToast("Add an item before continuing.", "error");
+function showCartStep() {
+  saveDraft();
+  scheduleServerPricing();
+  setCheckoutStep(CHECKOUT_STEPS.CART);
+  dom.cartPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  trackEvent("valour_checkout_step_cart");
+}
+
+function continueToCart(event) {
+  if (event) event.preventDefault();
+
+  if (!validateForm(true)) {
+    showToast("A few delivery details need attention.", "error");
     return;
   }
 
-  setCheckoutStep(CHECKOUT_STEPS.DETAILS);
-  dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
-  trackEvent("valour_checkout_step_details");
+  const values = getFormValues();
+  if (!hasVerifiedUser(values.phone)) {
+    saveDraft();
+    startOtpVerification("cart");
+    return;
+  }
+
+  showCartStep();
 }
 
 function showReviewStep() {
@@ -1323,12 +1340,12 @@ function continueToReview(event) {
 }
 
 function handleFloatingStep() {
-  if (state.step === CHECKOUT_STEPS.CART) {
-    continueToDetails();
+  if (state.step === CHECKOUT_STEPS.DETAILS) {
+    continueToCart();
     return;
   }
 
-  if (state.step === CHECKOUT_STEPS.DETAILS) {
+  if (state.step === CHECKOUT_STEPS.CART) {
     continueToReview();
     return;
   }
@@ -1442,6 +1459,7 @@ async function startOtpVerification(nextAction = null) {
     if (result.existingUser) {
       saveVerifiedUser(result);
       showToast("Welcome back. Your details have been saved.");
+      if (otpState.nextAction === "cart") showCartStep();
       if (otpState.nextAction === "review") showReviewStep();
       otpState.nextAction = null;
       return;
@@ -1489,6 +1507,12 @@ async function verifyOtp(event) {
   closeOtpModal();
   trackEvent("valour_user_verified", { phone: otpState.phone });
   showToast("Mobile verified.");
+
+  if (otpState.nextAction === "cart") {
+    otpState.nextAction = null;
+    showCartStep();
+    return;
+  }
 
   if (otpState.nextAction === "review") {
     otpState.nextAction = null;
@@ -1796,8 +1820,8 @@ function bindEvents() {
   });
 
   document
-    .querySelector("[data-action='continue-to-details']")
-    .addEventListener("click", continueToDetails);
+    .querySelector("[data-action='continue-to-cart']")
+    .addEventListener("click", continueToCart);
   document
     .querySelector("[data-action='continue-to-review']")
     .addEventListener("click", continueToReview);
@@ -1820,7 +1844,7 @@ function bindEvents() {
       button.addEventListener("click", placeOrder);
     });
 
-  dom.form.addEventListener("submit", continueToReview);
+  dom.form.addEventListener("submit", continueToCart);
   dom.form.addEventListener("input", () => {
     saveDraft();
     updateProgress();

@@ -87,25 +87,25 @@
 
     <div class="page-shell">
       <main class="checkout-layout">
-        <section class="checkout-main" aria-labelledby="cart-title">
+        <section class="checkout-main" aria-label="Checkout">
           <div class="progress-card" aria-label="Checkout progress">
             <button
               class="progress-step is-active"
               type="button"
-              data-progress-step="cart"
+              data-progress-step="details"
               aria-current="step"
             >
               <span class="progress-step-number">1</span>
-              <span class="progress-step-label">Cart</span>
+              <span class="progress-step-label">Details</span>
             </button>
             <div class="progress-line" aria-hidden="true"></div>
             <button
               class="progress-step"
               type="button"
-              data-progress-step="details"
+              data-progress-step="cart"
             >
               <span class="progress-step-number">2</span>
-              <span class="progress-step-label">Details</span>
+              <span class="progress-step-label">Cart</span>
             </button>
             <div class="progress-line" aria-hidden="true"></div>
             <button
@@ -195,7 +195,7 @@
             <button
               class="primary-btn"
               type="button"
-              data-action="continue-to-details"
+              data-action="continue-to-review"
             >
               Continue
             </button>
@@ -297,7 +297,7 @@
             <button
               class="primary-btn"
               type="button"
-              data-action="continue-to-review"
+              data-action="continue-to-cart"
             >
               Continue
             </button>
@@ -728,6 +728,6 @@
       </div>
     </div>
 
-    <script src="checkout-script.js?v=20260831-delivery-area-1" defer></script>
+    <script src="checkout-script.js?v=20260831-details-first-1" defer></script>
   </body>
 </html>
