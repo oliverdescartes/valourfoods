@@ -3151,6 +3151,144 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
   return true;
 }
 
+function isWhatsappOrderAdmin(phone) {
+  return DEFAULT_CUSTOMER_CARE_PHONES.includes(
+    normalizeWhatsappRecipient(phone),
+  );
+}
+
+function formatAdminOrderDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "Not recorded";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatAdminWhatsappOrder(order) {
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const customerName =
+    order.customerName || order.name || order.deliveryDetails?.name || "Not recorded";
+  const customerPhone = normalizeWhatsappRecipient(
+    order.phone || order.whatsappPhone || order.deliveryDetails?.phone,
+  );
+  const addressParts = [
+    order.address || order.addressLine || order.deliveryDetails?.addressLine,
+    order.locality || order.deliveryDetails?.locality,
+    order.city || order.deliveryDetails?.city,
+    order.state || order.deliveryDetails?.state,
+    order.pincode || order.deliveryDetails?.pincode,
+  ].filter(Boolean);
+
+  return `VALOUR order details
+
+Order: ${orderNumber}
+Placed: ${formatAdminOrderDate(order.createdAt || order.created_at)}
+Customer: ${customerName}
+Phone: ${customerPhone ? `+${customerPhone}` : "Not recorded"}
+Payment: ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"} · ${order.paymentStatus || "Not recorded"}
+Order status: ${order.shippingStatus || "Order confirmed"}
+Expected delivery: ${getExpectedDeliveryText(order)}
+Items: ${formatProductsForWhatsapp(order.products || [])}
+Total: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}
+Address: ${addressParts.join(", ") || "Not recorded"}`;
+}
+
+async function sendRecentOrdersToWhatsappAdmin(phone) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  const recentOrders = await collections().orders
+    .find({})
+    .sort({ createdAt: -1, created_at: -1, _id: -1 })
+    .limit(10)
+    .toArray();
+
+  console.log("[WHATSAPP][ADMIN_RECENT_ORDERS]", {
+    admin: maskWhatsappPhone(recipient),
+    count: recentOrders.length,
+  });
+
+  if (!recentOrders.length) {
+    await sendMessage(recipient, "No orders have been recorded yet.");
+    return;
+  }
+
+  await sendListMessage(recipient, {
+    type: "list",
+    title: "Recent VALOUR orders",
+    body: `The ${recentOrders.length} most recent orders are shown below. Select one to view its details.`,
+    footer: "Available only to authorised VALOUR admins.",
+    msgid: "valour_admin_recent_orders",
+    globalButtons: [{ type: "text", title: "View recent orders" }],
+    items: [{
+      title: "Orders",
+      options: recentOrders.map((order) => {
+        const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+        const status = String(order.shippingStatus || "Order confirmed");
+        const total = Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN");
+        return {
+          type: "text",
+          title: orderNumber.slice(0, 24),
+          description: `${status} · Rs. ${total}`.slice(0, 72),
+          postbackText: `ADMIN_ORDER_${String(order._id)}`,
+        };
+      }),
+    }],
+  });
+}
+
+async function handleWhatsappAdminOrderLookup({ phone, text }) {
+  if (!isWhatsappOrderAdmin(phone)) return false;
+  const value = String(text || "").trim();
+  const lower = normalizeText(value);
+
+  if (
+    matchesAny(lower, [
+      "orders",
+      "recent orders",
+      "check orders",
+      "admin orders",
+      "admin_recent_orders",
+    ])
+  ) {
+    await sendRecentOrdersToWhatsappAdmin(phone);
+    return true;
+  }
+
+  const selectedOrder = value.match(/^ADMIN_ORDER_([a-f\d]{24})$/i);
+  if (!selectedOrder) return false;
+
+  const order = await collections().orders.findOne({
+    _id: new ObjectId(selectedOrder[1]),
+  });
+  if (!order) {
+    await sendActionButtons(
+      phone,
+      "That order could not be found. It may have been removed.",
+      [{ type: "text", title: "Recent orders", postbackText: "ADMIN_RECENT_ORDERS" }],
+      "valour_admin_order_missing",
+    );
+    return true;
+  }
+
+  console.log("[WHATSAPP][ADMIN_ORDER_OPENED]", {
+    admin: maskWhatsappPhone(phone),
+    orderId: String(order._id),
+    orderNumber: order.orderNumber || formatOrderNumber(order._id),
+  });
+  await sendActionButtons(
+    phone,
+    formatAdminWhatsappOrder(order),
+    [{ type: "text", title: "Recent orders", postbackText: "ADMIN_RECENT_ORDERS" }],
+    "valour_admin_order_details",
+  );
+  return true;
+}
+
 function validateLocalWhatsappTemplateMedia() {
   const mediaConfig = getWhatsappTemplateMediaConfig();
   const whatsappMediaRoot = path.resolve(__dirname, "../whatsapp");
@@ -5369,6 +5507,10 @@ async function processIncomingMessage(message) {
   });
 
   if (!isNewMessage) {
+    return;
+  }
+
+  if (await handleWhatsappAdminOrderLookup({ phone, text })) {
     return;
   }
 
