@@ -38,7 +38,6 @@
     dd { margin:5px 0 0; font-weight:700; overflow-wrap:anywhere; }
     .items { margin-top:28px; }
     .items ul { margin:10px 0 0; padding-left:20px; line-height:1.7; }
-    .external { display:inline-block; margin-top:24px; color:var(--red); font-weight:800; text-underline-offset:4px; }
     .error { color:var(--red); }
     @media (max-width:480px) { dl { grid-template-columns:1fr; } }
   </style>
@@ -55,10 +54,8 @@
         <div><dt>Order total</dt><dd id="order-total"></dd></div>
         <div><dt>Payment</dt><dd id="payment"></dd></div>
         <div><dt>Expected delivery</dt><dd id="eta"></dd></div>
-        <div><dt>Courier</dt><dd id="courier"></dd></div>
       </dl>
       <div class="items"><span class="label">Items</span><ul id="items"></ul></div>
-      <a class="external" id="courier-link" hidden target="_blank" rel="noopener noreferrer">Track with courier →</a>
     </section>
   </main>
   <script>
@@ -80,7 +77,6 @@
       setText("#order-total", new Intl.NumberFormat("en-IN", { style: "currency", currency: order.currency || "INR" }).format(order.totalAmount || 0));
       setText("#payment", [order.paymentStatus, order.paymentMethod].filter(Boolean).join(" · "));
       setText("#eta", order.expectedDelivery);
-      setText("#courier", order.courierName);
       const items = document.querySelector("#items");
       (order.items || []).forEach((item) => {
         const li = document.createElement("li");
@@ -92,11 +88,6 @@
         items.appendChild(li);
       });
       if (!order.items?.length) items.innerHTML = "<li>Order items unavailable</li>";
-      if (/^https?:\/\//i.test(order.trackingUrl || "")) {
-        const link = document.querySelector("#courier-link");
-        link.href = order.trackingUrl;
-        link.hidden = false;
-      }
       document.querySelector("#details").hidden = false;
     }
     loadTracking().catch((error) => {

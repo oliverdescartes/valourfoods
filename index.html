@@ -1885,6 +1885,31 @@
     font-size: 13px;
   }
 
+  .buy-sheet-product-copy {
+    margin-top: 7px;
+    color: rgba(42, 42, 42, 0.62);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .buy-sheet-product-copy p {
+    margin: 0;
+  }
+
+  .buy-sheet-product-benefits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 12px;
+    margin-top: 7px;
+    color: rgba(42, 42, 42, 0.72);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .buy-sheet-product-benefits span {
+    margin: 0;
+  }
+
   .buy-sheet-row {
     display: flex;
     align-items: center;
@@ -5085,8 +5110,15 @@
         <div class="buy-sheet-product">
           <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" data-buy-sheet-image loading="lazy" decoding="async">
           <div>
-            <strong data-buy-sheet-name>Velvety Butter Chicken</strong>
-            <span data-buy-sheet-meta>520 ml · Makes 1 kg chicken · Serves 6–8</span>
+            <strong data-buy-sheet-name>Velvety Butter Chicken Liquid Spice</strong>
+            <div class="buy-sheet-product-copy" data-buy-sheet-meta>
+              <p data-buy-sheet-description>Make restaurant-style Butter Chicken at home. Just add chicken.</p>
+              <div class="buy-sheet-product-benefits" aria-label="Product quality details">
+                <span>✓ No added preservatives</span>
+                <span>✓ Quality checked</span>
+                <span>✓ Safety-sealed</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="buy-sheet-row">
@@ -5513,7 +5545,6 @@ Prepare less.</h2>
                   <a href="#how-it-works">How it works</a>
                   <a href="privacy-policy">
                     Privacy policy</a>
-                  <a href="#" aria-label="Valour on Instagram">Instagram</a>
                 </nav>
 
                 <div class="footer-social">
@@ -6964,7 +6995,7 @@ function initValourCartActions() {
   const buySheetBackdrop = document.querySelector("[data-buy-sheet-backdrop]");
   const buySheetTitle = document.querySelector("[data-buy-sheet-title]");
   const buySheetName = document.querySelector("[data-buy-sheet-name]");
-  const buySheetMeta = document.querySelector("[data-buy-sheet-meta]");
+  const buySheetDescription = document.querySelector("[data-buy-sheet-description]");
   const buySheetImage = document.querySelector("[data-buy-sheet-image]");
   const buySheetQty = document.querySelector("[data-buy-sheet-qty]");
   const buySheetTotal = document.querySelector("[data-buy-sheet-total]");
@@ -7072,8 +7103,11 @@ function initValourCartActions() {
     if (!selectedBuyProduct) return;
 
     buySheetTitle.textContent = selectedBuyProduct.name.replace(" Liquid Spice", "");
-    buySheetName.textContent = selectedBuyProduct.name;
-    buySheetMeta.textContent = [selectedBuyProduct.size, selectedBuyProduct.serves].filter(Boolean).join(" · ");
+    buySheetName.textContent = selectedBuyProduct.name.includes("Liquid Spice")
+      ? selectedBuyProduct.name
+      : `${selectedBuyProduct.name} Liquid Spice`;
+    buySheetDescription.textContent = selectedBuyProduct.descriptor
+      || "Make restaurant-style Butter Chicken at home. Just add chicken.";
     buySheetImage.src = selectedBuyProduct.image;
     buySheetImage.alt = selectedBuyProduct.name;
     buySheetQty.textContent = selectedBuyQuantity;

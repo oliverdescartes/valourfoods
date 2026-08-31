@@ -415,6 +415,9 @@ async function loadUserCoupons() {
       dom.couponAvailability.hidden = available.length === 0;
     }
     dom.couponAvailability?.classList.toggle("is-empty", available.length === 0);
+    const retainedHiddenCoupons = Object.fromEntries(
+      Object.entries(coupons).filter(([, coupon]) => coupon.scope === "hidden"),
+    );
     Object.keys(coupons).forEach((code) => delete coupons[code]);
     available.forEach((item) => {
       coupons[item.code] = {
@@ -426,6 +429,7 @@ async function loadUserCoupons() {
         scope: item.scope,
       };
     });
+    Object.assign(coupons, retainedHiddenCoupons);
     dom.availableCoupons.innerHTML = available.length
       ? available.map((item) => {
           const benefit = item.type === "fixed" ? `${money(item.value / 100)} off` : `${item.value}% off`;
@@ -655,6 +659,21 @@ async function refreshServerPricing() {
     });
     if (requestId !== state.pricingRequestId) return;
     const quote = result.quote;
+    if (
+      quote.couponScope === "hidden" &&
+      state.coupon &&
+      quote.couponCode === state.coupon &&
+      Number(quote.discountPaise) > 0
+    ) {
+      coupons[state.coupon] = {
+        label: state.coupon,
+        type: "fixed",
+        value: quote.discountPaise / 100,
+        minSubtotal: 0,
+        message: `${state.coupon} applied successfully.`,
+        scope: "hidden",
+      };
+    }
     state.cart = quote.items.map((line) => ({
       ...(state.cart.find((item) => item.id === line.sku) || {}),
       id: line.sku,
@@ -751,7 +770,10 @@ function renderCouponState() {
   });
 
   if (state.coupon && coupons[state.coupon]) {
-    setTextAll("[data-applied-coupon]", `${state.coupon} is active`);
+    const discountText = state.totals.discount
+      ? ` · ${money(state.totals.discount)} off`
+      : "";
+    setTextAll("[data-applied-coupon]", `${state.coupon} applied${discountText}`);
     dom.couponInput.value = state.coupon;
   } else {
     setTextAll("[data-applied-coupon]", "No coupon applied");
@@ -888,10 +910,12 @@ function restoreCart() {
   showToast("Sample Valour cart restored.");
 }
 
-function applyCoupon(rawCode) {
-  const code = rawCode.trim().toUpperCase();
+async function applyCoupon(rawCode) {
+  const enteredCode = String(rawCode || "").trim();
+  const listedCode = enteredCode.toUpperCase();
+  let code = coupons[listedCode] ? listedCode : enteredCode;
   const subtotal = getSubtotal();
-  const coupon = coupons[code];
+  let coupon = coupons[code];
 
   dom.couponRow.classList.remove("is-invalid");
   dom.couponMessage.className = "field-message";
@@ -901,15 +925,44 @@ function applyCoupon(rawCode) {
     return;
   }
 
-  if (!code) {
+  if (!enteredCode) {
     setCouponError("Enter a coupon code.");
     return;
   }
 
   if (!coupon) {
-    setCouponError("That code is not active for this order.");
-    trackEvent("valour_coupon_invalid", { coupon: code });
-    return;
+    try {
+      const result = await postJSON(`${API_BASE}/api/checkout/quote`, {
+        items: state.cart.map((item) => ({
+          sku: item.id,
+          quantity: item.quantity,
+        })),
+        pincode: /^\d{6}$/.test(getPincode()) ? getPincode() : "",
+        couponCode: enteredCode,
+        phone: getStoredUser()?.phone || "",
+      });
+      if (
+        result.quote?.couponCode !== enteredCode ||
+        Number(result.quote.discountPaise) <= 0
+      ) {
+        throw new Error("That code is not active for this order.");
+      }
+      code = result.quote.couponCode;
+      coupon = coupons[code] = {
+        label: code,
+        type: "fixed",
+        value: result.quote.discountPaise / 100,
+        minSubtotal: 0,
+        message: "Coupon applied successfully.",
+        scope: result.quote.couponScope || "hidden",
+      };
+    } catch (error) {
+      setCouponError(
+        error.message || "That code is not active for this order.",
+      );
+      trackEvent("valour_coupon_invalid", { coupon: enteredCode });
+      return;
+    }
   }
 
   if (state.coupon === code) {
@@ -1625,10 +1678,6 @@ function init() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cart));
   state.coupon = localStorage.getItem(COUPON_KEY);
   hydrateDraft();
-
-  if (state.coupon && !coupons[state.coupon]) {
-    state.coupon = null;
-  }
 
   setPaymentMethod(state.paymentMethod);
   bindEvents();

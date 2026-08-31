@@ -58,7 +58,9 @@ function calculateQuote({ requestedItems, products, rules, couponCode = "", ship
   });
 
   const subtotalPaise = lines.reduce((sum, line) => sum + line.lineTotalPaise, 0);
-  const code = String(couponCode || "").trim().toUpperCase();
+  const enteredCode = String(couponCode || "").trim();
+  const normalisedCode = enteredCode.toUpperCase();
+  const code = rules.coupons?.[enteredCode] ? enteredCode : normalisedCode;
   const coupon = code && rules.coupons ? rules.coupons[code] : null;
   let discountPaise = 0;
   if (coupon?.active && subtotalPaise >= asPaise(coupon.minSubtotalPaise || 0, "coupon minimum")) {

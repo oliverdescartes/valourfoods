@@ -111,6 +111,7 @@ function collections() {
     pricingRules: db.collection("pricing_rules"),
     couponAssignments: db.collection("coupon_assignments"),
     universalCoupons: db.collection("universal_coupons"),
+    hiddenCoupons: db.collection("hidden_coupons"),
     couponUsages: db.collection("coupon_usages"),
     flowDefinitions: db.collection("flow_definitions"),
     hesitationRecovery: db.collection("hesitation_recovery"),
@@ -201,6 +202,7 @@ async function connectDB() {
     customerEvents,
     couponAssignments,
     universalCoupons,
+    hiddenCoupons,
     couponUsages,
     otpChallenges,
     accordionContent,
@@ -233,6 +235,8 @@ async function connectDB() {
     couponAssignments.createIndex({ phone: 1, status: 1, assignedAt: -1 }),
     universalCoupons.createIndex({ code: 1 }, { unique: true }),
     universalCoupons.createIndex({ active: 1, startsAt: 1, endsAt: 1 }),
+    hiddenCoupons.createIndex({ code: 1 }, { unique: true }),
+    hiddenCoupons.createIndex({ active: 1, startsAt: 1, endsAt: 1 }),
     couponUsages.createIndex({ phone: 1, code: 1 }, { unique: true }),
     couponUsages.createIndex({ phone: 1, usedAt: -1 }),
     flowDefinitions.createIndex(
@@ -2768,6 +2772,12 @@ async function sendOrderConfirmationWhatsapp(order) {
 async function schedulePaidOrderAutomation(order) {
   const phone = order.whatsappPhone || order.phone;
   const orderReference = getOrderReference(order);
+  void notifyWhatsappAdminsOfNewOrder(order).catch((error) =>
+    console.error("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_ERROR]", {
+      orderId: String(order._id || ""),
+      error: error.message,
+    }),
+  );
   await cancelWhatsappJobs(
     {
       phone: normalizeWhatsappRecipient(phone),
@@ -3310,6 +3320,164 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
     "valour_admin_order_details",
   );
   return true;
+}
+
+function buildAdminNewOrderMessage(order) {
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const customerName =
+    order.customerName || order.name || order.deliveryDetails?.name || "Not recorded";
+  const customerPhone = normalizeWhatsappRecipient(
+    order.phone || order.whatsappPhone || order.deliveryDetails?.phone,
+  );
+  const address = [
+    order.address || order.addressLine || order.deliveryDetails?.addressLine,
+    order.locality || order.deliveryDetails?.locality,
+    order.city || order.deliveryDetails?.city,
+    order.state || order.deliveryDetails?.state,
+    order.pincode || order.deliveryDetails?.pincode,
+  ].filter(Boolean).join(", ");
+
+  return `New VALOUR order received
+
+Order: ${orderNumber}
+Customer: ${customerName}
+Phone: ${customerPhone ? `+${customerPhone}` : "Not recorded"}
+Items: ${formatProductsForWhatsapp(order.products || [])}
+Total: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}
+Payment: ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"} · ${order.paymentStatus || "Not recorded"}
+Delivery: ${address || "Not recorded"}
+
+Open recent orders below for complete details.`;
+}
+
+function buildAdminNewOrderTemplateParams(order) {
+  const clean = (value, maxLength = 500) =>
+    String(value || "")
+      .replace(/[\r\n\t]+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .slice(0, maxLength);
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const customerPhone = normalizeWhatsappRecipient(
+    order.phone || order.whatsappPhone || order.deliveryDetails?.phone,
+  );
+  const address = [
+    order.address || order.addressLine || order.deliveryDetails?.addressLine,
+    order.locality || order.deliveryDetails?.locality,
+    order.city || order.deliveryDetails?.city,
+    order.state || order.deliveryDetails?.state,
+    order.pincode || order.deliveryDetails?.pincode,
+  ].filter(Boolean).join(", ");
+  return [
+    clean(orderNumber, 100),
+    clean(order.customerName || order.name || order.deliveryDetails?.name || "WhatsApp customer", 200),
+    clean(customerPhone ? `+${customerPhone}` : "Not recorded", 30),
+    clean(formatProductsForWhatsapp(order.products || []), 500),
+    clean(`Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} · ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`, 200),
+    clean(address || "Not recorded", 500),
+  ];
+}
+
+async function notifyWhatsappAdminsOfNewOrder(order) {
+  if (!order?._id) {
+    console.error("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_SKIPPED]", {
+      reason: "missing_order_id",
+    });
+    return [];
+  }
+
+  const templateIdentifier =
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID ||
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_NAME ||
+    "";
+  const language =
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_LANGUAGE || "en_US";
+  const results = [];
+
+  for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
+    const claimPath = `adminOrderAlerts.${recipient}.claimedAt`;
+    const claim = await collections().orders.findOneAndUpdate(
+      { _id: order._id, [claimPath]: { $exists: false } },
+      {
+        $set: {
+          [claimPath]: new Date(),
+          [`adminOrderAlerts.${recipient}.status`]: "processing",
+        },
+      },
+      { returnDocument: "after" },
+    );
+    const claimedOrder = claim?.value || (claim?._id ? claim : null);
+    if (!claimedOrder) {
+      results.push({ recipient, sent: false, reason: "already_claimed" });
+      continue;
+    }
+
+    console.log("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_ATTEMPT]", {
+      orderId: String(order._id),
+      orderNumber: order.orderNumber || formatOrderNumber(order._id),
+      recipient: maskWhatsappPhone(recipient),
+      mode: templateIdentifier ? "template" : "session_message",
+    });
+
+    try {
+      const providerResult = templateIdentifier
+        ? await sendTemplateMessage(
+            recipient,
+            templateIdentifier,
+            language,
+            buildAdminNewOrderTemplateParams(order),
+          )
+        : await sendActionButtons(
+            recipient,
+            buildAdminNewOrderMessage(order),
+            [{
+              type: "text",
+              title: "Recent orders",
+              postbackText: "ADMIN_RECENT_ORDERS",
+            }],
+            "valour_admin_new_order",
+          );
+      const providerMessageId = getProviderMessageId(providerResult);
+      await collections().orders.updateOne(
+        { _id: order._id },
+        {
+          $set: {
+            [`adminOrderAlerts.${recipient}.status`]: "submitted",
+            [`adminOrderAlerts.${recipient}.sentAt`]: new Date(),
+            [`adminOrderAlerts.${recipient}.providerMessageId`]:
+              providerMessageId || null,
+          },
+        },
+      );
+      results.push({ recipient, sent: true, providerMessageId });
+      console.log("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_SENT]", {
+        orderId: String(order._id),
+        recipient: maskWhatsappPhone(recipient),
+        providerMessageId,
+      });
+    } catch (error) {
+      await collections().orders.updateOne(
+        { _id: order._id },
+        {
+          $set: {
+            [`adminOrderAlerts.${recipient}.status`]: "failed",
+            [`adminOrderAlerts.${recipient}.failedAt`]: new Date(),
+            [`adminOrderAlerts.${recipient}.error`]: String(
+              error.response?.data?.message || error.message,
+            ).slice(0, 500),
+          },
+          $unset: { [claimPath]: "" },
+        },
+      );
+      results.push({ recipient, sent: false, error: error.message });
+      console.error("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_FAILED]", {
+        orderId: String(order._id),
+        recipient: maskWhatsappPhone(recipient),
+        error: error.response?.data || error.message,
+      });
+    }
+  }
+  return results;
 }
 
 function validateLocalWhatsappTemplateMedia() {
@@ -6768,16 +6936,23 @@ function normalizeCouponPhone(value) {
   return local;
 }
 
-function isCouponAvailable(coupon, now = new Date()) {
+function isCouponAvailable(coupon, now = new Date(), enforceUsageCount = true) {
   if (!coupon || coupon.active === false) return false;
   if (coupon.startsAt && new Date(coupon.startsAt) > now) return false;
   if (coupon.endsAt && new Date(coupon.endsAt) <= now) return false;
+  if (!enforceUsageCount) return true;
   const usageLimit = Number(coupon.usageLimit);
   return (
     !Number.isFinite(usageLimit) ||
     usageLimit < 1 ||
     Number(coupon.usedCount || 0) < usageLimit
   );
+}
+
+function couponUsageCount(usage) {
+  if (!usage) return 0;
+  const count = Number(usage.usedCount);
+  return Number.isSafeInteger(count) && count >= 0 ? count : 1;
 }
 
 function parseCouponDate(value, field) {
@@ -6845,6 +7020,63 @@ async function recordCouponRedemption(order, orderId) {
       },
       { $inc: { usedCount: 1 }, $set: { updatedAt: now } },
     );
+    return;
+  }
+  if (order.couponScope === "hidden") {
+    const definition = await collections().hiddenCoupons.findOne({
+      code: order.couponCode,
+    });
+    const usageLimitPerAccount = Number(
+      definition?.usageLimitPerAccount || definition?.usageLimit || 1,
+    );
+    const existing = await collections().couponUsages.findOne({
+      phone: order.phone,
+      code: order.couponCode,
+    });
+    const orderKey = String(orderId);
+    if (
+      existing?.orderId?.toString() === orderKey ||
+      existing?.orderIds?.some((value) => value.toString() === orderKey)
+    ) return;
+    const currentCount = couponUsageCount(existing);
+    if (currentCount >= usageLimitPerAccount) return;
+    if (!existing) {
+      try {
+        await collections().couponUsages.insertOne({
+          phone: order.phone,
+          code: order.couponCode,
+          usedCount: 1,
+          orderIds: [orderId],
+          usedAt: now,
+          updatedAt: now,
+          source: "website",
+        });
+        return;
+      } catch (error) {
+        if (error?.code === 11000)
+          return recordCouponRedemption(order, orderId);
+        throw error;
+      }
+    }
+    await collections().couponUsages.updateOne(
+      {
+        _id: existing._id,
+        ...(Number.isSafeInteger(Number(existing.usedCount))
+          ? { usedCount: currentCount }
+          : { usedCount: { $exists: false } }),
+        orderIds: { $ne: orderId },
+      },
+      {
+        $set: {
+          usedCount: currentCount + 1,
+          usedAt: now,
+          updatedAt: now,
+          source: "website",
+        },
+        $addToSet: { orderIds: orderId },
+        $unset: { orderId: "" },
+      },
+    );
   }
 }
 
@@ -6855,12 +7087,11 @@ async function getCouponDefinition(code) {
 
 async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
   const requestedItems = normaliseCartItems(items);
-  const { products, pricingRules, universalCoupons } = collections();
-  const normalizedCode = String(couponCode || "")
-    .trim()
-    .toUpperCase();
+  const { products, pricingRules, universalCoupons, hiddenCoupons } = collections();
+  const enteredCode = String(couponCode || "").trim();
+  const normalizedCode = enteredCode.toUpperCase();
   const now = new Date();
-  const [catalogue, storedRules, universalCouponCandidate] = await Promise.all([
+  const [catalogue, storedRules, universalCouponCandidate, hiddenCouponCandidate] = await Promise.all([
     products
       .find({
         sku: { $in: requestedItems.map((item) => item.sku) },
@@ -6890,15 +7121,37 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
           ],
         })
       : null,
+    enteredCode
+      ? hiddenCoupons.findOne({ code: enteredCode, active: true })
+      : null,
   ]);
   if (!storedRules)
     throw new Error("Checkout pricing rules have not been configured");
   const universalCoupon = isCouponAvailable(universalCouponCandidate, now)
     ? universalCouponCandidate
     : null;
+  const hiddenCoupon = isCouponAvailable(hiddenCouponCandidate, now, false)
+    ? hiddenCouponCandidate
+    : null;
 
   let couponScope = null;
-  if (normalizedCode && universalCoupon) {
+  let resolvedCode = normalizedCode;
+  if (enteredCode && hiddenCoupon) {
+    resolvedCode = enteredCode;
+    if (phone) {
+      const normalizedPhone = normalizeCouponPhone(phone);
+      const previousUse = await collections().couponUsages.findOne({
+        phone: normalizedPhone,
+        code: enteredCode,
+      });
+      const perAccountLimit = Number(
+        hiddenCoupon.usageLimitPerAccount || hiddenCoupon.usageLimit || 1,
+      );
+      if (couponUsageCount(previousUse) >= perAccountLimit)
+        throw new Error("This coupon has already been used by this user");
+    }
+    couponScope = "hidden";
+  } else if (normalizedCode && universalCoupon) {
     if (phone) {
       const normalizedPhone = normalizeCouponPhone(phone);
       const previousUse = await collections().couponUsages.findOne({
@@ -6921,10 +7174,11 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
     couponScope = "assigned";
   }
 
-  const rules = universalCoupon
+  const dynamicCoupon = hiddenCoupon || universalCoupon;
+  const rules = dynamicCoupon
     ? {
         ...storedRules,
-        coupons: { ...storedRules.coupons, [normalizedCode]: universalCoupon },
+        coupons: { ...storedRules.coupons, [resolvedCode]: dynamicCoupon },
       }
     : storedRules;
 
@@ -6932,7 +7186,7 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
     requestedItems,
     products: catalogue,
     rules,
-    couponCode: normalizedCode,
+    couponCode: resolvedCode,
   });
   const delivery = getDefaultExpectedDeliveryFields(now, storedRules);
   return {
@@ -7636,7 +7890,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
     const istNow = new Date(now.getTime() + 330 * 60_000);
     istNow.setUTCHours(0, 0, 0, 0);
     const todayStart = new Date(istNow.getTime() - 330 * 60_000);
-    const { orders, couponAssignments, pricingRules, messageJobs } =
+    const { orders, couponAssignments, pricingRules, messageJobs, hiddenCoupons } =
       collections();
     const [
       orderRows,
@@ -7650,6 +7904,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
       assignments,
       whatsappRows,
       whatsappStatusRows,
+      hiddenCouponRows,
     ] = await Promise.all([
       orders
         .find(orderFilter)
@@ -7683,6 +7938,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
           { $group: { _id: "$status", count: { $sum: 1 } } },
         ])
         .toArray(),
+      hiddenCoupons.find({ active: true }).sort({ createdAt: -1 }).limit(100).toArray(),
     ]);
 
     const couponDefinitions = Object.entries(rules?.coupons || {}).map(
@@ -7726,6 +7982,19 @@ app.get("/api/admin/dashboard", async (req, res) => {
         startsAt: assignment.startsAt || null,
         endsAt: assignment.endsAt || null,
         assignedAt: assignment.assignedAt || null,
+      })),
+      hiddenCoupons: hiddenCouponRows.map((coupon) => ({
+        code: coupon.code,
+        type: coupon.type,
+        value:
+          coupon.type === "fixed"
+            ? Number(coupon.valuePaise || 0) / 100
+            : Number(coupon.value || 0),
+        minSubtotal: Number(coupon.minSubtotalPaise || 0) / 100,
+        usageLimitPerAccount:
+          coupon.usageLimitPerAccount || coupon.usageLimit || 1,
+        startsAt: coupon.startsAt || null,
+        endsAt: coupon.endsAt || null,
       })),
       whatsapp: {
         jobs: whatsappRows.map(serializeAdminWhatsappJob),
@@ -7781,6 +8050,7 @@ app.get("/api/coupons/universal", async (req, res) => {
           valuePaise: 1,
           minSubtotalPaise: 1,
           title: 1,
+          usageLimitPerAccount: 1,
           usageLimit: 1,
           usedCount: 1,
           startsAt: 1,
@@ -7790,7 +8060,7 @@ app.get("/api/coupons/universal", async (req, res) => {
       phone
         ? collections()
             .couponUsages.find({ phone })
-            .project({ _id: 0, code: 1, usedAt: 1 })
+            .project({ _id: 0, code: 1, usedAt: 1, usedCount: 1 })
             .toArray()
         : [],
     ]);
@@ -8000,6 +8270,82 @@ app.delete("/api/admin/coupons/universal/:code", async (req, res) => {
   res
     .status(result.matchedCount ? 200 : 404)
     .json({ ok: Boolean(result.matchedCount), code });
+});
+
+app.post("/api/admin/coupons/hidden", async (req, res) => {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const code = String(req.body.code || "").trim();
+    const type = String(req.body.type || "").trim();
+    const value = Number(req.body.value);
+    const minSubtotalPaise = Math.round(Number(req.body.minSubtotal || 0) * 100);
+    const usageLimitPerAccount = parseUsageLimit(
+      req.body.usageLimitPerAccount ?? req.body.usageLimit,
+      1,
+    );
+    const startsAt = parseCouponDate(req.body.startsAt, "Start date");
+    const endsAt = parseCouponDate(req.body.endsAt, "End date");
+    if (!code || code.length > 64 || /[\u0000-\u001f\u007f]/.test(code))
+      throw new Error("Hidden coupon name must be 1-64 visible characters");
+    if (
+      !["percent", "fixed"].includes(type) ||
+      !Number.isFinite(value) ||
+      value <= 0
+    )
+      throw new Error("A valid coupon type and value are required");
+    if (type === "percent" && value > 100)
+      throw new Error("Percentage cannot exceed 100");
+    if (!Number.isSafeInteger(minSubtotalPaise) || minSubtotalPaise < 0)
+      throw new Error("Minimum subtotal is invalid");
+    if (startsAt && endsAt && endsAt <= startsAt)
+      throw new Error("End date must be after start date");
+    const now = new Date();
+    const coupon = {
+      code,
+      active: true,
+      type,
+      usageLimitPerAccount,
+      startsAt,
+      endsAt,
+      minSubtotalPaise,
+      ...(type === "percent"
+        ? { value, valuePaise: null }
+        : { value: null, valuePaise: Math.round(value * 100) }),
+      updatedAt: now,
+    };
+    await collections().hiddenCoupons.updateOne(
+      { code },
+      { $set: coupon, $setOnInsert: { createdAt: now } },
+      { upsert: true },
+    );
+    res.json({ ok: true, coupon });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/api/admin/coupons/hidden/remove", async (req, res) => {
+  if (
+    !process.env.ORDER_ADMIN_TOKEN ||
+    req.get("x-admin-token") !== process.env.ORDER_ADMIN_TOKEN
+  ) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const code = String(req.body.code || "").trim();
+  const result = await collections().hiddenCoupons.updateOne(
+    { code },
+    { $set: { active: false, removedAt: new Date(), updatedAt: new Date() } },
+  );
+  res.status(result.matchedCount ? 200 : 404).json({
+    ok: Boolean(result.matchedCount),
+    code,
+    error: result.matchedCount ? undefined : "Hidden coupon not found",
+  });
 });
 
 app.delete("/api/admin/coupons/assign/:phone/:code", async (req, res) => {
@@ -8286,6 +8632,13 @@ app.post("/api/orders/cod", async (req, res) => {
       whatsappJobKey: confirmation.jobKey || null,
       whatsappScheduled: Boolean(confirmation.scheduled),
     });
+
+    void notifyWhatsappAdminsOfNewOrder(savedOrder).catch((error) =>
+      console.error("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_ERROR]", {
+        orderId: String(savedOrder._id || ""),
+        error: error.message,
+      }),
+    );
 
     return res.status(created ? 201 : 200).json({
       ok: true,
@@ -9342,6 +9695,16 @@ function startServer() {
   getWhatsappTemplateMediaConfig();
   validateWhatsappAutomationConfig();
   validateLocalWhatsappTemplateMedia();
+  if (
+    !process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID &&
+    !process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_NAME
+  ) {
+    console.warn("[WHATSAPP][ADMIN_NEW_ORDER_TEMPLATE_NOT_CONFIGURED]", {
+      deliveryMode: "session_message",
+      explanation:
+        "Admin new-order alerts require an open 24-hour WhatsApp service window until a dedicated utility template is configured",
+    });
+  }
 
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);
