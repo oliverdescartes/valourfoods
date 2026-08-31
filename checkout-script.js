@@ -23,7 +23,8 @@ const sampleCart = [
   {
     id: "velvety-butter-chicken",
     name: "Velvety Butter Chicken",
-    descriptor: "Make restaurant-style Butter Chicken at home. Just add chicken.",
+    descriptor:
+      "Make restaurant-style Butter Chicken at home. Just add chicken.",
     size: "520 ml",
     serves: "Makes up to 1 kg",
     price: 350,
@@ -84,7 +85,9 @@ const dom = {
   availableCoupons: document.querySelector("[data-available-coupons]"),
   usedCoupons: document.querySelector("[data-used-coupons]"),
   couponAvailability: document.querySelector("[data-coupon-availability]"),
-  couponAvailabilityText: document.querySelector("[data-coupon-availability-text]"),
+  couponAvailabilityText: document.querySelector(
+    "[data-coupon-availability-text]",
+  ),
   mobileBarLabel: document.querySelector("[data-mobile-bar-label]"),
   mobileTotal: document.querySelector("[data-mobile-total]"),
   floatingStepButton: document.querySelector("[data-floating-step-button]"),
@@ -181,7 +184,10 @@ function updateFloatingSubtotalBar() {
     return;
 
   const isReviewStep = state.step === CHECKOUT_STEPS.REVIEW;
-  const cartNetSubtotal = Math.max(state.totals.subtotal - state.totals.discount, 0);
+  const cartNetSubtotal = Math.max(
+    state.totals.subtotal - state.totals.discount,
+    0,
+  );
   dom.mobileBarLabel.textContent = isReviewStep
     ? "Total"
     : state.totals.discount
@@ -223,10 +229,7 @@ function navigateToProgressStep(progressStep) {
     return;
   }
 
-  if (
-    destination.step === CHECKOUT_STEPS.REVIEW &&
-    !validateForm(true)
-  ) {
+  if (destination.step === CHECKOUT_STEPS.REVIEW && !validateForm(true)) {
     setCheckoutStep(CHECKOUT_STEPS.DETAILS);
     dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
@@ -289,9 +292,10 @@ function getMetaContents(items = []) {
   return items.map((item) => ({
     id: String(item.sku || item.id || ""),
     quantity: Number(item.quantity) || 1,
-    item_price: Number(
-      item.unitPricePaise != null ? item.unitPricePaise / 100 : item.price,
-    ) || 0,
+    item_price:
+      Number(
+        item.unitPricePaise != null ? item.unitPricePaise / 100 : item.price,
+      ) || 0,
   }));
 }
 
@@ -313,7 +317,8 @@ function trackMetaInitiateCheckout(quote) {
 }
 
 function trackMetaPurchase({ value, currency = "INR", items, orderId }) {
-  if (typeof window.fbq !== "function" || !Number.isFinite(Number(value))) return;
+  if (typeof window.fbq !== "function" || !Number.isFinite(Number(value)))
+    return;
 
   const contents = getMetaContents(items);
   window.fbq("track", "Purchase", {
@@ -342,7 +347,9 @@ function showToast(message, type = "success") {
 }
 
 function normalizeDeliveryPlace(value) {
-  return String(value || "").trim().toLocaleLowerCase("en-IN");
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("en-IN");
 }
 
 function isServiceAreaSupported(values = getFormValues()) {
@@ -357,7 +364,7 @@ function hasUnsupportedServiceArea(values = getFormValues()) {
   const selectedState = normalizeDeliveryPlace(values.state);
   return Boolean(
     (city && city !== DELIVERY_CITY) ||
-      (selectedState && selectedState !== DELIVERY_STATE),
+    (selectedState && selectedState !== DELIVERY_STATE),
   );
 }
 
@@ -421,32 +428,50 @@ function reportCheckoutDetailsSubmitted() {
     cartId: eventId,
     productName: state.cart.map((item) => item.name).join(", "),
     orderValue: money(state.totals.total),
-  }).catch((error) => console.warn("Unable to record checkout event", error.message));
+  }).catch((error) =>
+    console.warn("Unable to record checkout event", error.message),
+  );
 }
 
 async function loadUserCoupons() {
   const user = getStoredUser();
   dom.couponAvailability?.classList.remove("is-empty", "is-error");
   if (dom.couponAvailability) dom.couponAvailability.hidden = true;
-  if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Finding your offers...";
+  if (dom.couponAvailabilityText)
+    dom.couponAvailabilityText.textContent = "Finding your offers...";
   try {
     const universalUrl = user?.phone
       ? `${API_BASE}/api/coupons/universal?phone=${encodeURIComponent(user.phone)}`
       : `${API_BASE}/api/coupons/universal`;
     const universalRequest = fetch(universalUrl);
     const assignedRequest = user?.phone
-      ? fetch(`${API_BASE}/api/coupons/mine?phone=${encodeURIComponent(user.phone)}`)
+      ? fetch(
+          `${API_BASE}/api/coupons/mine?phone=${encodeURIComponent(user.phone)}`,
+        )
       : Promise.resolve(null);
-    const [universalResponse, assignedResponse] = await Promise.all([universalRequest, assignedRequest]);
+    const [universalResponse, assignedResponse] = await Promise.all([
+      universalRequest,
+      assignedRequest,
+    ]);
     const universalData = await universalResponse.json().catch(() => ({}));
-    if (!universalResponse.ok || universalData.ok === false) throw new Error(universalData.error || "Unable to load coupons");
-    const assignedData = assignedResponse ? await assignedResponse.json().catch(() => ({})) : { coupons: [] };
-    if (assignedResponse && (!assignedResponse.ok || assignedData.ok === false)) {
+    if (!universalResponse.ok || universalData.ok === false)
+      throw new Error(universalData.error || "Unable to load coupons");
+    const assignedData = assignedResponse
+      ? await assignedResponse.json().catch(() => ({}))
+      : { coupons: [] };
+    if (
+      assignedResponse &&
+      (!assignedResponse.ok || assignedData.ok === false)
+    ) {
       throw new Error(assignedData.error || "Unable to load your coupons");
     }
 
-    const phoneKey = String(user?.phone || "").replace(/\D/g, "").slice(-10);
-    const locallyUsed = user ? readJSON(USED_COUPONS_KEY, {})[phoneKey] || [] : [];
+    const phoneKey = String(user?.phone || "")
+      .replace(/\D/g, "")
+      .slice(-10);
+    const locallyUsed = user
+      ? readJSON(USED_COUPONS_KEY, {})[phoneKey] || []
+      : [];
     const universal = universalData.coupons
       .filter((item) => !user || !locallyUsed.includes(item.code))
       .map((item) => ({
@@ -459,25 +484,47 @@ async function loadUserCoupons() {
     const assigned = assignedData.coupons || [];
     const available = [
       ...universal,
-      ...assigned.filter((item) => item.status === "available" && item.active).map((item) => ({ ...item, scope: "assigned" })),
-    ].filter((item, index, list) => list.findIndex((candidate) => candidate.code === item.code) === index);
-    const universalUsed = (universalData.used || []).map((item) => ({ ...item, status: "used" }));
-    const used = [...assigned.filter((item) => item.status === "used"), ...universalUsed]
-      .filter((item, index, list) => list.findIndex((candidate) => candidate.code === item.code) === index);
+      ...assigned
+        .filter((item) => item.status === "available" && item.active)
+        .map((item) => ({ ...item, scope: "assigned" })),
+    ].filter(
+      (item, index, list) =>
+        list.findIndex((candidate) => candidate.code === item.code) === index,
+    );
+    const universalUsed = (universalData.used || []).map((item) => ({
+      ...item,
+      status: "used",
+    }));
+    const used = [
+      ...assigned.filter((item) => item.status === "used"),
+      ...universalUsed,
+    ].filter(
+      (item, index, list) =>
+        list.findIndex((candidate) => candidate.code === item.code) === index,
+    );
     if (user && universalUsed.length) {
       const usedByPhone = readJSON(USED_COUPONS_KEY, {});
-      usedByPhone[phoneKey] = [...new Set([...(usedByPhone[phoneKey] || []), ...universalUsed.map((item) => item.code)])];
+      usedByPhone[phoneKey] = [
+        ...new Set([
+          ...(usedByPhone[phoneKey] || []),
+          ...universalUsed.map((item) => item.code),
+        ]),
+      ];
       localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
     }
     if (dom.couponAvailabilityText) {
-      dom.couponAvailabilityText.textContent = available.length === 1
-        ? "1 coupon available"
-        : `${available.length} coupons available`;
+      dom.couponAvailabilityText.textContent =
+        available.length === 1
+          ? "1 coupon available"
+          : `${available.length} coupons available`;
     }
     if (dom.couponAvailability) {
       dom.couponAvailability.hidden = available.length === 0;
     }
-    dom.couponAvailability?.classList.toggle("is-empty", available.length === 0);
+    dom.couponAvailability?.classList.toggle(
+      "is-empty",
+      available.length === 0,
+    );
     const retainedHiddenCoupons = Object.fromEntries(
       Object.entries(coupons).filter(([, coupon]) => coupon.scope === "hidden"),
     );
@@ -494,11 +541,18 @@ async function loadUserCoupons() {
     });
     Object.assign(coupons, retainedHiddenCoupons);
     dom.availableCoupons.innerHTML = available.length
-      ? available.map((item) => {
-          const benefit = item.type === "fixed" ? `${money(item.value / 100)} off` : `${item.value}% off`;
-          const minimum = item.minSubtotalPaise ? ` above ${money(item.minSubtotalPaise / 100)}` : "";
-          return `<button class="coupon-chip" type="button" data-coupon="${item.code}"><strong>${item.code}</strong><span>${benefit}${minimum}</span></button>`;
-        }).join("")
+      ? available
+          .map((item) => {
+            const benefit =
+              item.type === "fixed"
+                ? `${money(item.value / 100)} off`
+                : `${item.value}% off`;
+            const minimum = item.minSubtotalPaise
+              ? ` above ${money(item.minSubtotalPaise / 100)}`
+              : "";
+            return `<button class="coupon-chip" type="button" data-coupon="${item.code}"><strong>${item.code}</strong><span>${benefit}${minimum}</span></button>`;
+          })
+          .join("")
       : "<p>You have no unused coupons right now.</p>";
     dom.usedCoupons.hidden = used.length === 0;
     dom.usedCoupons.innerHTML = used.length
@@ -509,7 +563,8 @@ async function loadUserCoupons() {
     dom.availableCoupons.innerHTML = `<p>${error.message}</p>`;
     if (dom.couponAvailability) dom.couponAvailability.hidden = false;
     dom.couponAvailability?.classList.add("is-error");
-    if (dom.couponAvailabilityText) dom.couponAvailabilityText.textContent = "Offers unavailable";
+    if (dom.couponAvailabilityText)
+      dom.couponAvailabilityText.textContent = "Offers unavailable";
   }
 }
 
@@ -518,7 +573,9 @@ function rememberUsedUniversalCoupon(code) {
   if (!user?.phone || coupons[code]?.scope !== "universal") return;
   const phoneKey = String(user.phone).replace(/\D/g, "").slice(-10);
   const usedByPhone = readJSON(USED_COUPONS_KEY, {});
-  usedByPhone[phoneKey] = [...new Set([...(usedByPhone[phoneKey] || []), code])];
+  usedByPhone[phoneKey] = [
+    ...new Set([...(usedByPhone[phoneKey] || []), code]),
+  ];
   localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
 }
 
@@ -783,9 +840,10 @@ function renderCart() {
   state.cart.forEach((item) => {
     const originalPrice = item.compareAt || item.price;
     const originalLineTotal = originalPrice * item.quantity;
-    const lineDiscount = state.totals.subtotal > 0
-      ? state.totals.discount * (originalLineTotal / state.totals.subtotal)
-      : 0;
+    const lineDiscount =
+      state.totals.subtotal > 0
+        ? state.totals.discount * (originalLineTotal / state.totals.subtotal)
+        : 0;
     const netLineTotal = Math.max(originalLineTotal - lineDiscount, 0);
     const article = document.createElement("article");
     article.className = "cart-item";
@@ -836,7 +894,10 @@ function renderCouponState() {
     const discountText = state.totals.discount
       ? ` · ${money(state.totals.discount)} off`
       : "";
-    setTextAll("[data-applied-coupon]", `${state.coupon} applied${discountText}`);
+    setTextAll(
+      "[data-applied-coupon]",
+      `${state.coupon} applied${discountText}`,
+    );
     dom.couponInput.value = state.coupon;
   } else {
     setTextAll("[data-applied-coupon]", "No coupon applied");
@@ -886,7 +947,7 @@ function applyQuoteDelivery(quote = {}) {
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
   };
-  setTextAll("[data-delivery-window]", quote.estimatedDelivery);
+  // setTextAll("[data-delivery-window]", quote.estimatedDelivery);
 }
 
 function updateProgress() {
@@ -1112,7 +1173,16 @@ function validateForm(showErrors = true) {
 
 function saveDraft() {
   const values = getFormValues();
-  const shippingFields = ["name", "phone", "email", "address", "landmark", "city", "state", "pincode"];
+  const shippingFields = [
+    "name",
+    "phone",
+    "email",
+    "address",
+    "landmark",
+    "city",
+    "state",
+    "pincode",
+  ];
   const shippingDetails = Object.fromEntries(
     shippingFields.map((field) => [field, values[field] || ""]),
   );
@@ -1120,14 +1190,19 @@ function saveDraft() {
   const phoneKey = String(shippingDetails.phone).replace(/\D/g, "").slice(-10);
   if (/^[6-9]\d{9}$/.test(phoneKey)) {
     const customers = readJSON(CUSTOMER_DETAILS_KEY, {});
-    customers[phoneKey] = { ...shippingDetails, savedAt: new Date().toISOString() };
+    customers[phoneKey] = {
+      ...shippingDetails,
+      savedAt: new Date().toISOString(),
+    };
     localStorage.setItem(CUSTOMER_DETAILS_KEY, JSON.stringify(customers));
   }
 }
 
 function hydrateDraft() {
   const user = getStoredUser();
-  const phoneKey = String(user?.phone || "").replace(/\D/g, "").slice(-10);
+  const phoneKey = String(user?.phone || "")
+    .replace(/\D/g, "")
+    .slice(-10);
   const customers = readJSON(CUSTOMER_DETAILS_KEY, {});
   const draft = customers[phoneKey] || readJSON(DRAFT_KEY, {});
   Object.entries(draft).forEach(([key, value]) => {
@@ -1278,11 +1353,15 @@ function saveVerifiedUser(verification) {
 }
 
 function updateOtpResendCountdown() {
-  const seconds = Math.max(0, Math.ceil((otpState.resendAvailableAt - Date.now()) / 1000));
+  const seconds = Math.max(
+    0,
+    Math.ceil((otpState.resendAvailableAt - Date.now()) / 1000),
+  );
   dom.otpResendButton.disabled = seconds > 0 || otpState.sending;
-  dom.otpResendStatus.textContent = seconds > 0
-    ? `Resend SMS available in 00:${String(seconds).padStart(2, "0")}`
-    : "Didn't receive the code?";
+  dom.otpResendStatus.textContent =
+    seconds > 0
+      ? `Resend SMS available in 00:${String(seconds).padStart(2, "0")}`
+      : "Didn't receive the code?";
   if (seconds === 0 && otpState.countdownTimer) {
     window.clearInterval(otpState.countdownTimer);
     otpState.countdownTimer = null;
@@ -1307,7 +1386,8 @@ async function resendOtp() {
     startOtpResendCountdown();
     dom.otpInput.focus();
   } catch (error) {
-    dom.otpError.textContent = error?.message || "Unable to resend the SMS. Please try again.";
+    dom.otpError.textContent =
+      error?.message || "Unable to resend the SMS. Please try again.";
   } finally {
     otpState.sending = false;
     updateOtpResendCountdown();
@@ -1356,7 +1436,10 @@ async function startOtpVerification(nextAction = null) {
     }
     openOtpModal();
   } catch (error) {
-    showToast(error?.message || "Phone verification failed. Please try again.", "error");
+    showToast(
+      error?.message || "Phone verification failed. Please try again.",
+      "error",
+    );
   } finally {
     otpState.sending = false;
   }
@@ -1383,7 +1466,8 @@ async function verifyOtp(event) {
       otp: enteredOtp,
     });
   } catch (error) {
-    dom.otpError.textContent = error?.message || "Phone verification failed. Please try again.";
+    dom.otpError.textContent =
+      error?.message || "Phone verification failed. Please try again.";
     setLoading(verifyButton, false);
     return;
   }
@@ -1485,7 +1569,11 @@ async function placeOrder(event) {
   }
 
   setOrderLoading(true);
-  showToast(state.paymentMethod === "COD" ? "Placing your COD order..." : `Opening ${getPaymentMethodLabel()} payment...`);
+  showToast(
+    state.paymentMethod === "COD"
+      ? "Placing your COD order..."
+      : `Opening ${getPaymentMethodLabel()} payment...`,
+  );
   trackEvent("valour_begin_checkout", {
     value: state.totals.total,
     currency: "INR",
@@ -1500,9 +1588,12 @@ async function placeOrder(event) {
 
     if (state.paymentMethod === "COD") {
       const idempotencyStorageKey = "valour_cod_idempotency_key";
-      const generatedIdempotencyKey = globalThis.crypto?.randomUUID?.() ||
+      const generatedIdempotencyKey =
+        globalThis.crypto?.randomUUID?.() ||
         `cod-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
-      const idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || generatedIdempotencyKey;
+      const idempotencyKey =
+        sessionStorage.getItem(idempotencyStorageKey) ||
+        generatedIdempotencyKey;
       sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
       const codOrder = await postJSON(
         `${API_BASE}/api/orders/cod`,
@@ -1606,9 +1697,15 @@ async function placeOrder(event) {
 
     window.location.href = "order-success.html";
   } catch (error) {
-    console.error(state.paymentMethod === "COD" ? "COD order failed" : "Payment failed", error);
+    console.error(
+      state.paymentMethod === "COD" ? "COD order failed" : "Payment failed",
+      error,
+    );
     if (state.paymentMethod === "COD") {
-      showToast(error.message || "Unable to place the COD order. Please try again.", "error");
+      showToast(
+        error.message || "Unable to place the COD order. Please try again.",
+        "error",
+      );
       return;
     }
     if (razorpayOrder?.order_id) {
@@ -1717,8 +1814,14 @@ function bindEvents() {
     updateProgress();
   });
   dom.form.elements.pincode.addEventListener("input", scheduleServerPricing);
-  dom.form.elements.city.addEventListener("blur", showServiceAreaNoticeIfNeeded);
-  dom.form.elements.state.addEventListener("change", showServiceAreaNoticeIfNeeded);
+  dom.form.elements.city.addEventListener(
+    "blur",
+    showServiceAreaNoticeIfNeeded,
+  );
+  dom.form.elements.state.addEventListener(
+    "change",
+    showServiceAreaNoticeIfNeeded,
+  );
 
   document.querySelectorAll("[data-payment-input]").forEach((input) => {
     input.addEventListener("change", () => {

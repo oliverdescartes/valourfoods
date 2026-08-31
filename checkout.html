@@ -1,38 +1,51 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window,document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '2927690960901306');
-      fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
-      alt="" /></noscript>
-    <!-- End Meta Pixel Code -->
-    <!-- Google tag (gtag.js) testing -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"
-    ></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-
-      gtag("config", "G-YRQF7PS079");
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-YRQF7PS079');
     </script>
-
+    <!-- Meta Pixel Code -->
+    <script>
+      !(function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod
+            ? n.callMethod.apply(n, arguments)
+            : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = !0;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = !0;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(
+        window,
+        document,
+        "script",
+        "https://connect.facebook.net/en_US/fbevents.js",
+      );
+      fbq("init", "2927690960901306");
+      fbq("track", "PageView");
+    </script>
+    <noscript
+      ><img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
+        alt=""
+    /></noscript>
+    <!-- End Meta Pixel Code -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
@@ -470,7 +483,7 @@
                 </span>
                 <div>
                   <strong>Delivery</strong>
-                  <span data-delivery-window>Loading delivery estimate...</span>
+                  <span data-delivery-window>With in 1 hour</span>
                 </div>
               </article>
               <article>
@@ -587,7 +600,7 @@
             <div class="delivery-grid">
               <div>
                 <span class="mini-label">Timeline</span>
-                <strong data-delivery-window>Loading delivery estimate...</strong>
+                <strong data-delivery-window>With in 1 hour</strong>
               </div>
               <div>
                 <span class="mini-label">Shipping</span>
@@ -638,7 +651,9 @@
         </button>
         <div class="service-area-icon" aria-hidden="true">
           <svg viewBox="0 0 64 64" focusable="false">
-            <path d="M32 55s17-14.2 17-31A17 17 0 0 0 15 24c0 16.8 17 31 17 31Z" />
+            <path
+              d="M32 55s17-14.2 17-31A17 17 0 0 0 15 24c0 16.8 17 31 17 31Z"
+            />
             <circle cx="32" cy="24" r="6" />
             <path d="M8 53c6-4 12-5 18-3M38 50c7-2 13-1 18 3" />
           </svg>
@@ -657,7 +672,11 @@
           </svg>
           <strong>Agartala</strong>
         </div>
-        <button class="primary-btn" type="button" data-action="close-service-area">
+        <button
+          class="primary-btn"
+          type="button"
+          data-action="close-service-area"
+        >
           Update delivery details
         </button>
       </div>
