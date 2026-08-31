@@ -2260,16 +2260,13 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
   const configuredDate = String(order.expectedDeliveryDate || "").trim();
   if (configuredDate) return formatDateOnly(configuredDate) || configuredDate;
 
+  const configured = String(order.estimatedDelivery || "").trim();
+  if (configured) return formatDateOnly(configured) || configured;
+
   const configuredStart = formatDateOnly(order.expectedDeliveryStartDate);
   const configuredEnd = formatDateOnly(order.expectedDeliveryEndDate);
   if (configuredStart && configuredEnd) {
     return `${configuredStart} – ${configuredEnd}`;
-  }
-
-  const configured = String(order.estimatedDelivery || "").trim();
-
-  if (configured) {
-    return formatDateOnly(configured) || configured;
   }
 
   const createdAt = new Date(order.createdAt || 0);
@@ -2281,6 +2278,23 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
 }
 
 function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
+  const deliveryWithinHours = Number(rules.deliveryWithinHours);
+  if (
+    Number.isFinite(deliveryWithinHours) &&
+    deliveryWithinHours > 0 &&
+    deliveryWithinHours <= 24
+  ) {
+    return {
+      expectedDeliveryAt: new Date(
+        now.getTime() + deliveryWithinHours * 60 * 60_000,
+      ).toISOString(),
+      deliveryWithinHours,
+      estimatedDelivery: `Within ${deliveryWithinHours} ${
+        deliveryWithinHours === 1 ? "hour" : "hours"
+      }`,
+    };
+  }
+
   const minDays = Number(rules.deliveryMinDays);
   const maxDays = Number(rules.deliveryMaxDays);
   if (
@@ -6889,6 +6903,12 @@ function validateOrderPayload(order) {
     return "City, state, and pincode are required.";
   }
   if (
+    order.city.trim().toLocaleLowerCase("en-IN") !== "agartala" ||
+    order.state.trim().toLocaleLowerCase("en-IN") !== "tripura"
+  ) {
+    return "We currently deliver only within Agartala, Tripura.";
+  }
+  if (
     !order.products.length ||
     order.products.some((item) => item.quantity < 1)
   ) {
@@ -6920,6 +6940,8 @@ function quoteToOrderFields(quote) {
     currency: quote.currency,
     couponCode: quote.couponCode,
     couponScope: quote.couponScope,
+    expectedDeliveryAt: quote.expectedDeliveryAt,
+    deliveryWithinHours: quote.deliveryWithinHours,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,

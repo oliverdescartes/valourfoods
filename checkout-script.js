@@ -6,6 +6,8 @@ const USER_KEY = "user";
 const USED_COUPONS_KEY = "valour_used_universal_coupons";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
+const DELIVERY_CITY = "agartala";
+const DELIVERY_STATE = "tripura";
 // The Express app serves both the storefront and API. Keeping requests on the
 // current origin avoids stale deployment-domain mappings and works locally too.
 const API_BASE = window.location.origin;
@@ -111,8 +113,11 @@ const dom = {
   otpError: document.querySelector("[data-otp-error]"),
   otpResendButton: document.querySelector("[data-resend-otp]"),
   otpResendStatus: document.querySelector("[data-otp-resend-status]"),
+  serviceAreaModal: document.querySelector("[data-service-area-modal]"),
   mobileBar: document.querySelector("[data-mobile-bar]"),
 };
+
+let serviceAreaLastFocused = null;
 
 const otpState = {
   phone: "",
@@ -215,6 +220,15 @@ function navigateToProgressStep(progressStep) {
   if (!state.cart.length && destination.step !== CHECKOUT_STEPS.CART) {
     showToast("Add an item before continuing.", "error");
     setCheckoutStep(CHECKOUT_STEPS.CART);
+    return;
+  }
+
+  if (
+    destination.step === CHECKOUT_STEPS.REVIEW &&
+    !validateForm(true)
+  ) {
+    setCheckoutStep(CHECKOUT_STEPS.DETAILS);
+    dom.form.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
 
@@ -325,6 +339,55 @@ function showToast(message, type = "success") {
   }, 2800);
 
   window.setTimeout(() => toast.remove(), 3300);
+}
+
+function normalizeDeliveryPlace(value) {
+  return String(value || "").trim().toLocaleLowerCase("en-IN");
+}
+
+function isServiceAreaSupported(values = getFormValues()) {
+  return (
+    normalizeDeliveryPlace(values.city) === DELIVERY_CITY &&
+    normalizeDeliveryPlace(values.state) === DELIVERY_STATE
+  );
+}
+
+function hasUnsupportedServiceArea(values = getFormValues()) {
+  const city = normalizeDeliveryPlace(values.city);
+  const selectedState = normalizeDeliveryPlace(values.state);
+  return Boolean(
+    (city && city !== DELIVERY_CITY) ||
+      (selectedState && selectedState !== DELIVERY_STATE),
+  );
+}
+
+function openServiceAreaModal() {
+  if (!dom.serviceAreaModal || !dom.serviceAreaModal.hidden) return;
+  serviceAreaLastFocused = document.activeElement;
+  dom.serviceAreaModal.hidden = false;
+  document.body.classList.add("is-modal-open");
+  trackEvent("valour_delivery_area_unavailable", {
+    city: getFormValues().city,
+    state: getFormValues().state,
+  });
+  window.setTimeout(
+    () =>
+      dom.serviceAreaModal
+        .querySelector("[data-action='close-service-area']")
+        ?.focus(),
+    50,
+  );
+}
+
+function closeServiceAreaModal() {
+  if (!dom.serviceAreaModal) return;
+  dom.serviceAreaModal.hidden = true;
+  if (dom.otpModal?.hidden) document.body.classList.remove("is-modal-open");
+  serviceAreaLastFocused?.focus?.();
+}
+
+function showServiceAreaNoticeIfNeeded() {
+  if (hasUnsupportedServiceArea()) openServiceAreaModal();
 }
 
 async function postJSON(url, payload, extraHeaders = {}) {
@@ -817,6 +880,8 @@ function renderSummary() {
 function applyQuoteDelivery(quote = {}) {
   if (!quote.estimatedDelivery) return;
   state.delivery = {
+    expectedDeliveryAt: quote.expectedDeliveryAt,
+    deliveryWithinHours: quote.deliveryWithinHours,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
@@ -1014,9 +1079,16 @@ function validateForm(showErrors = true) {
     errors.email = "Enter a valid email.";
   if (!values.address || values.address.trim().length < 8)
     errors.address = "Enter your full address.";
-  if (!values.city || values.city.trim().length < 2)
+  if (!values.city || values.city.trim().length < 2) {
     errors.city = "Enter your city.";
-  if (!values.state) errors.state = "Select your state.";
+  } else if (normalizeDeliveryPlace(values.city) !== DELIVERY_CITY) {
+    errors.city = "Delivery is currently available only in Agartala.";
+  }
+  if (!values.state) {
+    errors.state = "Select your state.";
+  } else if (normalizeDeliveryPlace(values.state) !== DELIVERY_STATE) {
+    errors.state = "Delivery is currently available only in Tripura.";
+  }
   if (!/^\d{6}$/.test((values.pincode || "").trim()))
     errors.pincode = "Enter a valid 6-digit pincode.";
 
@@ -1030,6 +1102,9 @@ function validateForm(showErrors = true) {
         field.closest(".field").classList.add("is-invalid");
       }
     });
+    if (!isServiceAreaSupported(values) && hasUnsupportedServiceArea(values)) {
+      openServiceAreaModal();
+    }
   }
 
   return Object.keys(errors).length === 0;
@@ -1642,6 +1717,8 @@ function bindEvents() {
     updateProgress();
   });
   dom.form.elements.pincode.addEventListener("input", scheduleServerPricing);
+  dom.form.elements.city.addEventListener("blur", showServiceAreaNoticeIfNeeded);
+  dom.form.elements.state.addEventListener("change", showServiceAreaNoticeIfNeeded);
 
   document.querySelectorAll("[data-payment-input]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -1659,6 +1736,19 @@ function bindEvents() {
   document
     .querySelector("[data-action='close-otp']")
     .addEventListener("click", closeOtpModal);
+  document
+    .querySelectorAll("[data-action='close-service-area']")
+    .forEach((button) =>
+      button.addEventListener("click", closeServiceAreaModal),
+    );
+  dom.serviceAreaModal?.addEventListener("click", (event) => {
+    if (event.target === dom.serviceAreaModal) closeServiceAreaModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dom.serviceAreaModal?.hidden) {
+      closeServiceAreaModal();
+    }
+  });
   dom.otpForm.addEventListener("submit", verifyOtp);
   dom.otpResendButton.addEventListener("click", resendOtp);
 }

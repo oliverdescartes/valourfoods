@@ -192,6 +192,10 @@
             <div class="panel-heading">
               <div>
                 <h2>Where should we send it?</h2>
+                <p class="service-area-hint">
+                  <span aria-hidden="true">⌖</span>
+                  One-hour delivery is currently available in Agartala, Tripura.
+                </p>
               </div>
             </div>
 
@@ -616,6 +620,49 @@
 
     <div class="toast-region" data-toast-region aria-live="polite"></div>
 
+    <div class="service-area-modal" data-service-area-modal hidden>
+      <div
+        class="service-area-card"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="service-area-title"
+        aria-describedby="service-area-description"
+      >
+        <button
+          class="modal-close"
+          type="button"
+          aria-label="Close delivery notice"
+          data-action="close-service-area"
+        >
+          &times;
+        </button>
+        <div class="service-area-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" focusable="false">
+            <path d="M32 55s17-14.2 17-31A17 17 0 0 0 15 24c0 16.8 17 31 17 31Z" />
+            <circle cx="32" cy="24" r="6" />
+            <path d="M8 53c6-4 12-5 18-3M38 50c7-2 13-1 18 3" />
+          </svg>
+        </div>
+        <p class="service-area-kicker">Our delivery circle</p>
+        <h2 id="service-area-title">We’re not in your neighbourhood—yet</h2>
+        <p id="service-area-description">
+          We currently deliver only within <strong>Agartala, Tripura</strong>.
+          We’re expanding carefully and hope to reach your area soon.
+        </p>
+        <div class="service-area-route" aria-label="Current delivery area">
+          <span>VALOUR kitchen</span>
+          <svg viewBox="0 0 48 12" aria-hidden="true">
+            <path d="M1 6h42" />
+            <path d="m39 2 4 4-4 4" />
+          </svg>
+          <strong>Agartala</strong>
+        </div>
+        <button class="primary-btn" type="button" data-action="close-service-area">
+          Update delivery details
+        </button>
+      </div>
+    </div>
+
     <div class="otp-modal" data-otp-modal hidden>
       <div
         class="otp-card"
@@ -662,6 +709,6 @@
       </div>
     </div>
 
-    <script src="checkout-script.js?v=20260831-hidden-coupon-3" defer></script>
+    <script src="checkout-script.js?v=20260831-delivery-area-1" defer></script>
   </body>
 </html>
