@@ -713,6 +713,9 @@ function maskWhatsappPhone(phone = "") {
 
 const GUPSHUP_MESSAGE_URL = "https://api.gupshup.io/wa/api/v1/msg";
 const GUPSHUP_TEMPLATE_URL = "https://api.gupshup.io/wa/api/v1/template/msg";
+const DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME = "valour_customer_care_alertv1";
+const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
+  "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
 
 function buildGupshupForm(recipient, fields = {}) {
   const form = new URLSearchParams({
@@ -747,7 +750,13 @@ function getGupshupTemplateId(templateName, languageCode) {
   const templateId =
     templateIds[`${templateName}:${languageCode}`] ||
     templateIds[templateName] ||
-    process.env[envKey];
+    process.env[envKey] ||
+    (templateName ===
+    (process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_NAME ||
+      DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME)
+      ? process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_ID ||
+        DEFAULT_CUSTOMER_CARE_TEMPLATE_ID
+      : null);
 
   if (!templateId) {
     throw new Error(
@@ -962,6 +971,7 @@ async function sendTemplateMessage(
   console.log("Gupshup WhatsApp template send attempt", {
     recipient,
     templateName,
+    templateId,
     languageCode,
     parameterCount: bodyParams.length,
   });
@@ -1146,6 +1156,7 @@ const WHATSAPP_TEMPLATE_CONTRACTS = {
   valour_post_cook_feedback: { parameterCount: 0, mediaType: null },
   valour_review_request: { parameterCount: 0, mediaType: null },
   valour_reorder_reminder: { parameterCount: 1, mediaType: "image" },
+  valour_customer_care_alertv1: { parameterCount: 5, mediaType: null },
 };
 
 function validateWhatsappTemplatePayload(templateName, parameters = []) {
@@ -1192,6 +1203,18 @@ function validateWhatsappAutomationConfig() {
       throw new Error(`${templateName} is text-only but media is configured`);
     }
   }
+
+  const supportTemplateName =
+    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_NAME ||
+    DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME;
+  const supportLanguage =
+    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_LANGUAGE || "en_US";
+  if (!WHATSAPP_TEMPLATE_CONTRACTS[supportTemplateName]) {
+    throw new Error(
+      `Missing WhatsApp template contract for ${supportTemplateName} (customer care)`,
+    );
+  }
+  getGupshupTemplateId(supportTemplateName, supportLanguage);
   return true;
 }
 
@@ -3033,20 +3056,25 @@ function getCustomerCareAlertRecipients() {
 
 function buildCustomerCareAlertParams({ caseId, customerName, phone, details }) {
   const recipient = normalizeWhatsappRecipient(phone);
-  const reference = String(caseId || "").slice(0, 100);
-  const issue = String(details || "").trim().replace(/\s+/g, " ").slice(0, 550);
+  const cleanTemplateParameter = (value, maxLength) =>
+    String(value || "")
+      .replace(/[\r\n\t]+/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .slice(0, maxLength);
+  const reference = cleanTemplateParameter(caseId, 100);
+  const issue = cleanTemplateParameter(details, 550);
   const guide = [
     issue,
-    "",
     "Admin guide:",
     `Resolved: DONE ${reference}`,
     `Waiting: PENDING ${reference}`,
     `Reopen: REOPEN ${reference}`,
     `Check: STATUS ${reference}`,
-  ].join("\n").slice(0, 900);
+  ].join(" | ").slice(0, 900);
   return [
     reference,
-    String(customerName || "WhatsApp customer").trim().slice(0, 200),
+    cleanTemplateParameter(customerName || "WhatsApp customer", 200),
     recipient ? `+${recipient}` : String(phone || "").slice(0, 30),
     guide,
     recipient,
@@ -3123,10 +3151,49 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
   return true;
 }
 
+function validateLocalWhatsappTemplateMedia() {
+  const mediaConfig = getWhatsappTemplateMediaConfig();
+  const whatsappMediaRoot = path.resolve(__dirname, "../whatsapp");
+
+  for (const [templateName, media] of Object.entries(mediaConfig)) {
+    const mediaUrl = new URL(media.url);
+    if (!mediaUrl.pathname.startsWith("/whatsapp/")) continue;
+
+    const relativePath = decodeURIComponent(
+      mediaUrl.pathname.slice("/whatsapp/".length),
+    );
+    const localPath = path.resolve(whatsappMediaRoot, relativePath);
+    const insideMediaRoot =
+      localPath === whatsappMediaRoot ||
+      localPath.startsWith(`${whatsappMediaRoot}${path.sep}`);
+
+    if (!insideMediaRoot || !fs.existsSync(localPath)) {
+      throw new Error(
+        `WhatsApp media file not found for ${templateName}: ${localPath}`,
+      );
+    }
+
+    const stats = fs.statSync(localPath);
+    if (!stats.isFile() || stats.size === 0) {
+      throw new Error(
+        `WhatsApp media file is empty or invalid for ${templateName}: ${localPath}`,
+      );
+    }
+
+    console.log("[WHATSAPP][TEMPLATE_MEDIA_READY]", {
+      templateName,
+      type: media.type,
+      url: media.url,
+      file: relativePath,
+      bytes: stats.size,
+    });
+  }
+}
+
 async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
   const templateName =
-    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_ID ||
-    "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
+    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_NAME ||
+    DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME;
   const language = process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_LANGUAGE || "en_US";
   const parameters = buildCustomerCareAlertParams({
     caseId,
@@ -3134,9 +3201,19 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
     phone,
     details,
   });
+  const recipients = getCustomerCareAlertRecipients();
   const results = [];
 
-  for (const recipient of getCustomerCareAlertRecipients()) {
+  console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_START]", {
+    caseId,
+    templateName,
+    templateId: getGupshupTemplateId(templateName, language),
+    language,
+    recipients: recipients.map(maskWhatsappPhone),
+    parameterLengths: parameters.map((value) => String(value).length),
+  });
+
+  for (const recipient of recipients) {
     try {
       const result = await sendTemplateMessage(
         recipient,
@@ -4077,7 +4154,7 @@ async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
     content: {
       type: "text",
       header: "Your VALOUR cooking tutorial",
-      text: "Enjoy the tutorial above. You can tap Done when your dish is ready, but you do not need to reply to continue.",
+      text: "Follow the tutorial above to cook your Butter Chicken. When your dish is ready, tap Done to share how it turned out.",
       caption: "VALOUR makes the curry. You make it yours.",
     },
     options: [
@@ -9013,6 +9090,10 @@ const staticAssetOptions = {
 
 app.use("/assets", express.static(path.join(rootPath, "assets"), staticAssetOptions));
 app.use("/vendor", express.static(path.join(rootPath, "vendor"), staticAssetOptions));
+app.use(
+  "/whatsapp",
+  express.static(path.join(rootPath, "whatsapp"), staticAssetOptions),
+);
 
 const publicRootFiles = new Set([
   "admin-dashboard.html",
@@ -9095,6 +9176,7 @@ function startServer() {
 
   getWhatsappTemplateMediaConfig();
   validateWhatsappAutomationConfig();
+  validateLocalWhatsappTemplateMedia();
 
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);
