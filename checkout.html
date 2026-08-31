@@ -724,10 +724,33 @@
             <span data-otp-resend-status>Resend SMS available in 01:00</span>
             <button type="button" data-resend-otp disabled>Resend SMS</button>
           </div>
+          <div class="otp-help">
+            <button
+              type="button"
+              class="otp-help-toggle"
+              data-otp-help-toggle
+              aria-expanded="false"
+              aria-controls="otp-help-panel"
+            >
+              Did not receive the OTP? Request help
+            </button>
+            <div class="otp-help-panel" id="otp-help-panel" data-otp-help-panel hidden>
+              <p>Contact VALOUR Customer Care on WhatsApp for verification help.</p>
+              <a
+                class="otp-whatsapp-link"
+                data-otp-help-link
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open WhatsApp support
+              </a>
+            </div>
+          </div>
         </form>
       </div>
     </div>
 
-    <script src="checkout-script.js?v=20260831-details-first-1" defer></script>
+    <script src="checkout-script.js?v=20260901-otp-help-1" defer></script>
   </body>
 </html>

@@ -8,6 +8,7 @@ const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const DELIVERY_CITY = "agartala";
 const DELIVERY_STATE = "tripura";
+const OTP_HELP_WHATSAPP_PHONE = "917005328132";
 // The Express app serves both the storefront and API. Keeping requests on the
 // current origin avoids stale deployment-domain mappings and works locally too.
 const API_BASE = window.location.origin;
@@ -116,6 +117,9 @@ const dom = {
   otpError: document.querySelector("[data-otp-error]"),
   otpResendButton: document.querySelector("[data-resend-otp]"),
   otpResendStatus: document.querySelector("[data-otp-resend-status]"),
+  otpHelpToggle: document.querySelector("[data-otp-help-toggle]"),
+  otpHelpPanel: document.querySelector("[data-otp-help-panel]"),
+  otpHelpLink: document.querySelector("[data-otp-help-link]"),
   serviceAreaModal: document.querySelector("[data-service-area-modal]"),
   mobileBar: document.querySelector("[data-mobile-bar]"),
 };
@@ -1431,9 +1435,27 @@ function openOtpModal() {
   document.body.classList.add("is-modal-open");
   dom.otpInput.value = "";
   dom.otpError.textContent = "";
+  dom.otpHelpPanel.hidden = true;
+  dom.otpHelpToggle.setAttribute("aria-expanded", "false");
   dom.otpMessage.textContent = `We sent a 6-digit OTP to ${otpState.phone}.`;
   startOtpResendCountdown();
   window.setTimeout(() => dom.otpInput.focus(), 50);
+}
+
+function showOtpWhatsappHelp() {
+  const customer = otpState.pendingUser || getFormValues();
+  const customerName = String(customer.name || "Customer").trim();
+  const customerPhone = String(customer.phone || otpState.phone || "").trim();
+  const message = [
+    "Hello from the VALOUR website.",
+    "I need help with OTP verification.",
+    `Name: ${customerName}`,
+    `Registered phone: +91${customerPhone.replace(/\D/g, "").slice(-10)}`,
+  ].join("\n");
+  dom.otpHelpLink.href = `https://wa.me/${OTP_HELP_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+  dom.otpHelpPanel.hidden = false;
+  dom.otpHelpToggle.setAttribute("aria-expanded", "true");
+  trackEvent("valour_otp_help_revealed", { phone: customerPhone });
 }
 
 function closeOtpModal() {
@@ -1893,6 +1915,10 @@ function bindEvents() {
   });
   dom.otpForm.addEventListener("submit", verifyOtp);
   dom.otpResendButton.addEventListener("click", resendOtp);
+  dom.otpHelpToggle.addEventListener("click", showOtpWhatsappHelp);
+  dom.otpHelpLink.addEventListener("click", () =>
+    trackEvent("valour_otp_help_whatsapp_opened", { phone: otpState.phone }),
+  );
 }
 
 function init() {

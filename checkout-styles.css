@@ -1598,6 +1598,56 @@ img {
   text-decoration: none;
 }
 
+.otp-help {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.otp-help-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--deep);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.otp-help-panel {
+  margin-top: 12px;
+  border-radius: 12px;
+  background: rgba(37, 211, 102, 0.1);
+  padding: 13px;
+}
+
+.otp-help-panel p {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.otp-whatsapp-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 10px;
+  background: #187c43;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 9px 16px;
+  text-decoration: none;
+}
+
+.otp-whatsapp-link:hover {
+  background: #116535;
+}
+
 [hidden] {
   display: none !important;
 }
