@@ -3260,11 +3260,34 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
   }
 
   const selectedOrder = value.match(/^ADMIN_ORDER_([a-f\d]{24})$/i);
-  if (!selectedOrder) return false;
+  const displayedOrderNumber = normalizeOrderReference(value).match(
+    /\bVALOUR-[A-Z0-9]{6}\b/,
+  );
+  if (!selectedOrder && !displayedOrderNumber) return false;
 
-  const order = await collections().orders.findOne({
-    _id: new ObjectId(selectedOrder[1]),
-  });
+  let order = null;
+  if (selectedOrder) {
+    order = await collections().orders.findOne({
+      _id: new ObjectId(selectedOrder[1]),
+    });
+  } else {
+    const orderReference = displayedOrderNumber[0];
+    order = await collections().orders.findOne({ orderNumber: orderReference });
+
+    // Older orders did not persist orderNumber; their displayed reference is
+    // derived from the final six characters of the MongoDB ObjectId.
+    if (!order) {
+      const recentCandidates = await collections().orders
+        .find({})
+        .sort({ createdAt: -1, created_at: -1, _id: -1 })
+        .limit(200)
+        .toArray();
+      order =
+        recentCandidates.find(
+          (candidate) => formatOrderNumber(candidate._id) === orderReference,
+        ) || null;
+    }
+  }
   if (!order) {
     await sendActionButtons(
       phone,
