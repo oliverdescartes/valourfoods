@@ -742,6 +742,7 @@ const GUPSHUP_TEMPLATE_URL = "https://api.gupshup.io/wa/api/v1/template/msg";
 const DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME = "valour_customer_care_alertv1";
 const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
   "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
+const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID = "1071618388950122";
 
 function buildGupshupForm(recipient, fields = {}) {
   const form = new URLSearchParams({
@@ -759,7 +760,12 @@ function buildGupshupForm(recipient, fields = {}) {
 }
 
 function getGupshupTemplateId(templateName, languageCode) {
-  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName)) return templateName;
+  if (
+    /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName) ||
+    /^\d{10,30}$/.test(templateName)
+  ) {
+    return templateName;
+  }
 
   let templateIds = {};
   if (process.env.GUPSHUP_TEMPLATE_IDS) {
@@ -3453,7 +3459,7 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
   const templateIdentifier =
     process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID ||
     process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_NAME ||
-    "";
+    DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
   const language =
     process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_LANGUAGE || "en_US";
   const results = [];
@@ -10025,16 +10031,19 @@ function startServer() {
   getWhatsappTemplateMediaConfig();
   validateWhatsappAutomationConfig();
   validateLocalWhatsappTemplateMedia();
-  if (
-    !process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID &&
-    !process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_NAME
-  ) {
-    console.warn("[WHATSAPP][ADMIN_NEW_ORDER_TEMPLATE_NOT_CONFIGURED]", {
-      deliveryMode: "session_message",
-      explanation:
-        "Admin new-order alerts require an open 24-hour WhatsApp service window until a dedicated utility template is configured",
-    });
-  }
+  const adminOrderTemplateIdentifier =
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID ||
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_NAME ||
+    DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  getGupshupTemplateId(
+    adminOrderTemplateIdentifier,
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_LANGUAGE || "en_US",
+  );
+  console.log("[WHATSAPP][ADMIN_NEW_ORDER_TEMPLATE_READY]", {
+    templateId: adminOrderTemplateIdentifier,
+    parameterCount: 6,
+    recipients: DEFAULT_CUSTOMER_CARE_PHONES.map(maskWhatsappPhone),
+  });
 
   app.listen(PORT, () => {
     console.log(`VALOUR running on  http://localhost:${PORT}`);

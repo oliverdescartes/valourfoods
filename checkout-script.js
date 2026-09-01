@@ -479,8 +479,8 @@ async function loadUserCoupons() {
     if (dom.universalCouponText) {
       dom.universalCouponText.textContent =
         universal.length === 1
-          ? "1 universal coupon is available"
-          : `${universal.length} universal coupons are available`;
+          ? "1 coupon available"
+          : `${universal.length} coupons available`;
     }
     if (dom.universalCouponCodes) {
       dom.universalCouponCodes.textContent = `${universal
