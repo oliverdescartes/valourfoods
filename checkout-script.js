@@ -80,6 +80,7 @@ const dom = {
   cartItems: document.querySelector("[data-cart-items]"),
   emptyState: document.querySelector("[data-empty-state]"),
   couponInput: document.querySelector("[data-coupon-input]"),
+  couponApplyButton: document.querySelector("[data-action='apply-coupon']"),
   couponMessage: document.querySelector("[data-coupon-message]"),
   couponRow: document.querySelector(".coupon-input-row"),
   availableCoupons: document.querySelector("[data-available-coupons]"),
@@ -879,6 +880,18 @@ function renderCouponState() {
   } else {
     setTextAll("[data-applied-coupon]", "No coupon applied");
   }
+
+  syncCouponApplyButton();
+}
+
+function syncCouponApplyButton() {
+  if (!dom.couponApplyButton) return;
+  const isApplied = Boolean(
+    state.coupon && dom.couponInput.value.trim() === state.coupon,
+  );
+  dom.couponApplyButton.classList.toggle("is-applied", isApplied);
+  dom.couponApplyButton.textContent = isApplied ? "Applied" : "Apply";
+  dom.couponApplyButton.setAttribute("aria-pressed", String(isApplied));
 }
 
 function renderSummary() {
@@ -1796,6 +1809,7 @@ function bindEvents() {
       applyCoupon(dom.couponInput.value);
     }
   });
+  dom.couponInput.addEventListener("input", syncCouponApplyButton);
 
   dom.availableCoupons.addEventListener("click", (event) => {
     const chip = event.target.closest("[data-coupon]");
