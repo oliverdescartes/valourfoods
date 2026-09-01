@@ -7075,18 +7075,58 @@ async function recordCouponRedemption(order, orderId) {
     return;
   }
   if (order.couponScope === "universal") {
-    try {
-      await collections().couponUsages.insertOne({
-        phone: order.phone,
-        code: order.couponCode,
-        orderId,
-        usedAt: now,
-        source: "website",
-      });
-    } catch (error) {
-      if (error?.code === 11000) return;
-      throw error;
+    const existing = await collections().couponUsages.findOne({
+      phone: order.phone,
+      code: order.couponCode,
+    });
+    const orderKey = String(orderId);
+    if (
+      existing?.orderId?.toString() === orderKey ||
+      existing?.orderIds?.some((value) => value.toString() === orderKey)
+    ) return;
+    let recorded = false;
+    if (!existing) {
+      try {
+        await collections().couponUsages.insertOne({
+          phone: order.phone,
+          code: order.couponCode,
+          usedCount: 1,
+          orderIds: [orderId],
+          usedAt: now,
+          updatedAt: now,
+          source: "website",
+        });
+        recorded = true;
+      } catch (error) {
+        if (error?.code === 11000)
+          return recordCouponRedemption(order, orderId);
+        throw error;
+      }
+    } else {
+      const currentCount = couponUsageCount(existing);
+      const result = await collections().couponUsages.updateOne(
+        {
+          _id: existing._id,
+          ...(Number.isSafeInteger(Number(existing.usedCount))
+            ? { usedCount: currentCount }
+            : { usedCount: { $exists: false } }),
+          orderIds: { $ne: orderId },
+        },
+        {
+          $set: {
+            usedCount: currentCount + 1,
+            usedAt: now,
+            updatedAt: now,
+            source: "website",
+          },
+          $addToSet: { orderIds: orderId },
+          $unset: { orderId: "" },
+        },
+      );
+      recorded = result.modifiedCount === 1;
+      if (!recorded) return recordCouponRedemption(order, orderId);
     }
+    if (!recorded) return;
     await collections().universalCoupons.updateOne(
       {
         code: order.couponCode,
@@ -7238,19 +7278,6 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
     }
     couponScope = "hidden";
   } else if (normalizedCode && universalCoupon) {
-    if (phone) {
-      const normalizedPhone = normalizeCouponPhone(phone);
-      const previousUse = await collections().couponUsages.findOne({
-        phone: normalizedPhone,
-        code: normalizedCode,
-      });
-      if (previousUse) {
-        throw checkoutClientError(
-          "You've already used this coupon. It can only be used once per account.",
-          "COUPON_ACCOUNT_LIMIT_REACHED",
-        );
-      }
-    }
     couponScope = "universal";
   } else if (normalizedCode) {
     const normalizedPhone = normalizeCouponPhone(phone);
@@ -8276,62 +8303,45 @@ app.get("/api/admin/dashboard", async (req, res) => {
 app.get("/api/coupons/universal", async (req, res) => {
   try {
     const now = new Date();
-    const phone = req.query.phone
-      ? normalizeCouponPhone(req.query.phone)
-      : null;
-    const [coupons, usages] = await Promise.all([
-      collections()
-        .universalCoupons.find({
-          active: true,
-          $and: [
-            {
-              $or: [
-                { startsAt: { $exists: false } },
-                { startsAt: null },
-                { startsAt: { $lte: now } },
-              ],
-            },
-            {
-              $or: [
-                { endsAt: { $exists: false } },
-                { endsAt: null },
-                { endsAt: { $gt: now } },
-              ],
-            },
-          ],
-        })
-        .sort({ createdAt: -1 })
-        .project({
-          _id: 0,
-          code: 1,
-          type: 1,
-          value: 1,
-          valuePaise: 1,
-          minSubtotalPaise: 1,
-          title: 1,
-          usageLimitPerAccount: 1,
-          usageLimit: 1,
-          usedCount: 1,
-          startsAt: 1,
-          endsAt: 1,
-        })
-        .toArray(),
-      phone
-        ? collections()
-            .couponUsages.find({ phone })
-            .project({ _id: 0, code: 1, usedAt: 1, usedCount: 1 })
-            .toArray()
-        : [],
-    ]);
-    const usedCodes = new Set(usages.map((usage) => usage.code));
+    const coupons = await collections()
+      .universalCoupons.find({
+        active: true,
+        $and: [
+          {
+            $or: [
+              { startsAt: { $exists: false } },
+              { startsAt: null },
+              { startsAt: { $lte: now } },
+            ],
+          },
+          {
+            $or: [
+              { endsAt: { $exists: false } },
+              { endsAt: null },
+              { endsAt: { $gt: now } },
+            ],
+          },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .project({
+        _id: 0,
+        code: 1,
+        type: 1,
+        value: 1,
+        valuePaise: 1,
+        minSubtotalPaise: 1,
+        title: 1,
+        usageLimit: 1,
+        usedCount: 1,
+        startsAt: 1,
+        endsAt: 1,
+      })
+      .toArray();
     res.json({
       ok: true,
-      coupons: coupons.filter(
-        (coupon) =>
-          isCouponAvailable(coupon, now) &&
-          (!phone || !usedCodes.has(coupon.code)),
-      ),
-      used: usages,
+      coupons: coupons.filter((coupon) => isCouponAvailable(coupon, now)),
+      used: [],
     });
   } catch (error) {
     const status = /valid user phone/i.test(error.message) ? 400 : 500;

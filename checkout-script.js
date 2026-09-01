@@ -3,12 +3,11 @@ const COUPON_KEY = "valour_checkout_coupon";
 const DRAFT_KEY = "valour_checkout_address";
 const CUSTOMER_DETAILS_KEY = "valour_customer_shipping_details";
 const USER_KEY = "user";
-const USED_COUPONS_KEY = "valour_used_universal_coupons";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const DELIVERY_CITY = "agartala";
 const DELIVERY_STATE = "tripura";
-const OTP_HELP_WHATSAPP_PHONE = "917005328132";
+const OTP_HELP_WHATSAPP_PHONE = "919233054806";
 // The Express app serves both the storefront and API. Keeping requests on the
 // current origin avoids stale deployment-domain mappings and works locally too.
 const API_BASE = window.location.origin;
@@ -85,9 +84,14 @@ const dom = {
   couponRow: document.querySelector(".coupon-input-row"),
   availableCoupons: document.querySelector("[data-available-coupons]"),
   usedCoupons: document.querySelector("[data-used-coupons]"),
-  couponAvailability: document.querySelector("[data-coupon-availability]"),
-  couponAvailabilityText: document.querySelector(
-    "[data-coupon-availability-text]",
+  universalCouponNotice: document.querySelector(
+    "[data-universal-coupon-notice]",
+  ),
+  universalCouponText: document.querySelector(
+    "[data-universal-coupon-text]",
+  ),
+  universalCouponCodes: document.querySelector(
+    "[data-universal-coupon-codes]",
   ),
   mobileBarLabel: document.querySelector("[data-mobile-bar-label]"),
   mobileTotal: document.querySelector("[data-mobile-total]"),
@@ -440,15 +444,9 @@ function reportCheckoutDetailsSubmitted() {
 
 async function loadUserCoupons() {
   const user = getStoredUser();
-  dom.couponAvailability?.classList.remove("is-empty", "is-error");
-  if (dom.couponAvailability) dom.couponAvailability.hidden = true;
-  if (dom.couponAvailabilityText)
-    dom.couponAvailabilityText.textContent = "Finding your offers...";
+  if (dom.universalCouponNotice) dom.universalCouponNotice.hidden = true;
   try {
-    const universalUrl = user?.phone
-      ? `${API_BASE}/api/coupons/universal?phone=${encodeURIComponent(user.phone)}`
-      : `${API_BASE}/api/coupons/universal`;
-    const universalRequest = fetch(universalUrl);
+    const universalRequest = fetch(`${API_BASE}/api/coupons/universal`);
     const assignedRequest = user?.phone
       ? fetch(
           `${API_BASE}/api/coupons/mine?phone=${encodeURIComponent(user.phone)}`,
@@ -471,21 +469,27 @@ async function loadUserCoupons() {
       throw new Error(assignedData.error || "Unable to load your coupons");
     }
 
-    const phoneKey = String(user?.phone || "")
-      .replace(/\D/g, "")
-      .slice(-10);
-    const locallyUsed = user
-      ? readJSON(USED_COUPONS_KEY, {})[phoneKey] || []
-      : [];
-    const universal = universalData.coupons
-      .filter((item) => !user || !locallyUsed.includes(item.code))
-      .map((item) => ({
+    const universal = universalData.coupons.map((item) => ({
         ...item,
         status: "available",
         active: true,
         value: item.type === "fixed" ? item.valuePaise : item.value,
         scope: "universal",
       }));
+    if (dom.universalCouponText) {
+      dom.universalCouponText.textContent =
+        universal.length === 1
+          ? "1 universal coupon is available"
+          : `${universal.length} universal coupons are available`;
+    }
+    if (dom.universalCouponCodes) {
+      dom.universalCouponCodes.textContent = `${universal
+        .map((item) => item.code)
+        .join("  ·  ")} — apply in the Cart step.`;
+    }
+    if (dom.universalCouponNotice) {
+      dom.universalCouponNotice.hidden = universal.length === 0;
+    }
     const assigned = assignedData.coupons || [];
     const available = [
       ...universal,
@@ -496,39 +500,9 @@ async function loadUserCoupons() {
       (item, index, list) =>
         list.findIndex((candidate) => candidate.code === item.code) === index,
     );
-    const universalUsed = (universalData.used || []).map((item) => ({
-      ...item,
-      status: "used",
-    }));
-    const used = [
-      ...assigned.filter((item) => item.status === "used"),
-      ...universalUsed,
-    ].filter(
+    const used = assigned.filter((item) => item.status === "used").filter(
       (item, index, list) =>
         list.findIndex((candidate) => candidate.code === item.code) === index,
-    );
-    if (user && universalUsed.length) {
-      const usedByPhone = readJSON(USED_COUPONS_KEY, {});
-      usedByPhone[phoneKey] = [
-        ...new Set([
-          ...(usedByPhone[phoneKey] || []),
-          ...universalUsed.map((item) => item.code),
-        ]),
-      ];
-      localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
-    }
-    if (dom.couponAvailabilityText) {
-      dom.couponAvailabilityText.textContent =
-        available.length === 1
-          ? "1 coupon available"
-          : `${available.length} coupons available`;
-    }
-    if (dom.couponAvailability) {
-      dom.couponAvailability.hidden = available.length === 0;
-    }
-    dom.couponAvailability?.classList.toggle(
-      "is-empty",
-      available.length === 0,
     );
     const retainedHiddenCoupons = Object.fromEntries(
       Object.entries(coupons).filter(([, coupon]) => coupon.scope === "hidden"),
@@ -566,22 +540,8 @@ async function loadUserCoupons() {
     renderCouponState();
   } catch (error) {
     dom.availableCoupons.innerHTML = `<p>${error.message}</p>`;
-    if (dom.couponAvailability) dom.couponAvailability.hidden = false;
-    dom.couponAvailability?.classList.add("is-error");
-    if (dom.couponAvailabilityText)
-      dom.couponAvailabilityText.textContent = "Offers unavailable";
+    if (dom.universalCouponNotice) dom.universalCouponNotice.hidden = true;
   }
-}
-
-function rememberUsedUniversalCoupon(code) {
-  const user = getStoredUser();
-  if (!user?.phone || coupons[code]?.scope !== "universal") return;
-  const phoneKey = String(user.phone).replace(/\D/g, "").slice(-10);
-  const usedByPhone = readJSON(USED_COUPONS_KEY, {});
-  usedByPhone[phoneKey] = [
-    ...new Set([...(usedByPhone[phoneKey] || []), code]),
-  ];
-  localStorage.setItem(USED_COUPONS_KEY, JSON.stringify(usedByPhone));
 }
 
 function loadRazorpayCheckout() {
@@ -1683,7 +1643,6 @@ async function placeOrder(event) {
         items: codOrder.order.products,
         orderId: codOrder.orderId,
       });
-      rememberUsedUniversalCoupon(state.coupon);
       state.cart = [];
       state.coupon = null;
       localStorage.removeItem(STORAGE_KEY);
@@ -1750,7 +1709,6 @@ async function placeOrder(event) {
       orderId: verifiedOrder.orderId,
     });
 
-    rememberUsedUniversalCoupon(state.coupon);
     state.cart = [];
     state.coupon = null;
     localStorage.removeItem(STORAGE_KEY);

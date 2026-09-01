@@ -58,7 +58,7 @@
       type="image/png"
       href="vendor/cdn/cdn/shop/files/valourlogobrowser.png"
     />
-    <link rel="stylesheet" href="checkout-styles.css?v=20260831-delivery-area-1" />
+    <link rel="stylesheet" href="checkout-styles.css?v=20260901-details-coupon-notice-1" />
   </head>
   <body>
     <div class="navbar">
@@ -142,19 +142,6 @@
             <div class="panel-heading">
               <div>
                 <h2 id="coupon-title">Apply coupon</h2>
-                <div
-                  class="coupon-availability"
-                  data-coupon-availability
-                  aria-live="polite"
-                  hidden
-                >
-                  <span class="coupon-availability-icon" aria-hidden="true"
-                    >%</span
-                  >
-                  <span data-coupon-availability-text
-                    >Finding your offers...</span
-                  >
-                </div>
               </div>
             </div>
 
@@ -211,6 +198,26 @@
                 </p>
               </div>
             </div>
+
+            <aside
+              class="universal-coupon-notice"
+              data-universal-coupon-notice
+              aria-live="polite"
+              hidden
+            >
+              <span class="universal-coupon-notice-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M4 7.5A2.5 2.5 0 0 0 6.5 10 2.5 2.5 0 0 0 4 12.5V17h16v-4.5a2.5 2.5 0 0 1 0-5V3H4v4.5Z" />
+                  <path d="m9 14 6-6M9.5 8.5h.01M14.5 13.5h.01" />
+                </svg>
+              </span>
+              <span class="universal-coupon-notice-copy">
+                <span class="universal-coupon-notice-kicker">Offers for you</span>
+                <strong data-universal-coupon-text></strong>
+                <span data-universal-coupon-codes></span>
+              </span>
+              <span class="universal-coupon-notice-next" aria-hidden="true">Use in Cart →</span>
+            </aside>
 
             <div class="form-grid">
               <div class="field">
@@ -751,6 +758,6 @@
       </div>
     </div>
 
-    <script src="checkout-script.js?v=20260901-otp-help-1" defer></script>
+    <script src="checkout-script.js?v=20260901-details-coupon-notice-1" defer></script>
   </body>
 </html>
