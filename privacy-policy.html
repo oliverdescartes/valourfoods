@@ -2,12 +2,12 @@
 <html lang="en-IN">
   <head>
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YRQF7PS079"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJN2HFD224"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-YRQF7PS079');
+      gtag('config', 'G-EJN2HFD224');
     </script>
     <!-- Meta Pixel Code -->
     <script>
@@ -47,16 +47,21 @@
     <meta property="og:site_name" content="VALOUR" />
     <meta property="og:title" content="Privacy Policy | VALOUR" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://liquidspice.in/privacy-policy" />
     <meta
       property="og:description"
       content="VALOUR Privacy Policy covering ecommerce orders, Razorpay payments, delivery partners, WhatsApp support, analytics, advertising, cookies, and user rights."
     />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://liquidspice.in/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" />
+    <meta property="og:image:alt" content="VALOUR Velvety Butter Chicken Liquid Spice jar" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Privacy Policy | VALOUR" />
     <meta
       name="twitter:description"
       content="How VALOUR collects, uses, shares, and protects personal information."
     />
+    <meta name="twitter:image" content="https://liquidspice.in/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" />
+    <meta name="twitter:image:alt" content="VALOUR Velvety Butter Chicken Liquid Spice jar" />
 
     <title>Privacy Policy | VALOUR</title>
     <link
@@ -64,7 +69,7 @@
       type="image/png"
       href="vendor/cdn/cdn/shop/files/valourlogobrowser.png"
     />
-    <link rel="canonical" href="" />
+    <link rel="canonical" href="https://liquidspice.in/privacy-policy" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1087,12 +1092,8 @@
             meta.setAttribute("content", "Privacy Policy | " + businessName);
           });
 
-        const canonical = document.querySelector('link[rel="canonical"]');
         if (websiteUrl) {
           const normalized = websiteUrl.replace(/\/$/, "");
-          if (canonical) {
-            canonical.setAttribute("href", normalized + "/privacy-policy");
-          }
           document
             .querySelectorAll('[data-config="websiteUrl"]')
             .forEach(function (node) {
@@ -1103,8 +1104,6 @@
               node.textContent = "";
               node.appendChild(link);
             });
-        } else if (canonical) {
-          canonical.setAttribute("href", window.location.href.split("#")[0]);
         }
 
         const email = clean(config.supportEmail);
