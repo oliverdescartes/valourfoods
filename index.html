@@ -7064,6 +7064,36 @@ if (looksTastesSection && sachetVideoSection) {
   looksTastesSection.insertAdjacentElement("beforebegin", sachetVideoSection);
 }
 
+// Meta Pixel: record meaningful section views once per page load.
+function observeMetaSectionEntry(element, eventName, parameters) {
+  if (!element || !("IntersectionObserver" in window)) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry.isIntersecting || entry.intersectionRatio < 0.35) return;
+      if (typeof window.fbq !== "function") return;
+
+      window.fbq("trackCustom", eventName, parameters);
+      observer.disconnect();
+    },
+    { threshold: 0.35 },
+  );
+
+  observer.observe(element);
+}
+
+observeMetaSectionEntry(productSliderSection, "ProductSliderView", {
+  section_id: "container_slider",
+  section_name: "Product slider",
+  content_name: "Velvety Butter Chicken",
+});
+
+observeMetaSectionEntry(looksTastesSection, "LooksTastesSectionView", {
+  section_id: "looks-tastes-section",
+  section_name: "Looks and tastes",
+  content_name: "Velvety Butter Chicken recipe",
+});
+
 const looksTastesVideo = looksTastesSection?.querySelector("video");
 
 if (looksTastesSection && looksTastesVideo) {
