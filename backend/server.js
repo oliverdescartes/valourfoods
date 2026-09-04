@@ -121,6 +121,7 @@ function collections() {
     otpChallenges: db.collection("otp_challenges"),
     accordionContent: db.collection("accordion_content"),
     carouselVideos: db.collection("carousel_videos"),
+    testimonialMedia: db.collection("testimonial_media"),
   };
 }
 
@@ -184,6 +185,13 @@ const DEFAULT_CAROUSEL_VIDEOS = [
   },
 ];
 
+const DEFAULT_TESTIMONIAL_MEDIA = [
+  { key: "first-kitchen-1", imageUrl: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp", altText: "A rich bowl of butter chicken served at the dinner table", objectPosition: "50% 58%", order: 1, active: true },
+  { key: "first-kitchen-2", imageUrl: "/vendor/cdn/cdn/shop/files/slide 3.webp", altText: "Butter chicken simmering in an Agartala home kitchen", objectPosition: "50% 55%", order: 2, active: true },
+  { key: "first-kitchen-3", imageUrl: "/vendor/cdn/cdn/shop/files/imagetab2.webp", altText: "Butter chicken plated and ready to share", objectPosition: "50% 58%", order: 3, active: true },
+  { key: "first-kitchen-4", imageUrl: "/vendor/cdn/cdn/shop/files/slide 5.webp", altText: "Chicken being prepared with the VALOUR cooking base", objectPosition: "50% 52%", order: 4, active: true },
+];
+
 async function connectDB() {
   await mongoClient.connect();
   db = mongoClient.db("valour_mvp");
@@ -207,6 +215,7 @@ async function connectDB() {
     otpChallenges,
     accordionContent,
     carouselVideos,
+    testimonialMedia,
   } = collections();
   try {
     await otpChallenges.dropIndex("expiresAt_1");
@@ -294,6 +303,15 @@ async function connectDB() {
     carouselVideos.createIndex({ active: 1, order: 1 }),
     ...DEFAULT_CAROUSEL_VIDEOS.map((item) =>
       carouselVideos.updateOne(
+        { key: item.key },
+        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        { upsert: true },
+      ),
+    ),
+    testimonialMedia.createIndex({ key: 1 }, { unique: true }),
+    testimonialMedia.createIndex({ active: 1, order: 1 }),
+    ...DEFAULT_TESTIMONIAL_MEDIA.map((item) =>
+      testimonialMedia.updateOne(
         { key: item.key },
         { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
         { upsert: true },
@@ -9923,6 +9941,28 @@ app.get("/api/carousel-videos", async (_req, res) => {
   } catch (err) {
     console.error("Carousel video lookup failed", err.message);
     return res.status(500).json({ ok: false, error: "Unable to load videos." });
+  }
+});
+
+app.get("/api/testimonial-media", async (_req, res) => {
+  if (!mongoReady) {
+    return res.status(503).json({ ok: false, error: "Customer photos are temporarily unavailable." });
+  }
+
+  try {
+    const items = await collections().testimonialMedia
+      .find(
+        { active: true },
+        { projection: { _id: 0, key: 1, imageUrl: 1, altText: 1, objectPosition: 1, order: 1 } },
+      )
+      .sort({ order: 1, key: 1 })
+      .limit(12)
+      .toArray();
+
+    return res.json({ ok: true, items });
+  } catch (err) {
+    console.error("Testimonial media lookup failed", err.message);
+    return res.status(500).json({ ok: false, error: "Unable to load customer photos." });
   }
 });
 

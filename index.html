@@ -5047,6 +5047,92 @@
     .valour-stack-card { transition: none; transform: none !important; }
     .valour-stack-card::before, .valour-stack-card::after { animation: none; }
   }
+
+  /* Customer stories */
+  .valour-testimonials {
+    --testimonial-burgundy: #831a1a;
+    --testimonial-cream: #fff8ef;
+    --testimonial-gold: #9a6b1f;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    padding: clamp(88px, 10vw, 150px) 20px;
+    background: transparent;
+    color: #44231f;
+  }
+
+  .valour-testimonials__inner { width: min(1120px, 100%); margin: 0 auto; }
+  .valour-testimonials__eyebrow { margin: 0 0 16px; color: var(--testimonial-burgundy); font: 700 12px/1.3 Inter, sans-serif; letter-spacing: 0.18em; text-align: center; text-transform: uppercase; }
+  .valour-testimonials__title { max-width: 880px; margin: 0 auto; color: var(--testimonial-burgundy); font: 600 clamp(52px, 8vw, 104px)/0.88 "Cormorant Garamond", "Playfair Display", Georgia, serif; letter-spacing: -0.035em; text-align: center; text-wrap: balance; }
+  .valour-testimonials__title span { display: block; color: var(--testimonial-gold); font-style: italic; }
+  .valour-testimonials__viewport { overflow: hidden; margin-top: clamp(42px, 6vw, 72px); border: 1px solid rgba(131, 26, 26, 0.16); border-radius: 10px; background: var(--testimonial-cream); box-shadow: 0 28px 70px rgba(68, 35, 31, 0.15); touch-action: pan-y; }
+  .valour-testimonials__track { display: flex; transform: translate3d(0, 0, 0); transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .valour-testimonial { flex: 0 0 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(340px, 0.96fr); }
+  .valour-testimonial__media { min-height: 540px; display: grid; gap: 8px; padding: 8px; background: var(--testimonial-burgundy); }
+  .valour-testimonial__media[data-image-count="1"] { grid-template-columns: 1fr; }
+  .valour-testimonial__media[data-image-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .valour-testimonial__media[data-image-count="3"] { grid-template-columns: 1.18fr 0.82fr; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .valour-testimonial__media[data-image-count="3"] img:first-child { grid-row: 1 / span 2; }
+  .valour-testimonial__media[data-image-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .valour-testimonial__media img { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; object-fit: cover; object-position: center; border-radius: 4px; }
+  .valour-testimonial__media img[data-focus="food"] { object-position: 50% 58%; }
+  .valour-testimonial__media img[data-focus="product"] { object-position: 50% 48%; }
+  .valour-testimonial__copy { position: relative; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: clamp(38px, 6vw, 76px); background: var(--testimonial-cream); }
+  .valour-testimonial__copy::before { content: "\201C"; position: absolute; top: 20px; right: 34px; color: rgba(154, 107, 31, 0.16); font: 600 132px/1 Georgia, serif; }
+  .valour-testimonial__stars { position: relative; margin: 0 0 24px; color: #c27b08; font-size: 17px; letter-spacing: 0.22em; }
+  .valour-testimonial__quote { position: relative; margin: 0; color: #44231f; font: 600 clamp(30px, 3.25vw, 48px)/1.05 "Cormorant Garamond", "Playfair Display", Georgia, serif; letter-spacing: -0.02em; text-wrap: balance; }
+  .valour-testimonial__person { margin-top: clamp(30px, 4vw, 52px); padding-top: 20px; border-top: 1px solid rgba(131, 26, 26, 0.16); }
+  .valour-testimonial__name { display: block; color: var(--testimonial-burgundy); font: 700 15px/1.4 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+  .valour-testimonial__detail { display: block; margin-top: 5px; color: var(--testimonial-gold); font: 600 12px/1.4 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+  .valour-testimonials__controls { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 20px; width: min(420px, 100%); margin: 30px auto 0; }
+  .valour-testimonials__arrow { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid rgba(131, 26, 26, 0.22); border-radius: 50%; background: var(--testimonial-burgundy); color: #f7d46c; cursor: pointer; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
+  .valour-testimonials__arrow:hover { transform: translateY(-2px); background: #f7d46c; color: var(--testimonial-burgundy); }
+  .valour-testimonials__arrow:focus-visible, .valour-testimonials__dot:focus-visible { outline: 3px solid rgba(131, 26, 26, 0.32); outline-offset: 4px; }
+  .valour-testimonials__arrow svg { width: 20px; height: 20px; fill: currentColor; }
+  .valour-testimonials__dots { display: flex; justify-content: center; align-items: center; gap: 10px; }
+  .valour-testimonials__dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%; background: rgba(131, 26, 26, 0.25); cursor: pointer; transition: width 220ms ease, border-radius 220ms ease, background 220ms ease; }
+  .valour-testimonials__dot[aria-current="true"] { width: 34px; border-radius: 999px; background: var(--testimonial-burgundy); }
+  .valour-testimonials__status { margin: 16px 0 0; color: rgba(68, 35, 31, 0.7); font: 600 12px/1.4 Inter, sans-serif; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; }
+
+  /* Dark-background, multi-photo carousel */
+  .valour-testimonials__intro { max-width: 900px; margin: 0 auto; text-align: center; }
+  .valour-testimonials__title { max-width: 780px; color: #fff8ef; font-size: clamp(50px, 7.2vw, 94px); line-height: 0.9; text-shadow: 0 12px 34px rgba(43, 5, 5, 0.2); }
+  .valour-testimonials__subtitle { max-width: 660px; margin: clamp(20px, 3vw, 32px) auto 0; color: rgba(255, 248, 239, 0.78); font: 500 clamp(17px, 2vw, 23px)/1.55 Inter, sans-serif; text-wrap: balance; }
+  .valour-testimonials__viewport { margin-top: clamp(42px, 6vw, 72px); border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .valour-testimonials__track { --photos-visible: 3; --carousel-gap: clamp(12px, 1.8vw, 24px); gap: var(--carousel-gap); }
+  .valour-testimonial { flex: 0 0 calc((100% - (2 * var(--carousel-gap))) / 3); display: block; overflow: hidden; border: 1px solid rgba(255, 248, 239, 0.22); border-radius: 8px; background: rgba(255, 248, 239, 0.08); box-shadow: 0 24px 55px rgba(42, 5, 5, 0.26); }
+  .valour-testimonial__media, .valour-testimonial__media[data-image-count] { min-height: 0; height: auto; aspect-ratio: 4 / 5; display: block; padding: 0; background: rgba(255, 248, 239, 0.08); }
+  .valour-testimonial__media img { width: 100%; height: 100%; border-radius: 0; object-fit: cover; }
+  .valour-testimonial__media img:not(:first-child), .valour-testimonial__copy { display: none; }
+  .valour-testimonials__closing { max-width: 760px; margin: clamp(64px, 8vw, 108px) auto 0; color: #f7d46c; font: 600 clamp(42px, 6vw, 76px)/0.96 "Cormorant Garamond", "Playfair Display", Georgia, serif; letter-spacing: -0.03em; text-align: center; text-wrap: balance; }
+  .valour-testimonials__controls { grid-template-columns: 52px 52px; justify-content: center; width: auto; margin-top: 30px; }
+  .valour-testimonials__dots { display: none; }
+  .valour-testimonials__arrow { border-color: rgba(255, 248, 239, 0.34); background: transparent; color: #fff8ef; }
+  .valour-testimonials__arrow:hover { background: #f7d46c; color: #831a1a; }
+  .valour-testimonials__arrow:focus-visible { outline-color: #f7d46c; }
+  .valour-testimonials__status { width: fit-content; margin: 15px auto 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: rgba(255, 248, 239, 0.5); font-size: 10px; font-weight: 500; letter-spacing: 0.1em; line-height: 1.3; box-shadow: none; backdrop-filter: none; }
+  .valour-testimonials__status::before { content: none; }
+
+  @media (max-width: 980px) {
+    .valour-testimonials__track { --photos-visible: 2; }
+    .valour-testimonial { flex-basis: calc((100% - var(--carousel-gap)) / 2); }
+  }
+
+  @media (max-width: 820px) {
+    .valour-testimonials { padding: 82px 16px 96px; }
+  }
+
+  @media (max-width: 480px) {
+    .valour-testimonials__title { font-size: clamp(46px, 15vw, 66px); }
+    .valour-testimonials__track { --photos-visible: 1.18; }
+    .valour-testimonial { flex-basis: 84.75%; }
+    .valour-testimonials__controls { grid-template-columns: 48px 48px; gap: 12px; }
+    .valour-testimonials__arrow { width: 48px; height: 48px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .valour-testimonials__track, .valour-testimonials__arrow, .valour-testimonials__dot { transition: none; }
+  }
 </style>
 
 <body>
@@ -5178,6 +5264,86 @@
         </article>
       </div>
     </section>
+    <section class="valour-testimonials" id="customer-stories" data-valour-testimonials aria-labelledby="customer-stories-title">
+      <div class="valour-testimonials__inner">
+        <header class="valour-testimonials__intro">
+          <h2 class="valour-testimonials__title" id="customer-stories-title">FROM OUR FIRST KITCHENS.</h2>
+          <p class="valour-testimonials__subtitle">VALOUR is already being cooked and served in homes across Agartala.</p>
+        </header>
+
+        <div class="valour-testimonials__viewport" data-testimonial-viewport tabindex="0" aria-roledescription="carousel" aria-label="Customer testimonials">
+          <div class="valour-testimonials__track" data-testimonial-track>
+            <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="1 of 4">
+              <div class="valour-testimonial__media" data-image-count="1" data-testimonial-media-key="first-kitchen-1">
+                <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" width="900" height="900" alt="A rich bowl of butter chicken served at the dinner table" data-focus="food" loading="lazy" decoding="async">
+              </div>
+              <div class="valour-testimonial__copy">
+                <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
+                <blockquote class="valour-testimonial__quote">“It tasted like the butter chicken we save for special dinners—only I made it on a Tuesday, in fifteen minutes.”</blockquote>
+                <p class="valour-testimonial__person"><strong class="valour-testimonial__name">Ananya Sen</strong><span class="valour-testimonial__detail">Kolkata · Verified customer</span></p>
+              </div>
+            </article>
+
+            <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="2 of 4" aria-hidden="true">
+              <div class="valour-testimonial__media" data-image-count="2" data-testimonial-media-key="first-kitchen-2">
+                <img src="vendor/cdn/cdn/shop/files/slide 3.webp" width="720" height="900" alt="Butter chicken simmering in a home kitchen" data-focus="food" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/slide 4.webp" width="720" height="900" alt="A finished serving of creamy butter chicken" data-focus="food" loading="lazy" decoding="async">
+              </div>
+              <div class="valour-testimonial__copy">
+                <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
+                <blockquote class="valour-testimonial__quote">“The sauce was silky, balanced and properly restaurant-style. My parents asked which place I had ordered it from.”</blockquote>
+                <p class="valour-testimonial__person"><strong class="valour-testimonial__name">Rohan Mehta</strong><span class="valour-testimonial__detail">Bengaluru · Weekend cook</span></p>
+              </div>
+            </article>
+
+            <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="3 of 4" aria-hidden="true">
+              <div class="valour-testimonial__media" data-image-count="3" data-testimonial-media-key="first-kitchen-3">
+                <img src="vendor/cdn/cdn/shop/files/imagetab2.webp" width="760" height="950" alt="Butter chicken plated with a glossy finish" data-focus="food" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/image_2_prod.webp" width="600" height="600" alt="VALOUR cooking base beside the prepared meal" data-focus="product" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" width="600" height="600" alt="Jar of VALOUR Velvety Butter Chicken cooking base" data-focus="product" loading="lazy" decoding="async">
+              </div>
+              <div class="valour-testimonial__copy">
+                <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
+                <blockquote class="valour-testimonial__quote">“No long spice list, no guesswork. The first spoonful had everyone quiet—and then reaching for more naan.”</blockquote>
+                <p class="valour-testimonial__person"><strong class="valour-testimonial__name">Ishita Das</strong><span class="valour-testimonial__detail">Guwahati · Verified customer</span></p>
+              </div>
+            </article>
+
+            <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="4 of 4" aria-hidden="true">
+              <div class="valour-testimonial__media" data-image-count="4" data-testimonial-media-key="first-kitchen-4">
+                <img src="vendor/cdn/cdn/shop/files/slide 5.webp" width="600" height="600" alt="Chicken cooking before the VALOUR base is added" data-focus="food" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/slide 6.webp" width="600" height="600" alt="Creamy butter chicken coming together in the pan" data-focus="food" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/Packaging Design v3.png" width="600" height="600" alt="VALOUR Butter Chicken package on the kitchen counter" data-focus="product" loading="lazy" decoding="async">
+                <img src="vendor/cdn/cdn/shop/files/hero_banner2nd.webp" width="600" height="600" alt="Butter chicken dinner ready to share" data-focus="food" loading="lazy" decoding="async">
+              </div>
+              <div class="valour-testimonial__copy">
+                <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
+                <blockquote class="valour-testimonial__quote">“I served eight people without spending the evening in the kitchen. It felt generous, effortless and genuinely delicious.”</blockquote>
+                <p class="valour-testimonial__person"><strong class="valour-testimonial__name">Neha Kapoor</strong><span class="valour-testimonial__detail">Delhi · Dinner-party host</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <h3 class="valour-testimonials__closing">Now we'd love to see what you make.</h3>
+
+        <div class="valour-testimonials__controls" aria-label="Photo carousel controls">
+          <button class="valour-testimonials__arrow" type="button" data-testimonial-prev aria-label="Show previous testimonial">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2Z"/></svg>
+          </button>
+          <div class="valour-testimonials__dots" role="group" aria-label="Choose a testimonial">
+            <button class="valour-testimonials__dot" type="button" data-testimonial-dot="0" aria-label="Show testimonial 1" aria-current="true"></button>
+            <button class="valour-testimonials__dot" type="button" data-testimonial-dot="1" aria-label="Show testimonial 2" aria-current="false"></button>
+            <button class="valour-testimonials__dot" type="button" data-testimonial-dot="2" aria-label="Show testimonial 3" aria-current="false"></button>
+            <button class="valour-testimonials__dot" type="button" data-testimonial-dot="3" aria-label="Show testimonial 4" aria-current="false"></button>
+          </div>
+          <button class="valour-testimonials__arrow" type="button" data-testimonial-next aria-label="Show next testimonial">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 4-1.42 1.41L16.17 11H4v2h12.17l-5.59 5.59L12 20l8-8-8-8Z"/></svg>
+          </button>
+        </div>
+        <p class="valour-testimonials__status" data-testimonial-status>Photos 1–3 of 4</p>
+      </div>
+    </section>
     </section>
     <div id="shopify-section-template--19781511708886__text_scrolling_pBimbB"
       class=" shopify-section text-scrolling-parent">
@@ -5303,7 +5469,7 @@
                       data-product-image="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp"
                       disabled
                     >ADD TO CART</button>
-                    <a class="product-action-btn product-video-link" href="#looks-tastes-title">Watch 2-min Recipe</a>
+                    <a class="product-action-btn product-video-link" href="#detailed-recipe-video">Watch 2-min Recipe</a>
  
                   </div>
                   <ul class="product-trust-badges" aria-label="Product quality assurances">
@@ -5414,13 +5580,7 @@
         
         <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
           class="shopify-section testimonial-sectionxyz-parent">
-          <link rel="stylesheet"
-            href="vendor/cdn/cdn/shop/t/8/assets/testimonial-section-stylesheet.css?v=91204637565225421031755792981"
-            media="print" onload="this.media='all'">
-
-
-
-          <div class="testimonial-sectionxyz">
+          <template id="retired-testimonial-template">
 
             <div class="header">
               <h2>Customers <span>love us.</span></h2>
@@ -5511,7 +5671,7 @@
 
             </div>
 
-          </div>
+          </template>
 
 
 
@@ -6089,60 +6249,132 @@ Prepare less.</h2>
     }
 
 
-    const track = document.getElementById("track");
-    const next = document.getElementById("next");
-    const prev = document.getElementById("prev");
+    (async () => {
+      const section = document.querySelector("[data-valour-testimonials]");
+      if (!section) return;
 
-    let index = 0;
-
-    function getVisibleItems() {
-      return 1;
-    }
-
-    function updateSlide() {
-      const item = document.querySelector(".carousel-item");
-      if (!item) return;
-
-      const trackStyles = window.getComputedStyle(track);
-      const gap = parseFloat(trackStyles.gap) || 0;
-
-      const itemWidth = item.offsetWidth + gap;
-
-      track.style.transform = `translateX(-${index * itemWidth}px)`;
-    }
-
-    /* NEXT */
-    next.addEventListener("click", () => {
-      const visibleItems = getVisibleItems();
-      const totalItems = track.children.length;
-      if (index < totalItems - visibleItems) {
-        index++;
-        updateSlide();
-      }
-    });
-
-    /* PREV */
-    prev.addEventListener("click", () => {
-      if (index > 0) {
-        index--;
-        updateSlide();
-      }
-    });
-
-    /* AUTO FIX ON RESIZE */
-    window.addEventListener("resize", () => {
-      const visibleItems = getVisibleItems();
-      const totalItems = track.children.length; 4
-
-      if (index > totalItems - visibleItems) {
-        index = totalItems - visibleItems;
+      try {
+        const response = await fetch("/api/testimonial-media", { headers: { Accept: "application/json" } });
+        const payload = await response.json();
+        if (response.ok && payload.ok && Array.isArray(payload.items)) {
+          const mediaByKey = new Map(payload.items.map((item) => [item.key, item]));
+          section.querySelectorAll("[data-testimonial-media-key]").forEach((media) => {
+            const item = mediaByKey.get(media.dataset.testimonialMediaKey);
+            const image = media.querySelector("img");
+            if (!item || !image || typeof item.imageUrl !== "string" || !/^(\/|https:\/\/)/.test(item.imageUrl)) return;
+            image.src = item.imageUrl;
+            if (typeof item.altText === "string" && item.altText.trim()) image.alt = item.altText.trim();
+            if (typeof item.objectPosition === "string" && /^\d{1,3}%\s+\d{1,3}%$/.test(item.objectPosition)) image.style.objectPosition = item.objectPosition;
+          });
+        }
+      } catch (error) {
+        console.warn("Using fallback customer photos", error);
       }
 
-      updateSlide();
-    });
+      const viewport = section.querySelector("[data-testimonial-viewport]");
+      const track = section.querySelector("[data-testimonial-track]");
+      const slides = Array.from(section.querySelectorAll("[data-testimonial-slide]"));
+      const dots = Array.from(section.querySelectorAll("[data-testimonial-dot]"));
+      const previousButton = section.querySelector("[data-testimonial-prev]");
+      const nextButton = section.querySelector("[data-testimonial-next]");
+      const status = section.querySelector("[data-testimonial-status]");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const pauseReasons = new Set();
+      let activeIndex = 0;
+      let autoRotateTimer = null;
+      let touchStartX = 0;
+      let touchStartY = 0;
 
-    /* INITIAL LOAD */
-    window.addEventListener("load", updateSlide);
+      const getVisibleCount = () => Math.max(1, Math.floor(parseFloat(getComputedStyle(track).getPropertyValue("--photos-visible")) || 1));
+      const getMaxIndex = () => Math.max(0, slides.length - getVisibleCount());
+
+      const update = (nextIndex, announce = true) => {
+        const maxIndex = getMaxIndex();
+        activeIndex = nextIndex > maxIndex ? 0 : nextIndex < 0 ? maxIndex : nextIndex;
+        const gap = parseFloat(getComputedStyle(track).gap) || 0;
+        const step = (slides[0]?.getBoundingClientRect().width || 0) + gap;
+        track.style.transform = `translate3d(-${activeIndex * step}px, 0, 0)`;
+        const visibleCount = getVisibleCount();
+        slides.forEach((slide, slideIndex) => slide.setAttribute("aria-hidden", slideIndex >= activeIndex && slideIndex < activeIndex + visibleCount ? "false" : "true"));
+        dots.forEach((dot, dotIndex) => dot.setAttribute("aria-current", dotIndex === activeIndex ? "true" : "false"));
+        const firstVisible = activeIndex + 1;
+        const lastVisible = Math.min(activeIndex + visibleCount, slides.length);
+        status.textContent = visibleCount === 1
+          ? `Photo ${firstVisible} of ${slides.length}`
+          : `Photos ${firstVisible}–${lastVisible} of ${slides.length}`;
+      };
+
+      const stopAutoRotate = () => {
+        window.clearInterval(autoRotateTimer);
+        autoRotateTimer = null;
+      };
+
+      const startAutoRotate = () => {
+        stopAutoRotate();
+        if (reducedMotion.matches || pauseReasons.size) return;
+        autoRotateTimer = window.setInterval(() => update(activeIndex + 1, false), 6500);
+      };
+
+      const pause = (reason) => {
+        pauseReasons.add(reason);
+        stopAutoRotate();
+      };
+
+      const resume = (reason) => {
+        pauseReasons.delete(reason);
+        startAutoRotate();
+      };
+
+      const selectManually = (nextIndex) => {
+        update(nextIndex);
+        pause("manual");
+        window.setTimeout(() => resume("manual"), 8000);
+      };
+
+      previousButton.addEventListener("click", () => selectManually(activeIndex - 1));
+      nextButton.addEventListener("click", () => selectManually(activeIndex + 1));
+      dots.forEach((dot) => dot.addEventListener("click", () => selectManually(Number(dot.dataset.testimonialDot))));
+
+      section.addEventListener("mouseenter", () => pause("hover"));
+      section.addEventListener("mouseleave", () => resume("hover"));
+      section.addEventListener("focusin", () => pause("focus"));
+      section.addEventListener("focusout", (event) => {
+        if (!section.contains(event.relatedTarget)) resume("focus");
+      });
+
+      viewport.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        selectManually(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
+      });
+
+      viewport.addEventListener("touchstart", (event) => {
+        const touch = event.touches[0];
+        if (!touch) return;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        pause("touch");
+      }, { passive: true });
+
+      viewport.addEventListener("touchend", (event) => {
+        const touch = event.changedTouches[0];
+        if (touch) {
+          const deltaX = touch.clientX - touchStartX;
+          const deltaY = touch.clientY - touchStartY;
+          if (Math.abs(deltaX) > 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+            selectManually(activeIndex + (deltaX < 0 ? 1 : -1));
+          }
+        }
+        resume("touch");
+      }, { passive: true });
+
+      viewport.addEventListener("touchcancel", () => resume("touch"), { passive: true });
+      window.addEventListener("resize", () => update(Math.min(activeIndex, getMaxIndex()), false));
+      document.addEventListener("visibilitychange", () => document.hidden ? pause("hidden") : resume("hidden"));
+      reducedMotion.addEventListener?.("change", startAutoRotate);
+      update(0, false);
+      startAutoRotate();
+    })();
 
 
 
@@ -6401,11 +6633,15 @@ Prepare less.</h2>
 const productSliderSection = document.querySelector(".container_slider");
 const valourHeroInner = document.querySelector(".valour-hero__inner");
 const valourStackStory = document.querySelector(".valour-stack-story");
+const customerStories = document.querySelector("[data-valour-testimonials]");
 
 if (productSliderSection && valourHeroInner) {
   valourHeroInner.appendChild(productSliderSection);
   if (valourStackStory) {
     valourHeroInner.insertBefore(valourStackStory, productSliderSection);
+  }
+  if (customerStories) {
+    valourHeroInner.insertBefore(customerStories, productSliderSection);
   }
 }
 
@@ -6604,7 +6840,21 @@ if (looksTastesSection && looksTastesVideo) {
   };
 
   document.querySelectorAll(".product-video-link").forEach((link) => {
-    link.addEventListener("click", playLooksTastesVideoWithSound);
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      playLooksTastesVideoWithSound();
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const videoTarget = document.getElementById("detailed-recipe-video");
+      videoTarget?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+
+      if (window.location.hash !== "#detailed-recipe-video") {
+        window.history.pushState(null, "", "#detailed-recipe-video");
+      }
+    });
   });
 
   const looksTastesVideoObserver = new IntersectionObserver((entries) => {
