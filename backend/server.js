@@ -122,6 +122,7 @@ function collections() {
     accordionContent: db.collection("accordion_content"),
     carouselVideos: db.collection("carousel_videos"),
     testimonialMedia: db.collection("testimonial_media"),
+    homepageTestimonials: db.collection("homepage_testimonials"),
   };
 }
 
@@ -192,6 +193,59 @@ const DEFAULT_TESTIMONIAL_MEDIA = [
   { key: "first-kitchen-4", imageUrl: "/vendor/cdn/cdn/shop/files/slide 5.webp", altText: "Chicken being prepared with the VALOUR cooking base", objectPosition: "50% 52%", order: 4, active: true },
 ];
 
+const DEFAULT_HOMEPAGE_TESTIMONIALS = [
+  {
+    key: "agartala-kitchen-1",
+    quote: "It tasted like the butter chicken we save for special dinners—only I made it on a Tuesday, in fifteen minutes.",
+    personName: "Ananya Sen",
+    personDetail: "Agartala · Verified customer",
+    images: [
+      { url: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp", alt: "A rich bowl of butter chicken served at home", objectPosition: "50% 58%" },
+      { url: "/vendor/cdn/cdn/shop/files/slide 3.webp", alt: "Butter chicken simmering in a home kitchen", objectPosition: "50% 55%" },
+    ],
+    order: 1,
+    active: true,
+  },
+  {
+    key: "agartala-kitchen-2",
+    quote: "The sauce was silky and balanced. My parents genuinely asked which restaurant I had ordered it from.",
+    personName: "Rohan Deb",
+    personDetail: "Agartala · Weekend cook",
+    images: [
+      { url: "/vendor/cdn/cdn/shop/files/slide 4.webp", alt: "Freshly prepared creamy butter chicken", objectPosition: "50% 56%" },
+      { url: "/vendor/cdn/cdn/shop/files/imagetab2.webp", alt: "Butter chicken plated and ready to share", objectPosition: "50% 58%" },
+      { url: "/vendor/cdn/cdn/shop/files/image_2_prod.webp", alt: "VALOUR cooking base beside a prepared meal", objectPosition: "50% 48%" },
+    ],
+    order: 2,
+    active: true,
+  },
+  {
+    key: "agartala-kitchen-3",
+    quote: "No long spice list, no guesswork. The first spoonful had everyone quiet—and then reaching for more naan.",
+    personName: "Ishita Das",
+    personDetail: "Agartala · Verified customer",
+    images: [
+      { url: "/vendor/cdn/cdn/shop/files/slide 5.webp", alt: "Chicken being prepared for a VALOUR meal", objectPosition: "50% 52%" },
+      { url: "/vendor/cdn/cdn/shop/files/slide 6.webp", alt: "Creamy butter chicken coming together in the pan", objectPosition: "50% 55%" },
+    ],
+    order: 3,
+    active: true,
+  },
+  {
+    key: "agartala-kitchen-4",
+    quote: "I served the whole family without spending the evening in the kitchen. It felt effortless and genuinely delicious.",
+    personName: "Neha Paul",
+    personDetail: "Agartala · Family dinner",
+    images: [
+      { url: "/vendor/cdn/cdn/shop/files/hero_banner2nd.webp", alt: "A butter chicken dinner ready to share", objectPosition: "50% 52%" },
+      { url: "/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp", alt: "VALOUR Velvety Butter Chicken cooking base", objectPosition: "50% 48%" },
+      { url: "/vendor/cdn/cdn/shop/files/Packaging Design v3.png", alt: "VALOUR Butter Chicken package in a home kitchen", objectPosition: "50% 50%" },
+    ],
+    order: 4,
+    active: true,
+  },
+];
+
 async function connectDB() {
   await mongoClient.connect();
   db = mongoClient.db("valour_mvp");
@@ -216,6 +270,7 @@ async function connectDB() {
     accordionContent,
     carouselVideos,
     testimonialMedia,
+    homepageTestimonials,
   } = collections();
   try {
     await otpChallenges.dropIndex("expiresAt_1");
@@ -312,6 +367,15 @@ async function connectDB() {
     testimonialMedia.createIndex({ active: 1, order: 1 }),
     ...DEFAULT_TESTIMONIAL_MEDIA.map((item) =>
       testimonialMedia.updateOne(
+        { key: item.key },
+        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        { upsert: true },
+      ),
+    ),
+    homepageTestimonials.createIndex({ key: 1 }, { unique: true }),
+    homepageTestimonials.createIndex({ active: 1, order: 1 }),
+    ...DEFAULT_HOMEPAGE_TESTIMONIALS.map((item) =>
+      homepageTestimonials.updateOne(
         { key: item.key },
         { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
         { upsert: true },
@@ -9963,6 +10027,33 @@ app.get("/api/testimonial-media", async (_req, res) => {
   } catch (err) {
     console.error("Testimonial media lookup failed", err.message);
     return res.status(500).json({ ok: false, error: "Unable to load customer photos." });
+  }
+});
+
+app.get("/api/homepage-testimonials", async (_req, res) => {
+  if (!mongoReady) {
+    return res.status(503).json({ ok: false, error: "Testimonials are temporarily unavailable." });
+  }
+
+  try {
+    const items = await collections().homepageTestimonials
+      .find(
+        { active: true },
+        { projection: { _id: 0, key: 1, quote: 1, personName: 1, personDetail: 1, images: 1, order: 1 } },
+      )
+      .sort({ order: 1, key: 1 })
+      .limit(12)
+      .toArray();
+
+    const testimonials = items.map((item) => ({
+      ...item,
+      images: Array.isArray(item.images) ? item.images.slice(0, 3) : [],
+    })).filter((item) => item.images.length >= 1);
+
+    return res.json({ ok: true, items: testimonials });
+  } catch (err) {
+    console.error("Homepage testimonial lookup failed", err.message);
+    return res.status(500).json({ ok: false, error: "Unable to load testimonials." });
   }
 });
 
