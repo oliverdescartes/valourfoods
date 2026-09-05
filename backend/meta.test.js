@@ -28,6 +28,10 @@ test("source URLs drop secrets, fragments and token paths; custom data excludes 
   assert.equal(meta.sourceUrl("https://example.test/api/order-tracking/private", "https://example.test"), "https://example.test/");
   assert.equal(meta.sourceUrl("https://evil.test/", "https://example.test"), undefined);
   assert.deepEqual(meta.customData({ phone: "123", email: "private", reason: "private", item_id: "spice" }), { content_ids: ["spice"] });
+  assert.equal(meta.sourceUrl(undefined, "https://example.test"), undefined);
+  assert.equal(meta.sourceUrl("https://liquidspice.in/checkout", "https://www.liquidspice.in/"), "https://liquidspice.in/checkout");
+  assert.equal(meta.sourceUrl("https://www.liquidspice.in/checkout", "https://liquidspice.in/"), "https://www.liquidspice.in/checkout");
+  assert.equal(meta.sourceUrl("https://evil.liquidspice.in/", "https://www.liquidspice.in"), undefined);
 });
 test("Purchase uses authoritative rupees, quantities and real order ID", () => {
   const saved = order(); saved.totalAmount = 999999;
@@ -115,4 +119,106 @@ test("browser shares IDs, queues before init, strips PII and prevents refresh/ba
   assert.equal(pixels.filter(x => x[1] === "Purchase").length, 2);
   assert.equal(pixels.find(x => x[1] === "Purchase")[3].eventID, "purchase_order12345678");
   assert.equal(requests.some(x => x.event_name === "Purchase"), false);
+});
+
+const stagingEnv = () => ({ ...env, NODE_ENV: "production", META_DEPLOYMENT_ENV: "staging", META_CAPI_TEST_MODE: "true", META_CAPI_TEST_MODE_UNTIL: new Date(Date.now() + 3600000).toISOString(), PUBLIC_SITE_URL: "https://staging.example.test" });
+function replaceEnv(values) {
+  const before = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(values)) { if (value == null) delete process.env[key]; else process.env[key] = value; }
+  return () => { for (const [key, value] of Object.entries(before)) { if (value == null) delete process.env[key]; else process.env[key] = value; } };
+}
+test("temporary staging test mode is explicit, expires, and refuses production deployments/hosts", () => {
+  assert.equal(meta.config({ ...env, NODE_ENV: "production" }).test, undefined);
+  assert.equal(meta.config({ ...env, NODE_ENV: undefined }).test, undefined);
+  assert.equal(meta.config(stagingEnv()).test, "TEST_LOCAL");
+  assert.equal(meta.testMode(stagingEnv(), Date.now() + 2 * 3600000).enabled, false);
+  for (const changes of [
+    { META_CAPI_TEST_MODE: "false" }, { META_DEPLOYMENT_ENV: "production" }, { META_DEPLOYMENT_ENV: undefined },
+    { META_CAPI_TEST_MODE_UNTIL: "invalid" }, { META_CAPI_TEST_MODE_UNTIL: new Date(Date.now() - 1000).toISOString() },
+    { META_CAPI_TEST_MODE_UNTIL: new Date(Date.now() + 48 * 3600000).toISOString() },
+    { PUBLIC_SITE_URL: "https://liquidspice.in" }, { PUBLIC_SITE_URL: "https://www.liquidspice.in" },
+    { PUBLIC_SITE_URL: "invalid" }, { META_CAPI_TEST_EVENT_CODE: "" },
+  ]) assert.equal(meta.config({ ...stagingEnv(), ...changes }).test, undefined, JSON.stringify(changes));
+  assert.equal(meta.config({ ...env, META_DEPLOYMENT_ENV: "production" }).test, undefined);
+  const output = JSON.stringify(meta.diagnostics(stagingEnv()));
+  assert.equal(output.includes(env.META_CAPI_ACCESS_TOKEN), false);
+  assert.equal(output.includes(env.META_CAPI_TEST_EVENT_CODE), false);
+  assert.equal(meta.diagnostics(stagingEnv()).nodeEnv, "production");
+  assert.equal(meta.diagnostics(stagingEnv()).testEventsEnabled, true);
+});
+test("real browser helper and HTTP ingress plus Purchase worker use normal names and staging test code", async () => {
+  const restore = replaceEnv(stagingEnv());
+  const oldFetch = global.fetch;
+  const graph = []; const pixels = []; const requests = [];
+  const saved = order(); saved.metaPurchase.sourceUrl = "https://staging.example.test/checkout";
+  const db = { createIndex: async () => {}, updateMany: async () => {}, findOneAndUpdate: async () => {
+    if (saved.metaPurchase.status !== "pending") return null;
+    saved.metaPurchase.attempts++; return structuredClone(saved);
+  }, updateOne: async (_filter, update) => {
+    for (const [key, value] of Object.entries(update.$set || {})) saved.metaPurchase[key.split(".")[1]] = value;
+  } };
+  global.fetch = async (url, options) => {
+    assert.match(String(url), /^https:\/\/graph\.facebook\.com\//);
+    graph.push(JSON.parse(options.body));
+    return { ok: true, status: 200, json: async () => ({ events_received: 1 }) };
+  };
+  const app = express(); app.use(express.json()); const worker = meta.install(app, () => db);
+  const server = app.listen(0, "127.0.0.1"); await new Promise(resolve => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const context = { window: {}, location: { origin: "https://staging.example.test", pathname: "/checkout" }, crypto, console,
+      localStorage: { getItem: () => null, setItem: () => {} }, fetch: (url, options = {}) => {
+        const request = oldFetch(base + url, { ...options, headers: { ...options.headers, Origin: "https://staging.example.test", "Sec-Fetch-Site": "same-origin" } });
+        requests.push(request); return request;
+      } };
+    context.window.fbq = (...args) => pixels.push(args);
+    vm.runInNewContext(fs.readFileSync(require.resolve("../meta-pixel.js"), "utf8"), context);
+    const data = { currency: "INR", value: 160, content_type: "product", contents: [{ id: "spice", quantity: 1, item_price: 160 }] };
+    for (const name of ["ViewContent", "AddToCart", "InitiateCheckout"]) context.window.valourMeta.track("track", name, data);
+    // Bound the wait for the actual local HTTP requests; no external Meta connection occurs.
+    for (let i = 0; i < 100 && graph.length < 4; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(graph.length, 4);
+    await Promise.all(requests);
+    await worker.drain();
+    context.window.valourMeta.track("track", "Purchase", meta.purchaseData(saved));
+    assert.deepEqual(graph.map(x => x.data[0].event_name).sort(), ["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "Purchase"].sort());
+    for (const payload of graph) {
+      const sent = payload.data[0];
+      assert.equal(payload.test_event_code, "TEST_LOCAL");
+      assert.equal(sent.action_source, "website");
+      assert.equal(pixels.find(x => x[1] === sent.event_name)[3].eventID, sent.event_id);
+    }
+    assert.equal(graph.some(x => x.data[0].event_name === "TestEvent"), false);
+    assert.equal(saved.metaPurchase.status, "sent");
+  } finally { worker.stop(); await new Promise(resolve => server.close(resolve)); global.fetch = oldFetch; restore(); }
+});
+test("HTTP rejections expose safe reason codes for origin, timestamps, payloads and rate limits", async () => {
+  const restore = replaceEnv({ PUBLIC_SITE_URL: "https://www.liquidspice.in" });
+  const warnings = []; const oldWarn = console.warn; console.warn = (...args) => warnings.push(args);
+  const app = express(); app.use(express.json()); const worker = meta.install(app, () => { throw new Error(); });
+  const server = app.listen(0, "127.0.0.1"); await new Promise(resolve => server.once("listening", resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/meta/events`;
+  const body = { event_name: "PageView", event_id: "audit_event_123456", event_time: Math.floor(Date.now() / 1000), event_source_url: "https://liquidspice.in/" };
+  const post = async (payload, origin = "https://liquidspice.in") => {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", ...(origin ? { Origin: origin } : {}) }, body: JSON.stringify(payload) });
+    return { status: response.status, data: await response.json() };
+  };
+  try {
+    for (const [payload, origin, reason] of [
+      [body, "https://evil.test", "origin_not_allowed"], [body, null, "origin_not_allowed"],
+      [{ ...body, event_time: 1 }, "https://liquidspice.in", "invalid_event_time"],
+      [{ ...body, event_name: "TestEvent" }, "https://liquidspice.in", "event_not_allowed"],
+      [{ ...body, event_id: "12345" }, "https://liquidspice.in", "invalid_event_id"],
+      [{ ...body, event_name: "Purchase" }, "https://liquidspice.in", "event_not_allowed"],
+      [{ ...body, access_token: "private-value" }, "https://liquidspice.in", "invalid_payload_shape"],
+      [{ ...body, event_source_url: "https://evil.test/private" }, "https://liquidspice.in", "source_url_not_allowed"],
+      [{ ...body, custom_data: { currency: "USD" } }, "https://liquidspice.in", "invalid_currency"],
+      [{ ...body, event_name: "AddToCart" }, "https://liquidspice.in", "invalid_commerce_data"],
+    ]) assert.equal((await post(payload, origin)).data.reason, reason);
+    let limited;
+    for (let i = 0; i < 121; i++) { limited = await post({}); if (limited.status === 429) break; }
+    assert.equal(limited.data.reason, "rate_limited");
+    assert.equal(JSON.stringify(warnings).includes("private-value"), false);
+    assert.equal(warnings.some(x => x[1].stage === "ingress"), true);
+  } finally { worker.stop(); await new Promise(resolve => server.close(resolve)); console.warn = oldWarn; restore(); }
 });

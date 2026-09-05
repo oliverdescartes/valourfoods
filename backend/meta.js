@@ -7,16 +7,49 @@ const ALLOWED = new Set(["PageView", "ViewContent", "AddToCart", "InitiateChecko
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const text = value => typeof value === "string" ? value.trim().slice(0, 256) : "";
 const letters = value => text(value).toLowerCase().replace(/[^\p{L}]/gu, "");
+const PRODUCTION_HOSTS = new Set(["liquidspice.in", "www.liquidspice.in"]);
+const MAX_TEST_EXPIRY = Date.now() + 24 * 3600000;
+function testMode(env = process.env, now = Date.now()) {
+  const code = String(env.META_CAPI_TEST_EVENT_CODE || "").trim();
+  const inactive = reason => ({ enabled: false, codeConfigured: Boolean(code), reason });
+  if (!code) return inactive("test_code_missing");
+  if (env.META_DEPLOYMENT_ENV === "production") return inactive("production_deployment");
+  if (["development", "test"].includes(env.NODE_ENV)) return { enabled: true, codeConfigured: true, reason: "nonproduction_node_env", code };
+  if (env.META_CAPI_TEST_MODE !== "true") return inactive("explicit_test_mode_required");
+  if (!["staging", "test", "development"].includes(env.META_DEPLOYMENT_ENV)) return inactive("nonproduction_deployment_required");
+  try {
+    const site = new URL(env.PUBLIC_SITE_URL);
+    if (!["https:", "http:"].includes(site.protocol) || PRODUCTION_HOSTS.has(site.hostname)) return inactive("production_or_invalid_site");
+  } catch { return inactive("production_or_invalid_site"); }
+  const until = Date.parse(env.META_CAPI_TEST_MODE_UNTIL || "");
+  if (!Number.isFinite(until) || until <= now || until > MAX_TEST_EXPIRY) return inactive("test_window_invalid_or_expired");
+  return { enabled: true, codeConfigured: true, reason: "temporary_staging_override", code };
+}
 function config(env = process.env) {
   return { pixel: /^\d+$/.test(env.META_PIXEL_ID || "") ? env.META_PIXEL_ID : "2927690960901306",
     token: env.META_CAPI_ACCESS_TOKEN || env.META_CAPI_TOKEN,
     version: /^v\d+\.0$/.test(env.META_GRAPH_API_VERSION || "") ? env.META_GRAPH_API_VERSION : "v26.0",
-    test: ["development", "test"].includes(env.NODE_ENV) ? env.META_CAPI_TEST_EVENT_CODE : undefined };
+    test: testMode(env).code };
+}
+function diagnostics(env = process.env) {
+  const mode = testMode(env);
+  let publicOrigin;
+  try { publicOrigin = new URL(env.PUBLIC_SITE_URL).origin; } catch { publicOrigin = "invalid_or_missing"; }
+  return { nodeEnv: ["production", "development", "test"].includes(env.NODE_ENV) ? env.NODE_ENV : env.NODE_ENV ? "other" : "unset",
+    deploymentEnv: ["production", "staging", "development", "test"].includes(env.META_DEPLOYMENT_ENV) ? env.META_DEPLOYMENT_ENV : "unset_or_other",
+    tokenConfigured: Boolean(config(env).token), testCodeConfigured: mode.codeConfigured, testEventsEnabled: mode.enabled, testModeReason: mode.reason, publicOrigin };
 }
 function sourceUrl(value, base = process.env.PUBLIC_SITE_URL) {
+  if (typeof value !== "string" || !value.trim()) return undefined;
   try {
     const url = new URL(value, base);
-    if (!["https:", "http:"].includes(url.protocol) || url.origin !== new URL(base).origin) return undefined;
+    const site = new URL(base);
+    const allowedOrigins = new Set([site.origin]);
+    // Both verified VALOUR hosts serve the same site without a canonical redirect.
+    if (site.protocol === "https:" && !site.port && PRODUCTION_HOSTS.has(site.hostname)) {
+      for (const hostname of PRODUCTION_HOSTS) allowedOrigins.add(`https://${hostname}`);
+    }
+    if (!["https:", "http:"].includes(url.protocol) || !allowedOrigins.has(url.origin)) return undefined;
     // Tracking/review/payment tokens and customer query parameters never leave the site.
     const safePaths = /^\/(?:index\.html|checkout(?:\.html)?|cart\.html|order-success\.html|payment-failed\.html|privacy-policy(?:\.html)?|review(?:\.html)?|pay-order\.html|track-order\.html)?$/;
     return url.origin + (safePaths.test(url.pathname) ? url.pathname : "/");
@@ -91,9 +124,19 @@ function pending(req, now = new Date()) {
 }
 async function send(event, { env = process.env, fetchImpl = fetch } = {}) {
   const cfg = config(env);
-  if (!cfg.token) return { ok: false, retry: true, disabled: true };
+  const finish = result => {
+    if (!result.ok || testMode(env).codeConfigured) {
+      const fields = { stage: "transport", event: ALLOWED.has(event.event_name) || event.event_name === "Purchase" ? event.event_name : "invalid",
+        eventId: /^[A-Za-z0-9_-]{8,128}$/.test(event.event_id || "") ? event.event_id : undefined,
+        accepted: result.ok, testEventsEnabled: Boolean(cfg.test), httpStatus: result.status, code: result.code,
+        reason: result.disabled ? "token_missing" : result.ok ? "accepted" : "delivery_failed" };
+      if (result.ok) console.info("[META]", fields); else console.warn("[META]", fields);
+    }
+    return result;
+  };
+  if (!cfg.token) return finish({ ok: false, retry: true, disabled: true });
   const age = Math.floor(Date.now() / 1000) - event.event_time;
-  if ((!ALLOWED.has(event.event_name) && event.event_name !== "Purchase") || !/^[A-Za-z0-9_-]{8,128}$/.test(event.event_id || "") || !Number.isInteger(age) || age < -60 || age > 604800 || !event.event_source_url) return { ok: false, retry: false, code: "validation" };
+  if ((!ALLOWED.has(event.event_name) && event.event_name !== "Purchase") || !/^[A-Za-z0-9_-]{8,128}$/.test(event.event_id || "") || !Number.isInteger(age) || age < -60 || age > 604800 || !event.event_source_url) return finish({ ok: false, retry: false, code: "validation" });
   try {
     const response = await fetchImpl(`https://graph.facebook.com/${cfg.version}/${cfg.pixel}/events`, {
       method: "POST", headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
@@ -101,15 +144,21 @@ async function send(event, { env = process.env, fetchImpl = fetch } = {}) {
     });
     const body = await response.json().catch(() => ({}));
     const ok = response.ok && body.events_received === 1;
-    return { ok, retry: !ok && (response.status === 429 || response.status >= 500 || body.error?.is_transient === true), status: response.status, code: typeof body.error?.code === "number" ? body.error.code : undefined };
-  } catch { return { ok: false, retry: true, code: "network" }; }
+    return finish({ ok, retry: !ok && (response.status === 429 || response.status >= 500 || body.error?.is_transient === true), status: response.status, code: typeof body.error?.code === "number" ? body.error.code : undefined });
+  } catch { return finish({ ok: false, retry: true, code: "network" }); }
 }
 function install(app, getOrders, getPaymentAttempts) {
+  console.info("[META][CONFIG]", diagnostics());
   const buckets = new Map();
   app.get("/api/meta/config", (_req, res) => res.json({ pixelId: config().pixel }));
   app.post("/api/meta/events", async (req, res) => {
+    const reject = (status, reason) => {
+      console.warn("[META]", { stage: "ingress", status, reason });
+      return res.status(status).json({ ok: false, reason });
+    };
     const origin = sourceUrl(req.get("origin"));
-    if (!origin || req.get("sec-fetch-site") === "cross-site") return res.sendStatus(403);
+    if (!origin) return reject(403, "origin_not_allowed");
+    if (req.get("sec-fetch-site") === "cross-site") return reject(403, "cross_site_request");
     const now = Date.now();
     if (buckets.size > 10000) buckets.clear();
     const requestUserData = requestData(req);
@@ -117,17 +166,19 @@ function install(app, getOrders, getPaymentAttempts) {
     const bucket = buckets.get(rateKey) || { start: now, count: 0 };
     if (now - bucket.start > 60000) { bucket.start = now; bucket.count = 0; }
     buckets.set(rateKey, bucket);
-    if (++bucket.count > 120) return res.sendStatus(429);
+    if (++bucket.count > 120) return reject(429, "rate_limited");
     const body = req.body || {};
-    if (Object.keys(body).some(key => !["event_name", "event_id", "event_time", "event_source_url", "custom_data", "customer"].includes(key)) || (body.custom_data != null && (typeof body.custom_data !== "object" || Array.isArray(body.custom_data))) || (body.customer != null && (typeof body.customer !== "object" || Array.isArray(body.customer)))) return res.sendStatus(400);
-    if (!ALLOWED.has(body.event_name) || !/^[A-Za-z0-9_-]{8,128}$/.test(body.event_id || "") || JSON.stringify(body).length > 12000 || !Number.isInteger(body.event_time) || Math.abs(Math.floor(now / 1000) - body.event_time) > 300) return res.sendStatus(400);
+    if (Object.keys(body).some(key => !["event_name", "event_id", "event_time", "event_source_url", "custom_data", "customer"].includes(key)) || (body.custom_data != null && (typeof body.custom_data !== "object" || Array.isArray(body.custom_data))) || (body.customer != null && (typeof body.customer !== "object" || Array.isArray(body.customer)))) return reject(400, "invalid_payload_shape");
+    if (!ALLOWED.has(body.event_name)) return reject(400, "event_not_allowed");
+    if (!/^[A-Za-z0-9_-]{8,128}$/.test(body.event_id || "")) return reject(400, "invalid_event_id");
+    if (JSON.stringify(body).length > 12000) return reject(400, "payload_too_large");
+    if (!Number.isInteger(body.event_time) || Math.abs(Math.floor(now / 1000) - body.event_time) > 300) return reject(400, "invalid_event_time");
     const url = sourceUrl(body.event_source_url);
-    if (!url) return res.sendStatus(400);
+    if (!url) return reject(400, "source_url_not_allowed");
     const data = customData(body.custom_data);
-    if (body.custom_data?.currency != null && body.custom_data.currency !== "INR") return res.sendStatus(400);
-    if (["ViewContent", "AddToCart", "InitiateCheckout"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return res.sendStatus(400);
-    const result = await send({ event_name: body.event_name, event_id: body.event_id, event_time: body.event_time, event_source_url: url, user_data: { ...matching(body.customer), ...requestUserData }, custom_data: data });
-    if (!result.ok && !result.disabled) console.warn("[META]", { event: body.event_name, eventId: body.event_id, httpStatus: result.status, code: result.code });
+    if (body.custom_data?.currency != null && body.custom_data.currency !== "INR") return reject(400, "invalid_currency");
+    if (["ViewContent", "AddToCart", "InitiateCheckout"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return reject(400, "invalid_commerce_data");
+    await send({ event_name: body.event_name, event_id: body.event_id, event_time: body.event_time, event_source_url: url, user_data: { ...matching(body.customer), ...requestUserData }, custom_data: data });
     return res.sendStatus(204);
   });
   let running = false;
@@ -172,4 +223,4 @@ function install(app, getOrders, getPaymentAttempts) {
   timer.unref();
   return { drain, stop: () => clearInterval(timer) };
 }
-module.exports = { ALLOWED, config, sourceUrl, matching, requestData, customData, purchaseData, confirmed, pending, send, install };
+module.exports = { ALLOWED, config, diagnostics, testMode, sourceUrl, matching, requestData, customData, purchaseData, confirmed, pending, send, install };

@@ -40,7 +40,12 @@
           for (const key of ["name", "email", "phone", "city", "state", "pincode"]) if (typeof values[key] === "string" && values[key].trim()) customer[key] = values[key].trim().slice(0, 256);
         } catch { /* Early page view. */ }
         void fetch("/api/meta/events", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", keepalive: true,
-          body: JSON.stringify({ event_name: name, event_id: eventId, event_time: Math.floor(Date.now() / 1000), event_source_url: safeUrl(), custom_data: safe, customer }) }).catch(() => {});
+          body: JSON.stringify({ event_name: name, event_id: eventId, event_time: Math.floor(Date.now() / 1000), event_source_url: safeUrl(), custom_data: safe, customer }) }).then(async response => {
+            if (!response.ok) {
+              const details = await response.json().catch(() => ({}));
+              console.warn("[META]", { stage: "ingress", event: name, status: response.status, reason: details.reason || "request_rejected" });
+            }
+          }).catch(() => { console.warn("[META]", { stage: "ingress", event: name, reason: "network_error" }); });
       }
     } catch { /* Analytics must never interrupt customer actions. */ }
   }
@@ -48,10 +53,10 @@
   // Leave Meta's fbq object intact: the SDK installs callMethod on this object.
   // Call sites use valourMeta.track; fbq remains available for unrelated tracking.
   fetch("/api/meta/config", { credentials: "same-origin" }).then(r => r.ok ? r.json() : Promise.reject()).then(({ pixelId }) => {
-    if (!/^\d+$/.test(pixelId)) return;
+    if (!/^\d+$/.test(pixelId)) throw new Error("Invalid Pixel configuration");
     original("init", pixelId);
     ready = true;
     track("track", "PageView");
     for (const args of queue.splice(0)) track(...args);
-  }).catch(() => {});
+  }).catch(() => { console.warn("[META] Pixel configuration unavailable"); });
 })();
