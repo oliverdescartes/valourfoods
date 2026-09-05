@@ -25,6 +25,7 @@
     "express": "^5.2.1",
     "mongodb": "^7.3.0",
     "openai": "^6.42.0",
+    "proxy-addr": "2.0.7",
     "razorpay": "^2.9.6"
   }
 }

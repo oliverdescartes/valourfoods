@@ -292,9 +292,11 @@ function trackEvent(name, payload = {}) {
   }
 
   if (window.fbq) {
-    window.fbq("trackCustom", name, payload);
+    window.valourMeta?.track("trackCustom", name, payload);
   }
 }
+
+if (window.valourMeta) window.valourMeta.customer = () => getFormValues();
 
 let metaInitiateCheckoutTracked = false;
 
@@ -316,7 +318,7 @@ function trackMetaInitiateCheckout(quote) {
   if (!contents.length) return;
 
   metaInitiateCheckoutTracked = true;
-  window.fbq("track", "InitiateCheckout", {
+  window.valourMeta?.track("track", "InitiateCheckout", {
     content_ids: contents.map((item) => item.id),
     content_type: "product",
     contents,
@@ -331,7 +333,7 @@ function trackMetaPurchase({ value, currency = "INR", items, orderId }) {
     return;
 
   const contents = getMetaContents(items);
-  window.fbq("track", "Purchase", {
+  window.valourMeta?.track("track", "Purchase", {
     content_ids: contents.map((item) => item.id),
     content_type: "product",
     contents,
@@ -1645,6 +1647,7 @@ async function placeOrder(event) {
         }),
       );
       trackEvent("valour_purchase", {
+        order_id: codOrder.orderId,
         value: codOrder.order.totalAmount,
         currency: "INR",
         items: codOrder.order.products,
@@ -1710,15 +1713,16 @@ async function placeOrder(event) {
     );
 
     trackEvent("valour_purchase", {
-      value: state.totals.total,
+      order_id: verifiedOrder.orderId,
+      value: verifiedOrder.order.totalAmount,
       currency: "INR",
       items: state.cart,
       razorpay_order_id: verifiedOrder.order?.razorpayOrderId,
     });
-    trackMetaPurchase({
-      value: state.totals.total,
+    if (verifiedOrder.metaPurchaseConfirmed) trackMetaPurchase({
+      value: verifiedOrder.order.totalAmount,
       currency: verifiedOrder.order?.currency || "INR",
-      items: state.cart,
+      items: verifiedOrder.order.products,
       orderId: verifiedOrder.orderId,
     });
 

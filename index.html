@@ -21,9 +21,8 @@
   t.src=v;s=b.getElementsByTagName(e)[0];
   s.parentNode.insertBefore(t,s)}(window,document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', '2927690960901306');
-  fbq('track', 'PageView');
 </script>
+    <script src="/meta-pixel.js"></script>
 <noscript><img height="1" width="1" style="display:none"
   src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
   alt="" /></noscript>
@@ -7038,11 +7037,11 @@ if (velvetyButterChickenSlide && "IntersectionObserver" in window) {
 
       try {
         const product = await loadAuthoritativeProduct(productSku);
-        window.fbq("track", "ViewContent", {
+        window.valourMeta.track("track", "ViewContent", {
           content_ids: [productSku],
           content_name: product.name,
           content_type: "product",
-          contents: [{ id: productSku, quantity: 1 }],
+          contents: [{ id: productSku, quantity: 1, item_price: product.value }],
           value: product.value,
           currency: product.currency,
         });
@@ -7610,11 +7609,11 @@ function initValourCartActions() {
 
     try {
       const pricedProduct = await loadAuthoritativeProduct(product.id, quantity);
-      window.fbq("track", "AddToCart", {
+      window.valourMeta.track("track", "AddToCart", {
         content_ids: [product.id],
         content_name: pricedProduct.name,
         content_type: "product",
-        contents: [{ id: product.id, quantity }],
+        contents: [{ id: product.id, quantity, item_price: pricedProduct.lineValue / quantity }],
         value: pricedProduct.lineValue,
         currency: pricedProduct.currency,
       });

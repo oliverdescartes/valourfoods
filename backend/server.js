@@ -22,6 +22,7 @@ const {
 } = require("./whatsapp-order");
 const GRAPH_VERSION = "v25.0";
 const app = express();
+const meta = require("./meta");
 app.use(cors());
 // app.use(
 //   cors({
@@ -72,6 +73,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 let db;
+const metaDelivery = meta.install(app, () => collections().orders, () => collections().paymentAttempts);
 const phoneQueues = new Map();
 const DEPENDENCY_RETRY_MS = 30000;
 let mongoReady = false;
@@ -6672,6 +6674,9 @@ app.post("/api/payment/webhook", async (req, res) => {
           $set: {
             paymentStatus: "paid",
             razorpayPaymentId: payment.id,
+            metaCapturedAt: Number.isInteger(req.body.created_at) && req.body.created_at > 0 && req.body.created_at <= Math.floor(Date.now() / 1000) + 60
+              ? new Date(req.body.created_at * 1000)
+              : new Date(),
             paidAt: new Date(),
             updatedAt: new Date(),
           },
@@ -8960,6 +8965,7 @@ app.post("/api/orders/cod", async (req, res) => {
       const now = new Date();
       const codOrder = {
         ...websiteOrder,
+        metaPurchase: meta.pending(req, now),
         checkoutIdempotencyKey: idempotencyKey,
         razorpayOrderId: `cod_${idempotencyKey}`,
         channel: "website",
@@ -9041,11 +9047,12 @@ app.post("/api/orders/cod", async (req, res) => {
       }),
     );
 
+    void metaDelivery.drain();
     return res.status(created ? 201 : 200).json({
       ok: true,
       orderId: String(savedOrder._id),
       whatsappConfirmation: confirmation,
-      order: { ...savedOrder, _id: String(savedOrder._id) },
+      order: { ...savedOrder, metaPurchase: undefined, _id: String(savedOrder._id) },
     });
   } catch (error) {
     const clientError =
@@ -9270,6 +9277,9 @@ app.post("/api/payment/verify", async (req, res) => {
     };
 
     delete savedOrder._id;
+    savedOrder.metaPurchase = meta.pending(req, savedOrder.createdAt);
+    // Advertising waits for capture even though the existing order flow accepts authorization.
+    savedOrder.metaPurchase.requiresCapture = razorpayPayment.status !== "captured";
 
     const result = await orders.insertOne(savedOrder);
     await recordCouponRedemption(savedOrder, result.insertedId);
@@ -9347,12 +9357,14 @@ app.post("/api/payment/verify", async (req, res) => {
       );
     }
 
+    void metaDelivery.drain();
     res.json({
       ok: true,
       orderId: result.insertedId.toString(),
       paymentStatus: savedOrder.paymentStatus,
+      metaPurchaseConfirmed: !savedOrder.metaPurchase.requiresCapture,
       whatsappConfirmation,
-      order: { ...orderForResponse, _id: result.insertedId.toString() },
+      order: { ...orderForResponse, metaPurchase: undefined, _id: result.insertedId.toString() },
     });
   } catch (err) {
     if (err?.code === 11000) {
@@ -10084,6 +10096,7 @@ const publicRootFiles = new Set([
   "admin-dashboard.html",
   "cart.html",
   "checkout-script.js",
+  "meta-pixel.js",
   "checkout-styles.css",
   "checkout.html",
   "coupon-admin.html",
