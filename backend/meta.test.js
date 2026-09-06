@@ -58,6 +58,14 @@ test("transport protects token and test mode, validates time and classifies fail
   for (const [status, retry] of [[400, false], [401, false], [429, true], [503, true]]) assert.equal((await meta.send(event(), { env, fetchImpl: async () => ({ ok: false, status, json: async () => ({ error: { code: 100 } }) }) })).retry, retry);
   assert.equal((await meta.send(event(), { env, fetchImpl: async () => { throw new Error("private error"); } })).retry, true);
   assert.equal(meta.config({ META_CAPI_TOKEN: "alias" }).token, "alias");
+  const aliases = { META_CAPI_ACCESS_TOKEN: "preferred-private-value", META_CAPI_TOKEN: "legacy-private-value" };
+  assert.equal(meta.config(aliases).token, aliases.META_CAPI_ACCESS_TOKEN);
+  assert.equal(meta.diagnostics(aliases).tokenSource, "META_CAPI_ACCESS_TOKEN");
+  assert.equal(meta.diagnostics(aliases).tokenAliasesDiffer, true);
+  assert.equal(meta.diagnostics({ META_CAPI_TOKEN: "private value" }).tokenHasWhitespace, true);
+  const report = JSON.stringify(meta.diagnostics(aliases));
+  assert.equal(report.includes(aliases.META_CAPI_ACCESS_TOKEN), false);
+  assert.equal(report.includes(aliases.META_CAPI_TOKEN), false);
 });
 test("restricted HTTP endpoint rejects fake Purchase, foreign origin and arbitrary payload", async () => {
   const tokens = [process.env.META_CAPI_ACCESS_TOKEN, process.env.META_CAPI_TOKEN];

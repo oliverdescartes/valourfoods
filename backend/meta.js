@@ -28,6 +28,7 @@ function testMode(env = process.env, now = Date.now()) {
 function config(env = process.env) {
   return { pixel: /^\d+$/.test(env.META_PIXEL_ID || "") ? env.META_PIXEL_ID : "2927690960901306",
     token: env.META_CAPI_ACCESS_TOKEN || env.META_CAPI_TOKEN,
+    tokenSource: env.META_CAPI_ACCESS_TOKEN ? "META_CAPI_ACCESS_TOKEN" : env.META_CAPI_TOKEN ? "META_CAPI_TOKEN" : "missing",
     version: /^v\d+\.0$/.test(env.META_GRAPH_API_VERSION || "") ? env.META_GRAPH_API_VERSION : "v26.0",
     test: testMode(env).code };
 }
@@ -37,7 +38,10 @@ function diagnostics(env = process.env) {
   try { publicOrigin = new URL(env.PUBLIC_SITE_URL).origin; } catch { publicOrigin = "invalid_or_missing"; }
   return { nodeEnv: ["production", "development", "test"].includes(env.NODE_ENV) ? env.NODE_ENV : env.NODE_ENV ? "other" : "unset",
     deploymentEnv: ["production", "staging", "development", "test"].includes(env.META_DEPLOYMENT_ENV) ? env.META_DEPLOYMENT_ENV : "unset_or_other",
-    tokenConfigured: Boolean(config(env).token), testCodeConfigured: mode.codeConfigured, testEventsEnabled: mode.enabled, testModeReason: mode.reason, publicOrigin };
+    tokenConfigured: Boolean(config(env).token), tokenSource: config(env).tokenSource,
+    tokenAliasesDiffer: Boolean(env.META_CAPI_ACCESS_TOKEN && env.META_CAPI_TOKEN && env.META_CAPI_ACCESS_TOKEN !== env.META_CAPI_TOKEN),
+    tokenHasWhitespace: /\s/.test(config(env).token || ""),
+    testCodeConfigured: mode.codeConfigured, testEventsEnabled: mode.enabled, testModeReason: mode.reason, publicOrigin };
 }
 function sourceUrl(value, base = process.env.PUBLIC_SITE_URL) {
   if (typeof value !== "string" || !value.trim()) return undefined;
@@ -128,7 +132,7 @@ async function send(event, { env = process.env, fetchImpl = fetch } = {}) {
     if (!result.ok || testMode(env).codeConfigured) {
       const fields = { stage: "transport", event: ALLOWED.has(event.event_name) || event.event_name === "Purchase" ? event.event_name : "invalid",
         eventId: /^[A-Za-z0-9_-]{8,128}$/.test(event.event_id || "") ? event.event_id : undefined,
-        accepted: result.ok, testEventsEnabled: Boolean(cfg.test), httpStatus: result.status, code: result.code,
+        accepted: result.ok, testEventsEnabled: Boolean(cfg.test), tokenSource: cfg.tokenSource, httpStatus: result.status, code: result.code,
         reason: result.disabled ? "token_missing" : result.ok ? "accepted" : "delivery_failed" };
       if (result.ok) console.info("[META]", fields); else console.warn("[META]", fields);
     }

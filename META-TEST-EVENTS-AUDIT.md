@@ -1,5 +1,31 @@
 # Why normal VALOUR events were missing from Meta Test Events
 
+## Latest confirmed blocker: Meta rejects the application credential
+
+The owner subsequently supplied a real PM2 log from `valour-backend` for PageView:
+
+```text
+stage: transport
+accepted: false
+testEventsEnabled: true
+httpStatus: 401
+code: 190
+```
+
+This proves that a real PageView passed ingress, reached the central transport, and had Test Events enabled. Its current failure is Meta authentication; changing event names, NODE_ENV or origin validation again would not address this response.
+
+A read-only dataset lookup with the current local configured token returned Meta's message **Malformed access token** with code 190. Bearer-header authentication returned 401; query-parameter authentication returned 400/code 190 with the same message. No event was sent, no token/URL containing it was logged, and the authentication format was not changed. This proves the local credential is rejected; it does not expose or directly compare PM2's actual secret with the successful manual request's secret.
+
+The local file currently supplies only META_CAPI_TOKEN. In any environment, META_CAPI_ACCESS_TOKEN takes precedence if nonempty. PM2-injected variables can also override backend/.env because dotenv preserves existing process variables. The successful manual TestEvent may therefore have used a different credential, or credential validity may have changed since that test. Do not assume those values are identical without checking privately.
+
+Diagnostics now include only the selected **variable name** (`tokenSource`), whether both aliases differ (`tokenAliasesDiffer`), and a whitespace flag. The transport log includes tokenSource from the actual app process. No token value, prefix or fingerprint is printed.
+
+Correction on Lightsail: privately put the exact raw token from the successful manual call into the selected backend secret setting, preferably META_CAPI_ACCESS_TOKEN. Avoid a stale conflicting alias or PM2-injected value; do not paste the credential into chat/source or include a `Bearer ` prefix in its value. Update the actual PM2 configuration/environment, then restart `valour-backend` with `--update-env` as appropriate. PM2 documents environment refresh in its [environment-variable guide](https://pm2.io/docs/runtime/best-practices/environment-variables/). That flag refreshes the supplied environment; it is not a guarantee that an obsolete separately configured value was removed.
+
+Reload the homepage and require a new PageView log with accepted=true, httpStatus=200 and testEventsEnabled=true before considering authentication fixed. Old failed Purchase records are not automatically replayed: authentication failures are permanent under the existing retry policy and require separate, deliberate order/deduplication review after the credential is corrected.
+
+No secret was changed locally or remotely during this investigation. The historical findings and test-mode/origin fixes below remain recorded, but the supplied PM2 log identifies authentication as the current blocker.
+
 ## Root cause reported before edits
 
 The normal central transport is `send()` in `backend/meta.js` (the project's equivalent of sendMetaConversionEvent). Before this fix, it selected the test code using:
