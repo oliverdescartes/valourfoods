@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 const { isIP } = require("node:net");
 const proxyaddr = require("proxy-addr");
 const CUSTOM = ["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`);
-const ALLOWED = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", ...CUSTOM]);
+const ALLOWED = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", ...CUSTOM]);
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const text = value => typeof value === "string" ? value.trim().slice(0, 256) : "";
 const letters = value => text(value).toLowerCase().replace(/[^\p{L}]/gu, "");
@@ -97,7 +97,7 @@ function requestData(req) {
 function customData(input = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return {};
   const out = {};
-  for (const key of ["content_type", "currency", "order_id", "payment_method", "step", "coupon"]) {
+  for (const key of ["content_type", "content_name", "currency", "order_id", "payment_method", "step", "coupon"]) {
     if (text(input[key])) out[key] = text(input[key]);
   }
   if (letters(input.city)) out.city = letters(input.city);
@@ -151,7 +151,7 @@ async function send(event, { env = process.env, fetchImpl = fetch } = {}) {
     return finish({ ok, retry: !ok && (response.status === 429 || response.status >= 500 || body.error?.is_transient === true), status: response.status, code: typeof body.error?.code === "number" ? body.error.code : undefined });
   } catch { return finish({ ok: false, retry: true, code: "network" }); }
 }
-function install(app, getOrders, getPaymentAttempts) {
+function install(app, getOrders, getPaymentAttempts, getMetaEvents) {
   console.info("[META][CONFIG]", diagnostics());
   const buckets = new Map();
   app.get("/api/meta/config", (_req, res) => res.json({ pixelId: config().pixel }));
@@ -181,8 +181,41 @@ function install(app, getOrders, getPaymentAttempts) {
     if (!url) return reject(400, "source_url_not_allowed");
     const data = customData(body.custom_data);
     if (body.custom_data?.currency != null && body.custom_data.currency !== "INR") return reject(400, "invalid_currency");
-    if (["ViewContent", "AddToCart", "InitiateCheckout"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return reject(400, "invalid_commerce_data");
-    await send({ event_name: body.event_name, event_id: body.event_id, event_time: body.event_time, event_source_url: url, user_data: { ...matching(body.customer), ...requestUserData }, custom_data: data });
+    if (["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return reject(400, "invalid_commerce_data");
+    const deliveryPayload = { event_name: body.event_name, event_id: body.event_id, event_time: body.event_time, event_source_url: url, user_data: { ...matching(body.customer), ...requestUserData }, custom_data: data };
+    let diagnosticsCollection;
+    let shouldSend = true;
+    try {
+      diagnosticsCollection = getMetaEvents?.();
+      await diagnosticsCollection?.insertOne({ eventName: body.event_name, eventId: body.event_id, occurredAt: new Date(body.event_time * 1000), receivedAt: new Date(), browserAttempted: true, capiAttempts: 0, capiAccepted: false, status: "processing", deliveryPayload });
+    } catch (error) {
+      if (error?.code === 11000 && diagnosticsCollection) {
+        const existing = await diagnosticsCollection.findOne({ eventName: body.event_name, eventId: body.event_id });
+        const stale = existing?.status === "processing" && new Date(existing.receivedAt || 0).getTime() < Date.now() - 2 * 60_000;
+        shouldSend = (existing?.status === "failed" && existing?.retryable === true) || stale;
+        if (shouldSend) {
+          const claim = await diagnosticsCollection.updateOne({ _id: existing._id, status: existing.status }, { $set: { status: "processing", receivedAt: new Date(), lastAttemptAt: new Date() } });
+          shouldSend = claim.modifiedCount === 1;
+        }
+      }
+    }
+    if (!shouldSend) return res.status(200).json({ ok: true, duplicate: true });
+    const result = await send(deliveryPayload);
+    const deliveryStatus = result.ok ? "accepted" : result.retry ? "pending" : "failed";
+    try {
+      await diagnosticsCollection?.updateOne(
+        { eventName: body.event_name, eventId: body.event_id },
+        { $set: { status: deliveryStatus, retryable: Boolean(result.retry), nextAt: new Date(Date.now() + 10000), capiAccepted: result.ok, httpStatus: result.status || null, errorCode: result.code || (result.disabled ? "token_missing" : null), updatedAt: new Date() }, $inc: { capiAttempts: 1 }, ...(deliveryStatus !== "pending" ? { $unset: { deliveryPayload: "" } } : {}) },
+      );
+    } catch { /* diagnostics must not affect event delivery */ }
+    return res.sendStatus(204);
+  });
+  app.post("/api/meta/browser-attempt", async (req, res) => {
+    if (!sourceUrl(req.get("origin")) || req.get("sec-fetch-site") === "cross-site") return res.status(403).json({ ok: false });
+    const eventId = String(req.body?.event_id || "");
+    const match = eventId.match(/^purchase_([a-f\d]{24})$/i);
+    if (!match) return res.status(400).json({ ok: false });
+    try { await getOrders().updateOne({ _id: new (require("mongodb").ObjectId)(match[1]) }, { $set: { "metaPurchase.browserAttempted": true, "metaPurchase.browserAttemptedAt": new Date() } }); } catch { /* diagnostics only */ }
     return res.sendStatus(204);
   });
   let running = false;
@@ -199,6 +232,28 @@ function install(app, getOrders, getPaymentAttempts) {
       // Stay inside the browser/server deduplication window even after a long outage.
       await orders.updateMany({ "metaPurchase.status": "pending", "metaPurchase.eventTime": { $lt: Math.floor(Date.now() / 1000) - 47 * 3600 } }, { $set: { "metaPurchase.status": "failed", "metaPurchase.errorCode": "expired" }, $unset: { "metaPurchase.userData": "" } });
       if (!config().token) return;
+      const eventDiagnostics = getMetaEvents?.();
+      if (eventDiagnostics) {
+        await eventDiagnostics.updateMany({ status: "processing", nextAt: { $lte: new Date() } }, { $set: { status: "pending" } });
+        for (let i = 0; i < 50; i++) {
+          const pendingEvent = await eventDiagnostics.findOneAndUpdate(
+            { status: "pending", nextAt: { $lte: new Date() }, capiAttempts: { $lt: 8 }, occurredAt: { $gte: new Date(Date.now() - 47 * 3600_000) } },
+            { $set: { status: "processing", nextAt: new Date(Date.now() + 60_000) } },
+            { returnDocument: "after" },
+          );
+          if (!pendingEvent) break;
+          const result = await send(pendingEvent.deliveryPayload || {});
+          const status = result.ok ? "accepted" : result.retry && pendingEvent.capiAttempts + 1 < 8 ? "pending" : "failed";
+          await eventDiagnostics.updateOne(
+            { _id: pendingEvent._id, status: "processing" },
+            { $set: { status, retryable: status === "pending", nextAt: new Date(Date.now() + Math.min(3600_000, 10000 * 2 ** pendingEvent.capiAttempts)), capiAccepted: result.ok, httpStatus: result.status || null, errorCode: result.code || null, updatedAt: new Date() }, $inc: { capiAttempts: 1 }, ...(status !== "pending" ? { $unset: { deliveryPayload: "" } } : {}) },
+          );
+        }
+        await eventDiagnostics.updateMany(
+          { status: { $in: ["pending", "processing"] }, occurredAt: { $lt: new Date(Date.now() - 47 * 3600_000) } },
+          { $set: { status: "failed", retryable: false, errorCode: "expired", updatedAt: new Date() }, $unset: { deliveryPayload: "" } },
+        );
+      }
       for (let i = 0; i < 20; i++) {
         const now = new Date();
         const order = await orders.findOneAndUpdate({ "metaPurchase.status": "pending", "metaPurchase.nextAt": { $lte: now } }, { $set: { "metaPurchase.nextAt": new Date(now.getTime() + 60000) }, $inc: { "metaPurchase.attempts": 1 } }, { returnDocument: "after" });

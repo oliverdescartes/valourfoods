@@ -11,6 +11,8 @@
       function gtag() {
         dataLayer.push(arguments);
       }
+      let measurementDenied = navigator.doNotTrack === '1'; try { measurementDenied ||= localStorage.getItem('valour_analytics_consent') === 'denied'; } catch {}
+      gtag('consent', 'default', { analytics_storage: measurementDenied ? 'denied' : 'granted', ad_storage: measurementDenied ? 'denied' : 'granted', ad_user_data: measurementDenied ? 'denied' : 'granted', ad_personalization: measurementDenied ? 'denied' : 'granted' });
       gtag("js", new Date());
       gtag("config", "G-YRQF7PS079");
     </script>
@@ -40,6 +42,7 @@
         "https://connect.facebook.net/en_US/fbevents.js",
       );
     </script>
+    <script src="/attribution.js"></script>
     <script src="/meta-pixel.js"></script>
     <noscript
       ><img

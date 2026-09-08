@@ -106,18 +106,41 @@ test("durable worker retries same ID, excludes failed orders and does not resend
     assert.equal(ids[2], "purchase_authorized123"); assert.equal(saved.metaPurchase.status, "sent");
   } finally { worker.stop(); global.fetch = oldFetch; if (oldToken == null) delete process.env.META_CAPI_ACCESS_TOKEN; else process.env.META_CAPI_ACCESS_TOKEN = oldToken; }
 });
+test("non-purchase CAPI failures retry durably with the original browser event ID", async () => {
+  const restore = replaceEnv({ PUBLIC_SITE_URL: "https://example.test", META_CAPI_ACCESS_TOKEN: "local-test-only", META_CAPI_TOKEN: null });
+  const oldFetch = global.fetch;
+  const sentIds = []; let fail = true; let document = null;
+  const events = {
+    insertOne: async value => { if (document) { const error = new Error("duplicate"); error.code = 11000; throw error; } document = { ...structuredClone(value), _id: "meta1" }; },
+    findOne: async () => structuredClone(document),
+    updateOne: async (_filter, update) => { if (!document) return { modifiedCount: 0 }; for (const [key, value] of Object.entries(update.$set || {})) document[key] = value; for (const [key, value] of Object.entries(update.$inc || {})) document[key] = (document[key] || 0) + value; for (const key of Object.keys(update.$unset || {})) delete document[key]; return { modifiedCount: 1 }; },
+    findOneAndUpdate: async (_filter, update) => { if (document?.status !== "pending" || document.nextAt > new Date()) return null; Object.assign(document, update.$set); return structuredClone(document); },
+    updateMany: async () => ({ modifiedCount: 0 }),
+  };
+  const orders = { createIndex: async () => {}, updateMany: async () => {}, findOneAndUpdate: async () => null };
+  global.fetch = async (_url, options) => { const value = JSON.parse(options.body).data[0]; sentIds.push(value.event_id); return { ok: !fail, status: fail ? 503 : 200, json: async () => fail ? {} : { events_received: 1 } }; };
+  const app = express(); app.use(express.json()); const worker = meta.install(app, () => orders, null, () => events);
+  const server = app.listen(0, "127.0.0.1"); await new Promise(resolve => server.once("listening", resolve));
+  try {
+    const body = { ...event(), custom_data: {} }; delete body.user_data;
+    const response = await oldFetch(`http://127.0.0.1:${server.address().port}/api/meta/events`, { method: "POST", headers: { Origin: "https://example.test", "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    assert.equal(response.status, 204); assert.equal(document.status, "pending"); assert.equal(document.capiAttempts, 1);
+    fail = false; document.nextAt = new Date(0); await worker.drain();
+    assert.deepEqual(sentIds, [body.event_id, body.event_id]); assert.equal(document.status, "accepted"); assert.equal(document.capiAttempts, 2); assert.equal(document.deliveryPayload, undefined);
+  } finally { worker.stop(); await new Promise(resolve => server.close(resolve)); global.fetch = oldFetch; restore(); }
+});
 test("browser shares IDs, queues before init, strips PII and prevents refresh/back duplicate Purchase", async () => {
   const source = fs.readFileSync(require.resolve("../meta-pixel.js"), "utf8");
   const store = new Map(); const pixels = []; const requests = [];
   function browser() {
-    const context = { window: {}, location: { origin: "https://example.test", pathname: "/checkout" }, crypto, localStorage: { getItem: k => store.get(k), setItem: (k, v) => store.set(k, v) }, fetch: async (url, options) => { if (options?.body) requests.push(JSON.parse(options.body)); return { ok: true, json: async () => ({ pixelId: "2927690960901306" }) }; } };
+    const context = { window: {}, location: { origin: "https://example.test", pathname: "/checkout" }, crypto, localStorage: { getItem: k => store.get(k), setItem: (k, v) => store.set(k, v) }, fetch: async (url, options) => { if (options?.body) requests.push({ url, body: JSON.parse(options.body) }); return { ok: true, json: async () => ({ pixelId: "2927690960901306" }) }; } };
     context.window.fbq = (...args) => pixels.push(args); vm.runInNewContext(source, context); return context.window.valourMeta;
   }
   const client = browser();
   client.track("track", "AddToCart", { currency: "INR", value: 160, contents: [{ id: "spice", quantity: 1 }], phone: "private" });
   await new Promise(setImmediate);
   assert.equal(pixels[0][0], "init");
-  const pixel = pixels.find(x => x[1] === "AddToCart"); const capi = requests.find(x => x.event_name === "AddToCart");
+  const pixel = pixels.find(x => x[1] === "AddToCart"); const capi = requests.find(x => x.url === "/api/meta/events" && x.body.event_name === "AddToCart").body;
   assert.equal(pixel[3].eventID, capi.event_id); assert.equal(pixel[2].phone, undefined);
   client.track("track", "Purchase", { order_id: "order12345678", value: 450, currency: "INR" });
   client.track("track", "Purchase", { order_id: "order12345678", value: 450, currency: "INR" });
@@ -126,7 +149,8 @@ test("browser shares IDs, queues before init, strips PII and prevents refresh/ba
   refreshed.track("track", "Purchase", { order_id: "different123", value: 450, currency: "INR" });
   assert.equal(pixels.filter(x => x[1] === "Purchase").length, 2);
   assert.equal(pixels.find(x => x[1] === "Purchase")[3].eventID, "purchase_order12345678");
-  assert.equal(requests.some(x => x.event_name === "Purchase"), false);
+  assert.equal(requests.some(x => x.url === "/api/meta/events" && x.body.event_name === "Purchase"), false);
+  assert.equal(requests.some(x => x.url === "/api/meta/browser-attempt" && x.body.event_name === "Purchase"), true);
 });
 
 const stagingEnv = () => ({ ...env, NODE_ENV: "production", META_DEPLOYMENT_ENV: "staging", META_CAPI_TEST_MODE: "true", META_CAPI_TEST_MODE_UNTIL: new Date(Date.now() + 3600000).toISOString(), PUBLIC_SITE_URL: "https://staging.example.test" });
@@ -182,14 +206,15 @@ test("real browser helper and HTTP ingress plus Purchase worker use normal names
     context.window.fbq = (...args) => pixels.push(args);
     vm.runInNewContext(fs.readFileSync(require.resolve("../meta-pixel.js"), "utf8"), context);
     const data = { currency: "INR", value: 160, content_type: "product", contents: [{ id: "spice", quantity: 1, item_price: 160 }] };
-    for (const name of ["ViewContent", "AddToCart", "InitiateCheckout"]) context.window.valourMeta.track("track", name, data);
+    for (const name of ["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"]) context.window.valourMeta.track("track", name, data);
+    for (const name of ["Lead", "Contact"]) context.window.valourMeta.track("track", name, {});
     // Bound the wait for the actual local HTTP requests; no external Meta connection occurs.
-    for (let i = 0; i < 100 && graph.length < 4; i++) await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(graph.length, 4);
+    for (let i = 0; i < 100 && graph.length < 7; i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(graph.length, 7);
     await Promise.all(requests);
     await worker.drain();
     context.window.valourMeta.track("track", "Purchase", meta.purchaseData(saved));
-    assert.deepEqual(graph.map(x => x.data[0].event_name).sort(), ["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "Purchase"].sort());
+    assert.deepEqual(graph.map(x => x.data[0].event_name).sort(), ["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", "Purchase"].sort());
     for (const payload of graph) {
       const sent = payload.data[0];
       assert.equal(payload.test_event_code, "TEST_LOCAL");

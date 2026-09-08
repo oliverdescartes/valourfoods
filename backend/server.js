@@ -23,6 +23,7 @@ const {
 const GRAPH_VERSION = "v25.0";
 const app = express();
 const meta = require("./meta");
+const acquisition = require("./attribution");
 app.use(cors());
 // app.use(
 //   cors({
@@ -73,7 +74,12 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 let db;
-const metaDelivery = meta.install(app, () => collections().orders, () => collections().paymentAttempts);
+const metaDelivery = meta.install(
+  app,
+  () => collections().orders,
+  () => collections().paymentAttempts,
+  () => collections().metaEvents,
+);
 const phoneQueues = new Map();
 const DEPENDENCY_RETRY_MS = 30000;
 let mongoReady = false;
@@ -120,6 +126,8 @@ function collections() {
     reviews: db.collection("reviews"),
     messageJobs: db.collection("message_jobs"),
     customerEvents: db.collection("customer_events"),
+    analyticsEvents: db.collection("analytics_events"),
+    metaEvents: db.collection("meta_events"),
     otpChallenges: db.collection("otp_challenges"),
     accordionContent: db.collection("accordion_content"),
     carouselVideos: db.collection("carousel_videos"),
@@ -264,6 +272,8 @@ async function connectDB() {
     reviews,
     messageJobs,
     customerEvents,
+    analyticsEvents,
+    metaEvents,
     couponAssignments,
     universalCoupons,
     hiddenCoupons,
@@ -340,6 +350,16 @@ async function connectDB() {
     messageJobs.createIndex({ phone: 1, submittedAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
+    analyticsEvents.createIndex({ eventId: 1 }, { unique: true }),
+    analyticsEvents.createIndex({ occurredAt: -1, event: 1 }),
+    analyticsEvents.createIndex({ "attribution.visitorId": 1, occurredAt: -1 }),
+    analyticsEvents.createIndex({ "attribution.sessionId": 1, occurredAt: -1 }),
+    analyticsEvents.createIndex({ "attribution.latestNonDirect.channel": 1, occurredAt: -1 }),
+    analyticsEvents.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 68256000 }),
+    metaEvents.createIndex({ eventName: 1, eventId: 1 }, { unique: true }),
+    metaEvents.createIndex({ occurredAt: -1, eventName: 1 }),
+    metaEvents.createIndex({ status: 1, nextAt: 1 }),
+    metaEvents.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 7776000 }),
     otpChallenges.createIndex({ challengeId: 1 }, { unique: true }),
     otpChallenges.createIndex({ cleanupAt: 1 }, { expireAfterSeconds: 0 }),
     otpChallenges.createIndex({ phone: 1, createdAt: -1 }),
@@ -6998,9 +7018,15 @@ function normalizeOrderPayload(order = {}) {
     utmCampaign: tracking.campaign,
     utmContent: tracking.content,
     utmTerm: tracking.term,
+    utmId: tracking.id,
+    fbclid: tracking.fbclid,
+    gclid: tracking.gclid,
+    attributionChannel: tracking.channel,
+    externalReferrer: tracking.referrer,
     landingPage: tracking.landingPage,
     attributionCapturedAt: tracking.capturedAt,
   });
+  const attributionDetails = acquisition.attribution(tracking);
 
   return {
     customerName: String(checkout.name || "").trim(),
@@ -7026,6 +7052,7 @@ function normalizeOrderPayload(order = {}) {
     totalAmount: Number(totals.total) || 0,
     ...signals,
     ...campaignAttribution,
+    ...(attributionDetails ? { attribution: attributionDetails } : {}),
   };
 }
 
@@ -7928,6 +7955,7 @@ function escapeMongoRegex(value = "") {
 }
 
 function serializeAdminOrder(order = {}) {
+  const orderTouch = order.attribution?.latestNonDirect || order.attribution?.currentSession || {};
   return {
     id: String(order._id || ""),
     orderNumber:
@@ -7958,6 +7986,15 @@ function serializeAdminOrder(order = {}) {
     expectedDeliveryDate:
       order.expectedDeliveryDate || order.estimatedDelivery || "",
     deliveredAt: order.deliveredAt || null,
+    attribution: {
+      channel: orderTouch.channel || "unknown",
+      source: orderTouch.source || order.utmSource || "",
+      medium: orderTouch.medium || order.utmMedium || "",
+      campaign: orderTouch.campaign || order.utmCampaign || "",
+      content: orderTouch.content || order.utmContent || "",
+      firstTouch: order.attribution?.firstTouch || null,
+      latestNonDirect: order.attribution?.latestNonDirect || null,
+    },
   };
 }
 
@@ -8226,6 +8263,126 @@ app.get(
     }
   },
 );
+
+function acquisitionDateRange(query = {}) {
+  const endCandidate = query.end ? new Date(`${String(query.end).slice(0, 10)}T23:59:59.999+05:30`) : new Date();
+  const end = Number.isNaN(endCandidate.getTime()) ? new Date() : endCandidate;
+  const startCandidate = query.start ? new Date(`${String(query.start).slice(0, 10)}T00:00:00.000+05:30`) : new Date(end.getTime() - 29 * 24 * 60 * 60_000);
+  const start = Number.isNaN(startCandidate.getTime()) ? new Date(end.getTime() - 29 * 24 * 60 * 60_000) : startCandidate;
+  if (start > end || end.getTime() - start.getTime() > 366 * 24 * 60 * 60_000) throw new Error("Date range must be between 1 and 366 days");
+  return { start, end };
+}
+
+function cleanAcquisitionFilter(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9._~+{}:-]/g, "").slice(0, 256);
+}
+
+async function buildAcquisitionReport(query = {}) {
+  const { start, end } = acquisitionDateRange(query);
+  const model = query.model === "first" ? "first" : "latest";
+  const filters = Object.fromEntries(["channel", "source", "medium", "campaign", "content"].map(key => [key, cleanAcquisitionFilter(query[key])]));
+  const touchExpression = model === "first"
+    ? "$attribution.firstTouch"
+    : { $ifNull: ["$attribution.latestNonDirect", "$attribution.currentSession"] };
+  const touchMatch = {};
+  for (const [key, value] of Object.entries(filters)) if (value) touchMatch[`touch.${key}`] = value;
+  const base = [
+    { $match: { occurredAt: { $gte: start, $lte: end } } },
+    { $set: { touch: touchExpression } },
+    ...(Object.keys(touchMatch).length ? [{ $match: touchMatch }] : []),
+  ];
+  const { analyticsEvents, orders, metaEvents } = collections();
+  const [eventRows, orderRows, metaRows, purchaseMetaRows] = await Promise.all([
+    analyticsEvents.aggregate([...base, { $facet: {
+      metrics: [{ $group: {
+        _id: null,
+        visitors: { $addToSet: "$attribution.visitorId" },
+        sessions: { $addToSet: "$attribution.sessionId" },
+        pageViews: { $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] } },
+        leads: { $sum: { $cond: [{ $eq: ["$event", "lead"] }, 1, 0] } },
+        productViews: { $sum: { $cond: [{ $eq: ["$event", "view_content"] }, 1, 0] } },
+        addToCarts: { $sum: { $cond: [{ $eq: ["$event", "add_to_cart"] }, 1, 0] } },
+        checkoutStarts: { $sum: { $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0] } },
+      } }],
+      rows: [{ $group: { _id: { channel: { $ifNull: ["$touch.channel", "unknown"] }, source: { $ifNull: ["$touch.source", ""] }, medium: { $ifNull: ["$touch.medium", ""] }, campaign: { $ifNull: ["$touch.campaign", ""] }, content: { $ifNull: ["$touch.content", ""] }, landingPage: { $ifNull: ["$touch.landingPage", ""] } }, visitors: { $addToSet: "$attribution.visitorId" }, sessions: { $addToSet: "$attribution.sessionId" }, pageViews: { $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] } }, checkoutStarts: { $sum: { $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0] } } } }, { $sort: { pageViews: -1 } }, { $limit: 200 }],
+    } }]).toArray(),
+    orders.aggregate([
+      { $match: { createdAt: { $gte: start, $lte: end }, purchaseIntent: "completed", paymentStatus: { $in: ["paid", "pending_cod"] } } },
+      { $set: { touch: model === "first" ? "$attribution.firstTouch" : { $ifNull: ["$attribution.latestNonDirect", "$attribution.currentSession"] } } },
+      ...(Object.keys(touchMatch).length ? [{ $match: touchMatch }] : []),
+      { $facet: {
+        totals: [{ $group: { _id: null, purchases: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } }],
+        rows: [{ $group: { _id: { channel: { $ifNull: ["$touch.channel", "unknown"] }, source: { $ifNull: ["$touch.source", "$utmSource"] }, medium: { $ifNull: ["$touch.medium", "$utmMedium"] }, campaign: { $ifNull: ["$touch.campaign", "$utmCampaign"] }, content: { $ifNull: ["$touch.content", "$utmContent"] }, landingPage: { $ifNull: ["$touch.landingPage", "$landingPage"] } }, purchases: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } }, { $sort: { revenue: -1, purchases: -1 } }, { $limit: 200 }],
+      } },
+    ]).toArray(),
+    metaEvents.aggregate([
+      { $match: { occurredAt: { $gte: start, $lte: end } } },
+      { $group: { _id: "$eventName", logicalEvents: { $sum: 1 }, browserAttempts: { $sum: { $cond: ["$browserAttempted", 1, 0] } }, capiAttempts: { $sum: "$capiAttempts" }, accepted: { $sum: { $cond: ["$capiAccepted", 1, 0] } }, failures: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }, retries: { $sum: { $max: [{ $subtract: ["$capiAttempts", 1] }, 0] } }, paired: { $sum: { $cond: [{ $and: ["$browserAttempted", "$capiAccepted"] }, 1, 0] } } } },
+      { $sort: { _id: 1 } },
+    ]).toArray(),
+    orders.aggregate([
+      { $match: { createdAt: { $gte: start, $lte: end }, "metaPurchase.status": { $exists: true } } },
+      { $group: { _id: "Purchase", logicalEvents: { $sum: 1 }, browserAttempts: { $sum: { $cond: [{ $eq: ["$metaPurchase.browserAttempted", true] }, 1, 0] } }, capiAttempts: { $sum: "$metaPurchase.attempts" }, accepted: { $sum: { $cond: [{ $eq: ["$metaPurchase.status", "sent"] }, 1, 0] } }, failures: { $sum: { $cond: [{ $eq: ["$metaPurchase.status", "failed"] }, 1, 0] } }, paired: { $sum: { $cond: [{ $and: [{ $eq: ["$metaPurchase.browserAttempted", true] }, { $eq: ["$metaPurchase.status", "sent"] }] }, 1, 0] } } } },
+    ]).toArray(),
+  ]);
+  const eventResult = eventRows[0] || { metrics: [], rows: [] };
+  const events = eventResult.metrics[0] || { visitors: [], sessions: [], pageViews: 0, leads: 0, productViews: 0, addToCarts: 0, checkoutStarts: 0 };
+  const ordersResult = orderRows[0] || { totals: [], rows: [] };
+  const totals = ordersResult.totals[0] || { purchases: 0, revenue: 0 };
+  const keyOf = row => [row.channel, row.source, row.medium, row.campaign, row.content, row.landingPage].map(value => value || "").join("\u001f");
+  const rowMap = new Map(eventResult.rows.map(row => {
+    const value = { ...row._id, visitors: row.visitors.filter(Boolean).length, sessions: row.sessions.filter(Boolean).length, pageViews: row.pageViews, checkoutStarts: row.checkoutStarts, purchases: 0, revenue: 0 };
+    return [keyOf(value), value];
+  }));
+  for (const row of ordersResult.rows) {
+    const orderValue = { ...row._id, purchases: row.purchases, revenue: row.revenue };
+    const existing = rowMap.get(keyOf(orderValue)) || { ...orderValue, visitors: 0, sessions: 0, pageViews: 0, checkoutStarts: 0 };
+    existing.purchases = orderValue.purchases;
+    existing.revenue = orderValue.revenue;
+    rowMap.set(keyOf(orderValue), existing);
+  }
+  const rows = [...rowMap.values()].sort((left, right) => right.revenue - left.revenue || right.pageViews - left.pageViews);
+  const visitors = events.visitors.filter(Boolean).length;
+  return {
+    generatedAt: new Date(), range: { start, end, timezone: "Asia/Kolkata" }, model, filters,
+    definitions: { visitor: "Unique pseudonymous browser ID observed", session: "30 minutes of inactivity starts a new session", pageView: "A recorded public-page load", purchase: "Paid online order or placed COD order", attributionExpiryDays: 90 },
+    metrics: { visitors, sessions: events.sessions.filter(Boolean).length, pageViews: events.pageViews, leads: events.leads, productViews: events.productViews, addToCarts: events.addToCarts, checkoutStarts: events.checkoutStarts, purchases: totals.purchases, revenue: totals.revenue, conversionRate: visitors ? totals.purchases / visitors : 0 },
+    breakdown: rows,
+    meta: [...metaRows, ...purchaseMetaRows].map(row => ({ eventName: row._id, logicalEvents: row.logicalEvents || 0, browserAttempts: row.browserAttempts || 0, capiAttempts: row.capiAttempts || 0, accepted: row.accepted || 0, failures: row.failures || 0, retries: row.retries || Math.max(0, (row.capiAttempts || 0) - (row.logicalEvents || 0)), paired: row.paired || 0 })),
+    limits: "Counts reflect this application's measurement records. Browser blocking, denied consent, cleared storage, and cross-device use affect visitor counts. Meta delivery and attribution must be confirmed in Events Manager.",
+  };
+}
+
+app.post("/api/analytics/events", async (req, res) => {
+  if (req.get("sec-fetch-site") === "cross-site" || !meta.sourceUrl(req.get("origin") || req.get("referer"))) return res.status(403).json({ ok: false, error: "Origin not allowed" });
+  const record = acquisition.event(req.body);
+  if (!record) return res.status(400).json({ ok: false, error: "Invalid analytics event" });
+  try {
+    await collections().analyticsEvents.insertOne({ ...record, receivedAt: new Date() });
+    return res.sendStatus(204);
+  } catch (error) {
+    if (error?.code === 11000) return res.status(200).json({ ok: true, duplicate: true });
+    return res.status(503).json({ ok: false, error: "Measurement temporarily unavailable" });
+  }
+});
+
+app.get("/api/admin/acquisition", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) return res.status(401).json({ ok: false, error: "Unauthorized" });
+  try { return res.json({ ok: true, ...(await buildAcquisitionReport(req.query)) }); }
+  catch (error) { return res.status(/Date range/.test(error.message) ? 400 : 500).json({ ok: false, error: /Date range/.test(error.message) ? error.message : "Unable to load acquisition reporting" }); }
+});
+
+app.get("/api/admin/acquisition.csv", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) return res.status(401).json({ ok: false, error: "Unauthorized" });
+  try {
+    const report = await buildAcquisitionReport(req.query);
+    const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const lines = [["channel", "source", "medium", "campaign", "content", "landing_page", "visitors", "sessions", "page_views", "checkout_starts", "purchases", "revenue_inr"], ...report.breakdown.map(row => [row.channel, row.source, row.medium, row.campaign, row.content, row.landingPage, row.visitors, row.sessions, row.pageViews, row.checkoutStarts, row.purchases, row.revenue])];
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="valour-acquisition-${new Date().toISOString().slice(0, 10)}.csv"`);
+    return res.send(lines.map(row => row.map(quote).join(",")).join("\n"));
+  } catch { return res.status(500).json({ ok: false, error: "Unable to export acquisition report" }); }
+});
 
 app.get("/api/admin/dashboard", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
@@ -8829,6 +8986,7 @@ app.post("/api/customer-events", async (req, res) => {
         cartId: String(req.body.cartId || "").slice(0, 160) || null,
         occurredAt: new Date(),
         source: "website",
+        attribution: acquisition.attribution(req.body.attribution),
       });
     } catch (err) {
       if (err?.code === 11000) return res.json({ ok: true, duplicate: true });
@@ -10094,6 +10252,7 @@ app.use(
 
 const publicRootFiles = new Set([
   "admin-dashboard.html",
+  "attribution.js",
   "cart.html",
   "checkout-script.js",
   "meta-pixel.js",
@@ -10206,6 +10365,9 @@ if (require.main === module) {
 
 module.exports = {
   _test: {
+    app,
+    acquisitionDateRange,
+    cleanAcquisitionFilter,
     PRODUCTS,
     buildCustomerSegment,
     getCookingScenarioChoice,

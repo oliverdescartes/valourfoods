@@ -3,7 +3,11 @@
   "use strict";
   const original = window.fbq;
   if (!original || window.valourMeta) return;
-  const mirrored = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", ...["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`)]);
+  if (window.valourAttribution?.get?.().measurementAllowed === false) {
+    window.valourMeta = { track() {} };
+    return;
+  }
+  const mirrored = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", ...["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`)]);
   const seen = new Set();
   let ready = false;
   const queue = [];
@@ -23,15 +27,28 @@
       if (purchase && !data.order_id) return;
       const eventId = purchase ? `${name === "Purchase" ? "purchase" : "valour_purchase"}_${data.order_id}` : options.eventID || crypto.randomUUID();
       const key = `valour_meta_${eventId}`;
-      if (purchase) {
+      if (purchase || options.eventID) {
         if (seen.has(key)) return;
         try { if (localStorage.getItem(key)) return; } catch { /* Storage may be disabled. */ }
       }
       const safe = clean(data);
       original(command, name, safe, { ...options, eventID: eventId });
-      if (purchase) {
+      const gaName = { ViewContent: "view_item", AddToCart: "add_to_cart", InitiateCheckout: "begin_checkout", AddPaymentInfo: "add_payment_info", Purchase: "purchase", Lead: "generate_lead" }[name];
+      if (gaName && typeof window.gtag === "function") window.gtag("event", gaName, {
+        currency: safe.currency,
+        value: safe.value,
+        transaction_id: safe.order_id,
+        payment_type: safe.payment_method,
+        items: (safe.contents || []).map(item => ({ item_id: item.id, quantity: item.quantity, price: item.item_price })),
+      });
+      const measurementEvent = { PageView: "page_view", ViewContent: "view_content", AddToCart: "add_to_cart", InitiateCheckout: "checkout_started", AddPaymentInfo: "add_payment_info", Lead: "lead", Contact: "contact" }[name];
+      if (measurementEvent && name !== "PageView") window.valourAttribution?.track(measurementEvent, { itemId: safe.content_ids?.[0], contentName: safe.content_name, value: safe.value, currency: safe.currency, paymentMethod: safe.payment_method }, { eventId });
+      if (purchase || options.eventID) {
         seen.add(key);
         try { localStorage.setItem(key, "1"); } catch { /* Stable ID still deduplicates. */ }
+      }
+      if (purchase) {
+        void fetch("/api/meta/browser-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", keepalive: true, body: JSON.stringify({ event_name: "Purchase", event_id: eventId }) }).catch(() => {});
       }
       if (mirrored.has(name)) {
         let customer = {};

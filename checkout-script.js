@@ -328,6 +328,27 @@ function trackMetaInitiateCheckout(quote) {
   });
 }
 
+function trackMetaAddPaymentInfo() {
+  const contents = getMetaContents(state.cart);
+  if (!contents.length) return;
+  const key = `valour_add_payment_event_${state.paymentMethod}`;
+  let eventId = "";
+  try { eventId = sessionStorage.getItem(key) || ""; } catch { /* storage may be unavailable */ }
+  if (!eventId) {
+    eventId = `payment_${state.paymentMethod}_${window.crypto?.randomUUID?.() || Date.now()}`.replace(/[^A-Za-z0-9_-]/g, "");
+    try { sessionStorage.setItem(key, eventId); } catch { /* event ID still deduplicates this call */ }
+  }
+  window.valourMeta?.track("track", "AddPaymentInfo", {
+    content_ids: contents.map(item => item.id),
+    content_type: "product",
+    contents,
+    num_items: contents.reduce((total, item) => total + item.quantity, 0),
+    value: Number(state.totals.total) || 0,
+    currency: "INR",
+    payment_method: state.paymentMethod,
+  }, { eventID: eventId });
+}
+
 function trackMetaPurchase({ value, currency = "INR", items, orderId }) {
   if (typeof window.fbq !== "function" || !Number.isFinite(Number(value)))
     return;
@@ -433,6 +454,11 @@ function reportCheckoutDetailsSubmitted() {
     eventId = window.crypto?.randomUUID?.() || `checkout-${Date.now()}`;
     sessionStorage.setItem(eventKey, eventId);
   }
+  window.valourMeta?.track("track", "Lead", {
+    content_name: "checkout_details_submitted",
+    value: Number(state.totals.total) || 0,
+    currency: "INR",
+  }, { eventID: `lead_${eventId}` });
   void postJSON(`${API_BASE}/api/customer-events`, {
     eventId,
     event: "checkout_details_submitted",
@@ -440,6 +466,7 @@ function reportCheckoutDetailsSubmitted() {
     cartId: eventId,
     productName: state.cart.map((item) => item.name).join(", "),
     orderValue: money(state.totals.total),
+    attribution: window.valourAttribution?.get?.() || null,
   }).catch((error) =>
     console.warn("Unable to record checkout event", error.message),
   );
@@ -604,6 +631,22 @@ function buildRazorpayMethodOptions(method) {
 }
 
 function getCheckoutAttribution() {
+  const complete = window.valourAttribution?.get?.();
+  if (complete) {
+    const selected = complete.latestNonDirect || complete.currentSession || {};
+    return {
+      ...selected,
+      visitorId: complete.visitorId,
+      sessionId: complete.sessionId,
+      firstTouch: complete.firstTouch,
+      latestNonDirect: complete.latestNonDirect,
+      currentSession: complete.currentSession,
+      cookingType: "fish",
+      purchaseIntent: "high",
+      activationPreference: "custom_checkout",
+      segment: "checkout_intent",
+    };
+  }
   let stored = {};
 
   try {
@@ -1604,6 +1647,8 @@ async function placeOrder(event) {
     return;
   }
 
+  trackMetaAddPaymentInfo();
+
   setOrderLoading(true);
   showToast(
     state.paymentMethod === "COD"
@@ -1866,6 +1911,7 @@ function bindEvents() {
       trackEvent("valour_payment_select", {
         payment_method: input.value,
       });
+      trackMetaAddPaymentInfo();
       updateProgress();
     });
   });

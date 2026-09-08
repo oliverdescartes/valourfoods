@@ -6,6 +6,8 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      let measurementDenied = navigator.doNotTrack === '1'; try { measurementDenied ||= localStorage.getItem('valour_analytics_consent') === 'denied'; } catch {}
+      gtag('consent', 'default', { analytics_storage: measurementDenied ? 'denied' : 'granted', ad_storage: measurementDenied ? 'denied' : 'granted', ad_user_data: measurementDenied ? 'denied' : 'granted', ad_personalization: measurementDenied ? 'denied' : 'granted' });
       gtag('js', new Date());
       gtag('config', 'G-YRQF7PS079');
     </script>
@@ -20,6 +22,7 @@
       s.parentNode.insertBefore(t,s)}(window,document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
     </script>
+    <script src="/attribution.js"></script>
     <script src="/meta-pixel.js"></script>
     <noscript><img height="1" width="1" style="display:none"
       src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
@@ -794,6 +797,14 @@
                 IP address, approximate location, pages viewed, events
                 performed, referral source, cart and checkout interactions, and
                 advertising identifiers.
+              </p>
+              <p>
+                For website campaign reporting, we keep a pseudonymous browser
+                identifier and first-touch and latest non-direct attribution in
+                local storage for up to 90 days. A new analytics session begins
+                after 30 minutes of inactivity or when a new tagged campaign is
+                opened. Campaign data may include UTM parameters, the landing
+                page, referring domain, and advertising click identifiers.
               </p>
               <p>
                 You can manage cookies through your browser settings. If you

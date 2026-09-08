@@ -257,6 +257,14 @@
         border-bottom: 1px solid var(--line);
         font-size: 13px;
       }
+      .acquisition-metrics,
+      .report-grid { display: grid; gap: 12px; }
+      .acquisition-metrics { grid-template-columns: repeat(5, minmax(130px, 1fr)); margin: 16px 0 22px; }
+      .report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .report-card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: auto; }
+      .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .report-table th, .report-table td { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+      .url-output { display: block; width: 100%; min-height: 82px; margin-top: 12px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; overflow-wrap: anywhere; background: #f6ede3; }
       .empty {
         padding: 32px;
         text-align: center;
@@ -553,6 +561,8 @@
         .coupon-layout {
           grid-template-columns: 1fr;
         }
+        .acquisition-metrics { grid-template-columns: repeat(2, 1fr); }
+        .report-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 760px) {
         .inbox-layout {
@@ -646,6 +656,8 @@
         <button class="btn tab is-active" data-tab="orders">Orders</button
         ><button class="btn ghost tab" data-tab="conversations">
           WhatsApp conversations</button
+        ><button class="btn ghost tab" data-tab="acquisition">
+          Acquisition &amp; funnel</button
         ><button class="btn ghost tab" data-tab="whatsapp">
           Delivery monitor</button
         ><button class="btn ghost tab" data-tab="coupons">
@@ -684,6 +696,41 @@
           <button class="btn ghost" id="previous">Previous</button
           ><span id="page-label">Page 1</span
           ><button class="btn ghost" id="next">Next</button>
+        </div>
+      </section>
+      <section class="panel" id="acquisition-panel" hidden>
+        <h2>Acquisition and funnel</h2>
+        <p class="muted">Anonymous visitors are pseudonymous browser IDs. Counts may be reduced by consent choices, blocking, cleared storage, and cross-device visits. Meta acceptance and attribution must still be checked in Events Manager.</p>
+        <form class="form-grid" id="acquisition-filters">
+          <div class="field"><label for="acquisition-start">Start date (IST)</label><input type="date" id="acquisition-start"></div>
+          <div class="field"><label for="acquisition-end">End date (IST)</label><input type="date" id="acquisition-end"></div>
+          <div class="field"><label for="acquisition-model">Attribution model</label><select id="acquisition-model"><option value="latest">Latest non-direct</option><option value="first">First touch</option></select></div>
+          <div class="field"><label for="acquisition-channel">Channel</label><select id="acquisition-channel"><option value="">All channels</option><option>paid_social</option><option>organic_social</option><option>paid_search</option><option>organic_search</option><option>referral</option><option>email</option><option>whatsapp</option><option>direct</option><option>unknown</option></select></div>
+          <div class="field"><label for="acquisition-source">Source/platform</label><input id="acquisition-source" placeholder="instagram"></div>
+          <div class="field"><label for="acquisition-medium">Medium</label><input id="acquisition-medium" placeholder="paid_social"></div>
+          <div class="field"><label for="acquisition-campaign">Campaign</label><input id="acquisition-campaign"></div>
+          <div class="field"><label for="acquisition-content">Creative/content</label><input id="acquisition-content"></div>
+          <div class="field"><button class="btn" type="submit">Apply filters</button> <button class="btn ghost" type="button" id="acquisition-export">Export CSV</button></div>
+        </form>
+        <div class="acquisition-metrics" id="acquisition-metrics"></div>
+        <div class="report-grid">
+          <div class="report-card"><h3>Traffic and purchase breakdown</h3><div id="acquisition-breakdown"></div></div>
+          <div class="report-card"><h3>Meta event diagnostics</h3><p class="muted">Accepted means Meta's API accepted a CAPI request. Paired means this app recorded browser dispatch and CAPI acceptance with the same event ID.</p><div id="meta-diagnostics"></div></div>
+        </div>
+        <div class="report-card" style="margin-top:16px">
+          <h3>Campaign URL builder</h3>
+          <p class="muted">Use one unique link per creative. A shared Instagram bio link can identify the bio link, but cannot identify the reel or post that prompted the click.</p>
+          <form class="form-grid" id="url-builder">
+            <div class="field full"><label for="url-preset">Preset</label><select id="url-preset"></select></div>
+            <div class="field"><label for="url-source">Source/platform</label><input id="url-source" required></div>
+            <div class="field"><label for="url-medium">Medium/channel</label><input id="url-medium" required></div>
+            <div class="field"><label for="url-campaign">Campaign/promotion</label><input id="url-campaign" value="butter_chicken_launch" required></div>
+            <div class="field"><label for="url-content">Creative/placement</label><input id="url-content" required></div>
+            <div class="field"><label for="url-term">Keyword/term (optional)</label><input id="url-term"></div>
+            <div class="field"><label><input style="width:auto" type="checkbox" id="url-dynamic"> Add platform dynamic IDs</label></div>
+            <div class="field full"><button class="btn" type="submit">Build URL</button> <button class="btn ghost" type="button" id="copy-url">Copy</button></div>
+          </form>
+          <output class="url-output" id="url-output"></output>
         </div>
       </section>
       <section class="panel" id="delivery-settings-panel" hidden>
@@ -962,6 +1009,75 @@
           )
           .join("");
       }
+      const campaignPresets = {
+        instagram_paid_reel: ["Instagram paid reel", "instagram", "paid_social", "reel_ad_01"],
+        instagram_paid_story: ["Instagram paid story", "instagram", "paid_social", "story_ad_01"],
+        instagram_paid_feed: ["Instagram paid feed", "instagram", "paid_social", "feed_ad_01"],
+        facebook_paid_reel: ["Facebook paid reel", "facebook", "paid_social", "reel_ad_01"],
+        facebook_paid_story: ["Facebook paid story", "facebook", "paid_social", "story_ad_01"],
+        facebook_paid_feed: ["Facebook paid feed", "facebook", "paid_social", "feed_ad_01"],
+        instagram_organic_reel: ["Instagram organic reel", "instagram", "organic_social", "reel_01"],
+        instagram_organic_post: ["Instagram organic post", "instagram", "organic_social", "post_01"],
+        instagram_organic_story: ["Instagram organic story", "instagram", "organic_social", "story_01"],
+        instagram_bio: ["Instagram bio", "instagram", "organic_social", "bio"],
+        facebook_organic_reel: ["Facebook organic reel", "facebook", "organic_social", "reel_01"],
+        facebook_organic_post: ["Facebook organic post", "facebook", "organic_social", "post_01"],
+        google_search: ["Google Search ad", "google", "cpc", "search_ad_01"],
+        youtube_paid: ["YouTube paid video", "youtube", "paid_video", "video_ad_01"],
+        youtube_organic: ["YouTube organic video", "youtube", "organic_video", "video_01"],
+        whatsapp_broadcast: ["WhatsApp broadcast", "whatsapp", "messaging", "broadcast_01"],
+        whatsapp_individual: ["WhatsApp individual outreach", "whatsapp", "messaging", "personal_outreach_01"],
+        email: ["Email campaign", "newsletter", "email", "email_01"],
+        influencer: ["Influencer/partner", "partner", "influencer", "creator_reel_01"],
+        qr: ["QR code", "packaging", "qr", "qr_01"],
+      };
+      function acquisitionParams() {
+        const params = new URLSearchParams({ model: $("#acquisition-model").value });
+        for (const [key, selector] of Object.entries({ start: "#acquisition-start", end: "#acquisition-end", channel: "#acquisition-channel", source: "#acquisition-source", medium: "#acquisition-medium", campaign: "#acquisition-campaign", content: "#acquisition-content" })) {
+          const value = $(selector).value.trim();
+          if (value) params.set(key, value);
+        }
+        return params;
+      }
+      function reportTable(headers, rows) {
+        if (!rows.length) return "<p class='empty'>No records for these filters.</p>";
+        return `<table class="report-table"><thead><tr>${headers.map(item => `<th>${escapeHtml(item)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(value => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+      }
+      async function loadAcquisition() {
+        const report = await api(`/api/admin/acquisition?${acquisitionParams()}`);
+        const metrics = report.metrics;
+        $("#acquisition-metrics").innerHTML = [
+          ["Measured visitors", metrics.visitors], ["Sessions", metrics.sessions], ["Page views", metrics.pageViews], ["Product views", metrics.productViews], ["Add to carts", metrics.addToCarts], ["Checkout starts", metrics.checkoutStarts], ["Leads", metrics.leads], ["Purchases", metrics.purchases], ["Revenue", money(metrics.revenue)], ["Conversion", `${(Number(metrics.conversionRate) * 100).toFixed(1)}%`],
+        ].map(([label, value]) => `<article class="metric"><span>${label}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
+        $("#acquisition-breakdown").innerHTML = reportTable(["Channel", "Source", "Medium", "Campaign", "Content", "Visitors", "Sessions", "Views", "Checkouts", "Purchases", "Revenue"], report.breakdown.map(row => [row.channel || "unknown", row.source || "", row.medium || "", row.campaign || "", row.content || "", row.visitors, row.sessions, row.pageViews, row.checkoutStarts, row.purchases, money(row.revenue)]));
+        $("#meta-diagnostics").innerHTML = reportTable(["Event", "Logical", "Browser attempts", "CAPI attempts", "Accepted", "Failed", "Retries", "Paired"], report.meta.map(row => [row.eventName, row.logicalEvents, row.browserAttempts, row.capiAttempts, row.accepted, row.failures, row.retries, row.paired]));
+      }
+      function updatePreset() {
+        const preset = campaignPresets[$("#url-preset").value];
+        $("#url-source").value = preset?.[1] || "";
+        $("#url-medium").value = preset?.[2] || "";
+        $("#url-content").value = preset?.[3] || "";
+      }
+      function buildCampaignUrl() {
+        const preset = campaignPresets[$("#url-preset").value];
+        if (!preset) return "";
+        let campaign = $("#url-campaign").value.trim();
+        let content = $("#url-content").value.trim();
+        let term = $("#url-term").value.trim();
+        let campaignId = "";
+        if ($("#url-dynamic").checked && preset[2] === "paid_social") {
+          campaignId = "{{campaign.id}}";
+          content += "_{{ad.id}}_{{placement}}";
+        } else if ($("#url-dynamic").checked && $("#url-preset").value === "google_search") {
+          campaignId = "{campaignid}";
+          content += "_{creative}";
+          term ||= "{keyword}";
+        }
+        const params = new URLSearchParams({ utm_source: $("#url-source").value.trim(), utm_medium: $("#url-medium").value.trim(), utm_campaign: campaign, utm_content: content });
+        if (term) params.set("utm_term", term);
+        if (campaignId) params.set("utm_id", campaignId);
+        return `https://liquidspice.in/?${params.toString().replace(/%7B/gi, "{").replace(/%7D/gi, "}")}`;
+      }
       function renderDeliveryTiming() {
         const timing = dashboard.deliveryTiming || {
           value: 1,
@@ -982,7 +1098,7 @@
         "Cancelled",
       ];
       function orderCard(order) {
-        const items =
+        let items =
           order.products
             .map(
               (item) =>
@@ -995,6 +1111,9 @@
               `<option ${status.toLowerCase() === String(order.shippingStatus).toLowerCase() ? "selected" : ""}>${status}</option>`,
           )
           .join("");
+        const attr = order.attribution || {};
+        const attribution = `<span class="label">Acquisition</span><strong>${escapeHtml([attr.channel, attr.source, attr.medium].filter(Boolean).join(" / ") || "Unknown")}</strong><p>${escapeHtml([attr.campaign, attr.content].filter(Boolean).join(" / ") || "No campaign/creative")}</p>`;
+        items = attribution + items;
         return `<article class="order-card"><div class="order-head"><div><div class="order-number">${escapeHtml(order.orderNumber)}</div><div class="muted">${dateTime(order.createdAt)}</div></div><div class="badges"><span class="badge ${order.paymentStatus === "paid" ? "paid" : "cod"}">${escapeHtml(order.paymentStatus || "Unknown payment")}</span><span class="badge">${escapeHtml(order.shippingStatus)}</span></div></div><div class="order-grid"><div><span class="label">Customer</span><span class="value">${escapeHtml(order.customerName)}</span></div><div><span class="label">Phone</span><span class="value">${escapeHtml(order.phone)}</span></div><div><span class="label">Payment</span><span class="value">${escapeHtml(order.paymentMethod)} · ${money(order.totalAmount)}</span></div><div><span class="label">Delivery address</span><span class="value">${escapeHtml([order.address, order.city, order.state, order.pincode].filter(Boolean).join(", "))}</span></div></div><div class="items">${items}</div><details><summary>Update fulfilment</summary><form class="status-form" data-order-form="${escapeHtml(order.id)}"><div><span class="label">Shipping status</span><select name="shippingStatus">${options}</select></div><div><span class="label">Courier / delivery person</span><input name="courierName" value="${escapeHtml(order.courierName)}"></div><div><span class="label">Tracking number</span><input name="trackingNumber" value="${escapeHtml(order.trackingNumber)}"></div><div class="wide"><span class="label">Tracking URL</span><input name="trackingUrl" value="${escapeHtml(order.trackingUrl)}"></div><div><span class="label">Expected delivery date</span><input type="date" name="expectedDeliveryDate" value="${escapeHtml(dateInputValue(order.expectedDeliveryDate))}"></div><label class="check"><input type="checkbox" name="notifyWhatsapp" checked> Send WhatsApp update</label><div><button class="btn" type="submit">Save status</button></div><p class="notice wide" data-status-message></p></form></details></article>`;
       }
       function renderOrders() {
@@ -1226,6 +1345,30 @@
         currentPage = 1;
         loadDashboard().catch(showLoadError);
       });
+      $("#acquisition-filters").addEventListener("submit", (event) => {
+        event.preventDefault();
+        loadAcquisition().catch(showLoadError);
+      });
+      $("#acquisition-export").addEventListener("click", async () => {
+        try {
+          const response = await fetch(`/api/admin/acquisition.csv?${acquisitionParams()}`, { headers: { "x-admin-token": token } });
+          if (!response.ok) throw new Error("Unable to export acquisition report");
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(await response.blob());
+          link.download = `valour-acquisition-${new Date().toISOString().slice(0, 10)}.csv`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        } catch (error) { showLoadError(error); }
+      });
+      $("#url-preset").innerHTML = Object.entries(campaignPresets).map(([key, preset]) => `<option value="${escapeHtml(key)}">${escapeHtml(preset[0])}</option>`).join("");
+      $("#url-preset").addEventListener("change", updatePreset);
+      updatePreset();
+      $("#url-builder").addEventListener("submit", event => { event.preventDefault(); $("#url-output").textContent = buildCampaignUrl(); });
+      $("#copy-url").addEventListener("click", async () => {
+        const value = $("#url-output").textContent || buildCampaignUrl();
+        $("#url-output").textContent = value;
+        if (value) await navigator.clipboard.writeText(value);
+      });
       $("#refresh").addEventListener("click", () =>
         loadDashboard().catch(showLoadError),
       );
@@ -1251,12 +1394,15 @@
             item.classList.toggle("ghost", item !== button);
           });
           $("#orders-panel").hidden = activeTab !== "orders";
+          $("#acquisition-panel").hidden = activeTab !== "acquisition";
           $("#conversations-panel").hidden = activeTab !== "conversations";
           $("#whatsapp-panel").hidden = activeTab !== "whatsapp";
           $("#coupons-panel").hidden = activeTab !== "coupons";
           $("#delivery-settings-panel").hidden = activeTab !== "delivery";
           if (activeTab === "conversations")
             loadConversations().catch(showLoadError);
+          if (activeTab === "acquisition")
+            loadAcquisition().catch(showLoadError);
         }),
       );
       $("#conversation-search-form").addEventListener("submit", (event) => {
