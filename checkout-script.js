@@ -713,11 +713,6 @@ function buildOrderPayload() {
     coupon: state.coupon,
     phoneVerificationToken: getStoredUser()?.phoneVerificationToken || "",
     tracking,
-    delivery: {
-      estimate:
-        document.querySelector("[data-delivery-window]")?.textContent ||
-        "Delivery estimate will be shared soon",
-    },
   };
 }
 
@@ -979,11 +974,12 @@ function applyQuoteDelivery(quote = {}) {
     expectedDeliveryAt: quote.expectedDeliveryAt,
     deliveryTimeValue: quote.deliveryTimeValue,
     deliveryTimeUnit: quote.deliveryTimeUnit,
+    deliveryPromise: quote.deliveryPromise,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
   };
-  // setTextAll("[data-delivery-window]", quote.estimatedDelivery);
+  setTextAll("[data-delivery-window]", quote.estimatedDelivery);
 }
 
 function updateProgress() {
@@ -1284,7 +1280,7 @@ function renderSuccessOrderItems() {
   });
 
   const deliveryText =
-    document.querySelector("[data-delivery-window]")?.textContent ||
+    state.delivery?.estimatedDelivery ||
     "Delivery estimate will be shared soon";
   const orderId = `VALOUR-${Date.now().toString().slice(-6)}`;
 
@@ -1686,7 +1682,9 @@ async function placeOrder(event) {
         JSON.stringify({
           ...codOrder.order,
           orderId: codOrder.orderId,
-          deliveryEstimate: orderPayload.delivery.estimate,
+          deliveryEstimate:
+            codOrder.order.estimatedDelivery ||
+            state.delivery?.estimatedDelivery,
           paymentMethod: "COD",
           paymentMethodLabel: "Cash on delivery",
         }),
@@ -1751,7 +1749,9 @@ async function placeOrder(event) {
       JSON.stringify({
         ...verifiedOrder.order,
         orderId: verifiedOrder.orderId,
-        deliveryEstimate: orderPayload.delivery.estimate,
+        deliveryEstimate:
+          verifiedOrder.order.estimatedDelivery ||
+          state.delivery?.estimatedDelivery,
         paymentMethod: state.paymentMethod,
         paymentMethodLabel: getPaymentMethodLabel(),
       }),

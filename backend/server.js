@@ -847,6 +847,8 @@ const DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME = "valour_customer_care_alertv1";
 const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
   "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
 const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID = "1071618388950122";
+const DEFAULT_DELIVERED_TEMPLATE_ID =
+  "ed4e4f64-b494-4c44-94ae-effb751cf40c";
 
 function buildGupshupForm(recipient, fields = {}) {
   const form = new URLSearchParams({
@@ -892,7 +894,9 @@ function getGupshupTemplateId(templateName, languageCode) {
       DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME)
       ? process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_ID ||
         DEFAULT_CUSTOMER_CARE_TEMPLATE_ID
-      : null);
+      : templateName === "valour_delivered"
+        ? DEFAULT_DELIVERED_TEMPLATE_ID
+        : null);
 
   if (!templateId) {
     throw new Error(
@@ -2306,6 +2310,7 @@ function getWhatsappOrderRecipients(order) {
 
 function formatOrderConfirmationCaption(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const expectedDelivery = getExpectedDeliveryText(order);
 
   return `Thank you for your VALOUR order.
 
@@ -2313,6 +2318,7 @@ Order: ${orderNumber}
 Payment: ${order.paymentStatus || "paid"}
 Total: Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}
 Items: ${formatProductsForWhatsapp(order.products)}
+Expected delivery: ${expectedDelivery}
 
 We will share dispatch and tracking updates on WhatsApp.`;
 }
@@ -2343,7 +2349,7 @@ function getOrderTemplateParams(order) {
   return [
     orderNumber,
     total,
-    formatProductsForWhatsapp(order.products),
+    `${formatProductsForWhatsapp(order.products)}\nExpected delivery: ${getExpectedDeliveryText(order)}`,
     createOrderTrackingToken(order),
   ];
 }
@@ -2354,7 +2360,7 @@ function getCodTemplateParams(order) {
 
   return [
     orderNumber,
-    formatProductsForWhatsapp(order.products),
+    `${formatProductsForWhatsapp(order.products)}\nExpected delivery: ${getExpectedDeliveryText(order)}`,
     total,
     createOrderPaymentToken(order),
     createOrderTrackingToken(order),
@@ -2379,27 +2385,52 @@ function getOrderStatusTemplateParams(order) {
   ];
 }
 
-function getExpectedDeliveryText(order = {}, now = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-IN", {
+function getExpectedDeliveryText(order = {}) {
+  const dateFormatter = new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  const dateTimeFormatter = new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
     timeZone: "Asia/Kolkata",
   });
   const formatDateOnly = (value) => {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
     if (!match) return null;
     const [, year, month, day] = match;
-    return formatter.format(
+    return dateFormatter.format(
       new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 6)),
     );
+  };
+  const parseStoredDate = (value) => {
+    if (!value) return null;
+    const raw = typeof value?.toDate === "function" ? value.toDate() : value;
+    const parsed = raw instanceof Date ? raw : new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   };
 
   const configuredDate = String(order.expectedDeliveryDate || "").trim();
   if (configuredDate) return formatDateOnly(configuredDate) || configuredDate;
 
-  const configured = String(order.estimatedDelivery || "").trim();
-  if (configured) return formatDateOnly(configured) || configured;
+  const timing = getDeliveryTimingFromRules(order);
+  const promise = timing
+    ? formatDeliveryTiming(timing.value, timing.unit)
+    : String(order.deliveryPromise || order.estimatedDelivery || "").trim();
+  const expectedAt = parseStoredDate(order.expectedDeliveryAt);
+  if (expectedAt) {
+    const expectedAtText = dateTimeFormatter.format(expectedAt);
+    return promise
+      ? `${promise} · expected by ${expectedAtText}`
+      : `Expected by ${expectedAtText}`;
+  }
+  if (promise) return formatDateOnly(promise) || promise;
 
   const configuredStart = formatDateOnly(order.expectedDeliveryStartDate);
   const configuredEnd = formatDateOnly(order.expectedDeliveryEndDate);
@@ -2407,17 +2438,14 @@ function getExpectedDeliveryText(order = {}, now = new Date()) {
     return `${configuredStart} – ${configuredEnd}`;
   }
 
-  const createdAt = new Date(order.createdAt || 0);
-  const base =
-    Number.isNaN(createdAt.getTime()) || createdAt < now ? now : createdAt;
-  const firstDay = new Date(base.getTime() + 24 * 60 * 60_000);
-  const secondDay = new Date(base.getTime() + 2 * 24 * 60 * 60_000);
-  return `${formatter.format(firstDay)} – ${formatter.format(secondDay)}`;
+  return "Delivery estimate will be confirmed shortly";
 }
 
 function getDeliveryTimingFromRules(rules = {}) {
   const configuredValue = Number(rules.deliveryTimeValue);
-  const configuredUnit = String(rules.deliveryTimeUnit || "").toLowerCase();
+  const configuredUnit = String(rules.deliveryTimeUnit || "")
+    .trim()
+    .toLowerCase();
   if (
     Number.isSafeInteger(configuredValue) &&
     configuredValue >= 1 &&
@@ -2442,6 +2470,28 @@ function formatDeliveryTiming(value, unit) {
   return `Within ${value} ${value === 1 ? singular : unit}`;
 }
 
+function parseIstDateTimeLocal(value) {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(
+      String(value || "").trim(),
+    );
+  if (!match) return null;
+  const [, year, month, day, hour, minute] = match.map(Number);
+  const utcMilliseconds =
+    Date.UTC(year, month - 1, day, hour, minute) - 330 * 60_000;
+  const indiaWallClock = new Date(utcMilliseconds + 330 * 60_000);
+  if (
+    indiaWallClock.getUTCFullYear() !== year ||
+    indiaWallClock.getUTCMonth() !== month - 1 ||
+    indiaWallClock.getUTCDate() !== day ||
+    indiaWallClock.getUTCHours() !== hour ||
+    indiaWallClock.getUTCMinutes() !== minute
+  ) {
+    return null;
+  }
+  return new Date(utcMilliseconds);
+}
+
 function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
   const timing = getDeliveryTimingFromRules(rules);
   if (timing) {
@@ -2451,6 +2501,7 @@ function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
       expectedDeliveryAt: new Date(now.getTime() + durationMs).toISOString(),
       deliveryTimeValue: timing.value,
       deliveryTimeUnit: timing.unit,
+      deliveryPromise: formatDeliveryTiming(timing.value, timing.unit),
       estimatedDelivery: formatDeliveryTiming(timing.value, timing.unit),
     };
   }
@@ -2484,6 +2535,31 @@ function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
   return {
     ...fields,
     estimatedDelivery: getExpectedDeliveryText(fields, now),
+  };
+}
+
+function getOrderDeliverySnapshot(order = {}, createdAt = new Date()) {
+  const timing = getDeliveryTimingFromRules(order);
+  if (!timing) {
+    return {
+      expectedDeliveryAt: order.expectedDeliveryAt,
+      deliveryTimeValue: order.deliveryTimeValue,
+      deliveryTimeUnit: order.deliveryTimeUnit,
+      deliveryPromise: order.deliveryPromise,
+      expectedDeliveryStartDate: order.expectedDeliveryStartDate,
+      expectedDeliveryEndDate: order.expectedDeliveryEndDate,
+      estimatedDelivery: order.estimatedDelivery,
+    };
+  }
+
+  const fields = getDefaultExpectedDeliveryFields(createdAt, {
+    deliveryTimeValue: timing.value,
+    deliveryTimeUnit: timing.unit,
+  });
+  return {
+    ...fields,
+    expectedDeliveryAt: new Date(fields.expectedDeliveryAt),
+    deliverySource: "pricing_rules_snapshot",
   };
 }
 
@@ -4545,28 +4621,45 @@ async function sendQuickCookingDemo(phone) {
   }
 }
 
-const DEFAULT_LID_OPENING_VIDEO_URL =
-  "https://media.liquidspice.in/open_the_lid_vlr.mov";
-
 async function sendLidOpeningHelp(phone) {
-  const videoUrl = String(
-    process.env.WHATSAPP_LID_OPENING_VIDEO_URL || DEFAULT_LID_OPENING_VIDEO_URL,
-  ).trim();
+  const videoUrl = String(process.env.WHATSAPP_LID_OPENING_VIDEO_URL || "").trim();
   const caption = `Lid Sealed Tight? Here’s the Easy Way to Open It.
 
 High-temperature vacuum sealing can make the lid feel unusually tight. If it’s difficult to open, gently tap around the edge of the lid with a wooden spatula to release the vacuum—then twist it open easily.
 
 Watch the video to see how.`;
 
+  if (!/^https:\/\//i.test(videoUrl)) {
+    console.error("[WHATSAPP][LID_VIDEO_NOT_CONFIGURED]", {
+      recipient: maskWhatsappPhone(phone),
+      env: "WHATSAPP_LID_OPENING_VIDEO_URL",
+    });
+    await sendMessage(
+      phone,
+      "The lid-opening video is temporarily unavailable. VALOUR Customer Care can help if you need assistance.",
+    );
+    return { sent: false, reason: "missing_or_invalid_video_url" };
+  }
+
   try {
-    await sendVideoMessage(phone, videoUrl, caption);
+    console.log("[WHATSAPP][LID_VIDEO_SEND_ATTEMPT]", {
+      recipient: maskWhatsappPhone(phone),
+      videoUrl,
+    });
+    const result = await sendVideoMessage(phone, videoUrl, caption);
+    console.log("[WHATSAPP][LID_VIDEO_SENT]", {
+      recipient: maskWhatsappPhone(phone),
+      providerMessageId: getProviderMessageId(result),
+    });
+    return { sent: true, result };
   } catch (error) {
-    console.error("WhatsApp lid-opening video failed", {
+    console.error("[WHATSAPP][LID_VIDEO_FAILED]", {
       recipient: maskWhatsappPhone(phone),
       videoUrl,
       error: error.response?.data || error.message,
     });
     await sendMessage(phone, `${caption}\n\nVideo: ${videoUrl}`);
+    return { sent: false, reason: "video_send_failed" };
   }
 }
 
@@ -5995,7 +6088,14 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (lower === "cooking video") {
+  if (
+    matchesAny(lower, [
+      "cooking video",
+      "cooking_video",
+      "watch cooking video",
+      "delivered_cooking_video",
+    ])
+  ) {
     await cancelWhatsappJobs(
       { phone: normalizeWhatsappRecipient(phone), trigger: "cooking_reminder" },
       "customer_requested_cooking_video",
@@ -6017,7 +6117,15 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (lower === "how to open the lid" || lower === "how to open the lid?") {
+  if (
+    matchesAny(lower, [
+      "how to open the lid",
+      "how to open the lid?",
+      "how_to_open_the_lid",
+      "open the lid",
+      "delivered_open_lid",
+    ])
+  ) {
     await sendLidOpeningHelp(phone);
     return;
   }
@@ -6905,8 +7013,10 @@ async function getDelhiveryRates() {
       zone: item.zone,
       charged_weight: item.charged_weight,
       payment_type: item.pt,
-      delivery_days: "2-3",
-      min_days: 2,
+      delivery_days: item.delivery_days || null,
+      min_days: Number.isFinite(Number(item.min_days))
+        ? Number(item.min_days)
+        : null,
     }));
 
     return options;
@@ -7113,6 +7223,7 @@ function quoteToOrderFields(quote) {
     expectedDeliveryAt: quote.expectedDeliveryAt,
     deliveryTimeValue: quote.deliveryTimeValue,
     deliveryTimeUnit: quote.deliveryTimeUnit,
+    deliveryPromise: quote.deliveryPromise,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
@@ -7983,6 +8094,13 @@ function serializeAdminOrder(order = {}) {
     trackingNumber: order.trackingNumber || order.awbCode || "",
     trackingUrl: order.trackingUrl || "",
     estimatedDelivery: order.estimatedDelivery || "",
+    expectedDeliveryAt: order.expectedDeliveryAt || null,
+    expectedDeliveryText: getExpectedDeliveryText(order),
+    deliveryTimeValue: order.deliveryTimeValue || null,
+    deliveryTimeUnit: order.deliveryTimeUnit || null,
+    deliverySource: order.deliverySource || null,
+    manualExpectedDeliveryAt:
+      order.deliverySource === "manual" ? order.expectedDeliveryAt || null : null,
     expectedDeliveryDate:
       order.expectedDeliveryDate || order.estimatedDelivery || "",
     deliveredAt: order.deliveredAt || null,
@@ -8481,10 +8599,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
         minSubtotal: Number(definition.minSubtotalPaise || 0) / 100,
       }),
     );
-    const deliveryTiming = getDeliveryTimingFromRules(rules) || {
-      value: Number(rules?.deliveryMaxDays) || 1,
-      unit: "days",
-    };
+    const deliveryTiming = getDeliveryTimingFromRules(rules);
 
     return res.json({
       ok: true,
@@ -8504,10 +8619,15 @@ app.get("/api/admin/dashboard", async (req, res) => {
         pages: Math.max(1, Math.ceil(filteredCount / limit)),
       },
       couponDefinitions,
-      deliveryTiming: {
-        ...deliveryTiming,
-        label: formatDeliveryTiming(deliveryTiming.value, deliveryTiming.unit),
-      },
+      deliveryTiming: deliveryTiming
+        ? {
+            ...deliveryTiming,
+            label: formatDeliveryTiming(
+              deliveryTiming.value,
+              deliveryTiming.unit,
+            ),
+          }
+        : null,
       assignments: assignments.map((assignment) => ({
         id: String(assignment._id),
         phone: assignment.phone,
@@ -9121,8 +9241,10 @@ app.post("/api/orders/cod", async (req, res) => {
         return res.status(400).json({ ok: false, error: validationError });
 
       const now = new Date();
+      const deliverySnapshot = getOrderDeliverySnapshot(websiteOrder, now);
       const codOrder = {
         ...websiteOrder,
+        ...deliverySnapshot,
         metaPurchase: meta.pending(req, now),
         checkoutIdempotencyKey: idempotencyKey,
         razorpayOrderId: `cod_${idempotencyKey}`,
@@ -9415,8 +9537,16 @@ app.post("/api/payment/verify", async (req, res) => {
     }
 
     // Use the immutable server-priced payment attempt, never the browser payload.
+    // Rebase its database-backed delivery duration to final order creation so a
+    // customer who spends time in the payment flow does not lose that time.
+    const finalOrderCreatedAt = new Date();
+    const deliverySnapshot = getOrderDeliverySnapshot(
+      order,
+      finalOrderCreatedAt,
+    );
     const savedOrder = {
       ...order,
+      ...deliverySnapshot,
       paymentMethod: razorpayPayment.method || order.paymentMethod || "online",
       paymentMethodLabel:
         razorpayPayment.method || order.paymentMethodLabel || "Online payment",
@@ -9431,7 +9561,8 @@ app.post("/api/payment/verify", async (req, res) => {
       courierName: null,
       trackingNumber: null,
       trackingUrl: null,
-      createdAt: new Date(),
+      createdAt: finalOrderCreatedAt,
+      updatedAt: finalOrderCreatedAt,
     };
 
     delete savedOrder._id;
@@ -9731,12 +9862,29 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }
 
-    const expectedDeliveryDate =
+    const rawExpectedDeliveryDate =
       req.body.expectedDeliveryDate ?? req.body.estimatedDelivery;
+    const expectedDeliveryAtLocal = String(
+      req.body.expectedDeliveryAtLocal || "",
+    ).trim();
+    const manualExpectedDeliveryAt = expectedDeliveryAtLocal
+      ? parseIstDateTimeLocal(expectedDeliveryAtLocal)
+      : null;
+    if (expectedDeliveryAtLocal && !manualExpectedDeliveryAt) {
+      return res.status(400).json({
+        ok: false,
+        error: "Expected delivery must be a valid date and time in India time",
+      });
+    }
+    // The dashboard submits an empty date when an admin changes only status.
+    // Treat blank as "no timing change" so Packed/Dispatched/Out for delivery
+    // cannot erase the immutable pricing-rules snapshot.
+    const expectedDeliveryDate = String(rawExpectedDeliveryDate || "").trim();
+    const hasExpectedDeliveryDateUpdate = Boolean(expectedDeliveryDate);
     const expectedDateText = String(expectedDeliveryDate || "");
     const parsedExpectedDate = new Date(`${expectedDateText}T00:00:00.000Z`);
     if (
-      expectedDeliveryDate &&
+      hasExpectedDeliveryDateUpdate &&
       (!/^\d{4}-\d{2}-\d{2}$/.test(expectedDateText) ||
         Number.isNaN(parsedExpectedDate.getTime()) ||
         parsedExpectedDate.toISOString().slice(0, 10) !== expectedDateText)
@@ -9753,15 +9901,59 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       trackingNumber: req.body.trackingNumber,
       awbCode: req.body.awbCode,
       trackingUrl: req.body.trackingUrl,
-      expectedDeliveryDate,
+      expectedDeliveryDate: hasExpectedDeliveryDateUpdate
+        ? expectedDeliveryDate
+        : undefined,
     };
     const updates = Object.fromEntries(
       Object.entries(allowedUpdates).filter(
         ([, value]) => value !== undefined && value !== null,
       ),
     );
-    if (updates.expectedDeliveryDate !== undefined) {
+    if (manualExpectedDeliveryAt) {
+      updates.expectedDeliveryAt = manualExpectedDeliveryAt;
+      updates.expectedDeliveryDate = null;
+      updates.estimatedDelivery = null;
+      updates.deliveryTimeValue = null;
+      updates.deliveryTimeUnit = null;
+      updates.deliveryPromise = null;
+      updates.deliverySource = "manual";
+    } else if (updates.expectedDeliveryDate !== undefined) {
       updates.estimatedDelivery = updates.expectedDeliveryDate;
+      updates.expectedDeliveryAt = updates.expectedDeliveryDate
+        ? new Date(`${updates.expectedDeliveryDate}T18:29:59.999Z`)
+        : null;
+      updates.deliveryTimeValue = null;
+      updates.deliveryTimeUnit = null;
+      updates.deliveryPromise = null;
+      updates.deliverySource = "manual";
+    }
+
+    const requestedPaymentStatus = String(
+      req.body.paymentStatus || "",
+    ).trim().toLowerCase();
+    if (requestedPaymentStatus && requestedPaymentStatus !== "paid") {
+      return res.status(400).json({
+        ok: false,
+        error: "Admin payment status can only be changed to paid",
+      });
+    }
+    if (
+      requestedPaymentStatus === "paid" &&
+      String(order.paymentStatus || "").toLowerCase() !== "paid"
+    ) {
+      if (
+        /cancel|refund/i.test(String(order.paymentStatus || "")) ||
+        /cancel/i.test(String(order.shippingStatus || ""))
+      ) {
+        return res.status(409).json({
+          ok: false,
+          error: "Cancelled or refunded orders cannot be marked as paid",
+        });
+      }
+      updates.paymentStatus = "paid";
+      updates.paidAt = new Date();
+      updates.paymentMarkedPaidByAdminAt = updates.paidAt;
     }
 
     if (!Object.keys(updates).length) {
@@ -9789,6 +9981,7 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     const notifyWhatsapp = req.body.notifyWhatsapp !== false;
     const isCodConfirmation =
       isCodOrder(updatedOrder) &&
+      String(updatedOrder.paymentStatus || "").toLowerCase() !== "paid" &&
       /confirmed|processing/i.test(String(updates.shippingStatus || ""));
     if (notifyWhatsapp && isCodConfirmation) {
       const codJob = await scheduleWhatsappJob({
@@ -9809,7 +10002,11 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     // A COD confirmation has a stable, one-time job key. If it was already
     // sent, create a fresh status-update job so every checked fulfilment save
     // still notifies the customer.
-    if (notifyWhatsapp && (!isCodConfirmation || !whatsappUpdate.scheduled)) {
+    if (
+      notifyWhatsapp &&
+      !isDeliveredUpdate &&
+      (!isCodConfirmation || !whatsappUpdate.scheduled)
+    ) {
       const statusJob = await scheduleWhatsappJob({
         event: "order_status_update",
         phone: updatedOrder.whatsappPhone || updatedOrder.phone,
@@ -9828,16 +10025,44 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
 
     if (notifyWhatsapp && isDeliveredUpdate) {
       const phone = updatedOrder.whatsappPhone || updatedOrder.phone;
-      await scheduleWhatsappJob({
+      const deliveredTemplateName =
+        process.env.WHATSAPP_DELIVERED_TEMPLATE_NAME || "valour_delivered";
+      const deliveredScheduledAt = nextIstSendTime(
+        new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS),
+      );
+      const deliveredJob = await scheduleWhatsappJob({
         event: "delivered_ready_to_cook",
         phone,
         order: updatedOrder,
         parameters: [
           updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id),
         ],
-        scheduledAt: nextIstSendTime(
-          new Date(Date.now() + WHATSAPP_DELIVERED_DELAY_MS),
+        scheduledAt: deliveredScheduledAt,
+      });
+      whatsappUpdate = {
+        sent: false,
+        scheduled: deliveredJob.scheduled,
+        jobKey: deliveredJob.jobKey,
+        reason: deliveredJob.reason || null,
+        event: "delivered_ready_to_cook",
+        templateName: deliveredTemplateName,
+        templateId: getGupshupTemplateId(
+          deliveredTemplateName,
+          automationLanguage("delivered_ready_to_cook"),
         ),
+        scheduledAt: deliveredScheduledAt.toISOString(),
+      };
+      console.log("[WHATSAPP][DELIVERED_TEMPLATE_SCHEDULED]", {
+        orderId: String(updatedOrder._id),
+        orderNumber:
+          updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id),
+        recipient: maskWhatsappPhone(phone),
+        templateName: whatsappUpdate.templateName,
+        templateId: whatsappUpdate.templateId,
+        scheduled: whatsappUpdate.scheduled,
+        scheduledAt: whatsappUpdate.scheduledAt,
+        jobKey: whatsappUpdate.jobKey,
+        reason: whatsappUpdate.reason,
       });
       await scheduleWhatsappJob({
         event: "reorder_reminder",
@@ -9876,22 +10101,13 @@ app.get("/api/order-tracking/:token", async (req, res) => {
   }
 
   try {
-    const [order, rules] = await Promise.all([
-      findOrderByReference(orderReference),
-      collections().pricingRules.findOne({ _id: "checkout" }),
-    ]);
+    const order = await findOrderByReference(orderReference);
     if (!order) {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }
-    const hasManualDeliveryDate = Boolean(
-      order.deliverySource === "internal" || order.expectedDeliveryDate,
-    );
-    const expectedDelivery = hasManualDeliveryDate
-      ? getExpectedDeliveryText(order)
-      : getDefaultExpectedDeliveryFields(
-          new Date(order.createdAt || Date.now()),
-          rules || {},
-        ).estimatedDelivery;
+    // An order's promise is immutable: tracking must never recalculate it from
+    // today's pricing rules after an administrator changes the global setting.
+    const expectedDelivery = getExpectedDeliveryText(order);
 
     res.json({
       ok: true,
@@ -9905,6 +10121,9 @@ app.get("/api/order-tracking/:token", async (req, res) => {
         courierName: order.courierName || null,
         trackingUrl: order.trackingUrl || null,
         expectedDelivery,
+        expectedDeliveryAt: order.expectedDeliveryAt || null,
+        deliveryTimeValue: order.deliveryTimeValue || null,
+        deliveryTimeUnit: order.deliveryTimeUnit || null,
         items: getPublicOrderItems(order),
         updatedAt: order.updatedAt || order.paidAt || order.createdAt || null,
       },
@@ -10409,8 +10628,13 @@ module.exports = {
     getOrderTemplateParams,
     getCodTemplateParams,
     getOrderStatusTemplateParams,
+    getDeliveryTimingFromRules,
+    formatDeliveryTiming,
+    parseIstDateTimeLocal,
     getDefaultExpectedDeliveryFields,
+    getOrderDeliverySnapshot,
     getExpectedDeliveryText,
+    formatOrderConfirmationCaption,
     validateOrderPayload,
     getPublicOrderItems,
     parseGupshupV2Webhook,

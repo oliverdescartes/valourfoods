@@ -1,0 +1,38 @@
+import {Audio} from "@remotion/media";
+import {AbsoluteFill, Sequence} from "remotion";
+import {assets} from "./investigation/constants";
+import {ConnectionScene} from "./investigation/scenes/ConnectionScene";
+import {DiscoveryScene} from "./investigation/scenes/DiscoveryScene";
+import {FinalScene} from "./investigation/scenes/FinalScene";
+import {MechanismScene} from "./investigation/scenes/MechanismScene";
+import {PatternScene} from "./investigation/scenes/PatternScene";
+
+export const AgartalaInvestigation: React.FC = () => (
+  <AbsoluteFill>
+    <Sequence durationInFrames={60} premountFor={15}>
+      <DiscoveryScene />
+    </Sequence>
+    <Sequence from={60} durationInFrames={90} premountFor={15}>
+      <PatternScene />
+    </Sequence>
+    <Sequence from={150} durationInFrames={90} premountFor={15}>
+      <ConnectionScene />
+    </Sequence>
+    <Sequence from={240} durationInFrames={90} premountFor={15}>
+      <MechanismScene />
+    </Sequence>
+    <Sequence from={330} durationInFrames={105} premountFor={15}>
+      <FinalScene />
+    </Sequence>
+
+    <Audio src={assets.voiceover} volume={0.96} />
+    <Sequence durationInFrames={8}><Audio src={assets.pop} volume={0.16} /></Sequence>
+    <Sequence from={10} durationInFrames={6}><Audio src={assets.snap} volume={0.12} /></Sequence>
+    <Sequence from={20} durationInFrames={6}><Audio src={assets.snap} volume={0.12} /></Sequence>
+    <Sequence from={30} durationInFrames={15}><Audio src={assets.whoosh} volume={0.08} /></Sequence>
+    <Sequence from={176} durationInFrames={16}><Audio src={assets.bass} volume={0.11} /></Sequence>
+    <Sequence from={240} durationInFrames={27}><Audio src={assets.sizzle} volume={0.045} /></Sequence>
+    <Sequence from={270} durationInFrames={24}><Audio src={assets.pourSfx} volume={0.05} /></Sequence>
+    <Sequence from={300} durationInFrames={26}><Audio src={assets.bubble} volume={0.045} /></Sequence>
+  </AbsoluteFill>
+);
