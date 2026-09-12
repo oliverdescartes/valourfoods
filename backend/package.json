@@ -8,7 +8,7 @@
     "chat:questions": "node simulate-whatsapp-chat.js questions --debug",
     "chat:quantity": "node simulate-whatsapp-chat.js quantity --debug",
     "chat:guided": "node simulate-whatsapp-chat.js guided --debug",
-    "test": "node --test attribution.test.js meta.test.js server-analytics.test.js delivery-timing.test.js whatsapp-system.test.js",
+    "test": "node --test attribution.test.js meta.test.js server-analytics.test.js delivery-timing.test.js stock-management.test.js whatsapp-system.test.js",
     "test:whatsapp": "node --test whatsapp-system.test.js",
     "audit:whatsapp": "node whatsapp-audit-readonly.js",
     "seed:pricing": "node seed-pricing.js",

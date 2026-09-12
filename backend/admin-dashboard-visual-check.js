@@ -26,7 +26,9 @@ async function main() {
     socket.send(JSON.stringify({ id, method, params }));
   });
   await call("Page.enable");
-  await call("Runtime.evaluate", { expression: `
+  await call("Page.reload", { ignoreCache: true });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const setup = await call("Runtime.evaluate", { expression: String.raw`
     document.querySelector('#login').hidden = true;
     document.querySelectorAll('section.panel').forEach((panel) => panel.hidden = true);
     document.querySelector('#templates-panel').hidden = false;
@@ -36,8 +38,9 @@ async function main() {
     whatsappTemplates = [{
       key:'cod_prepaid_confirmation', label:'COD converted to prepaid', templateName:'515b2202-ab03-4fb3-a2de-32f896d04953',
       templateId:'515b2202-ab03-4fb3-a2de-32f896d04953', languageCode:'en_US', parameterCount:3,
-      parameterLabels:['Order number','Amount paid','Tracking button token'], mediaType:null, available:true, configurationError:''
-      ,bodyText:'Your payment for VALOUR order {{1}} was successful.\n\nAmount paid: {{2}}\nPayment method: Online payment\n\nYour order has been updated from Cash on Delivery to Prepaid. No payment will be collected at delivery.\n\nUse the button below to track your order.', buttons:['Track order'], footerText:''
+      parameterLabels:['Order number','Amount paid','Tracking button token'], mediaType:null, available:true, configurationError:'',
+      bodyText:'Your payment for VALOUR order {{1}} was successful.\n\nAmount paid: {{2}}\nPayment method: Online payment\n\nYour order has been updated from Cash on Delivery to Prepaid. No payment will be collected at delivery.\n\nUse the button below to track your order.',
+      buttons:['Track order'], footerText:''
     }];
     recentTemplateSends = [{templateLabel:'Cooking reminder',templateName:'valour_cooking_reminder',phone:'919876543210',parameterCount:1,status:'delivered',providerMessageId:'provider-example',createdAt:new Date().toISOString()},{templateLabel:'COD converted to prepaid',templateName:'515b2202-ab03-4fb3-a2de-32f896d04953',phone:'919876500001',parameterCount:3,status:'submitted',providerMessageId:'provider-pending',createdAt:new Date().toISOString()}];
     document.querySelector('#template-select').innerHTML = '<option value="cod_prepaid_confirmation">COD converted to prepaid</option>';
@@ -46,6 +49,7 @@ async function main() {
     document.querySelector('#template-phone').value = '+91 98765 43210';
     [...document.querySelectorAll('[data-template-parameter]')].forEach((input,index) => input.value = ['VALOUR-ABC123','Rs. 350','signed_tracking_token'][index]);
   ` });
+  if (setup.exceptionDetails) throw new Error(setup.exceptionDetails.exception?.description || setup.exceptionDetails.text);
   for (const viewport of [{ name: "mobile", width: 390, height: 844 }, { name: "desktop", width: 1440, height: 1000 }]) {
     await call("Emulation.setDeviceMetricsOverride", { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width < 600 });
     const metrics = await call("Runtime.evaluate", { expression: `({innerWidth, bodyScrollWidth:document.body.scrollWidth, shellWidth:document.querySelector('.shell').getBoundingClientRect().width, panelWidth:document.querySelector('#templates-panel').getBoundingClientRect().width})`, returnByValue: true });

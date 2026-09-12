@@ -1210,7 +1210,8 @@ img {
 }
 
 .otp-modal,
-.service-area-modal {
+.service-area-modal,
+.out-of-stock-modal {
   position: fixed;
   inset: 0;
   z-index: 80;
@@ -1219,6 +1220,68 @@ img {
   background: rgba(68, 35, 31, 0.5);
   padding: 18px;
   backdrop-filter: blur(10px);
+}
+
+.out-of-stock-card {
+  position: relative;
+  width: min(500px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(131, 26, 26, 0.16);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(247, 212, 108, 0.25), transparent 14rem),
+    var(--paper);
+  box-shadow: var(--shadow);
+  padding: 36px;
+  text-align: center;
+  animation: modalIn 0.25s ease both;
+}
+
+.out-of-stock-mark {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--deep);
+  color: var(--gold);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 38px;
+  margin: 0 auto 18px;
+}
+
+.out-of-stock-card h2 {
+  max-width: 410px;
+  margin: 0 auto;
+  color: var(--deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(30px, 7vw, 40px);
+  font-weight: 500;
+  line-height: 1.04;
+}
+
+.out-of-stock-card > p:not(.service-area-kicker) {
+  max-width: 410px;
+  margin: 16px auto 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.out-of-stock-items {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.out-of-stock-items p {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--deep);
+  margin: 0;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .service-area-hint {
@@ -1947,6 +2010,11 @@ img {
   .service-area-card {
     border-radius: 24px;
     padding: 28px 20px 22px;
+  }
+
+  .out-of-stock-card {
+    border-radius: 24px;
+    padding: 30px 20px 22px;
   }
 }
 

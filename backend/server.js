@@ -7630,6 +7630,21 @@ async function drainWhatsappInbox() {
 }
 
 async function receiveWhatsappWebhook(req, res) {
+  const expectedWebhookToken = String(
+    process.env.WHATSAPP_WEBHOOK_TOKEN || "",
+  );
+  const suppliedWebhookToken = String(
+    req.get("x-whatsapp-webhook-token") || "",
+  );
+  const expectedBuffer = Buffer.from(expectedWebhookToken);
+  const suppliedBuffer = Buffer.from(suppliedWebhookToken);
+  if (
+    !expectedWebhookToken ||
+    expectedBuffer.length !== suppliedBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, suppliedBuffer)
+  ) {
+    return res.status(401).json({ ok: false, error: "Unauthorized webhook" });
+  }
   if (!mongoReady) {
     return res.sendStatus(503);
   }
@@ -7660,6 +7675,7 @@ async function receiveWhatsappWebhook(req, res) {
     }
   }
 }
+app.post("/webhook", receiveWhatsappWebhook);
 app.post("/webhook/gupshup", receiveWhatsappWebhook);
 
 app.get("/health", (_req, res) => {
@@ -8380,6 +8396,117 @@ async function getCouponDefinition(code) {
   return { rules, coupon: rules?.coupons?.[code] || null };
 }
 
+function getManagedStockQuantity(product = {}) {
+  const quantity = Number(product.stockQuantity);
+  return Number.isSafeInteger(quantity) && quantity >= 0 ? quantity : null;
+}
+
+function buildStockStatus(requestedItems, catalogue) {
+  const productsBySku = new Map(
+    catalogue.map((product) => [String(product.sku), product]),
+  );
+  const items = requestedItems.map(({ sku, quantity }) => {
+    const product = productsBySku.get(sku);
+    const stockQuantity = product ? getManagedStockQuantity(product) : 0;
+    const tracked = product ? stockQuantity !== null : true;
+    const available =
+      Boolean(product) && (!tracked || stockQuantity >= quantity);
+    return {
+      sku,
+      name: String(product?.name || sku),
+      requestedQuantity: quantity,
+      stockQuantity,
+      tracked,
+      available,
+    };
+  });
+  return {
+    available: items.every((item) => item.available),
+    items,
+    unavailableItems: items.filter((item) => !item.available),
+  };
+}
+
+function assertStockAvailable(requestedItems, catalogue) {
+  const stock = buildStockStatus(requestedItems, catalogue);
+  if (stock.available) return stock;
+  const error = new Error(
+    stock.unavailableItems.length === 1
+      ? `${stock.unavailableItems[0].name} is currently out of stock.`
+      : "Some items in your cart are currently out of stock.",
+  );
+  error.statusCode = 409;
+  error.code = "OUT_OF_STOCK";
+  error.unavailableItems = stock.unavailableItems;
+  throw error;
+}
+
+async function restoreConsumedStock(consumedItems) {
+  if (!consumedItems.length) return;
+  await Promise.all(
+    consumedItems.map((item) =>
+      collections().products.updateOne(
+        { sku: item.sku },
+        {
+          $inc: { stockQuantity: item.quantity },
+          $set: { stockUpdatedAt: new Date(), updatedAt: new Date() },
+        },
+      ),
+    ),
+  );
+}
+
+async function consumeStock(items) {
+  const requestedItems = normaliseCartItems(items);
+  const products = collections().products;
+  const catalogue = await products
+    .find({
+      sku: { $in: requestedItems.map((item) => item.sku) },
+      active: true,
+    })
+    .toArray();
+  assertStockAvailable(requestedItems, catalogue);
+  const bySku = new Map(catalogue.map((product) => [product.sku, product]));
+  const managedItems = requestedItems.filter(
+    (item) => getManagedStockQuantity(bySku.get(item.sku)) !== null,
+  );
+  const consumed = [];
+  for (const item of managedItems) {
+    const now = new Date();
+    const result = await products.updateOne(
+      {
+        sku: item.sku,
+        active: true,
+        stockQuantity: { $gte: item.quantity },
+      },
+      {
+        $inc: { stockQuantity: -item.quantity },
+        $set: { stockUpdatedAt: now, updatedAt: now },
+      },
+    );
+    if (!result.matchedCount) {
+      await restoreConsumedStock(consumed);
+      const latest = await products.findOne({ sku: item.sku });
+      const latestStatus = buildStockStatus(
+        [item],
+        latest?.active ? [latest] : [],
+      );
+      const error = new Error(
+        `${latest?.name || item.sku} is currently out of stock.`,
+      );
+      error.statusCode = 409;
+      error.code = "OUT_OF_STOCK";
+      error.unavailableItems = latestStatus.items.map((status) => ({
+        ...status,
+        available: false,
+      }));
+      throw error;
+    }
+    consumed.push(item);
+  }
+  return consumed;
+}
+
 async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
   const requestedItems = normaliseCartItems(items);
   const { products, pricingRules, universalCoupons, hiddenCoupons } =
@@ -8426,6 +8553,7 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
       ? hiddenCoupons.findOne({ code: enteredCode, active: true })
       : null,
   ]);
+  assertStockAvailable(requestedItems, catalogue);
   if (!storedRules)
     throw new Error("Checkout pricing rules have not been configured");
   const universalCoupon = isCouponAvailable(universalCouponCandidate, now)
@@ -10221,6 +10349,67 @@ app.get("/api/coupons/mine", async (req, res) => {
   }
 });
 
+app.get("/api/admin/stock", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const rows = await collections()
+      .products.find({})
+      .sort({ name: 1 })
+      .toArray();
+    return res.json({
+      ok: true,
+      products: rows.map((product) => ({
+        sku: String(product.sku || ""),
+        name: String(product.name || product.sku || "Product"),
+        size: String(product.size || ""),
+        active: product.active === true,
+        stockQuantity: getManagedStockQuantity(product),
+        stockUpdatedAt: product.stockUpdatedAt || null,
+      })),
+    });
+  } catch (error) {
+    console.error("Admin stock list failed", error.message);
+    return res.status(500).json({ ok: false, error: "Unable to load stock" });
+  }
+});
+
+app.post("/api/admin/stock/:sku", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const sku = String(req.params.sku || "").trim();
+  const stockQuantity = Number(req.body.stockQuantity);
+  if (!sku || sku.length > 120) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Valid product SKU is required" });
+  }
+  if (
+    !Number.isSafeInteger(stockQuantity) ||
+    stockQuantity < 0 ||
+    stockQuantity > 1_000_000
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: "Stock must be a whole number from 0 to 1,000,000",
+    });
+  }
+  const stockUpdatedAt = new Date();
+  const result = await collections().products.updateOne(
+    { sku },
+    { $set: { stockQuantity, stockUpdatedAt, updatedAt: stockUpdatedAt } },
+  );
+  if (!result.matchedCount) {
+    return res.status(404).json({ ok: false, error: "Product not found" });
+  }
+  return res.json({
+    ok: true,
+    product: { sku, stockQuantity, stockUpdatedAt },
+  });
+});
+
 app.post("/api/admin/delivery-timing", async (req, res) => {
   if (
     !process.env.ORDER_ADMIN_TOKEN ||
@@ -10628,6 +10817,27 @@ app.post("/api/customer-events", async (req, res) => {
   }
 });
 
+app.post("/api/stock/check", async (req, res) => {
+  try {
+    const requestedItems = normaliseCartItems(req.body.items);
+    const catalogue = await collections()
+      .products.find({
+        sku: { $in: requestedItems.map((item) => item.sku) },
+        active: true,
+      })
+      .toArray();
+    return res.json({
+      ok: true,
+      stock: buildStockStatus(requestedItems, catalogue),
+    });
+  } catch (error) {
+    return res.status(400).json({
+      ok: false,
+      error: error.message || "Unable to check stock",
+    });
+  }
+});
+
 app.post("/api/checkout/quote", async (req, res) => {
   try {
     const pincode = String(req.body.pincode || "").trim();
@@ -10653,7 +10863,11 @@ app.post("/api/checkout/quote", async (req, res) => {
         : 500);
     res.status(status).json({
       ok: false,
-      error: status === 400 ? error.message : "Unable to calculate checkout",
+      error: status < 500 ? error.message : "Unable to calculate checkout",
+      ...(error.code ? { code: error.code } : {}),
+      ...(error.unavailableItems
+        ? { unavailableItems: error.unavailableItems }
+        : {}),
     });
   }
 });
@@ -10714,8 +10928,19 @@ app.post("/api/orders/cod", async (req, res) => {
         updatedAt: now,
       };
 
+      const consumedStock = await consumeStock(quote.items);
+      let inserted;
       try {
-        const inserted = await orders.insertOne(codOrder);
+        inserted = await orders.insertOne(codOrder);
+      } catch (error) {
+        await restoreConsumedStock(consumedStock);
+        if (error?.code !== 11000) throw error;
+        savedOrder = await orders.findOne({
+          checkoutIdempotencyKey: idempotencyKey,
+        });
+        if (!savedOrder) throw error;
+      }
+      if (inserted) {
         const orderNumber = formatOrderNumber(inserted.insertedId);
         await orders.updateOne(
           { _id: inserted.insertedId },
@@ -10733,12 +10958,6 @@ app.post("/api/orders/cod", async (req, res) => {
             stack: sideEffectError.stack,
           });
         }
-      } catch (error) {
-        if (error?.code !== 11000) throw error;
-        savedOrder = await orders.findOne({
-          checkoutIdempotencyKey: idempotencyKey,
-        });
-        if (!savedOrder) throw error;
       }
     }
 
@@ -10806,6 +11025,10 @@ app.post("/api/orders/cod", async (req, res) => {
     return res.status(error.statusCode || (clientError ? 400 : 500)).json({
       ok: false,
       error: clientError ? error.message : "Unable to place the COD order",
+      ...(error.code ? { code: error.code } : {}),
+      ...(error.unavailableItems
+        ? { unavailableItems: error.unavailableItems }
+        : {}),
     });
   }
 });
@@ -10900,6 +11123,10 @@ app.post("/api/payment/create-order", async (req, res) => {
     res.status(err.statusCode || 500).json({
       ok: false,
       error: err.statusCode ? err.message : "Unable to create payment order",
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.unavailableItems
+        ? { unavailableItems: err.unavailableItems }
+        : {}),
     });
   }
 });
@@ -11031,7 +11258,14 @@ app.post("/api/payment/verify", async (req, res) => {
     savedOrder.metaPurchase.requiresCapture =
       razorpayPayment.status !== "captured";
 
-    const result = await orders.insertOne(savedOrder);
+    const consumedStock = await consumeStock(savedOrder.products);
+    let result;
+    try {
+      result = await orders.insertOne(savedOrder);
+    } catch (error) {
+      await restoreConsumedStock(consumedStock);
+      throw error;
+    }
     await recordCouponRedemption(savedOrder, result.insertedId);
     await paymentAttempts.updateOne(
       { razorpayOrderId },
@@ -11120,7 +11354,14 @@ app.post("/api/payment/verify", async (req, res) => {
       "Razorpay verification failed",
       err.response?.data || err.message,
     );
-    res.status(500).json({ ok: false, error: "Unable to verify payment" });
+    res.status(err.statusCode || 500).json({
+      ok: false,
+      error: err.statusCode ? err.message : "Unable to verify payment",
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.unavailableItems
+        ? { unavailableItems: err.unavailableItems }
+        : {}),
+    });
   }
 });
 
@@ -12172,6 +12413,10 @@ module.exports = {
     getDefaultExpectedDeliveryFields,
     getOrderDeliverySnapshot,
     getExpectedDeliveryText,
+    getManagedStockQuantity,
+    buildStockStatus,
+    assertStockAvailable,
+    consumeStock,
     formatOrderConfirmationCaption,
     validateOrderPayload,
     getPublicOrderItems,

@@ -627,6 +627,55 @@
       .template-send-row .wa-meta {
         align-items: center;
       }
+      .stock-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .stock-card {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(170px, 240px);
+        align-items: end;
+        gap: 20px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+        padding: 18px;
+      }
+      .stock-product strong,
+      .stock-product span {
+        display: block;
+      }
+      .stock-product strong {
+        color: var(--wine);
+        font-size: 17px;
+      }
+      .stock-product span {
+        margin-top: 5px;
+      }
+      .stock-editor {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+      .stock-editor label,
+      .stock-editor .notice {
+        grid-column: 1 / -1;
+      }
+      .stock-badge {
+        display: inline-block !important;
+        width: fit-content;
+        border-radius: 999px;
+        background: #e5f5e9;
+        color: #176b44;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .stock-badge.out {
+        background: #fae4e1;
+        color: #9a2f2a;
+      }
       .login {
         position: fixed;
         inset: 0;
@@ -733,6 +782,14 @@
         .assignment {
           grid-template-columns: 1fr;
         }
+        .stock-card,
+        .stock-editor {
+          grid-template-columns: 1fr;
+        }
+        .stock-editor label,
+        .stock-editor .notice {
+          grid-column: auto;
+        }
         .panel {
           padding: 14px;
         }
@@ -819,6 +876,9 @@
           Send WhatsApp</button
         ><button class="btn ghost tab" data-tab="coupons">
           Customer coupons
+        </button
+        ><button class="btn ghost tab" data-tab="stock">
+          Stock
         </button
         ><button class="btn ghost tab" data-tab="delivery">
           Delivery settings
@@ -920,6 +980,17 @@
             <p class="notice" id="delivery-timing-message"></p>
           </div>
         </form>
+      </section>
+      <section class="panel" id="stock-panel" hidden>
+        <h2>Product stock</h2>
+        <p class="muted">
+          Enter the units currently available for each product. Set a product
+          to 0 to stop checkout immediately. Products marked “Not tracked”
+          remain available until you save their first stock quantity.
+        </p>
+        <div class="stock-list" id="stock-list">
+          <p class="empty">Open this tab to load products.</p>
+        </div>
       </section>
       <section class="panel" id="conversations-panel" hidden>
         <h2>WhatsApp conversations</h2>
@@ -1137,6 +1208,7 @@
       let whatsappTemplates = [];
       let recentTemplateSends = [];
       let pendingTemplateRequestId = "";
+      let stockProducts = [];
       const $ = (selector) => document.querySelector(selector);
       const escapeHtml = (value) =>
         String(value ?? "").replace(
@@ -1522,6 +1594,80 @@
         renderTemplateFields();
         renderTemplateHistory();
       }
+      function renderStock() {
+        $("#stock-list").innerHTML = stockProducts.length
+          ? stockProducts
+              .map((product) => {
+                const tracked = Number.isInteger(product.stockQuantity);
+                const out = tracked && product.stockQuantity === 0;
+                const status = !product.active
+                  ? "Inactive"
+                  : !tracked
+                  ? "Not tracked"
+                  : out
+                    ? "Out of stock"
+                    : `${product.stockQuantity} in stock`;
+                return `<article class="stock-card">
+                  <div class="stock-product">
+                    <strong>${escapeHtml(product.name)}</strong>
+                    <span class="muted">${escapeHtml([product.sku, product.size].filter(Boolean).join(" · "))}</span>
+                    <span class="stock-badge ${out || !product.active ? "out" : ""}">${escapeHtml(status)}</span>
+                  </div>
+                  <form class="stock-editor" data-stock-form="${escapeHtml(product.sku)}">
+                    <label for="stock-${escapeHtml(product.sku)}">Available units</label>
+                    <input id="stock-${escapeHtml(product.sku)}" name="stockQuantity" type="number" min="0" max="1000000" step="1" value="${tracked ? product.stockQuantity : ""}" placeholder="Enter stock" required />
+                    <button class="btn" type="submit">Save</button>
+                    <p class="notice" data-stock-message></p>
+                  </form>
+                </article>`;
+              })
+              .join("")
+          : "<p class='empty'>No products are configured in the catalogue.</p>";
+        $("#stock-list")
+          .querySelectorAll("[data-stock-form]")
+          .forEach((form) => form.addEventListener("submit", saveStock));
+      }
+      async function loadStock() {
+        const data = await api("/api/admin/stock");
+        stockProducts = data.products || [];
+        renderStock();
+      }
+      async function saveStock(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const button = form.querySelector("button");
+        const message = form.querySelector("[data-stock-message]");
+        const stockQuantity = Number(form.elements.stockQuantity.value);
+        button.disabled = true;
+        message.className = "notice";
+        message.textContent = "Saving…";
+        try {
+          await api(`/api/admin/stock/${encodeURIComponent(form.dataset.stockForm)}`, {
+            method: "POST",
+            body: JSON.stringify({ stockQuantity }),
+          });
+          const product = stockProducts.find(
+            (item) => item.sku === form.dataset.stockForm,
+          );
+          if (product) product.stockQuantity = stockQuantity;
+          const badge = form.closest(".stock-card").querySelector(".stock-badge");
+          badge.classList.toggle("out", !product?.active || stockQuantity === 0);
+          badge.textContent = !product?.active
+            ? "Inactive"
+            : stockQuantity === 0
+              ? "Out of stock"
+              : `${stockQuantity} in stock`;
+          message.className = "notice success";
+          message.textContent = stockQuantity === 0
+            ? "Saved. Checkout is now blocked for this product."
+            : `${stockQuantity} units available.`;
+          button.disabled = false;
+        } catch (error) {
+          message.className = "notice error";
+          message.textContent = error.message;
+          button.disabled = false;
+        }
+      }
       function renderConversationList() {
         const list = $("#conversation-list");
         list.innerHTML = conversations.length
@@ -1684,6 +1830,7 @@
         try {
           await loadDashboard();
           if (activeTab === "templates") await loadTemplateManager();
+          if (activeTab === "stock") await loadStock();
           if (activeTab === "conversations") await loadConversations();
           if (activeTab === "acquisition") await loadAcquisition();
         } catch (error) {
@@ -1717,6 +1864,7 @@
           $("#whatsapp-panel").hidden = activeTab !== "whatsapp";
           $("#templates-panel").hidden = activeTab !== "templates";
           $("#coupons-panel").hidden = activeTab !== "coupons";
+          $("#stock-panel").hidden = activeTab !== "stock";
           $("#delivery-settings-panel").hidden = activeTab !== "delivery";
           if (activeTab === "conversations")
             loadConversations().catch(showLoadError);
@@ -1724,6 +1872,8 @@
             loadAcquisition().catch(showLoadError);
           if (activeTab === "templates")
             loadTemplateManager().catch(showLoadError);
+          if (activeTab === "stock")
+            loadStock().catch(showLoadError);
         }),
       );
       $("#template-select").addEventListener("change", renderTemplateFields);

@@ -142,11 +142,23 @@ test("browser shares IDs, queues before init, strips PII and prevents refresh/ba
   assert.equal(pixels[0][0], "init");
   const pixel = pixels.find(x => x[1] === "AddToCart"); const capi = requests.find(x => x.url === "/api/meta/events" && x.body.event_name === "AddToCart").body;
   assert.equal(pixel[3].eventID, capi.event_id); assert.equal(pixel[2].phone, undefined);
-  client.track("track", "Purchase", { order_id: "order12345678", value: 450, currency: "INR" });
-  client.track("track", "Purchase", { order_id: "order12345678", value: 450, currency: "INR" });
+  client.track("track", "Purchase", { order_id: "blocked123", value: 450, currency: "INR" });
+  client.track("track", "InitiateCheckout", { currency: "INR", value: 450, contents: [{ id: "spice", quantity: 1 }] });
+  client.track("track", "AddPaymentInfo", { currency: "INR", value: 450, contents: [{ id: "spice", quantity: 1 }] });
+  client.track("trackCustom", "valour_purchase", { order_id: "blocked123", value: 450 });
+  client.track("trackCustom", "valour_begin_checkout", { value: 450 });
+  assert.equal(pixels.some(x => ["Purchase", "InitiateCheckout", "AddPaymentInfo", "valour_purchase", "valour_begin_checkout"].includes(x[1])), false);
+  const confirmedFunnel = { currency: "INR", value: 450, contents: [{ id: "spice", quantity: 1 }], order_confirmed: true };
+  client.track("track", "InitiateCheckout", confirmedFunnel);
+  client.track("track", "AddPaymentInfo", confirmedFunnel);
+  assert.equal(pixels.filter(x => x[1] === "InitiateCheckout").length, 1);
+  assert.equal(pixels.filter(x => x[1] === "AddPaymentInfo").length, 1);
+  const confirmedPurchase = { order_id: "order12345678", value: 450, currency: "INR", order_confirmed: true };
+  client.track("track", "Purchase", confirmedPurchase);
+  client.track("track", "Purchase", confirmedPurchase);
   const refreshed = browser(); await new Promise(setImmediate);
-  refreshed.track("track", "Purchase", { order_id: "order12345678", value: 450, currency: "INR" });
-  refreshed.track("track", "Purchase", { order_id: "different123", value: 450, currency: "INR" });
+  refreshed.track("track", "Purchase", confirmedPurchase);
+  refreshed.track("track", "Purchase", { order_id: "different123", value: 450, currency: "INR", order_confirmed: true });
   assert.equal(pixels.filter(x => x[1] === "Purchase").length, 2);
   assert.equal(pixels.find(x => x[1] === "Purchase")[3].eventID, "purchase_order12345678");
   assert.equal(requests.some(x => x.url === "/api/meta/events" && x.body.event_name === "Purchase"), false);
@@ -206,14 +218,14 @@ test("real browser helper and HTTP ingress plus Purchase worker use normal names
     context.window.fbq = (...args) => pixels.push(args);
     vm.runInNewContext(fs.readFileSync(require.resolve("../meta-pixel.js"), "utf8"), context);
     const data = { currency: "INR", value: 160, content_type: "product", contents: [{ id: "spice", quantity: 1, item_price: 160 }] };
-    for (const name of ["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"]) context.window.valourMeta.track("track", name, data);
+    for (const name of ["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"]) context.window.valourMeta.track("track", name, ["InitiateCheckout", "AddPaymentInfo"].includes(name) ? { ...data, order_confirmed: true } : data);
     for (const name of ["Lead", "Contact"]) context.window.valourMeta.track("track", name, {});
     // Bound the wait for the actual local HTTP requests; no external Meta connection occurs.
     for (let i = 0; i < 100 && graph.length < 7; i++) await new Promise(resolve => setTimeout(resolve, 10));
     assert.equal(graph.length, 7);
     await Promise.all(requests);
     await worker.drain();
-    context.window.valourMeta.track("track", "Purchase", meta.purchaseData(saved));
+    context.window.valourMeta.track("track", "Purchase", { ...meta.purchaseData(saved), order_confirmed: true });
     assert.deepEqual(graph.map(x => x.data[0].event_name).sort(), ["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", "Purchase"].sort());
     for (const payload of graph) {
       const sent = payload.data[0];

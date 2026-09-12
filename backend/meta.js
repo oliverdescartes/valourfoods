@@ -215,7 +215,25 @@ function install(app, getOrders, getPaymentAttempts, getMetaEvents) {
     const eventId = String(req.body?.event_id || "");
     const match = eventId.match(/^purchase_([a-f\d]{24})$/i);
     if (!match) return res.status(400).json({ ok: false });
-    try { await getOrders().updateOne({ _id: new (require("mongodb").ObjectId)(match[1]) }, { $set: { "metaPurchase.browserAttempted": true, "metaPurchase.browserAttemptedAt": new Date() } }); } catch { /* diagnostics only */ }
+    try {
+      await getOrders().updateOne(
+        {
+          _id: new (require("mongodb").ObjectId)(match[1]),
+          channel: "website",
+          purchaseIntent: "completed",
+          $or: [
+            { paymentStatus: "paid" },
+            { paymentMethod: "COD", paymentStatus: "pending_cod" },
+          ],
+        },
+        {
+          $set: {
+            "metaPurchase.browserAttempted": true,
+            "metaPurchase.browserAttemptedAt": new Date(),
+          },
+        },
+      );
+    } catch { /* diagnostics only */ }
     return res.sendStatus(204);
   });
   let running = false;
