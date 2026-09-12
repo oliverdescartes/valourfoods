@@ -56,6 +56,11 @@ test("admin can set stock to zero and checkout reports it unavailable", async ()
     size: "520 ml",
     active: true,
   });
+  await database.collection("pricing_rules").insertOne({
+    _id: "checkout",
+    deliveryTimeValue: 3,
+    deliveryTimeUnit: "hours",
+  });
 
   await withServer(async (base) => {
     const unauthorized = await fetch(`${base}/api/admin/stock`);
@@ -86,6 +91,10 @@ test("admin can set stock to zero and checkout reports it unavailable", async ()
     const result = await checked.json();
     assert.equal(result.stock.available, false);
     assert.equal(result.stock.unavailableItems[0].stockQuantity, 0);
+
+    const delivery = await fetch(`${base}/api/checkout/delivery-estimate`);
+    assert.equal(delivery.status, 200);
+    assert.equal((await delivery.json()).delivery.estimatedDelivery, "Within 3 hours");
 
     const quote = await fetch(`${base}/api/checkout/quote`, {
       method: "POST",

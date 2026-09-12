@@ -10838,6 +10838,20 @@ app.post("/api/stock/check", async (req, res) => {
   }
 });
 
+app.get("/api/checkout/delivery-estimate", async (_req, res) => {
+  try {
+    const rules = await collections().pricingRules.findOne({ _id: "checkout" });
+    const delivery = getDefaultExpectedDeliveryFields(new Date(), rules);
+    return res.json({ ok: true, delivery });
+  } catch (error) {
+    console.error("Checkout delivery estimate unavailable", error.message);
+    return res.status(503).json({
+      ok: false,
+      error: "Delivery estimate is temporarily unavailable",
+    });
+  }
+});
+
 app.post("/api/checkout/quote", async (req, res) => {
   try {
     const pincode = String(req.body.pincode || "").trim();

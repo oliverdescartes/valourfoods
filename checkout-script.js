@@ -581,6 +581,15 @@ async function postJSON(url, payload, extraHeaders = {}) {
   return data;
 }
 
+async function getJSON(url) {
+  const response = await fetch(url, { credentials: "same-origin" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || "Request failed. Please try again.");
+  }
+  return data;
+}
+
 function reportCheckoutDetailsSubmitted() {
   const values = getFormValues();
   if (!values.phone) return;
@@ -1115,6 +1124,21 @@ function applyQuoteDelivery(quote = {}) {
     estimatedDelivery: quote.estimatedDelivery,
   };
   setTextAll("[data-delivery-window]", quote.estimatedDelivery);
+}
+
+async function refreshDeliveryEstimate() {
+  try {
+    const result = await getJSON(`${API_BASE}/api/checkout/delivery-estimate`);
+    applyQuoteDelivery(result.delivery);
+  } catch (error) {
+    console.error("Delivery estimate unavailable", error);
+    if (!state.delivery) {
+      setTextAll(
+        "[data-delivery-window]",
+        "Delivery timing will be confirmed with your order",
+      );
+    }
+  }
 }
 
 function updateProgress() {
@@ -2139,6 +2163,7 @@ function init() {
   setPaymentMethod(state.paymentMethod);
   bindEvents();
   renderAll();
+  refreshDeliveryEstimate();
   loadUserCoupons();
   trackEvent("valour_checkout_view");
 }
