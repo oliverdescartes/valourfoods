@@ -55,7 +55,6 @@ const REQUIRED_ENV = [
   "GUPSHUP_API_KEY",
   "GUPSHUP_APP_NAME",
   "GUPSHUP_SOURCE_NUMBER",
-  "WHATSAPP_WEBHOOK_TOKEN",
   "FAST2SMS_API_KEY",
   "WHATSAPP_ORDER_TEMPLATE_NAME",
   "PUBLIC_SITE_URL",
@@ -84,7 +83,9 @@ const metaDelivery = meta.install(
 const phoneQueues = new Map();
 const inbound = require("./whatsapp-inbound");
 const whatsappInbox = require("./whatsapp-inbox").createWhatsappInbox({
-  collection: name => db.collection(name), process: processIncomingMessage, log: console.log,
+  collection: (name) => db.collection(name),
+  process: processIncomingMessage,
+  log: console.log,
 });
 const DEPENDENCY_RETRY_MS = 30000;
 let mongoReady = false;
@@ -175,8 +176,14 @@ const DEFAULT_ACCORDION_CONTENT = [
     content: {
       intro: "Depends on how you use it. But typically:",
       servings: [
-        { size: "250 ml", detail: "Cooks about 2–3 people (500–700 g fish/chicken)" },
-        { size: "525 ml (1 jar)", detail: "Cooks about 3–5 people (up to 1 kg)" },
+        {
+          size: "250 ml",
+          detail: "Cooks about 2–3 people (500–700 g fish/chicken)",
+        },
+        {
+          size: "525 ml (1 jar)",
+          detail: "Cooks about 3–5 people (up to 1 kg)",
+        },
       ],
     },
     order: 3,
@@ -204,59 +211,131 @@ const DEFAULT_CAROUSEL_VIDEOS = [
 ];
 
 const DEFAULT_TESTIMONIAL_MEDIA = [
-  { key: "first-kitchen-1", imageUrl: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp", altText: "A rich bowl of butter chicken served at the dinner table", objectPosition: "50% 58%", order: 1, active: true },
-  { key: "first-kitchen-2", imageUrl: "/vendor/cdn/cdn/shop/files/slide 3.webp", altText: "Butter chicken simmering in an Agartala home kitchen", objectPosition: "50% 55%", order: 2, active: true },
-  { key: "first-kitchen-3", imageUrl: "/vendor/cdn/cdn/shop/files/imagetab2.webp", altText: "Butter chicken plated and ready to share", objectPosition: "50% 58%", order: 3, active: true },
-  { key: "first-kitchen-4", imageUrl: "/vendor/cdn/cdn/shop/files/slide 5.webp", altText: "Chicken being prepared with the VALOUR cooking base", objectPosition: "50% 52%", order: 4, active: true },
+  {
+    key: "first-kitchen-1",
+    imageUrl: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp",
+    altText: "A rich bowl of butter chicken served at the dinner table",
+    objectPosition: "50% 58%",
+    order: 1,
+    active: true,
+  },
+  {
+    key: "first-kitchen-2",
+    imageUrl: "/vendor/cdn/cdn/shop/files/slide 3.webp",
+    altText: "Butter chicken simmering in an Agartala home kitchen",
+    objectPosition: "50% 55%",
+    order: 2,
+    active: true,
+  },
+  {
+    key: "first-kitchen-3",
+    imageUrl: "/vendor/cdn/cdn/shop/files/imagetab2.webp",
+    altText: "Butter chicken plated and ready to share",
+    objectPosition: "50% 58%",
+    order: 3,
+    active: true,
+  },
+  {
+    key: "first-kitchen-4",
+    imageUrl: "/vendor/cdn/cdn/shop/files/slide 5.webp",
+    altText: "Chicken being prepared with the VALOUR cooking base",
+    objectPosition: "50% 52%",
+    order: 4,
+    active: true,
+  },
 ];
 
 const DEFAULT_HOMEPAGE_TESTIMONIALS = [
   {
     key: "agartala-kitchen-1",
-    quote: "It tasted like the butter chicken we save for special dinners—only I made it on a Tuesday, in fifteen minutes.",
+    quote:
+      "It tasted like the butter chicken we save for special dinners—only I made it on a Tuesday, in fifteen minutes.",
     personName: "Ananya Sen",
     personDetail: "Agartala · Verified customer",
     images: [
-      { url: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp", alt: "A rich bowl of butter chicken served at home", objectPosition: "50% 58%" },
-      { url: "/vendor/cdn/cdn/shop/files/slide 3.webp", alt: "Butter chicken simmering in a home kitchen", objectPosition: "50% 55%" },
+      {
+        url: "/vendor/cdn/cdn/shop/files/butter_chcikencurry.webp",
+        alt: "A rich bowl of butter chicken served at home",
+        objectPosition: "50% 58%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/slide 3.webp",
+        alt: "Butter chicken simmering in a home kitchen",
+        objectPosition: "50% 55%",
+      },
     ],
     order: 1,
     active: true,
   },
   {
     key: "agartala-kitchen-2",
-    quote: "The sauce was silky and balanced. My parents genuinely asked which restaurant I had ordered it from.",
+    quote:
+      "The sauce was silky and balanced. My parents genuinely asked which restaurant I had ordered it from.",
     personName: "Rohan Deb",
     personDetail: "Agartala · Weekend cook",
     images: [
-      { url: "/vendor/cdn/cdn/shop/files/slide 4.webp", alt: "Freshly prepared creamy butter chicken", objectPosition: "50% 56%" },
-      { url: "/vendor/cdn/cdn/shop/files/imagetab2.webp", alt: "Butter chicken plated and ready to share", objectPosition: "50% 58%" },
-      { url: "/vendor/cdn/cdn/shop/files/image_2_prod.webp", alt: "VALOUR cooking base beside a prepared meal", objectPosition: "50% 48%" },
+      {
+        url: "/vendor/cdn/cdn/shop/files/slide 4.webp",
+        alt: "Freshly prepared creamy butter chicken",
+        objectPosition: "50% 56%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/imagetab2.webp",
+        alt: "Butter chicken plated and ready to share",
+        objectPosition: "50% 58%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/image_2_prod.webp",
+        alt: "VALOUR cooking base beside a prepared meal",
+        objectPosition: "50% 48%",
+      },
     ],
     order: 2,
     active: true,
   },
   {
     key: "agartala-kitchen-3",
-    quote: "No long spice list, no guesswork. The first spoonful had everyone quiet—and then reaching for more naan.",
+    quote:
+      "No long spice list, no guesswork. The first spoonful had everyone quiet—and then reaching for more naan.",
     personName: "Ishita Das",
     personDetail: "Agartala · Verified customer",
     images: [
-      { url: "/vendor/cdn/cdn/shop/files/slide 5.webp", alt: "Chicken being prepared for a VALOUR meal", objectPosition: "50% 52%" },
-      { url: "/vendor/cdn/cdn/shop/files/slide 6.webp", alt: "Creamy butter chicken coming together in the pan", objectPosition: "50% 55%" },
+      {
+        url: "/vendor/cdn/cdn/shop/files/slide 5.webp",
+        alt: "Chicken being prepared for a VALOUR meal",
+        objectPosition: "50% 52%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/slide 6.webp",
+        alt: "Creamy butter chicken coming together in the pan",
+        objectPosition: "50% 55%",
+      },
     ],
     order: 3,
     active: true,
   },
   {
     key: "agartala-kitchen-4",
-    quote: "I served the whole family without spending the evening in the kitchen. It felt effortless and genuinely delicious.",
+    quote:
+      "I served the whole family without spending the evening in the kitchen. It felt effortless and genuinely delicious.",
     personName: "Neha Paul",
     personDetail: "Agartala · Family dinner",
     images: [
-      { url: "/vendor/cdn/cdn/shop/files/hero_banner2nd.webp", alt: "A butter chicken dinner ready to share", objectPosition: "50% 52%" },
-      { url: "/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp", alt: "VALOUR Velvety Butter Chicken cooking base", objectPosition: "50% 48%" },
-      { url: "/vendor/cdn/cdn/shop/files/Packaging Design v3.png", alt: "VALOUR Butter Chicken package in a home kitchen", objectPosition: "50% 50%" },
+      {
+        url: "/vendor/cdn/cdn/shop/files/hero_banner2nd.webp",
+        alt: "A butter chicken dinner ready to share",
+        objectPosition: "50% 52%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp",
+        alt: "VALOUR Velvety Butter Chicken cooking base",
+        objectPosition: "50% 48%",
+      },
+      {
+        url: "/vendor/cdn/cdn/shop/files/Packaging Design v3.png",
+        alt: "VALOUR Butter Chicken package in a home kitchen",
+        objectPosition: "50% 50%",
+      },
     ],
     order: 4,
     active: true,
@@ -350,11 +429,21 @@ async function connectDB() {
     }),
     reviews.createIndex({ orderReference: 1 }, { unique: true }),
     reviews.createIndex({ createdAt: -1 }),
-    db.collection("whatsapp_inbox").createIndex({ eventId: 1 }, { unique: true }),
+    db
+      .collection("whatsapp_inbox")
+      .createIndex({ eventId: 1 }, { unique: true }),
     db.collection("whatsapp_inbox").createIndex({ status: 1, receivedAt: 1 }),
-    db.collection("whatsapp_phone_locks").createIndex({ phone: 1 }, { unique: true }),
-    collections().whatsappStatuses.createIndex({ eventKey: 1 }, { unique: true }),
-    collections().whatsappStatuses.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 2592000 }),
+    db
+      .collection("whatsapp_phone_locks")
+      .createIndex({ phone: 1 }, { unique: true }),
+    collections().whatsappStatuses.createIndex(
+      { eventKey: 1 },
+      { unique: true },
+    ),
+    collections().whatsappStatuses.createIndex(
+      { receivedAt: 1 },
+      { expireAfterSeconds: 2592000 },
+    ),
     messageJobs.createIndex({ jobKey: 1 }, { unique: true }),
     messageJobs.createIndex({ status: 1, scheduledAt: 1 }),
     messageJobs.createIndex({ providerMessageId: 1 }, { sparse: true }),
@@ -370,8 +459,14 @@ async function connectDB() {
     analyticsEvents.createIndex({ occurredAt: -1, event: 1 }),
     analyticsEvents.createIndex({ "attribution.visitorId": 1, occurredAt: -1 }),
     analyticsEvents.createIndex({ "attribution.sessionId": 1, occurredAt: -1 }),
-    analyticsEvents.createIndex({ "attribution.latestNonDirect.channel": 1, occurredAt: -1 }),
-    analyticsEvents.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 68256000 }),
+    analyticsEvents.createIndex({
+      "attribution.latestNonDirect.channel": 1,
+      occurredAt: -1,
+    }),
+    analyticsEvents.createIndex(
+      { receivedAt: 1 },
+      { expireAfterSeconds: 68256000 },
+    ),
     metaEvents.createIndex({ eventName: 1, eventId: 1 }, { unique: true }),
     metaEvents.createIndex({ occurredAt: -1, eventName: 1 }),
     metaEvents.createIndex({ status: 1, nextAt: 1 }),
@@ -388,7 +483,13 @@ async function connectDB() {
     ...DEFAULT_ACCORDION_CONTENT.map((item) =>
       accordionContent.updateOne(
         { key: item.key },
-        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        {
+          $setOnInsert: {
+            ...item,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
         { upsert: true },
       ),
     ),
@@ -397,7 +498,13 @@ async function connectDB() {
     ...DEFAULT_CAROUSEL_VIDEOS.map((item) =>
       carouselVideos.updateOne(
         { key: item.key },
-        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        {
+          $setOnInsert: {
+            ...item,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
         { upsert: true },
       ),
     ),
@@ -406,7 +513,13 @@ async function connectDB() {
     ...DEFAULT_TESTIMONIAL_MEDIA.map((item) =>
       testimonialMedia.updateOne(
         { key: item.key },
-        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        {
+          $setOnInsert: {
+            ...item,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
         { upsert: true },
       ),
     ),
@@ -415,7 +528,13 @@ async function connectDB() {
     ...DEFAULT_HOMEPAGE_TESTIMONIALS.map((item) =>
       homepageTestimonials.updateOne(
         { key: item.key },
-        { $setOnInsert: { ...item, createdAt: new Date(), updatedAt: new Date() } },
+        {
+          $setOnInsert: {
+            ...item,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
         { upsert: true },
       ),
     ),
@@ -864,10 +983,8 @@ const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
   "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
 const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID =
   "680c3021-6889-4c60-86b4-6ebb0c7d7b1b";
-const DEFAULT_DELIVERED_TEMPLATE_ID =
-  "ed4e4f64-b494-4c44-94ae-effb751cf40c";
-const DEFAULT_COD_PREPAID_TEMPLATE_ID =
-  "515b2202-ab03-4fb3-a2de-32f896d04953";
+const DEFAULT_DELIVERED_TEMPLATE_ID = "ed4e4f64-b494-4c44-94ae-effb751cf40c";
+const DEFAULT_COD_PREPAID_TEMPLATE_ID = "515b2202-ab03-4fb3-a2de-32f896d04953";
 
 function buildGupshupForm(recipient, fields = {}) {
   const form = new URLSearchParams({
@@ -885,8 +1002,12 @@ function buildGupshupForm(recipient, fields = {}) {
 }
 
 function getGupshupTemplateId(templateName, languageCode) {
-  if (templateName === "1071618388950122") return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
-  if (/^\d+$/.test(templateName)) throw new Error("Use the internal Gupshup template UUID, not the Meta external ID");
+  if (templateName === "1071618388950122")
+    return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  if (/^\d+$/.test(templateName))
+    throw new Error(
+      "Use the internal Gupshup template UUID, not the Meta external ID",
+    );
   if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName)) {
     return templateName;
   }
@@ -922,16 +1043,24 @@ function getGupshupTemplateId(templateName, languageCode) {
     );
   }
 
-  if (templateId === "1071618388950122") return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
-  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateId)) throw new Error("Invalid internal Gupshup template ID");
+  if (templateId === "1071618388950122")
+    return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateId))
+    throw new Error("Invalid internal Gupshup template ID");
   return templateId;
 }
 
 function assertWhatsappAccepted(data) {
-  if (!getProviderMessageId(data) || /^(error|failed|rejected)$/i.test(data?.status || "")) {
+  if (
+    !getProviderMessageId(data) ||
+    /^(error|failed|rejected)$/i.test(data?.status || "")
+  ) {
     const error = new Error("Gupshup rejected outbound message");
     if (/^(error|failed|rejected)$/i.test(data?.status || "")) {
-      error.response = { status: 400, data: { message: "Provider rejected submission" } };
+      error.response = {
+        status: 400,
+        data: { message: "Provider rejected submission" },
+      };
     } else {
       error.code = "SUBMISSION_UNCONFIRMED";
       error.request = {}; // A successful HTTP response without an ID is not safe to retry.
@@ -941,7 +1070,14 @@ function assertWhatsappAccepted(data) {
 }
 
 function isUncertainWhatsappSend(error) {
-  return !error.response && Boolean(error.request || /ETIMEDOUT|ECONNRESET|ECONNABORTED|EPIPE/.test(error.code || "")) || Number(error.response?.status) >= 500;
+  return (
+    (!error.response &&
+      Boolean(
+        error.request ||
+        /ETIMEDOUT|ECONNRESET|ECONNABORTED|EPIPE/.test(error.code || ""),
+      )) ||
+    Number(error.response?.status) >= 500
+  );
 }
 
 async function sendMessage(phone, body) {
@@ -1372,9 +1508,13 @@ const WHATSAPP_TEMPLATE_CONTRACTS = {
 };
 
 function validateWhatsappTemplatePayload(templateName, parameters = []) {
-  const canonical = templateName === "1071618388950122" ? DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID : templateName;
+  const canonical =
+    templateName === "1071618388950122"
+      ? DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID
+      : templateName;
   const contract = WHATSAPP_TEMPLATE_CONTRACTS[canonical];
-  if (!contract) throw new Error(`Missing template contract for ${templateName}`);
+  if (!contract)
+    throw new Error(`Missing template contract for ${templateName}`);
   if (
     !Array.isArray(parameters) ||
     parameters.length !== contract.parameterCount
@@ -1383,7 +1523,12 @@ function validateWhatsappTemplatePayload(templateName, parameters = []) {
       `Template ${templateName} requires ${contract.parameterCount} parameters; received ${parameters?.length ?? 0}`,
     );
   }
-  if (parameters.some(value => !String(value).trim() || String(value).length > 1024)) throw new Error(`Template ${templateName} has invalid parameter length`);
+  if (
+    parameters.some(
+      (value) => !String(value).trim() || String(value).length > 1024,
+    )
+  )
+    throw new Error(`Template ${templateName} has invalid parameter length`);
   const media = getWhatsappTemplateMedia(templateName);
   if (contract.mediaType && media?.type !== contract.mediaType) {
     throw new Error(
@@ -1533,10 +1678,24 @@ async function scheduleWhatsappJob({
       ? nextIstSendTime(scheduledAt)
       : scheduledAt;
   try {
-    const rearmed = await collections().messageJobs.updateOne({ jobKey, status: "failed" }, {
-      $set: { status: "scheduled", templateName, parameters, scheduledAt: sendAt, attemptCount: 0, recoveryReason: "fresh_trigger_after_definite_failure" },
-      $unset: { submissionStartedAt: "", processingStartedAt: "", providerMessageId: "" },
-    });
+    const rearmed = await collections().messageJobs.updateOne(
+      { jobKey, status: "failed" },
+      {
+        $set: {
+          status: "scheduled",
+          templateName,
+          parameters,
+          scheduledAt: sendAt,
+          attemptCount: 0,
+          recoveryReason: "fresh_trigger_after_definite_failure",
+        },
+        $unset: {
+          submissionStartedAt: "",
+          processingStartedAt: "",
+          providerMessageId: "",
+        },
+      },
+    );
     const result = await collections().messageJobs.updateOne(
       { jobKey },
       {
@@ -1570,15 +1729,23 @@ async function scheduleWhatsappJob({
       sendAt <= new Date()
     ) {
       setImmediate(() => {
-        void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) =>
-          console.error(
-            "Immediate WhatsApp job processing failed",
-            err.message,
-          ),
-        );
+        void recoverStuckWhatsappJobs()
+          .then(processDueWhatsappJobs)
+          .catch((err) =>
+            console.error(
+              "Immediate WhatsApp job processing failed",
+              err.message,
+            ),
+          );
       });
     }
-    console.log("[WHATSAPP][JOB_SCHEDULE]", { trigger: event, jobKey, scheduled, reason: scheduled ? "new_event" : "duplicate", scheduledAt: sendAt });
+    console.log("[WHATSAPP][JOB_SCHEDULE]", {
+      trigger: event,
+      jobKey,
+      scheduled,
+      reason: scheduled ? "new_event" : "duplicate",
+      scheduledAt: sendAt,
+    });
     return { scheduled, jobKey };
   } catch (err) {
     if (err?.code === 11000)
@@ -1589,7 +1756,13 @@ async function scheduleWhatsappJob({
 
 async function cancelWhatsappJobs(filter, reason) {
   const result = await collections().messageJobs.updateMany(
-    { ...filter, $or: [{ status: "scheduled" }, { status: "processing", submissionStartedAt: { $exists: false } }] },
+    {
+      ...filter,
+      $or: [
+        { status: "scheduled" },
+        { status: "processing", submissionStartedAt: { $exists: false } },
+      ],
+    },
     {
       $set: {
         status: "cancelled",
@@ -1598,7 +1771,10 @@ async function cancelWhatsappJobs(filter, reason) {
       },
     },
   );
-  console.log("[WHATSAPP][JOB_CANCEL]", { count: result.modifiedCount, reason });
+  console.log("[WHATSAPP][JOB_CANCEL]", {
+    count: result.modifiedCount,
+    reason,
+  });
   return result;
 }
 
@@ -1630,7 +1806,13 @@ async function runWhatsappQualityGate(job) {
     return { action: "cancel", reason: "invalid_template_parameters" };
   }
   const order = await resolveAutomationOrder(job);
-  if (order && /cancel|refund/i.test(`${order.shippingStatus || ""} ${order.paymentStatus || ""}`) && job.trigger !== "order_status_update") {
+  if (
+    order &&
+    /cancel|refund/i.test(
+      `${order.shippingStatus || ""} ${order.paymentStatus || ""}`,
+    ) &&
+    job.trigger !== "order_status_update"
+  ) {
     return { action: "cancel", reason: "order_cancelled_or_refunded" };
   }
   if (
@@ -1687,8 +1869,15 @@ async function runWhatsappQualityGate(job) {
   if (openSupport && job.kind === "marketing") {
     return { action: "cancel", reason: "unresolved_support_case" };
   }
-  if ((job.kind === "marketing" || job.trigger === "delivered_ready_to_cook") && nextIstSendTime(new Date()) > new Date()) {
-    return { action: "reschedule", reason: "outside_sending_hours", scheduledAt: nextIstSendTime(new Date()) };
+  if (
+    (job.kind === "marketing" || job.trigger === "delivered_ready_to_cook") &&
+    nextIstSendTime(new Date()) > new Date()
+  ) {
+    return {
+      action: "reschedule",
+      reason: "outside_sending_hours",
+      scheduledAt: nextIstSendTime(new Date()),
+    };
   }
   if (job.kind === "marketing") {
     const now = new Date();
@@ -1720,7 +1909,11 @@ async function runWhatsappQualityGate(job) {
       const user = await collections().users.findOne({
         phone: { $regex: `${String(job.phone).slice(-10)}$` },
       });
-      if (user?.last_seen_at && user.last_seen_at > job.createdAt && user.last_seen_at.getTime() + 24 * 60 * 60_000 > Date.now()) {
+      if (
+        user?.last_seen_at &&
+        user.last_seen_at > job.createdAt &&
+        user.last_seen_at.getTime() + 24 * 60 * 60_000 > Date.now()
+      ) {
         return {
           action: "reschedule",
           reason: "recent_customer_reply",
@@ -1739,7 +1932,13 @@ async function processDueWhatsappJobs() {
   while (true) {
     const job = await collections().messageJobs.findOneAndUpdate(
       { status: "scheduled", scheduledAt: { $lte: new Date() } },
-      { $set: { status: "processing", processingStartedAt: new Date(), claimToken: crypto.randomUUID() } },
+      {
+        $set: {
+          status: "processing",
+          processingStartedAt: new Date(),
+          claimToken: crypto.randomUUID(),
+        },
+      },
       { sort: { scheduledAt: 1 }, returnDocument: "after" },
     );
     if (!job) break;
@@ -1798,12 +1997,20 @@ async function processDueWhatsappJobs() {
       );
       job.acceptedProviderId = getProviderMessageId(result);
       if (job.trigger === "post_cook_feedback" && job.sessionId) {
-        await collections().sessions.updateOne({ _id: job.sessionId, current_state: { $in: ["guided_cooking", "post_cook_feedback"] } }, { $set: {
-          current_state: "post_cook_feedback",
-          last_flow_state: "post_cook_feedback",
-          post_cook_feedback_prompted_at: new Date(),
-          last_left_at: new Date(),
-        } });
+        await collections().sessions.updateOne(
+          {
+            _id: job.sessionId,
+            current_state: { $in: ["guided_cooking", "post_cook_feedback"] },
+          },
+          {
+            $set: {
+              current_state: "post_cook_feedback",
+              last_flow_state: "post_cook_feedback",
+              post_cook_feedback_prompted_at: new Date(),
+              last_left_at: new Date(),
+            },
+          },
+        );
       }
       const providerMessageId = getProviderMessageId(result);
       await collections().messageJobs.updateOne(
@@ -1830,10 +2037,12 @@ async function processDueWhatsappJobs() {
       });
     } catch (err) {
       const attemptCount = Number(job.attemptCount || 0) + 1;
-      const permanent = /template|parameter|invalid phone|destination|rejected/i.test(
-        String(err.response?.data?.message || err.message),
-      );
-      const uncertain = Boolean(job.acceptedProviderId) || isUncertainWhatsappSend(err);
+      const permanent =
+        /template|parameter|invalid phone|destination|rejected/i.test(
+          String(err.response?.data?.message || err.message),
+        );
+      const uncertain =
+        Boolean(job.acceptedProviderId) || isUncertainWhatsappSend(err);
       const failed = permanent || attemptCount >= WHATSAPP_JOB_MAX_ATTEMPTS;
       const delay =
         Math.min(60, 5 * 3 ** Math.max(0, attemptCount - 1)) * 60_000;
@@ -1841,8 +2050,14 @@ async function processDueWhatsappJobs() {
         { _id: job._id, status: "processing", claimToken: job.claimToken },
         {
           $set: {
-            status: uncertain ? "delivery_unknown" : failed ? "failed" : "scheduled",
-            ...(job.acceptedProviderId ? { providerMessageId: job.acceptedProviderId } : {}),
+            status: uncertain
+              ? "delivery_unknown"
+              : failed
+                ? "failed"
+                : "scheduled",
+            ...(job.acceptedProviderId
+              ? { providerMessageId: job.acceptedProviderId }
+              : {}),
             attemptCount,
             scheduledAt: new Date(Date.now() + delay),
             lastError: String(err.response?.data?.message || err.message).slice(
@@ -1851,7 +2066,10 @@ async function processDueWhatsappJobs() {
             ),
             failedAt: failed ? new Date() : null,
           },
-          $unset: { processingStartedAt: "", ...(!uncertain ? { submissionStartedAt: "" } : {}) },
+          $unset: {
+            processingStartedAt: "",
+            ...(!uncertain ? { submissionStartedAt: "" } : {}),
+          },
         },
       );
       console.error("[WHATSAPP][SEND_ERROR]", {
@@ -1869,16 +2087,38 @@ async function processDueWhatsappJobs() {
 async function recoverStuckWhatsappJobs() {
   if (!mongoReady) return;
   for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
-    for (const [collectionName, prefix] of [["orders", "adminOrderAlerts"], ["supportCases", "adminAlerts"]]) {
+    for (const [collectionName, prefix] of [
+      ["orders", "adminOrderAlerts"],
+      ["supportCases", "adminAlerts"],
+    ]) {
       const root = `${prefix}.${recipient}`;
-      await collections()[collectionName].updateMany({ [`${root}.status`]: "processing", [`${root}.claimedAt`]: { $lt: new Date(Date.now() - 10 * 60_000) } }, {
-        $set: { [`${root}.status`]: "delivery_unknown", [`${root}.recoveryReason`]: "interrupted_admin_alert" },
-      });
+      await collections()[collectionName].updateMany(
+        {
+          [`${root}.status`]: "processing",
+          [`${root}.claimedAt`]: { $lt: new Date(Date.now() - 10 * 60_000) },
+        },
+        {
+          $set: {
+            [`${root}.status`]: "delivery_unknown",
+            [`${root}.recoveryReason`]: "interrupted_admin_alert",
+          },
+        },
+      );
     }
   }
-  await collections().messageJobs.updateMany({ status: "processing", processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) }, submissionStartedAt: { $exists: true } }, {
-    $set: { status: "delivery_unknown", recoveryReason: "submission_may_have_reached_provider" },
-  });
+  await collections().messageJobs.updateMany(
+    {
+      status: "processing",
+      processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) },
+      submissionStartedAt: { $exists: true },
+    },
+    {
+      $set: {
+        status: "delivery_unknown",
+        recoveryReason: "submission_may_have_reached_provider",
+      },
+    },
+  );
   await collections().messageJobs.updateMany(
     {
       status: "processing",
@@ -1900,17 +2140,23 @@ async function recoverStuckWhatsappJobs() {
 function startWhatsappJobWorker() {
   if (whatsappJobTimer) return;
   void recoverStuckWhatsappJobs()
-    .then(() => Promise.all([
-      processDueWhatsappJobs(),
-      drainWhatsappInbox(),
-      processAbandonedCheckoutOtpAlerts(),
-    ]))
+    .then(() =>
+      Promise.all([
+        processDueWhatsappJobs(),
+        drainWhatsappInbox(),
+        processAbandonedCheckoutOtpAlerts(),
+      ]),
+    )
     .catch((err) => console.error("WhatsApp job worker failed", err.message));
   whatsappJobTimer = setInterval(() => {
-    void drainWhatsappInbox().catch(error => console.error("[WHATSAPP][INBOX_ERROR]", { code: error.code || "database_error" }));
-    void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) =>
-      console.error("WhatsApp job worker failed", err.message),
+    void drainWhatsappInbox().catch((error) =>
+      console.error("[WHATSAPP][INBOX_ERROR]", {
+        code: error.code || "database_error",
+      }),
     );
+    void recoverStuckWhatsappJobs()
+      .then(processDueWhatsappJobs)
+      .catch((err) => console.error("WhatsApp job worker failed", err.message));
     void processAbandonedCheckoutOtpAlerts().catch((err) =>
       console.error("Checkout OTP alert worker failed", err.message),
     );
@@ -1929,9 +2175,14 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
     "failed",
   ]);
   if (!allowed.has(normalized)) return;
-  if (persist) await collections().whatsappStatuses.updateOne({ eventKey: `${status.id}:${normalized}` }, {
-    $set: { status, receivedAt: new Date() },
-  }, { upsert: true });
+  if (persist)
+    await collections().whatsappStatuses.updateOne(
+      { eventKey: `${status.id}:${normalized}` },
+      {
+        $set: { status, receivedAt: new Date() },
+      },
+      { upsert: true },
+    );
   const rawTimestamp = Number(status.timestamp);
   const timestamp = Number.isFinite(rawTimestamp)
     ? new Date(
@@ -1966,9 +2217,14 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
   const outboundIds = [status.id, status.whatsappMessageId].filter(Boolean);
   const outboundResult = outboundIds.length
     ? await collections().messages.updateOne(
-        { provider_message_id: { $in: outboundIds }, direction: "outbound", $or: [
-          { delivery_status: { $exists: false } }, { delivery_status: { $in: allowedPreviousStatuses } },
-        ] },
+        {
+          provider_message_id: { $in: outboundIds },
+          direction: "outbound",
+          $or: [
+            { delivery_status: { $exists: false } },
+            { delivery_status: { $in: allowedPreviousStatuses } },
+          ],
+        },
         {
           $set: {
             delivery_status: normalized,
@@ -1976,17 +2232,31 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
             ...(normalized === "sent" ? { sent_at: timestamp } : {}),
             ...(normalized === "delivered" ? { delivered_at: timestamp } : {}),
             ...(normalized === "read" ? { read_at: timestamp } : {}),
-            ...(normalized === "failed" ? { failed_at: timestamp, provider_errors: status.errors || null } : {}),
+            ...(normalized === "failed"
+              ? { failed_at: timestamp, provider_errors: status.errors || null }
+              : {}),
           },
         },
       )
     : { matchedCount: 0 };
   for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
-    for (const [collectionName, prefix] of [["orders", "adminOrderAlerts"], ["supportCases", "adminAlerts"]]) {
+    for (const [collectionName, prefix] of [
+      ["orders", "adminOrderAlerts"],
+      ["supportCases", "adminAlerts"],
+    ]) {
       const root = `${prefix}.${recipient}`;
-      await collections()[collectionName].updateOne({ [`${root}.providerMessageId`]: { $in: outboundIds }, [`${root}.status`]: { $in: allowedPreviousStatuses } }, {
-        $set: { [`${root}.status`]: normalized, [`${root}.${normalized}At`]: timestamp },
-      });
+      await collections()[collectionName].updateOne(
+        {
+          [`${root}.providerMessageId`]: { $in: outboundIds },
+          [`${root}.status`]: { $in: allowedPreviousStatuses },
+        },
+        {
+          $set: {
+            [`${root}.status`]: normalized,
+            [`${root}.${normalized}At`]: timestamp,
+          },
+        },
+      );
     }
   }
   const label = normalized === "failed" ? "FAILED" : "CALLBACK";
@@ -2001,7 +2271,11 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
     errorCode: status.errors?.code || status.errors?.[0]?.code || null,
     timestamp: timestamp.toISOString(),
   });
-  if (!result.matchedCount && !manualSendResult.matchedCount && !outboundResult.matchedCount) {
+  if (
+    !result.matchedCount &&
+    !manualSendResult.matchedCount &&
+    !outboundResult.matchedCount
+  ) {
     console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
       providerMessageId: status.id,
       status: normalized,
@@ -2013,8 +2287,12 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
 
 async function reconcileWhatsappStatus(providerMessageId) {
   if (!providerMessageId || !mongoReady) return;
-  const events = await collections().whatsappStatuses.find({ "status.id": providerMessageId }).sort({ receivedAt: 1 }).toArray();
-  for (const event of events) await recordWhatsappJobStatus(event.status, false);
+  const events = await collections()
+    .whatsappStatuses.find({ "status.id": providerMessageId })
+    .sort({ receivedAt: 1 })
+    .toArray();
+  for (const event of events)
+    await recordWhatsappJobStatus(event.status, false);
 }
 
 function parseGupshupV2Webhook(body = {}) {
@@ -2143,15 +2421,29 @@ async function getOrCreateSession(userId) {
 async function updateSession(sessionId, updates) {
   const { sessions } = collections();
 
-  const before = updates.current_state ? await sessions.findOne({ _id: sessionId }) : null;
+  const before = updates.current_state
+    ? await sessions.findOne({ _id: sessionId })
+    : null;
   await sessions.updateOne(
     { _id: sessionId },
     { $set: { ...updates, updated_at: new Date() } },
   );
-  if (before && ["guided_cooking", "post_cook_feedback"].includes(before.current_state) && !["guided_cooking", "post_cook_feedback"].includes(updates.current_state)) {
-    await cancelWhatsappJobs({ sessionId, trigger: "post_cook_feedback" }, "customer_left_cooking");
+  if (
+    before &&
+    ["guided_cooking", "post_cook_feedback"].includes(before.current_state) &&
+    !["guided_cooking", "post_cook_feedback"].includes(updates.current_state)
+  ) {
+    await cancelWhatsappJobs(
+      { sessionId, trigger: "post_cook_feedback" },
+      "customer_left_cooking",
+    );
   }
-  if (updates.current_state) console.log("[WHATSAPP][STATE]", { sessionId: String(sessionId), before: before?.current_state || "idle", after: updates.current_state });
+  if (updates.current_state)
+    console.log("[WHATSAPP][STATE]", {
+      sessionId: String(sessionId),
+      before: before?.current_state || "idle",
+      after: updates.current_state,
+    });
 }
 
 async function resetToIdle(sessionId) {
@@ -2343,7 +2635,13 @@ async function findOrderByReference(reference, phone = "") {
   const order = await orders.findOne(query);
 
   if (order) {
-    if (!phoneDigits || [order.phone, order.whatsappPhone].some(value => normalizeIndianPhone(value) === phoneDigits)) return order;
+    if (
+      !phoneDigits ||
+      [order.phone, order.whatsappPhone].some(
+        (value) => normalizeIndianPhone(value) === phoneDigits,
+      )
+    )
+      return order;
     return null;
   }
 
@@ -2367,7 +2665,15 @@ async function findOrderByReference(reference, phone = "") {
 
 async function findLatestWhatsappOrder(phone) {
   const suffix = `${normalizeIndianPhone(phone)}$`;
-  return collections().orders.findOne({ $or: [{ phone: { $regex: suffix } }, { whatsappPhone: { $regex: suffix } }] }, { sort: { createdAt: -1 } });
+  return collections().orders.findOne(
+    {
+      $or: [
+        { phone: { $regex: suffix } },
+        { whatsappPhone: { $regex: suffix } },
+      ],
+    },
+    { sort: { createdAt: -1 } },
+  );
 }
 
 function formatProductsForWhatsapp(products = []) {
@@ -2466,20 +2772,122 @@ function getCodTemplateParams(order) {
 }
 
 const ADMIN_WHATSAPP_TEMPLATE_METADATA = {
-  new_lead: { label: "New lead welcome", parameterLabels: ["Dish name"], bodyText: "Welcome to VALOUR 👋\n\nMaking {{1}} at home can now be simple. Explore our ready-to-cook liquid spice and see how it works.", buttons: ["Explore product"] },
-  product_demo: { label: "Product demonstration", parameterLabels: ["Dish name"], bodyText: "Make {{1}} with VALOUR Velvety Butter Chicken Liquid Spice.\n\nThe cooking base handles the slow work. Add chicken and finish the dish at home.", buttons: ["Watch cooking demo", "Order online"] },
-  high_intent_followup: { label: "High-intent follow-up", parameterLabels: [], bodyText: "Still thinking about your next butter chicken?\n\nVALOUR gives you the complete cooking base, so you can get rich, balanced flavour without building the sauce from scratch.", buttons: ["Explore VALOUR"] },
-  price_delivery_followup: { label: "Price and delivery follow-up", parameterLabels: ["Product name", "Price", "Delivery estimate"], bodyText: "Here are the details you asked for:\n\nProduct: {{1}}\nPrice: {{2}}\nDelivery: {{3}}\n\nOrder online when you're ready.", buttons: ["Order online"] },
-  checkout_reminder: { label: "Checkout reminder", parameterLabels: ["Product name", "Amount"], bodyText: "You left {{1}} in checkout.\n\nYour total is {{2}}. Complete your order when you're ready.", buttons: ["Complete order"] },
-  order_confirmation: { label: "Prepaid order confirmation", parameterLabels: ["Order number", "Amount", "Items and delivery estimate", "Tracking button token"], bodyText: "Your VALOUR order {{1}} is confirmed.\n\nAmount paid: {{2}}\nOrder details: {{3}}\n\nUse the button below to track your order.", buttons: ["Track order"] },
-  cod_confirmation: { label: "Cash on Delivery confirmation", parameterLabels: ["Order number", "Items and delivery estimate", "Amount", "Payment button token", "Tracking button token"], bodyText: "Your VALOUR order {{1}} is confirmed for Cash on Delivery.\n\nOrder details: {{2}}\nAmount due: {{3}}\n\nPay online now or track your order using the buttons below.", buttons: ["Pay online", "Track order"] },
-  cod_prepaid_confirmation: { label: "COD converted to prepaid", parameterLabels: ["Order number", "Amount paid", "Tracking button token"], bodyText: "Your payment for VALOUR order {{1}} was successful.\n\nAmount paid: {{2}}\nPayment method: Online payment\n\nYour order has been updated from Cash on Delivery to Prepaid. No payment will be collected at delivery.\n\nUse the button below to track your order.", buttons: ["Track order"] },
-  order_status_update: { label: "Order status update", parameterLabels: ["Order number", "Shipping status", "Payment method", "Payment status", "Expected delivery", "Tracking button token"], bodyText: "VALOUR order {{1}} update\n\nShipping status: {{2}}\nPayment method: {{3}}\nPayment status: {{4}}\nExpected delivery: {{5}}\n\nUse the button below to track your order.", buttons: ["Track order"] },
-  delivered_ready_to_cook: { label: "Delivered and ready to cook", parameterLabels: ["Order number"], bodyText: "Your VALOUR order {{1}} has been delivered 🎉\n\nYour Velvety Butter Chicken Liquid Spice is ready when you are. Use the button below to start cooking.", buttons: ["Start cooking"] },
-  cooking_reminder: { label: "Cooking reminder", parameterLabels: ["Dish name"], bodyText: "Ready to cook {{1}}?\n\nYour VALOUR cooking guide is waiting. Open WhatsApp and choose Cooking Video whenever you're ready.", buttons: ["Watch cooking video"] },
-  post_cook_feedback: { label: "Post-cook feedback", parameterLabels: [], bodyText: "How did your VALOUR meal turn out?\n\nChoose an option below to share your experience.", buttons: ["Loved it ❤️", "Could be better"] },
-  review_request: { label: "Review request", parameterLabels: [], bodyText: "Enjoyed your VALOUR meal?\n\nWe'd love to hear from you. Use the button below to rate VALOUR.", buttons: ["Rate VALOUR", "Not now"] },
-  reorder_reminder: { label: "Reorder reminder", parameterLabels: ["Product name"], bodyText: "Ready for another {{1}} night?\n\nReorder VALOUR Velvety Butter Chicken Liquid Spice and make dinner easy again.", buttons: ["Reorder"] },
+  new_lead: {
+    label: "New lead welcome",
+    parameterLabels: ["Dish name"],
+    bodyText:
+      "Welcome to VALOUR 👋\n\nMaking {{1}} at home can now be simple. Explore our ready-to-cook liquid spice and see how it works.",
+    buttons: ["Explore product"],
+  },
+  product_demo: {
+    label: "Product demonstration",
+    parameterLabels: ["Dish name"],
+    bodyText:
+      "Make {{1}} with VALOUR Velvety Butter Chicken Liquid Spice.\n\nThe cooking base handles the slow work. Add chicken and finish the dish at home.",
+    buttons: ["Watch cooking demo", "Order online"],
+  },
+  high_intent_followup: {
+    label: "High-intent follow-up",
+    parameterLabels: [],
+    bodyText:
+      "Still thinking about your next butter chicken?\n\nVALOUR gives you the complete cooking base, so you can get rich, balanced flavour without building the sauce from scratch.",
+    buttons: ["Explore VALOUR"],
+  },
+  price_delivery_followup: {
+    label: "Price and delivery follow-up",
+    parameterLabels: ["Product name", "Price", "Delivery estimate"],
+    bodyText:
+      "Here are the details you asked for:\n\nProduct: {{1}}\nPrice: {{2}}\nDelivery: {{3}}\n\nOrder online when you're ready.",
+    buttons: ["Order online"],
+  },
+  checkout_reminder: {
+    label: "Checkout reminder",
+    parameterLabels: ["Product name", "Amount"],
+    bodyText:
+      "You left {{1}} in checkout.\n\nYour total is {{2}}. Complete your order when you're ready.",
+    buttons: ["Complete order"],
+  },
+  order_confirmation: {
+    label: "Prepaid order confirmation",
+    parameterLabels: [
+      "Order number",
+      "Amount",
+      "Items and delivery estimate",
+      "Tracking button token",
+    ],
+    bodyText:
+      "Your VALOUR order {{1}} is confirmed.\n\nAmount paid: {{2}}\nOrder details: {{3}}\n\nUse the button below to track your order.",
+    buttons: ["Track order"],
+  },
+  cod_confirmation: {
+    label: "Cash on Delivery confirmation",
+    parameterLabels: [
+      "Order number",
+      "Items and delivery estimate",
+      "Amount",
+      "Payment button token",
+      "Tracking button token",
+    ],
+    bodyText:
+      "Your VALOUR order {{1}} is confirmed for Cash on Delivery.\n\nOrder details: {{2}}\nAmount due: {{3}}\n\nPay online now or track your order using the buttons below.",
+    buttons: ["Pay online", "Track order"],
+  },
+  cod_prepaid_confirmation: {
+    label: "COD converted to prepaid",
+    parameterLabels: ["Order number", "Amount paid", "Tracking button token"],
+    bodyText:
+      "Your payment for VALOUR order {{1}} was successful.\n\nAmount paid: {{2}}\nPayment method: Online payment\n\nYour order has been updated from Cash on Delivery to Prepaid. No payment will be collected at delivery.\n\nUse the button below to track your order.",
+    buttons: ["Track order"],
+  },
+  order_status_update: {
+    label: "Order status update",
+    parameterLabels: [
+      "Order number",
+      "Shipping status",
+      "Payment method",
+      "Payment status",
+      "Expected delivery",
+      "Tracking button token",
+    ],
+    bodyText:
+      "VALOUR order {{1}} update\n\nShipping status: {{2}}\nPayment method: {{3}}\nPayment status: {{4}}\nExpected delivery: {{5}}\n\nUse the button below to track your order.",
+    buttons: ["Track order"],
+  },
+  delivered_ready_to_cook: {
+    label: "Delivered and ready to cook",
+    parameterLabels: ["Order number"],
+    bodyText:
+      "Your VALOUR order {{1}} has been delivered 🎉\n\nYour Velvety Butter Chicken Liquid Spice is ready when you are. Use the button below to start cooking.",
+    buttons: ["Start cooking"],
+  },
+  cooking_reminder: {
+    label: "Cooking reminder",
+    parameterLabels: ["Dish name"],
+    bodyText:
+      "Ready to cook {{1}}?\n\nYour VALOUR cooking guide is waiting. Open WhatsApp and choose Cooking Video whenever you're ready.",
+    buttons: ["Watch cooking video"],
+  },
+  post_cook_feedback: {
+    label: "Post-cook feedback",
+    parameterLabels: [],
+    bodyText:
+      "How did your VALOUR meal turn out?\n\nChoose an option below to share your experience.",
+    buttons: ["Loved it ❤️", "Could be better"],
+  },
+  review_request: {
+    label: "Review request",
+    parameterLabels: [],
+    bodyText:
+      "Enjoyed your VALOUR meal?\n\nWe'd love to hear from you. Use the button below to rate VALOUR.",
+    buttons: ["Rate VALOUR", "Not now"],
+  },
+  reorder_reminder: {
+    label: "Reorder reminder",
+    parameterLabels: ["Product name"],
+    bodyText:
+      "Ready for another {{1}} night?\n\nReorder VALOUR Velvety Butter Chicken Liquid Spice and make dinner easy again.",
+    buttons: ["Reorder"],
+  },
 };
 
 function getWhatsappTemplateTextOverrides() {
@@ -2497,24 +2905,32 @@ function getAdminWhatsappTemplateCatalog() {
   return Object.entries(ADMIN_WHATSAPP_TEMPLATE_METADATA).map(
     ([key, metadata]) => {
       const definition = WHATSAPP_AUTOMATION[key];
-      const templateName = process.env[definition.env] || definition.defaultTemplate || "";
+      const templateName =
+        process.env[definition.env] || definition.defaultTemplate || "";
       const languageCode = automationLanguage(key);
       const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
-      const configuredOverride = textOverrides[templateName] || textOverrides[key] || {};
-      const textOverride = typeof configuredOverride === "string"
-        ? { bodyText: configuredOverride }
-        : configuredOverride;
+      const configuredOverride =
+        textOverrides[templateName] || textOverrides[key] || {};
+      const textOverride =
+        typeof configuredOverride === "string"
+          ? { bodyText: configuredOverride }
+          : configuredOverride;
       let templateId = "";
       let configurationError = "";
       try {
         if (!templateName) throw new Error("Template name is not configured");
         if (!contract) throw new Error("Template contract is not configured");
         if (contract.parameterCount !== metadata.parameterLabels.length) {
-          throw new Error("Template parameter labels do not match its contract");
+          throw new Error(
+            "Template parameter labels do not match its contract",
+          );
         }
         validateWhatsappTemplatePayload(
           templateName,
-          Array.from({ length: contract.parameterCount }, () => "Configuration check"),
+          Array.from(
+            { length: contract.parameterCount },
+            () => "Configuration check",
+          ),
         );
         templateId = getGupshupTemplateId(templateName, languageCode);
       } catch (error) {
@@ -2526,10 +2942,13 @@ function getAdminWhatsappTemplateCatalog() {
         templateName,
         templateId,
         languageCode,
-        parameterCount: contract?.parameterCount ?? metadata.parameterLabels.length,
+        parameterCount:
+          contract?.parameterCount ?? metadata.parameterLabels.length,
         parameterLabels: metadata.parameterLabels,
         bodyText: String(textOverride.bodyText || metadata.bodyText || ""),
-        footerText: String(textOverride.footerText || metadata.footerText || ""),
+        footerText: String(
+          textOverride.footerText || metadata.footerText || "",
+        ),
         buttons: Array.isArray(textOverride.buttons)
           ? textOverride.buttons.map(String)
           : metadata.buttons || [],
@@ -2670,7 +3089,11 @@ function getDeliveryTimingFromRules(rules = {}) {
   }
 
   const legacyHours = Number(rules.deliveryWithinHours);
-  if (Number.isSafeInteger(legacyHours) && legacyHours >= 1 && legacyHours <= 24)
+  if (
+    Number.isSafeInteger(legacyHours) &&
+    legacyHours >= 1 &&
+    legacyHours <= 24
+  )
     return { value: legacyHours, unit: "hours" };
 
   return null;
@@ -2682,10 +3105,9 @@ function formatDeliveryTiming(value, unit) {
 }
 
 function parseIstDateTimeLocal(value) {
-  const match =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(
-      String(value || "").trim(),
-    );
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(
+    String(value || "").trim(),
+  );
   if (!match) return null;
   const [, year, month, day, hour, minute] = match.map(Number);
   const utcMilliseconds =
@@ -2942,7 +3364,12 @@ function readReviewToken(token = "", now = Date.now()) {
   }
 }
 
-async function sendActionButtons(phone, text, options, msgid = "valour_actions") {
+async function sendActionButtons(
+  phone,
+  text,
+  options,
+  msgid = "valour_actions",
+) {
   return sendQuickReplyMessage(phone, {
     type: "quick_reply",
     msgid,
@@ -3254,8 +3681,7 @@ async function schedulePaidOrderAutomation(order) {
     },
     "payment_completed",
   );
-  const isCodPrepaidConversion =
-    order.paymentConversion === "cod_to_prepaid";
+  const isCodPrepaidConversion = order.paymentConversion === "cod_to_prepaid";
   return scheduleWhatsappJob({
     event: isCodPrepaidConversion
       ? "cod_prepaid_confirmation"
@@ -3315,7 +3741,11 @@ Example: VALOUR-123ABC
 You can find it on the order success page after payment.
 
 If you cannot find the order number, tap Help.`,
-    [{ type: "text", title: "Help", postbackText: "HELP" }, { type: "text", title: "Main menu", postbackText: "MENU" }], "valour_tracking_help",
+    [
+      { type: "text", title: "Help", postbackText: "HELP" },
+      { type: "text", title: "Main menu", postbackText: "MENU" },
+    ],
+    "valour_tracking_help",
   );
 }
 
@@ -3336,7 +3766,11 @@ Please send these two details in ONE message:
 2. Delivery pincode
 
 Example: 9876543210, 799003`,
-    [{ type: "text", title: "Need help", postbackText: "NEED_HELP" }, { type: "text", title: "Main menu", postbackText: "MENU" }], "valour_tracking_recovery",
+    [
+      { type: "text", title: "Need help", postbackText: "NEED_HELP" },
+      { type: "text", title: "Main menu", postbackText: "MENU" },
+    ],
+    "valour_tracking_recovery",
   );
 }
 
@@ -3362,7 +3796,10 @@ async function handleTrackingLookupDetails({ session, text, phone }) {
   }
 
   if (details.phone !== normalizeIndianPhone(phone)) {
-    await sendMainMenuButton(phone, "For privacy, please message us from the phone used for your order, or select Customer Care from the main menu.");
+    await sendMainMenuButton(
+      phone,
+      "For privacy, please message us from the phone used for your order, or select Customer Care from the main menu.",
+    );
     return;
   }
   const { orders } = collections();
@@ -3419,16 +3856,43 @@ async function startSupportFlow({ session, phone }) {
     footer: "Choose a help topic below.",
     msgid: "valour_customer_care_menu",
     globalButtons: [{ type: "text", title: "Choose help topic" }],
-    items: [{
-      title: "Customer Care",
-      options: [
-        { type: "text", title: "Order status", description: "Delivery or tracking help", postbackText: "SUPPORT_ORDER_STATUS" },
-        { type: "text", title: "Return or refund", description: "Help with a return or refund", postbackText: "SUPPORT_RETURN_REFUND" },
-        { type: "text", title: "Damaged or missing", description: "Leaking, damaged, or missing item", postbackText: "SUPPORT_DAMAGED_ITEM" },
-        { type: "text", title: "Product or cooking", description: "Help using your VALOUR product", postbackText: "SUPPORT_PRODUCT_HELP" },
-        { type: "text", title: "Speak to Customer Care", description: "Describe your issue to our team", postbackText: "SUPPORT_CUSTOMER_CARE" },
-      ],
-    }],
+    items: [
+      {
+        title: "Customer Care",
+        options: [
+          {
+            type: "text",
+            title: "Order status",
+            description: "Delivery or tracking help",
+            postbackText: "SUPPORT_ORDER_STATUS",
+          },
+          {
+            type: "text",
+            title: "Return or refund",
+            description: "Help with a return or refund",
+            postbackText: "SUPPORT_RETURN_REFUND",
+          },
+          {
+            type: "text",
+            title: "Damaged or missing",
+            description: "Leaking, damaged, or missing item",
+            postbackText: "SUPPORT_DAMAGED_ITEM",
+          },
+          {
+            type: "text",
+            title: "Product or cooking",
+            description: "Help using your VALOUR product",
+            postbackText: "SUPPORT_PRODUCT_HELP",
+          },
+          {
+            type: "text",
+            title: "Speak to Customer Care",
+            description: "Describe your issue to our team",
+            postbackText: "SUPPORT_CUSTOMER_CARE",
+          },
+        ],
+      },
+    ],
   });
 }
 
@@ -3533,7 +3997,12 @@ function getCustomerCareAlertRecipients() {
   return [...DEFAULT_CUSTOMER_CARE_PHONES];
 }
 
-function buildCustomerCareAlertParams({ caseId, customerName, phone, details }) {
+function buildCustomerCareAlertParams({
+  caseId,
+  customerName,
+  phone,
+  details,
+}) {
   const recipient = normalizeWhatsappRecipient(phone);
   const cleanTemplateParameter = (value, maxLength) =>
     String(value || "")
@@ -3550,7 +4019,9 @@ function buildCustomerCareAlertParams({ caseId, customerName, phone, details }) 
     `Waiting: PENDING ${reference}`,
     `Reopen: REOPEN ${reference}`,
     `Check: STATUS ${reference}`,
-  ].join(" | ").slice(0, 900);
+  ]
+    .join(" | ")
+    .slice(0, 900);
   return [
     reference,
     cleanTemplateParameter(customerName || "WhatsApp customer", 200),
@@ -3566,7 +4037,8 @@ function parseCustomerCareAdminCommand(text = "") {
     .match(/^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\s+(VLR-[A-Z0-9-]+)$/i);
   if (!match) return null;
   return {
-    action: match[1].toUpperCase() === "RESOLVED" ? "DONE" : match[1].toUpperCase(),
+    action:
+      match[1].toUpperCase() === "RESOLVED" ? "DONE" : match[1].toUpperCase(),
     caseId: match[2].toUpperCase(),
   };
 }
@@ -3575,16 +4047,22 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
   const sender = normalizeWhatsappRecipient(phone);
   if (!getCustomerCareAlertRecipients().includes(sender)) return false;
   const command = parseCustomerCareAdminCommand(text);
-  const looksLikeCommand = /^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\s+VLR-/i.test(
-    String(text || "").trim(),
-  );
+  const looksLikeCommand =
+    /^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\s+VLR-/i.test(
+      String(text || "").trim(),
+    );
   if (!command) {
     if (!looksLikeCommand) return false;
-    await sendMessage(sender, "Use the command followed by its case reference, for example: DONE VLR-ABC123");
+    await sendMessage(
+      sender,
+      "Use the command followed by its case reference, for example: DONE VLR-ABC123",
+    );
     return true;
   }
 
-  const supportCase = await collections().supportCases.findOne({ case_id: command.caseId });
+  const supportCase = await collections().supportCases.findOne({
+    case_id: command.caseId,
+  });
   if (!supportCase) {
     await sendMessage(sender, `Case ${command.caseId} was not found.`);
     return true;
@@ -3597,7 +4075,9 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
     return true;
   }
 
-  const nextStatus = { DONE: "resolved", PENDING: "pending", REOPEN: "open" }[command.action];
+  const nextStatus = { DONE: "resolved", PENDING: "pending", REOPEN: "open" }[
+    command.action
+  ];
   const now = new Date();
   await collections().supportCases.updateOne(
     { _id: supportCase._id },
@@ -3626,7 +4106,10 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
     status: nextStatus,
     admin: maskWhatsappPhone(sender),
   });
-  await sendMessage(sender, `Case ${command.caseId} has been marked as ${nextStatus}.`);
+  await sendMessage(
+    sender,
+    `Case ${command.caseId} has been marked as ${nextStatus}.`,
+  );
   return true;
 }
 
@@ -3652,7 +4135,10 @@ function formatAdminOrderDate(value) {
 function formatAdminWhatsappOrder(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
   const customerName =
-    order.customerName || order.name || order.deliveryDetails?.name || "Not recorded";
+    order.customerName ||
+    order.name ||
+    order.deliveryDetails?.name ||
+    "Not recorded";
   const customerPhone = normalizeWhatsappRecipient(
     order.phone || order.whatsappPhone || order.deliveryDetails?.phone,
   );
@@ -3681,8 +4167,8 @@ Address: ${addressParts.join(", ") || "Not recorded"}`;
 async function sendRecentOrdersToWhatsappAdmin(phone) {
   if (!isWhatsappOrderAdmin(phone)) return;
   const recipient = normalizeWhatsappRecipient(phone);
-  const recentOrders = await collections().orders
-    .find({})
+  const recentOrders = await collections()
+    .orders.find({})
     .sort({ createdAt: -1, created_at: -1, _id: -1 })
     .limit(10)
     .toArray();
@@ -3704,26 +4190,36 @@ async function sendRecentOrdersToWhatsappAdmin(phone) {
     footer: "Available only to authorised VALOUR admins.",
     msgid: "valour_admin_recent_orders",
     globalButtons: [{ type: "text", title: "View recent orders" }],
-    items: [{
-      title: "Orders",
-      options: recentOrders.map((order) => {
-        const orderNumber = order.orderNumber || formatOrderNumber(order._id);
-        const status = String(order.shippingStatus || "Order confirmed");
-        const total = Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN");
-        return {
-          type: "text",
-          title: orderNumber.slice(0, 24),
-          description: `${status} · Rs. ${total}`.slice(0, 72),
-          postbackText: `ADMIN_ORDER_${String(order._id)}`,
-        };
-      }),
-    }],
+    items: [
+      {
+        title: "Orders",
+        options: recentOrders.map((order) => {
+          const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+          const status = String(order.shippingStatus || "Order confirmed");
+          const total = Math.round(
+            Number(order.totalAmount) || 0,
+          ).toLocaleString("en-IN");
+          return {
+            type: "text",
+            title: orderNumber.slice(0, 24),
+            description: `${status} · Rs. ${total}`.slice(0, 72),
+            postbackText: `ADMIN_ORDER_${String(order._id)}`,
+          };
+        }),
+      },
+    ],
   });
 }
 
 async function handleWhatsappAdminOrderLookup({ phone, text }) {
   if (!isWhatsappOrderAdmin(phone)) {
-    if (/^ADMIN_/i.test(String(text).trim())) { await sendMainMenuButton(phone, "This action is available only to VALOUR admins."); return true; }
+    if (/^ADMIN_/i.test(String(text).trim())) {
+      await sendMainMenuButton(
+        phone,
+        "This action is available only to VALOUR admins.",
+      );
+      return true;
+    }
     return false;
   }
   const value = String(text || "").trim();
@@ -3760,8 +4256,8 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
     // Older orders did not persist orderNumber; their displayed reference is
     // derived from the final six characters of the MongoDB ObjectId.
     if (!order) {
-      const recentCandidates = await collections().orders
-        .find({})
+      const recentCandidates = await collections()
+        .orders.find({})
         .sort({ createdAt: -1, created_at: -1, _id: -1 })
         .limit(200)
         .toArray();
@@ -3775,7 +4271,13 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
     await sendActionButtons(
       phone,
       "That order could not be found. It may have been removed.",
-      [{ type: "text", title: "Recent orders", postbackText: "ADMIN_RECENT_ORDERS" }],
+      [
+        {
+          type: "text",
+          title: "Recent orders",
+          postbackText: "ADMIN_RECENT_ORDERS",
+        },
+      ],
       "valour_admin_order_missing",
     );
     return true;
@@ -3789,7 +4291,13 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
   await sendActionButtons(
     phone,
     formatAdminWhatsappOrder(order),
-    [{ type: "text", title: "Recent orders", postbackText: "ADMIN_RECENT_ORDERS" }],
+    [
+      {
+        type: "text",
+        title: "Recent orders",
+        postbackText: "ADMIN_RECENT_ORDERS",
+      },
+    ],
     "valour_admin_order_details",
   );
   return true;
@@ -3798,7 +4306,10 @@ async function handleWhatsappAdminOrderLookup({ phone, text }) {
 function buildAdminNewOrderMessage(order) {
   const orderNumber = order.orderNumber || formatOrderNumber(order._id);
   const customerName =
-    order.customerName || order.name || order.deliveryDetails?.name || "Not recorded";
+    order.customerName ||
+    order.name ||
+    order.deliveryDetails?.name ||
+    "Not recorded";
   const customerPhone = normalizeWhatsappRecipient(
     order.phone || order.whatsappPhone || order.deliveryDetails?.phone,
   );
@@ -3808,7 +4319,9 @@ function buildAdminNewOrderMessage(order) {
     order.city || order.deliveryDetails?.city,
     order.state || order.deliveryDetails?.state,
     order.pincode || order.deliveryDetails?.pincode,
-  ].filter(Boolean).join(", ");
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return `New VALOUR order received
 
@@ -3840,13 +4353,24 @@ function buildAdminNewOrderTemplateParams(order) {
     order.city || order.deliveryDetails?.city,
     order.state || order.deliveryDetails?.state,
     order.pincode || order.deliveryDetails?.pincode,
-  ].filter(Boolean).join(", ");
+  ]
+    .filter(Boolean)
+    .join(", ");
   return [
     clean(orderNumber, 100),
-    clean(order.customerName || order.name || order.deliveryDetails?.name || "WhatsApp customer", 200),
+    clean(
+      order.customerName ||
+        order.name ||
+        order.deliveryDetails?.name ||
+        "WhatsApp customer",
+      200,
+    ),
     clean(customerPhone ? `+${customerPhone}` : "Not recorded", 30),
     clean(formatProductsForWhatsapp(order.products || []), 500),
-    clean(`Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} · ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`, 200),
+    clean(
+      `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} · ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`,
+      200,
+    ),
     clean(address || "Not recorded", 500),
   ];
 }
@@ -3912,11 +4436,13 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
         : await sendActionButtons(
             recipient,
             buildAdminNewOrderMessage(order),
-            [{
-              type: "text",
-              title: "Recent orders",
-              postbackText: "ADMIN_RECENT_ORDERS",
-            }],
+            [
+              {
+                type: "text",
+                title: "Recent orders",
+                postbackText: "ADMIN_RECENT_ORDERS",
+              },
+            ],
             "valour_admin_new_order",
           );
       const providerMessageId = getProviderMessageId(providerResult);
@@ -3944,13 +4470,18 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
         { _id: order._id },
         {
           $set: {
-            [`adminOrderAlerts.${recipient}.status`]: (Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? "delivery_unknown" : "failed",
+            [`adminOrderAlerts.${recipient}.status`]:
+              Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)
+                ? "delivery_unknown"
+                : "failed",
             [`adminOrderAlerts.${recipient}.failedAt`]: new Date(),
             [`adminOrderAlerts.${recipient}.error`]: String(
               error.response?.data?.message || error.message,
             ).slice(0, 500),
           },
-          ...(!(Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? { $unset: { [claimPath]: "" } } : {}),
+          ...(!(Boolean(acceptedProviderId) || isUncertainWhatsappSend(error))
+            ? { $unset: { [claimPath]: "" } }
+            : {}),
         },
       );
       results.push({ recipient, sent: false, error: error.message });
@@ -4007,7 +4538,8 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
   const templateName =
     process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_NAME ||
     DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME;
-  const language = process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_LANGUAGE || "en_US";
+  const language =
+    process.env.WHATSAPP_CUSTOMER_CARE_TEMPLATE_LANGUAGE || "en_US";
   const parameters = buildCustomerCareAlertParams({
     caseId,
     customerName: user?.profileName || user?.customerName || user?.name,
@@ -4028,10 +4560,30 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
 
   for (const recipient of recipients) {
     const root = `adminAlerts.${recipient}`;
-    const claim = await collections().supportCases.findOneAndUpdate({ case_id: caseId, $or: [
-      { [`${root}.status`]: { $exists: false } }, { [`${root}.status`]: "failed" },
-    ] }, { $set: { [`${root}.status`]: "processing", [`${root}.claimedAt`]: new Date() } }, { returnDocument: "after" });
-    if (!claim) { results.push({ recipient, sent: false, reason: "already_claimed_or_missing_case" }); continue; }
+    const claim = await collections().supportCases.findOneAndUpdate(
+      {
+        case_id: caseId,
+        $or: [
+          { [`${root}.status`]: { $exists: false } },
+          { [`${root}.status`]: "failed" },
+        ],
+      },
+      {
+        $set: {
+          [`${root}.status`]: "processing",
+          [`${root}.claimedAt`]: new Date(),
+        },
+      },
+      { returnDocument: "after" },
+    );
+    if (!claim) {
+      results.push({
+        recipient,
+        sent: false,
+        reason: "already_claimed_or_missing_case",
+      });
+      continue;
+    }
     let acceptedProviderId = null;
     try {
       const result = await sendTemplateMessage(
@@ -4043,14 +4595,24 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
       const providerMessageId = getProviderMessageId(result);
       acceptedProviderId = providerMessageId;
       const providerStatus = String(result?.status || "").toLowerCase();
-      if (!providerMessageId || ["error", "failed", "rejected"].includes(providerStatus)) {
+      if (
+        !providerMessageId ||
+        ["error", "failed", "rejected"].includes(providerStatus)
+      ) {
         throw new Error(
           `Gupshup did not accept the Customer Care alert: ${JSON.stringify(result).slice(0, 700)}`,
         );
       }
-      await collections().supportCases.updateOne({ case_id: caseId }, { $set: {
-        [`${root}.status`]: "submitted", [`${root}.providerMessageId`]: providerMessageId, [`${root}.submittedAt`]: new Date(),
-      } });
+      await collections().supportCases.updateOne(
+        { case_id: caseId },
+        {
+          $set: {
+            [`${root}.status`]: "submitted",
+            [`${root}.providerMessageId`]: providerMessageId,
+            [`${root}.submittedAt`]: new Date(),
+          },
+        },
+      );
       await reconcileWhatsappStatus(providerMessageId);
       results.push({ recipient, sent: true, providerMessageId });
       console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_SENT]", {
@@ -4061,10 +4623,23 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
         providerStatus: providerStatus || "submitted",
       });
     } catch (error) {
-      await collections().supportCases.updateOne({ case_id: caseId }, { $set: {
-        [`${root}.status`]: (Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? "delivery_unknown" : "failed", [`${root}.errorCode`]: error.code || "provider_rejected",
-      } });
-      results.push({ recipient, sent: false, error: String(error.message).slice(0, 300) });
+      await collections().supportCases.updateOne(
+        { case_id: caseId },
+        {
+          $set: {
+            [`${root}.status`]:
+              Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)
+                ? "delivery_unknown"
+                : "failed",
+            [`${root}.errorCode`]: error.code || "provider_rejected",
+          },
+        },
+      );
+      results.push({
+        recipient,
+        sent: false,
+        error: String(error.message).slice(0, 300),
+      });
       console.error("[WHATSAPP][CUSTOMER_CARE_ALERT_FAILED]", {
         caseId,
         recipient: maskWhatsappPhone(recipient),
@@ -4590,7 +5165,9 @@ function getWhatsappProductImageUrl() {
 }
 
 function getProductSectionUrl() {
-  const baseUrl = String(process.env.PUBLIC_SITE_URL || "https://liquidspice.in")
+  const baseUrl = String(
+    process.env.PUBLIC_SITE_URL || "https://liquidspice.in",
+  )
     .trim()
     .replace(/\/$/, "");
   return `${baseUrl}/#velvety-butter-chicken`;
@@ -4619,7 +5196,7 @@ ${description}`;
       await sendImageMessage(phone, imageUrl, content);
     } catch (error) {
       if (isUncertainWhatsappSend(error)) throw error;
-    console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
+      console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
         recipient: maskWhatsappPhone(phone),
         mediaType: "image",
         error: error.response?.data || error.message,
@@ -4705,7 +5282,11 @@ async function handleProductDetails({ session, text, phone, userId }) {
     return;
   }
 
-  if (lower === "product_start_cooking" || lower === "1" || lower.includes("start")) {
+  if (
+    lower === "product_start_cooking" ||
+    lower === "1" ||
+    lower.includes("start")
+  ) {
     await updateSession(session._id, { current_state: "product_selection" });
     await handleProductSelection({
       session: { ...session, current_state: "product_selection" },
@@ -4736,7 +5317,9 @@ function parseProductSelection(text = "") {
 function getCookingIntroVideoUrl(product) {
   if (!product) return "";
   const configuredUrl = String(process.env[product.videoEnvKey] || "").trim();
-  const publicSiteUrl = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
+  const publicSiteUrl = String(process.env.PUBLIC_SITE_URL || "")
+    .trim()
+    .replace(/\/$/, "");
   const compatibleMp4Url = publicSiteUrl
     ? `${publicSiteUrl}/whatsapp/cooking-tutorial.mp4`
     : "";
@@ -4749,7 +5332,11 @@ function getCookingIntroVideoUrl(product) {
   return configuredUrl || compatibleMp4Url;
 }
 
-async function sendCookingIntro(phone, product, { includeCaption = true } = {}) {
+async function sendCookingIntro(
+  phone,
+  product,
+  { includeCaption = true } = {},
+) {
   const videoUrl = getCookingIntroVideoUrl(product);
 
   if (!videoUrl) {
@@ -4873,7 +5460,9 @@ async function sendQuickCookingDemo(phone) {
 }
 
 async function sendLidOpeningHelp(phone) {
-  const videoUrl = String(process.env.WHATSAPP_LID_OPENING_VIDEO_URL || "").trim();
+  const videoUrl = String(
+    process.env.WHATSAPP_LID_OPENING_VIDEO_URL || "",
+  ).trim();
   const caption = `Lid Sealed Tight? Here’s the Easy Way to Open It.
 
 High-temperature vacuum sealing can make the lid feel unusually tight. If it’s difficult to open, gently tap around the edge of the lid with a wooden spatula to release the vacuum—then twist it open easily.
@@ -4922,10 +5511,30 @@ async function beginTutorialCooking({
   product,
   suppressVideoCaption = false,
 }) {
-  await cancelWhatsappJobs({ phone: normalizeWhatsappRecipient(phone), trigger: { $in: ["new_lead", "product_demo", "high_intent_followup", "price_delivery_followup", "cooking_reminder"] } }, "customer_started_cooking");
-  const tutorialRunId = session.current_state === "guided_cooking" && session.tutorial_run_id
-    ? session.tutorial_run_id : crypto.randomUUID();
-  if (tutorialRunId !== session.tutorial_run_id) await cancelWhatsappJobs({ sessionId: session._id, trigger: "post_cook_feedback" }, "new_cooking_journey");
+  await cancelWhatsappJobs(
+    {
+      phone: normalizeWhatsappRecipient(phone),
+      trigger: {
+        $in: [
+          "new_lead",
+          "product_demo",
+          "high_intent_followup",
+          "price_delivery_followup",
+          "cooking_reminder",
+        ],
+      },
+    },
+    "customer_started_cooking",
+  );
+  const tutorialRunId =
+    session.current_state === "guided_cooking" && session.tutorial_run_id
+      ? session.tutorial_run_id
+      : crypto.randomUUID();
+  if (tutorialRunId !== session.tutorial_run_id)
+    await cancelWhatsappJobs(
+      { sessionId: session._id, trigger: "post_cook_feedback" },
+      "new_cooking_journey",
+    );
   const videoResult = await sendCookingIntro(phone, product, {
     includeCaption: !suppressVideoCaption,
   });
@@ -4994,7 +5603,9 @@ async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
     );
   }
 
-  const configuredDelay = Number(process.env.WHATSAPP_TUTORIAL_FOLLOWUP_DELAY_MS || 12000);
+  const configuredDelay = Number(
+    process.env.WHATSAPP_TUTORIAL_FOLLOWUP_DELAY_MS || 12000,
+  );
   const followupDelayMs = Math.min(20_000, Math.max(2_000, configuredDelay));
   console.log("[WHATSAPP][COOKING_FOLLOWUP_WAIT]", {
     recipient: maskWhatsappPhone(phone),
@@ -5348,10 +5959,24 @@ async function handleQuantity({ session, text, phone, userId }) {
 }
 
 async function completeCooking({ session, phone, userId }) {
-  session = { ...session, selected_product: session.selected_product || "velvety_butter", selected_recipe: session.selected_recipe || PRODUCTS.velvety_butter.recipeId };
+  session = {
+    ...session,
+    selected_product: session.selected_product || "velvety_butter",
+    selected_recipe:
+      session.selected_recipe || PRODUCTS.velvety_butter.recipeId,
+  };
   const { cookingOutcomes } = collections();
-  const completion = await collections().sessions.updateOne({ _id: session._id, tutorial_completed_at: null }, { $set: { tutorial_completed_at: new Date() } });
-  if (!completion.modifiedCount) { await sendMainMenuButton(phone, "Thanks, your cooking completion is already recorded."); return; }
+  const completion = await collections().sessions.updateOne(
+    { _id: session._id, tutorial_completed_at: null },
+    { $set: { tutorial_completed_at: new Date() } },
+  );
+  if (!completion.modifiedCount) {
+    await sendMainMenuButton(
+      phone,
+      "Thanks, your cooking completion is already recorded.",
+    );
+    return;
+  }
   const completedSegment = `${session.selected_product || "unknown_product"}_completed_cooking`;
 
   await cookingOutcomes.insertOne({
@@ -5518,7 +6143,13 @@ async function recordPostCookFeedback({ session, userId, feedbackType }) {
             : "cook_feedback_received",
         updated_at: new Date(),
       },
-      $setOnInsert: { user_id: userId, session_id: session._id, product_id: session.selected_product, created_at: new Date(), outcome: "feedback_without_done" },
+      $setOnInsert: {
+        user_id: userId,
+        session_id: session._id,
+        product_id: session.selected_product,
+        created_at: new Date(),
+        outcome: "feedback_without_done",
+      },
     },
     { upsert: true },
   );
@@ -6091,8 +6722,15 @@ function resolveMainMenuPostback(...values) {
       return;
     }
     if (typeof value === "object") {
-      ["id", "title", "text", "body", "postbackText", "description", "payload"]
-        .forEach((key) => collect(value[key], depth + 1));
+      [
+        "id",
+        "title",
+        "text",
+        "body",
+        "postbackText",
+        "description",
+        "payload",
+      ].forEach((key) => collect(value[key], depth + 1));
     }
   };
   values.forEach((value) => collect(value));
@@ -6110,14 +6748,16 @@ function resolveMainMenuPostback(...values) {
 }
 
 function getMainMenuAction(text = "") {
-  return {
-    menu_cook: "cook",
-    menu_explore: "explore",
-    menu_buy: "order_link",
-    menu_order: "order_link",
-    menu_track: "track",
-    menu_support: "support",
-  }[normalizeText(text)] || null;
+  return (
+    {
+      menu_cook: "cook",
+      menu_explore: "explore",
+      menu_buy: "order_link",
+      menu_order: "order_link",
+      menu_track: "track",
+      menu_support: "support",
+    }[normalizeText(text)] || null
+  );
 }
 
 async function handleMainMenuAction({ action, session, user, phone }) {
@@ -6184,7 +6824,15 @@ async function handleMainMenuAction({ action, session, user, phone }) {
 async function processIncomingMessage(message) {
   const phone = normalizeWhatsappRecipient(message.from);
   const parsed = inbound.readInbound(message);
-  const text = ({ OPEN_LID: "how to open the lid", RATE: "rate valour", NOT_NOW: "not now", TOMORROW: "tomorrow", WEEKEND: "this weekend", LATER: "remind me later" })[parsed.action] || parsed.text;
+  const text =
+    {
+      OPEN_LID: "how to open the lid",
+      RATE: "rate valour",
+      NOT_NOW: "not now",
+      TOMORROW: "tomorrow",
+      WEEKEND: "this weekend",
+      LATER: "remind me later",
+    }[parsed.action] || parsed.text;
   const lower = normalizeText(text);
   const directOrderItems = parseOrderItems(text);
   const messageSignals = getMessageSignals(message);
@@ -6205,7 +6853,13 @@ async function processIncomingMessage(message) {
     console.log("[WHATSAPP][DUPLICATE_SKIPPED]", { messageId: message.id });
     return;
   }
-  console.log("[WHATSAPP][INBOUND]", { messageId: message.id, recipient: maskWhatsappPhone(phone), action: parsed.action || (/^ADMIN_/i.test(text) ? "admin_action" : "state_input"), state: session.current_state });
+  console.log("[WHATSAPP][INBOUND]", {
+    messageId: message.id,
+    recipient: maskWhatsappPhone(phone),
+    action:
+      parsed.action || (/^ADMIN_/i.test(text) ? "admin_action" : "state_input"),
+    state: session.current_state,
+  });
 
   if (await handleWhatsappAdminOrderLookup({ phone, text })) {
     return;
@@ -6274,43 +6928,96 @@ async function processIncomingMessage(message) {
   const selection = inbound.readInbound(message);
   // Explicit taps interrupt every state; ordinary issue text belongs to support.
   const inSupport = activeSession.current_state.startsWith("support_");
-  const supportText = !selection.explicit && (!selection.action || ["NEED_HELP", "MENU_SUPPORT"].includes(selection.action));
-  if (selection.explicit || !inSupport || (selection.action && !["NEED_HELP", "MENU_SUPPORT"].includes(selection.action))) {
+  const supportText =
+    !selection.explicit &&
+    (!selection.action ||
+      ["NEED_HELP", "MENU_SUPPORT"].includes(selection.action));
+  if (
+    selection.explicit ||
+    !inSupport ||
+    (selection.action &&
+      !["NEED_HELP", "MENU_SUPPORT"].includes(selection.action))
+  ) {
     const action = selection.action;
     if (action === "MENU") {
       await resetToIdle(session._id);
-      await cancelWhatsappJobs({ sessionId: session._id, trigger: "post_cook_feedback" }, "customer_left_cooking");
+      await cancelWhatsappJobs(
+        { sessionId: session._id, trigger: "post_cook_feedback" },
+        "customer_left_cooking",
+      );
       await sendMainMenu(phone);
       return;
     }
     if (getMainMenuAction(action || "")) {
-      await handleMainMenuAction({ action: getMainMenuAction(action), session: activeSession, user, phone });
+      await handleMainMenuAction({
+        action: getMainMenuAction(action),
+        session: activeSession,
+        user,
+        phone,
+      });
       return;
     }
-    if (action === "OPEN_LID") { await sendLidOpeningHelp(phone); return; }
-    if (/^SUPPORT_/i.test(selection.action || text) && (selection.explicit || /^SUPPORT_/i.test(text))) {
-      await handleSupportCategory({ session: activeSession, text: selection.action || text, phone }); return;
+    if (action === "OPEN_LID") {
+      await sendLidOpeningHelp(phone);
+      return;
+    }
+    if (
+      /^SUPPORT_/i.test(selection.action || text) &&
+      (selection.explicit || /^SUPPORT_/i.test(text))
+    ) {
+      await handleSupportCategory({
+        session: activeSession,
+        text: selection.action || text,
+        phone,
+      });
+      return;
     }
     if (action === "DONE") {
       if (activeSession.current_state !== "post_cook_feedback") {
-        await completeCooking({ session: activeSession, phone, userId: user._id });
-      } else await sendMessage(phone, "Thanks. We will check in shortly to hear how it turned out.");
+        await completeCooking({
+          session: activeSession,
+          phone,
+          userId: user._id,
+        });
+      } else
+        await sendMessage(
+          phone,
+          "Thanks. We will check in shortly to hear how it turned out.",
+        );
       return;
     }
     if (action === "LOVED" || action === "BETTER") {
-      await handlePostCookFeedback({ session: activeSession, text: action === "LOVED" ? "Loved it" : "Could be better", phone, userId: user._id }); return;
+      await handlePostCookFeedback({
+        session: activeSession,
+        text: action === "LOVED" ? "Loved it" : "Could be better",
+        phone,
+        userId: user._id,
+      });
+      return;
     }
     if (action === "NEED_HELP") {
-      if (activeSession.support_category?.key === "order_status" && activeSession.current_state === "support_awaiting_order_id") {
+      if (
+        activeSession.support_category?.key === "order_status" &&
+        activeSession.current_state === "support_awaiting_order_id"
+      ) {
         await startTrackingRecovery({ session: activeSession, phone });
       } else {
-        await updateSession(session._id, { current_state: "support_awaiting_details", support_category: SUPPORT_CATEGORIES["5"], support_order_id: null });
-        await sendMainMenuButton(phone, "Please describe your issue in one message so VALOUR Customer Care can help.");
+        await updateSession(session._id, {
+          current_state: "support_awaiting_details",
+          support_category: SUPPORT_CATEGORIES["5"],
+          support_order_id: null,
+        });
+        await sendMainMenuButton(
+          phone,
+          "Please describe your issue in one message so VALOUR Customer Care can help.",
+        );
       }
       return;
     }
   }
-  const earlyMainMenuAction = selection.explicit ? getMainMenuAction(selection.action || text) : null;
+  const earlyMainMenuAction = selection.explicit
+    ? getMainMenuAction(selection.action || text)
+    : null;
   if (earlyMainMenuAction) {
     await handleMainMenuAction({
       action: earlyMainMenuAction,
@@ -6321,17 +7028,26 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (supportText && activeSession.current_state === "support_select_category") {
+  if (
+    supportText &&
+    activeSession.current_state === "support_select_category"
+  ) {
     await handleSupportCategory({ session: activeSession, text, phone });
     return;
   }
 
-  if (supportText && activeSession.current_state === "support_awaiting_order_id") {
+  if (
+    supportText &&
+    activeSession.current_state === "support_awaiting_order_id"
+  ) {
     await handleSupportOrderId({ session: activeSession, text, phone });
     return;
   }
 
-  if (supportText && activeSession.current_state === "support_awaiting_details") {
+  if (
+    supportText &&
+    activeSession.current_state === "support_awaiting_details"
+  ) {
     await createSupportCase({
       session: activeSession,
       user,
@@ -6509,7 +7225,14 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (["product_selection", "awaiting_quantity", "product_exploration", "cooking_scenario"].includes(activeSession.current_state)) {
+  if (
+    [
+      "product_selection",
+      "awaiting_quantity",
+      "product_exploration",
+      "cooking_scenario",
+    ].includes(activeSession.current_state)
+  ) {
     // Migrate sessions left in the retired product-selection state directly
     // into the Velvety Butter tutorial journey.
     await startCookingFlow({ session: activeSession, phone, userId: user._id });
@@ -6760,10 +7483,24 @@ function enqueueMessage(message) {
     .catch(() => {})
     .then(() => whatsappInbox.run(message))
     .catch(async (err) => {
-      console.error("[WHATSAPP][ROUTE_ERROR]", { messageId: message.id, recipient: maskWhatsappPhone(phone), code: err.code || "handler_failed", uncertain: isUncertainWhatsappSend(err) });
+      console.error("[WHATSAPP][ROUTE_ERROR]", {
+        messageId: message.id,
+        recipient: maskWhatsappPhone(phone),
+        code: err.code || "handler_failed",
+        uncertain: isUncertainWhatsappSend(err),
+      });
       if (!isUncertainWhatsappSend(err)) {
-        try { await sendMessage(phone, "We could not complete that request. Please try again, or reply MENU to choose another option."); }
-        catch (_) { console.error("[WHATSAPP][FALLBACK_UNAVAILABLE]", { messageId: message.id, recipient: maskWhatsappPhone(phone) }); }
+        try {
+          await sendMessage(
+            phone,
+            "We could not complete that request. Please try again, or reply MENU to choose another option.",
+          );
+        } catch (_) {
+          console.error("[WHATSAPP][FALLBACK_UNAVAILABLE]", {
+            messageId: message.id,
+            recipient: maskWhatsappPhone(phone),
+          });
+        }
       }
     })
     .finally(() => {
@@ -6878,7 +7615,7 @@ app.get("/webhook/gupshup", (req, res) => {
 async function persistWhatsappWebhook(body) {
   const { messages, statuses } = inbound.parseWebhook(body);
   await whatsappInbox.persist(messages);
-  await Promise.all(statuses.map(status => recordWhatsappJobStatus(status)));
+  await Promise.all(statuses.map((status) => recordWhatsappJobStatus(status)));
   return messages;
 }
 
@@ -6893,23 +7630,37 @@ async function drainWhatsappInbox() {
 }
 
 async function receiveWhatsappWebhook(req, res) {
-  const expected = Buffer.from(process.env.WHATSAPP_WEBHOOK_TOKEN || "");
-  const received = Buffer.from(String(req.get("x-whatsapp-webhook-token") || req.query.token || ""));
-  if (!expected.length || expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
-    return res.sendStatus(401);
+  if (!mongoReady) {
+    return res.sendStatus(503);
   }
-  if (!mongoReady) return res.sendStatus(503);
+
   try {
     const messages = await persistWhatsappWebhook(req.body);
+
+    // Acknowledge Gupshup immediately.
     res.sendStatus(200);
-    for (const message of messages) void enqueueMessage(message);
+
+    // Process messages asynchronously after acknowledging the webhook.
+    for (const message of messages) {
+      void enqueueMessage(message).catch((error) => {
+        console.error("[WHATSAPP][MESSAGE_PROCESSING_FAILED]", {
+          code: error.code || "processing_error",
+          message: error.message,
+        });
+      });
+    }
   } catch (error) {
-    console.error("[WHATSAPP][WEBHOOK_PERSIST_FAILED]", { code: error.code || "database_error" });
-    res.sendStatus(503);
+    console.error("[WHATSAPP][WEBHOOK_PERSIST_FAILED]", {
+      code: error.code || "database_error",
+      message: error.message,
+    });
+
+    if (!res.headersSent) {
+      res.sendStatus(503);
+    }
   }
 }
 app.post("/webhook/gupshup", receiveWhatsappWebhook);
-app.post("/webhook", receiveWhatsappWebhook);
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -7007,9 +7758,12 @@ app.post("/api/payment/webhook", async (req, res) => {
           $set: {
             paymentStatus: "paid",
             razorpayPaymentId: payment.id,
-            metaCapturedAt: Number.isInteger(req.body.created_at) && req.body.created_at > 0 && req.body.created_at <= Math.floor(Date.now() / 1000) + 60
-              ? new Date(req.body.created_at * 1000)
-              : new Date(),
+            metaCapturedAt:
+              Number.isInteger(req.body.created_at) &&
+              req.body.created_at > 0 &&
+              req.body.created_at <= Math.floor(Date.now() / 1000) + 60
+                ? new Date(req.body.created_at * 1000)
+                : new Date(),
             paidAt: new Date(),
             updatedAt: new Date(),
           },
@@ -7020,7 +7774,9 @@ app.post("/api/payment/webhook", async (req, res) => {
       if (paidAttempt)
         await recordCouponRedemption(paidAttempt, payment.order_id);
       if (paidAttempt?.completedOrderId) {
-        const completedOrder = await orders.findOne({ _id: paidAttempt.completedOrderId });
+        const completedOrder = await orders.findOne({
+          _id: paidAttempt.completedOrderId,
+        });
         if (completedOrder) await schedulePaidOrderAutomation(completedOrder);
       } else if (paidAttempt) {
         console.log("[WHATSAPP][PAYMENT_CAPTURED_AWAITING_ORDER]", {
@@ -7500,7 +8256,8 @@ async function recordCouponRedemption(order, orderId) {
     if (
       existing?.orderId?.toString() === orderKey ||
       existing?.orderIds?.some((value) => value.toString() === orderKey)
-    ) return;
+    )
+      return;
     let recorded = false;
     if (!existing) {
       try {
@@ -7574,7 +8331,8 @@ async function recordCouponRedemption(order, orderId) {
     if (
       existing?.orderId?.toString() === orderKey ||
       existing?.orderIds?.some((value) => value.toString() === orderKey)
-    ) return;
+    )
+      return;
     const currentCount = couponUsageCount(existing);
     if (currentCount >= usageLimitPerAccount) return;
     if (!existing) {
@@ -7624,11 +8382,17 @@ async function getCouponDefinition(code) {
 
 async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
   const requestedItems = normaliseCartItems(items);
-  const { products, pricingRules, universalCoupons, hiddenCoupons } = collections();
+  const { products, pricingRules, universalCoupons, hiddenCoupons } =
+    collections();
   const enteredCode = String(couponCode || "").trim();
   const normalizedCode = enteredCode.toUpperCase();
   const now = new Date();
-  const [catalogue, storedRules, universalCouponCandidate, hiddenCouponCandidate] = await Promise.all([
+  const [
+    catalogue,
+    storedRules,
+    universalCouponCandidate,
+    hiddenCouponCandidate,
+  ] = await Promise.all([
     products
       .find({
         sku: { $in: requestedItems.map((item) => item.sku) },
@@ -7859,7 +8623,8 @@ async function processAbandonedCheckoutOtpAlerts() {
         otp_challenge_id: challenge.challengeId,
         phone: `91${phone}`,
         category: { key: "checkout_otp", label: "Checkout OTP not received" },
-        details: "Customer requested a checkout OTP but did not complete phone verification within 4 minutes.",
+        details:
+          "Customer requested a checkout OTP but did not complete phone verification within 4 minutes.",
         checkout_details: checkout,
         source: "website_checkout",
         status: "open",
@@ -8045,20 +8810,16 @@ app.post("/api/auth/otp/send", async (req, res) => {
       Date.now() - new Date(recent[0].createdAt).getTime() <
         CHECKOUT_OTP_RESEND_MS
     ) {
-      return res
-        .status(429)
-        .json({
-          ok: false,
-          error: "Please wait one minute before requesting another code",
-        });
+      return res.status(429).json({
+        ok: false,
+        error: "Please wait one minute before requesting another code",
+      });
     }
     if (recent.length >= CHECKOUT_OTP_MAX_SENDS_10_MIN) {
-      return res
-        .status(429)
-        .json({
-          ok: false,
-          error: "Too many OTP requests. Please try again after 10 minutes",
-        });
+      return res.status(429).json({
+        ok: false,
+        error: "Too many OTP requests. Please try again after 10 minutes",
+      });
     }
 
     const challengeId = crypto.randomUUID();
@@ -8131,12 +8892,10 @@ app.post("/api/auth/otp/send", async (req, res) => {
         challengeId,
         error: error.response?.data || error.message,
       });
-      return res
-        .status(502)
-        .json({
-          ok: false,
-          error: "Unable to send the verification code right now",
-        });
+      return res.status(502).json({
+        ok: false,
+        error: "Unable to send the verification code right now",
+      });
     }
 
     return res.json({
@@ -8178,12 +8937,10 @@ app.post("/api/auth/otp/verify", async (req, res) => {
         .json({ ok: false, error: "This OTP has expired. Request a new code" });
     }
     if (Number(challenge.attemptCount) >= CHECKOUT_OTP_MAX_ATTEMPTS) {
-      return res
-        .status(429)
-        .json({
-          ok: false,
-          error: "Too many incorrect attempts. Request a new code",
-        });
+      return res.status(429).json({
+        ok: false,
+        error: "Too many incorrect attempts. Request a new code",
+      });
     }
 
     const expected = Buffer.from(challenge.otpHash, "hex");
@@ -8252,7 +9009,10 @@ function escapeMongoRegex(value = "") {
 }
 
 function serializeAdminOrder(order = {}) {
-  const orderTouch = order.attribution?.latestNonDirect || order.attribution?.currentSession || {};
+  const orderTouch =
+    order.attribution?.latestNonDirect ||
+    order.attribution?.currentSession ||
+    {};
   return {
     id: String(order._id || ""),
     orderNumber:
@@ -8286,7 +9046,9 @@ function serializeAdminOrder(order = {}) {
     deliveryTimeUnit: order.deliveryTimeUnit || null,
     deliverySource: order.deliverySource || null,
     manualExpectedDeliveryAt:
-      order.deliverySource === "manual" ? order.expectedDeliveryAt || null : null,
+      order.deliverySource === "manual"
+        ? order.expectedDeliveryAt || null
+        : null,
     expectedDeliveryDate:
       order.expectedDeliveryDate || order.estimatedDelivery || "",
     deliveredAt: order.deliveredAt || null,
@@ -8355,8 +9117,8 @@ app.get("/api/admin/whatsapp/templates", async (req, res) => {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   try {
-    const recent = await collections().adminTemplateSends
-      .find({})
+    const recent = await collections()
+      .adminTemplateSends.find({})
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();
@@ -8385,7 +9147,9 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
     ? req.body.parameters.map(sanitizeWhatsappTemplateParameter)
     : null;
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(requestId)) {
-    return res.status(400).json({ ok: false, error: "Invalid send request ID" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Invalid send request ID" });
   }
   if (!phone) {
     return res.status(400).json({
@@ -8397,7 +9161,9 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
     (item) => item.key === templateKey,
   );
   if (!template) {
-    return res.status(400).json({ ok: false, error: "Unknown WhatsApp template" });
+    return res
+      .status(400)
+      .json({ ok: false, error: "Unknown WhatsApp template" });
   }
   if (!template.available) {
     return res.status(503).json({
@@ -8479,13 +9245,24 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
     return res.status(201).json({
       ok: true,
       duplicate: false,
-      send: serializeAdminTemplateSend(saved || { ...record, status: "submitted", submittedAt, providerMessageId }),
+      send: serializeAdminTemplateSend(
+        saved || {
+          ...record,
+          status: "submitted",
+          submittedAt,
+          providerMessageId,
+        },
+      ),
     });
   } catch (error) {
     const uncertain = isUncertainWhatsappSend(error);
     const status = uncertain ? "delivery_unknown" : "failed";
     const failedAt = new Date();
-    const errorMessage = String(error.response?.data?.message || error.message || "Provider submission failed").slice(0, 300);
+    const errorMessage = String(
+      error.response?.data?.message ||
+        error.message ||
+        "Provider submission failed",
+    ).slice(0, 300);
     await adminTemplateSends.updateOne(
       { requestId, status: "processing" },
       {
@@ -8732,27 +9509,50 @@ app.get(
 );
 
 function acquisitionDateRange(query = {}) {
-  const endCandidate = query.end ? new Date(`${String(query.end).slice(0, 10)}T23:59:59.999+05:30`) : new Date();
+  const endCandidate = query.end
+    ? new Date(`${String(query.end).slice(0, 10)}T23:59:59.999+05:30`)
+    : new Date();
   const end = Number.isNaN(endCandidate.getTime()) ? new Date() : endCandidate;
-  const startCandidate = query.start ? new Date(`${String(query.start).slice(0, 10)}T00:00:00.000+05:30`) : new Date(end.getTime() - 29 * 24 * 60 * 60_000);
-  const start = Number.isNaN(startCandidate.getTime()) ? new Date(end.getTime() - 29 * 24 * 60 * 60_000) : startCandidate;
-  if (start > end || end.getTime() - start.getTime() > 366 * 24 * 60 * 60_000) throw new Error("Date range must be between 1 and 366 days");
+  const startCandidate = query.start
+    ? new Date(`${String(query.start).slice(0, 10)}T00:00:00.000+05:30`)
+    : new Date(end.getTime() - 29 * 24 * 60 * 60_000);
+  const start = Number.isNaN(startCandidate.getTime())
+    ? new Date(end.getTime() - 29 * 24 * 60 * 60_000)
+    : startCandidate;
+  if (start > end || end.getTime() - start.getTime() > 366 * 24 * 60 * 60_000)
+    throw new Error("Date range must be between 1 and 366 days");
   return { start, end };
 }
 
 function cleanAcquisitionFilter(value) {
-  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9._~+{}:-]/g, "").slice(0, 256);
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._~+{}:-]/g, "")
+    .slice(0, 256);
 }
 
 async function buildAcquisitionReport(query = {}) {
   const { start, end } = acquisitionDateRange(query);
   const model = query.model === "first" ? "first" : "latest";
-  const filters = Object.fromEntries(["channel", "source", "medium", "campaign", "content"].map(key => [key, cleanAcquisitionFilter(query[key])]));
-  const touchExpression = model === "first"
-    ? "$attribution.firstTouch"
-    : { $ifNull: ["$attribution.latestNonDirect", "$attribution.currentSession"] };
+  const filters = Object.fromEntries(
+    ["channel", "source", "medium", "campaign", "content"].map((key) => [
+      key,
+      cleanAcquisitionFilter(query[key]),
+    ]),
+  );
+  const touchExpression =
+    model === "first"
+      ? "$attribution.firstTouch"
+      : {
+          $ifNull: [
+            "$attribution.latestNonDirect",
+            "$attribution.currentSession",
+          ],
+        };
   const touchMatch = {};
-  for (const [key, value] of Object.entries(filters)) if (value) touchMatch[`touch.${key}`] = value;
+  for (const [key, value] of Object.entries(filters))
+    if (value) touchMatch[`touch.${key}`] = value;
   const base = [
     { $match: { occurredAt: { $gte: start, $lte: end } } },
     { $set: { touch: touchExpression } },
@@ -8760,95 +9560,393 @@ async function buildAcquisitionReport(query = {}) {
   ];
   const { analyticsEvents, orders, metaEvents } = collections();
   const [eventRows, orderRows, metaRows, purchaseMetaRows] = await Promise.all([
-    analyticsEvents.aggregate([...base, { $facet: {
-      metrics: [{ $group: {
-        _id: null,
-        visitors: { $addToSet: "$attribution.visitorId" },
-        sessions: { $addToSet: "$attribution.sessionId" },
-        pageViews: { $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] } },
-        leads: { $sum: { $cond: [{ $eq: ["$event", "lead"] }, 1, 0] } },
-        productViews: { $sum: { $cond: [{ $eq: ["$event", "view_content"] }, 1, 0] } },
-        addToCarts: { $sum: { $cond: [{ $eq: ["$event", "add_to_cart"] }, 1, 0] } },
-        checkoutStarts: { $sum: { $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0] } },
-      } }],
-      rows: [{ $group: { _id: { channel: { $ifNull: ["$touch.channel", "unknown"] }, source: { $ifNull: ["$touch.source", ""] }, medium: { $ifNull: ["$touch.medium", ""] }, campaign: { $ifNull: ["$touch.campaign", ""] }, content: { $ifNull: ["$touch.content", ""] }, landingPage: { $ifNull: ["$touch.landingPage", ""] } }, visitors: { $addToSet: "$attribution.visitorId" }, sessions: { $addToSet: "$attribution.sessionId" }, pageViews: { $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] } }, checkoutStarts: { $sum: { $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0] } } } }, { $sort: { pageViews: -1 } }, { $limit: 200 }],
-    } }]).toArray(),
-    orders.aggregate([
-      { $match: { createdAt: { $gte: start, $lte: end }, purchaseIntent: "completed", paymentStatus: { $in: ["paid", "pending_cod"] } } },
-      { $set: { touch: model === "first" ? "$attribution.firstTouch" : { $ifNull: ["$attribution.latestNonDirect", "$attribution.currentSession"] } } },
-      ...(Object.keys(touchMatch).length ? [{ $match: touchMatch }] : []),
-      { $facet: {
-        totals: [{ $group: { _id: null, purchases: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } }],
-        rows: [{ $group: { _id: { channel: { $ifNull: ["$touch.channel", "unknown"] }, source: { $ifNull: ["$touch.source", "$utmSource"] }, medium: { $ifNull: ["$touch.medium", "$utmMedium"] }, campaign: { $ifNull: ["$touch.campaign", "$utmCampaign"] }, content: { $ifNull: ["$touch.content", "$utmContent"] }, landingPage: { $ifNull: ["$touch.landingPage", "$landingPage"] } }, purchases: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } }, { $sort: { revenue: -1, purchases: -1 } }, { $limit: 200 }],
-      } },
-    ]).toArray(),
-    metaEvents.aggregate([
-      { $match: { occurredAt: { $gte: start, $lte: end } } },
-      { $group: { _id: "$eventName", logicalEvents: { $sum: 1 }, browserAttempts: { $sum: { $cond: ["$browserAttempted", 1, 0] } }, capiAttempts: { $sum: "$capiAttempts" }, accepted: { $sum: { $cond: ["$capiAccepted", 1, 0] } }, failures: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }, retries: { $sum: { $max: [{ $subtract: ["$capiAttempts", 1] }, 0] } }, paired: { $sum: { $cond: [{ $and: ["$browserAttempted", "$capiAccepted"] }, 1, 0] } } } },
-      { $sort: { _id: 1 } },
-    ]).toArray(),
-    orders.aggregate([
-      { $match: { createdAt: { $gte: start, $lte: end }, "metaPurchase.status": { $exists: true } } },
-      { $group: { _id: "Purchase", logicalEvents: { $sum: 1 }, browserAttempts: { $sum: { $cond: [{ $eq: ["$metaPurchase.browserAttempted", true] }, 1, 0] } }, capiAttempts: { $sum: "$metaPurchase.attempts" }, accepted: { $sum: { $cond: [{ $eq: ["$metaPurchase.status", "sent"] }, 1, 0] } }, failures: { $sum: { $cond: [{ $eq: ["$metaPurchase.status", "failed"] }, 1, 0] } }, paired: { $sum: { $cond: [{ $and: [{ $eq: ["$metaPurchase.browserAttempted", true] }, { $eq: ["$metaPurchase.status", "sent"] }] }, 1, 0] } } } },
-    ]).toArray(),
+    analyticsEvents
+      .aggregate([
+        ...base,
+        {
+          $facet: {
+            metrics: [
+              {
+                $group: {
+                  _id: null,
+                  visitors: { $addToSet: "$attribution.visitorId" },
+                  sessions: { $addToSet: "$attribution.sessionId" },
+                  pageViews: {
+                    $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] },
+                  },
+                  leads: {
+                    $sum: { $cond: [{ $eq: ["$event", "lead"] }, 1, 0] },
+                  },
+                  productViews: {
+                    $sum: {
+                      $cond: [{ $eq: ["$event", "view_content"] }, 1, 0],
+                    },
+                  },
+                  addToCarts: {
+                    $sum: { $cond: [{ $eq: ["$event", "add_to_cart"] }, 1, 0] },
+                  },
+                  checkoutStarts: {
+                    $sum: {
+                      $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0],
+                    },
+                  },
+                },
+              },
+            ],
+            rows: [
+              {
+                $group: {
+                  _id: {
+                    channel: { $ifNull: ["$touch.channel", "unknown"] },
+                    source: { $ifNull: ["$touch.source", ""] },
+                    medium: { $ifNull: ["$touch.medium", ""] },
+                    campaign: { $ifNull: ["$touch.campaign", ""] },
+                    content: { $ifNull: ["$touch.content", ""] },
+                    landingPage: { $ifNull: ["$touch.landingPage", ""] },
+                  },
+                  visitors: { $addToSet: "$attribution.visitorId" },
+                  sessions: { $addToSet: "$attribution.sessionId" },
+                  pageViews: {
+                    $sum: { $cond: [{ $eq: ["$event", "page_view"] }, 1, 0] },
+                  },
+                  checkoutStarts: {
+                    $sum: {
+                      $cond: [{ $eq: ["$event", "checkout_started"] }, 1, 0],
+                    },
+                  },
+                },
+              },
+              { $sort: { pageViews: -1 } },
+              { $limit: 200 },
+            ],
+          },
+        },
+      ])
+      .toArray(),
+    orders
+      .aggregate([
+        {
+          $match: {
+            createdAt: { $gte: start, $lte: end },
+            purchaseIntent: "completed",
+            paymentStatus: { $in: ["paid", "pending_cod"] },
+          },
+        },
+        {
+          $set: {
+            touch:
+              model === "first"
+                ? "$attribution.firstTouch"
+                : {
+                    $ifNull: [
+                      "$attribution.latestNonDirect",
+                      "$attribution.currentSession",
+                    ],
+                  },
+          },
+        },
+        ...(Object.keys(touchMatch).length ? [{ $match: touchMatch }] : []),
+        {
+          $facet: {
+            totals: [
+              {
+                $group: {
+                  _id: null,
+                  purchases: { $sum: 1 },
+                  revenue: { $sum: "$totalAmount" },
+                },
+              },
+            ],
+            rows: [
+              {
+                $group: {
+                  _id: {
+                    channel: { $ifNull: ["$touch.channel", "unknown"] },
+                    source: { $ifNull: ["$touch.source", "$utmSource"] },
+                    medium: { $ifNull: ["$touch.medium", "$utmMedium"] },
+                    campaign: { $ifNull: ["$touch.campaign", "$utmCampaign"] },
+                    content: { $ifNull: ["$touch.content", "$utmContent"] },
+                    landingPage: {
+                      $ifNull: ["$touch.landingPage", "$landingPage"],
+                    },
+                  },
+                  purchases: { $sum: 1 },
+                  revenue: { $sum: "$totalAmount" },
+                },
+              },
+              { $sort: { revenue: -1, purchases: -1 } },
+              { $limit: 200 },
+            ],
+          },
+        },
+      ])
+      .toArray(),
+    metaEvents
+      .aggregate([
+        { $match: { occurredAt: { $gte: start, $lte: end } } },
+        {
+          $group: {
+            _id: "$eventName",
+            logicalEvents: { $sum: 1 },
+            browserAttempts: { $sum: { $cond: ["$browserAttempted", 1, 0] } },
+            capiAttempts: { $sum: "$capiAttempts" },
+            accepted: { $sum: { $cond: ["$capiAccepted", 1, 0] } },
+            failures: {
+              $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] },
+            },
+            retries: {
+              $sum: { $max: [{ $subtract: ["$capiAttempts", 1] }, 0] },
+            },
+            paired: {
+              $sum: {
+                $cond: [{ $and: ["$browserAttempted", "$capiAccepted"] }, 1, 0],
+              },
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray(),
+    orders
+      .aggregate([
+        {
+          $match: {
+            createdAt: { $gte: start, $lte: end },
+            "metaPurchase.status": { $exists: true },
+          },
+        },
+        {
+          $group: {
+            _id: "Purchase",
+            logicalEvents: { $sum: 1 },
+            browserAttempts: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$metaPurchase.browserAttempted", true] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            capiAttempts: { $sum: "$metaPurchase.attempts" },
+            accepted: {
+              $sum: {
+                $cond: [{ $eq: ["$metaPurchase.status", "sent"] }, 1, 0],
+              },
+            },
+            failures: {
+              $sum: {
+                $cond: [{ $eq: ["$metaPurchase.status", "failed"] }, 1, 0],
+              },
+            },
+            paired: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$metaPurchase.browserAttempted", true] },
+                      { $eq: ["$metaPurchase.status", "sent"] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ])
+      .toArray(),
   ]);
   const eventResult = eventRows[0] || { metrics: [], rows: [] };
-  const events = eventResult.metrics[0] || { visitors: [], sessions: [], pageViews: 0, leads: 0, productViews: 0, addToCarts: 0, checkoutStarts: 0 };
+  const events = eventResult.metrics[0] || {
+    visitors: [],
+    sessions: [],
+    pageViews: 0,
+    leads: 0,
+    productViews: 0,
+    addToCarts: 0,
+    checkoutStarts: 0,
+  };
   const ordersResult = orderRows[0] || { totals: [], rows: [] };
   const totals = ordersResult.totals[0] || { purchases: 0, revenue: 0 };
-  const keyOf = row => [row.channel, row.source, row.medium, row.campaign, row.content, row.landingPage].map(value => value || "").join("\u001f");
-  const rowMap = new Map(eventResult.rows.map(row => {
-    const value = { ...row._id, visitors: row.visitors.filter(Boolean).length, sessions: row.sessions.filter(Boolean).length, pageViews: row.pageViews, checkoutStarts: row.checkoutStarts, purchases: 0, revenue: 0 };
-    return [keyOf(value), value];
-  }));
+  const keyOf = (row) =>
+    [
+      row.channel,
+      row.source,
+      row.medium,
+      row.campaign,
+      row.content,
+      row.landingPage,
+    ]
+      .map((value) => value || "")
+      .join("\u001f");
+  const rowMap = new Map(
+    eventResult.rows.map((row) => {
+      const value = {
+        ...row._id,
+        visitors: row.visitors.filter(Boolean).length,
+        sessions: row.sessions.filter(Boolean).length,
+        pageViews: row.pageViews,
+        checkoutStarts: row.checkoutStarts,
+        purchases: 0,
+        revenue: 0,
+      };
+      return [keyOf(value), value];
+    }),
+  );
   for (const row of ordersResult.rows) {
-    const orderValue = { ...row._id, purchases: row.purchases, revenue: row.revenue };
-    const existing = rowMap.get(keyOf(orderValue)) || { ...orderValue, visitors: 0, sessions: 0, pageViews: 0, checkoutStarts: 0 };
+    const orderValue = {
+      ...row._id,
+      purchases: row.purchases,
+      revenue: row.revenue,
+    };
+    const existing = rowMap.get(keyOf(orderValue)) || {
+      ...orderValue,
+      visitors: 0,
+      sessions: 0,
+      pageViews: 0,
+      checkoutStarts: 0,
+    };
     existing.purchases = orderValue.purchases;
     existing.revenue = orderValue.revenue;
     rowMap.set(keyOf(orderValue), existing);
   }
-  const rows = [...rowMap.values()].sort((left, right) => right.revenue - left.revenue || right.pageViews - left.pageViews);
+  const rows = [...rowMap.values()].sort(
+    (left, right) =>
+      right.revenue - left.revenue || right.pageViews - left.pageViews,
+  );
   const visitors = events.visitors.filter(Boolean).length;
   return {
-    generatedAt: new Date(), range: { start, end, timezone: "Asia/Kolkata" }, model, filters,
-    definitions: { visitor: "Unique pseudonymous browser ID observed", session: "30 minutes of inactivity starts a new session", pageView: "A recorded public-page load", purchase: "Paid online order or placed COD order", attributionExpiryDays: 90 },
-    metrics: { visitors, sessions: events.sessions.filter(Boolean).length, pageViews: events.pageViews, leads: events.leads, productViews: events.productViews, addToCarts: events.addToCarts, checkoutStarts: events.checkoutStarts, purchases: totals.purchases, revenue: totals.revenue, conversionRate: visitors ? totals.purchases / visitors : 0 },
+    generatedAt: new Date(),
+    range: { start, end, timezone: "Asia/Kolkata" },
+    model,
+    filters,
+    definitions: {
+      visitor: "Unique pseudonymous browser ID observed",
+      session: "30 minutes of inactivity starts a new session",
+      pageView: "A recorded public-page load",
+      purchase: "Paid online order or placed COD order",
+      attributionExpiryDays: 90,
+    },
+    metrics: {
+      visitors,
+      sessions: events.sessions.filter(Boolean).length,
+      pageViews: events.pageViews,
+      leads: events.leads,
+      productViews: events.productViews,
+      addToCarts: events.addToCarts,
+      checkoutStarts: events.checkoutStarts,
+      purchases: totals.purchases,
+      revenue: totals.revenue,
+      conversionRate: visitors ? totals.purchases / visitors : 0,
+    },
     breakdown: rows,
-    meta: [...metaRows, ...purchaseMetaRows].map(row => ({ eventName: row._id, logicalEvents: row.logicalEvents || 0, browserAttempts: row.browserAttempts || 0, capiAttempts: row.capiAttempts || 0, accepted: row.accepted || 0, failures: row.failures || 0, retries: row.retries || Math.max(0, (row.capiAttempts || 0) - (row.logicalEvents || 0)), paired: row.paired || 0 })),
-    limits: "Counts reflect this application's measurement records. Browser blocking, denied consent, cleared storage, and cross-device use affect visitor counts. Meta delivery and attribution must be confirmed in Events Manager.",
+    meta: [...metaRows, ...purchaseMetaRows].map((row) => ({
+      eventName: row._id,
+      logicalEvents: row.logicalEvents || 0,
+      browserAttempts: row.browserAttempts || 0,
+      capiAttempts: row.capiAttempts || 0,
+      accepted: row.accepted || 0,
+      failures: row.failures || 0,
+      retries:
+        row.retries ||
+        Math.max(0, (row.capiAttempts || 0) - (row.logicalEvents || 0)),
+      paired: row.paired || 0,
+    })),
+    limits:
+      "Counts reflect this application's measurement records. Browser blocking, denied consent, cleared storage, and cross-device use affect visitor counts. Meta delivery and attribution must be confirmed in Events Manager.",
   };
 }
 
 app.post("/api/analytics/events", async (req, res) => {
-  if (req.get("sec-fetch-site") === "cross-site" || !meta.sourceUrl(req.get("origin") || req.get("referer"))) return res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (
+    req.get("sec-fetch-site") === "cross-site" ||
+    !meta.sourceUrl(req.get("origin") || req.get("referer"))
+  )
+    return res.status(403).json({ ok: false, error: "Origin not allowed" });
   const record = acquisition.event(req.body);
-  if (!record) return res.status(400).json({ ok: false, error: "Invalid analytics event" });
+  if (!record)
+    return res
+      .status(400)
+      .json({ ok: false, error: "Invalid analytics event" });
   try {
-    await collections().analyticsEvents.insertOne({ ...record, receivedAt: new Date() });
+    await collections().analyticsEvents.insertOne({
+      ...record,
+      receivedAt: new Date(),
+    });
     return res.sendStatus(204);
   } catch (error) {
-    if (error?.code === 11000) return res.status(200).json({ ok: true, duplicate: true });
-    return res.status(503).json({ ok: false, error: "Measurement temporarily unavailable" });
+    if (error?.code === 11000)
+      return res.status(200).json({ ok: true, duplicate: true });
+    return res
+      .status(503)
+      .json({ ok: false, error: "Measurement temporarily unavailable" });
   }
 });
 
 app.get("/api/admin/acquisition", async (req, res) => {
-  if (!isAuthorizedAdminRequest(req)) return res.status(401).json({ ok: false, error: "Unauthorized" });
-  try { return res.json({ ok: true, ...(await buildAcquisitionReport(req.query)) }); }
-  catch (error) { return res.status(/Date range/.test(error.message) ? 400 : 500).json({ ok: false, error: /Date range/.test(error.message) ? error.message : "Unable to load acquisition reporting" }); }
+  if (!isAuthorizedAdminRequest(req))
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  try {
+    return res.json({ ok: true, ...(await buildAcquisitionReport(req.query)) });
+  } catch (error) {
+    return res.status(/Date range/.test(error.message) ? 400 : 500).json({
+      ok: false,
+      error: /Date range/.test(error.message)
+        ? error.message
+        : "Unable to load acquisition reporting",
+    });
+  }
 });
 
 app.get("/api/admin/acquisition.csv", async (req, res) => {
-  if (!isAuthorizedAdminRequest(req)) return res.status(401).json({ ok: false, error: "Unauthorized" });
+  if (!isAuthorizedAdminRequest(req))
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
   try {
     const report = await buildAcquisitionReport(req.query);
-    const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const lines = [["channel", "source", "medium", "campaign", "content", "landing_page", "visitors", "sessions", "page_views", "checkout_starts", "purchases", "revenue_inr"], ...report.breakdown.map(row => [row.channel, row.source, row.medium, row.campaign, row.content, row.landingPage, row.visitors, row.sessions, row.pageViews, row.checkoutStarts, row.purchases, row.revenue])];
+    const quote = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const lines = [
+      [
+        "channel",
+        "source",
+        "medium",
+        "campaign",
+        "content",
+        "landing_page",
+        "visitors",
+        "sessions",
+        "page_views",
+        "checkout_starts",
+        "purchases",
+        "revenue_inr",
+      ],
+      ...report.breakdown.map((row) => [
+        row.channel,
+        row.source,
+        row.medium,
+        row.campaign,
+        row.content,
+        row.landingPage,
+        row.visitors,
+        row.sessions,
+        row.pageViews,
+        row.checkoutStarts,
+        row.purchases,
+        row.revenue,
+      ]),
+    ];
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="valour-acquisition-${new Date().toISOString().slice(0, 10)}.csv"`);
-    return res.send(lines.map(row => row.map(quote).join(",")).join("\n"));
-  } catch { return res.status(500).json({ ok: false, error: "Unable to export acquisition report" }); }
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="valour-acquisition-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    return res.send(lines.map((row) => row.map(quote).join(",")).join("\n"));
+  } catch {
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to export acquisition report" });
+  }
 });
 
 app.get("/api/admin/dashboard", async (req, res) => {
@@ -8885,8 +9983,13 @@ app.get("/api/admin/dashboard", async (req, res) => {
     const istNow = new Date(now.getTime() + 330 * 60_000);
     istNow.setUTCHours(0, 0, 0, 0);
     const todayStart = new Date(istNow.getTime() - 330 * 60_000);
-    const { orders, couponAssignments, pricingRules, messageJobs, hiddenCoupons } =
-      collections();
+    const {
+      orders,
+      couponAssignments,
+      pricingRules,
+      messageJobs,
+      hiddenCoupons,
+    } = collections();
     const [
       orderRows,
       filteredCount,
@@ -8933,7 +10036,11 @@ app.get("/api/admin/dashboard", async (req, res) => {
           { $group: { _id: "$status", count: { $sum: 1 } } },
         ])
         .toArray(),
-      hiddenCoupons.find({ active: true }).sort({ createdAt: -1 }).limit(100).toArray(),
+      hiddenCoupons
+        .find({ active: true })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .toArray(),
     ]);
 
     const couponDefinitions = Object.entries(rules?.coupons || {}).map(
@@ -9064,13 +10171,11 @@ app.get("/api/coupons/universal", async (req, res) => {
     });
   } catch (error) {
     const status = /valid user phone/i.test(error.message) ? 400 : 500;
-    res
-      .status(status)
-      .json({
-        ok: false,
-        error:
-          status === 400 ? error.message : "Unable to load universal coupons",
-      });
+    res.status(status).json({
+      ok: false,
+      error:
+        status === 400 ? error.message : "Unable to load universal coupons",
+    });
   }
 });
 
@@ -9125,7 +10230,9 @@ app.post("/api/admin/delivery-timing", async (req, res) => {
   }
 
   const value = Number(req.body.value);
-  const unit = String(req.body.unit || "").trim().toLowerCase();
+  const unit = String(req.body.unit || "")
+    .trim()
+    .toLowerCase();
   if (!Number.isSafeInteger(value) || value < 1 || value > 30) {
     return res.status(400).json({
       ok: false,
@@ -9313,7 +10420,9 @@ app.post("/api/admin/coupons/hidden", async (req, res) => {
     const code = String(req.body.code || "").trim();
     const type = String(req.body.type || "").trim();
     const value = Number(req.body.value);
-    const minSubtotalPaise = Math.round(Number(req.body.minSubtotal || 0) * 100);
+    const minSubtotalPaise = Math.round(
+      Number(req.body.minSubtotal || 0) * 100,
+    );
     const usageLimitPerAccount = parseUsageLimit(
       req.body.usageLimitPerAccount ?? req.body.usageLimit,
       1,
@@ -9552,12 +10661,10 @@ app.post("/api/checkout/quote", async (req, res) => {
 app.post("/api/orders/cod", async (req, res) => {
   const idempotencyKey = String(req.get("idempotency-key") || "").trim();
   if (!/^[A-Za-z0-9_-]{16,100}$/.test(idempotencyKey)) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "A valid checkout idempotency key is required",
-      });
+    return res.status(400).json({
+      ok: false,
+      error: "A valid checkout idempotency key is required",
+    });
   }
 
   try {
@@ -9681,7 +10788,11 @@ app.post("/api/orders/cod", async (req, res) => {
       ok: true,
       orderId: String(savedOrder._id),
       whatsappConfirmation: confirmation,
-      order: { ...savedOrder, metaPurchase: undefined, _id: String(savedOrder._id) },
+      order: {
+        ...savedOrder,
+        metaPurchase: undefined,
+        _id: String(savedOrder._id),
+      },
     });
   } catch (error) {
     const clientError =
@@ -9917,7 +11028,8 @@ app.post("/api/payment/verify", async (req, res) => {
     delete savedOrder._id;
     savedOrder.metaPurchase = meta.pending(req, savedOrder.createdAt);
     // Advertising waits for capture even though the existing order flow accepts authorization.
-    savedOrder.metaPurchase.requiresCapture = razorpayPayment.status !== "captured";
+    savedOrder.metaPurchase.requiresCapture =
+      razorpayPayment.status !== "captured";
 
     const result = await orders.insertOne(savedOrder);
     await recordCouponRedemption(savedOrder, result.insertedId);
@@ -9966,8 +11078,12 @@ app.post("/api/payment/verify", async (req, res) => {
 
     let whatsappConfirmation = { sent: false, reason: "not_attempted" };
     try {
-      whatsappConfirmation = await schedulePaidOrderAutomation(orderForResponse);
-      await collections().paymentAttempts.updateOne({ razorpayOrderId }, { $set: { successNotifiedAt: new Date(), updatedAt: new Date() } });
+      whatsappConfirmation =
+        await schedulePaidOrderAutomation(orderForResponse);
+      await collections().paymentAttempts.updateOne(
+        { razorpayOrderId },
+        { $set: { successNotifiedAt: new Date(), updatedAt: new Date() } },
+      );
       console.log(
         "WhatsApp order confirmation scheduling result",
         whatsappConfirmation,
@@ -9987,7 +11103,11 @@ app.post("/api/payment/verify", async (req, res) => {
       paymentStatus: savedOrder.paymentStatus,
       metaPurchaseConfirmed: !savedOrder.metaPurchase.requiresCapture,
       whatsappConfirmation,
-      order: { ...orderForResponse, metaPurchase: undefined, _id: result.insertedId.toString() },
+      order: {
+        ...orderForResponse,
+        metaPurchase: undefined,
+        _id: result.insertedId.toString(),
+      },
     });
   } catch (err) {
     if (err?.code === 11000) {
@@ -10140,12 +11260,10 @@ async function getOrCreateCodPaymentLink(order) {
 app.get("/api/cod-payment/:token", async (req, res) => {
   const orderReference = readOrderPaymentToken(req.params.token);
   if (!orderReference) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "This payment link is invalid or has expired.",
-      });
+    return res.status(400).json({
+      ok: false,
+      error: "This payment link is invalid or has expired.",
+    });
   }
 
   try {
@@ -10263,9 +11381,9 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       updates.deliverySource = "manual";
     }
 
-    const requestedPaymentStatus = String(
-      req.body.paymentStatus || "",
-    ).trim().toLowerCase();
+    const requestedPaymentStatus = String(req.body.paymentStatus || "")
+      .trim()
+      .toLowerCase();
     if (requestedPaymentStatus && requestedPaymentStatus !== "paid") {
       return res.status(400).json({
         ok: false,
@@ -10347,7 +11465,11 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         order: updatedOrder,
         parameters: getOrderStatusTemplateParams(updatedOrder),
         scheduledAt: new Date(),
-        occurrence: crypto.createHash("sha256").update(JSON.stringify(getOrderStatusTemplateParams(updatedOrder))).digest("hex").slice(0, 20),
+        occurrence: crypto
+          .createHash("sha256")
+          .update(JSON.stringify(getOrderStatusTemplateParams(updatedOrder)))
+          .digest("hex")
+          .slice(0, 20),
       });
       whatsappUpdate = {
         sent: false,
@@ -10477,12 +11599,10 @@ app.get("/api/reviews/customer/:token", async (req, res) => {
 
   const orderReference = readReviewToken(req.params.token);
   if (!orderReference) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "This review link is invalid or has expired.",
-      });
+    return res.status(400).json({
+      ok: false,
+      error: "This review link is invalid or has expired.",
+    });
   }
 
   try {
@@ -10504,12 +11624,10 @@ app.get("/api/reviews/customer/:token", async (req, res) => {
     });
   } catch (err) {
     console.error("Review customer lookup failed", err.message);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: "Customer details are temporarily unavailable.",
-      });
+    res.status(500).json({
+      ok: false,
+      error: "Customer details are temporarily unavailable.",
+    });
   }
 });
 
@@ -10519,12 +11637,10 @@ app.post("/api/reviews/:token", async (req, res) => {
     ? null
     : readReviewToken(req.params.token);
   if (!isPublicReview && !orderReference) {
-    return res
-      .status(400)
-      .json({
-        ok: false,
-        error: "This review link is invalid or has expired.",
-      });
+    return res.status(400).json({
+      ok: false,
+      error: "This review link is invalid or has expired.",
+    });
   }
 
   const rating = Number(req.body.rating);
@@ -10551,7 +11667,9 @@ app.post("/api/reviews/:token", async (req, res) => {
     "No — I have concerns about food safety",
   ]);
   const requestedRepurchaseIntent = String(req.body.repurchaseIntent || "");
-  const repurchaseIntent = allowedRepurchaseIntents.has(requestedRepurchaseIntent)
+  const repurchaseIntent = allowedRepurchaseIntents.has(
+    requestedRepurchaseIntent,
+  )
     ? requestedRepurchaseIntent
     : "";
   const allowedProductImprovements = new Set([
@@ -10567,7 +11685,9 @@ app.post("/api/reviews/:token", async (req, res) => {
   const reviewText = String(req.body.review || "")
     .trim()
     .slice(0, 2000);
-  const submittedCustomerName = String(req.body.name || "").trim().slice(0, 120);
+  const submittedCustomerName = String(req.body.name || "")
+    .trim()
+    .slice(0, 120);
   const submittedPhone = normalizeIndianPhone(req.body.phone);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -10617,9 +11737,7 @@ app.post("/api/reviews/:token", async (req, res) => {
         error: "The phone number associated with this order is invalid.",
       });
     }
-    const orderCustomerName = String(
-      order.customerName || "VALOUR customer",
-    )
+    const orderCustomerName = String(order.customerName || "VALOUR customer")
       .trim()
       .slice(0, 120);
 
@@ -10651,12 +11769,10 @@ app.post("/api/reviews/:token", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("Review submission failed", err.message);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: "Your review could not be saved. Please try again.",
-      });
+    res.status(500).json({
+      ok: false,
+      error: "Your review could not be saved. Please try again.",
+    });
   }
 });
 
@@ -10690,14 +11806,25 @@ app.post("/api/orders/:orderReference/request-review", async (req, res) => {
 
 app.get("/api/accordion-content", async (_req, res) => {
   if (!mongoReady) {
-    return res.status(503).json({ ok: false, error: "Content is temporarily unavailable." });
+    return res
+      .status(503)
+      .json({ ok: false, error: "Content is temporarily unavailable." });
   }
 
   try {
-    const items = await collections().accordionContent
-      .find(
+    const items = await collections()
+      .accordionContent.find(
         { active: true },
-        { projection: { _id: 0, key: 1, title: 1, contentType: 1, content: 1, order: 1 } },
+        {
+          projection: {
+            _id: 0,
+            key: 1,
+            title: 1,
+            contentType: 1,
+            content: 1,
+            order: 1,
+          },
+        },
       )
       .sort({ order: 1, key: 1 })
       .toArray();
@@ -10705,25 +11832,40 @@ app.get("/api/accordion-content", async (_req, res) => {
     return res.json({ ok: true, items });
   } catch (err) {
     console.error("Accordion content lookup failed", err.message);
-    return res.status(500).json({ ok: false, error: "Unable to load page content." });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load page content." });
   }
 });
 
 app.get("/api/carousel-videos", async (_req, res) => {
   if (!mongoReady) {
-    return res.status(503).json({ ok: false, error: "Videos are temporarily unavailable." });
+    return res
+      .status(503)
+      .json({ ok: false, error: "Videos are temporarily unavailable." });
   }
 
   try {
-    const items = await collections().carouselVideos
-      .find(
+    const items = await collections()
+      .carouselVideos.find(
         { active: true, provider: "youtube", videoId: { $type: "string" } },
-        { projection: { _id: 0, key: 1, provider: 1, videoId: 1, title: 1, order: 1 } },
+        {
+          projection: {
+            _id: 0,
+            key: 1,
+            provider: 1,
+            videoId: 1,
+            title: 1,
+            order: 1,
+          },
+        },
       )
       .sort({ order: 1, key: 1 })
       .toArray();
 
-    const videos = items.filter((item) => /^[A-Za-z0-9_-]{6,20}$/.test(item.videoId));
+    const videos = items.filter((item) =>
+      /^[A-Za-z0-9_-]{6,20}$/.test(item.videoId),
+    );
     return res.json({ ok: true, items: videos });
   } catch (err) {
     console.error("Carousel video lookup failed", err.message);
@@ -10733,14 +11875,26 @@ app.get("/api/carousel-videos", async (_req, res) => {
 
 app.get("/api/testimonial-media", async (_req, res) => {
   if (!mongoReady) {
-    return res.status(503).json({ ok: false, error: "Customer photos are temporarily unavailable." });
+    return res.status(503).json({
+      ok: false,
+      error: "Customer photos are temporarily unavailable.",
+    });
   }
 
   try {
-    const items = await collections().testimonialMedia
-      .find(
+    const items = await collections()
+      .testimonialMedia.find(
         { active: true },
-        { projection: { _id: 0, key: 1, imageUrl: 1, altText: 1, objectPosition: 1, order: 1 } },
+        {
+          projection: {
+            _id: 0,
+            key: 1,
+            imageUrl: 1,
+            altText: 1,
+            objectPosition: 1,
+            order: 1,
+          },
+        },
       )
       .sort({ order: 1, key: 1 })
       .limit(12)
@@ -10749,34 +11903,52 @@ app.get("/api/testimonial-media", async (_req, res) => {
     return res.json({ ok: true, items });
   } catch (err) {
     console.error("Testimonial media lookup failed", err.message);
-    return res.status(500).json({ ok: false, error: "Unable to load customer photos." });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load customer photos." });
   }
 });
 
 app.get("/api/homepage-testimonials", async (_req, res) => {
   if (!mongoReady) {
-    return res.status(503).json({ ok: false, error: "Testimonials are temporarily unavailable." });
+    return res
+      .status(503)
+      .json({ ok: false, error: "Testimonials are temporarily unavailable." });
   }
 
   try {
-    const items = await collections().homepageTestimonials
-      .find(
+    const items = await collections()
+      .homepageTestimonials.find(
         { active: true },
-        { projection: { _id: 0, key: 1, quote: 1, personName: 1, personDetail: 1, images: 1, order: 1 } },
+        {
+          projection: {
+            _id: 0,
+            key: 1,
+            quote: 1,
+            personName: 1,
+            personDetail: 1,
+            images: 1,
+            order: 1,
+          },
+        },
       )
       .sort({ order: 1, key: 1 })
       .limit(12)
       .toArray();
 
-    const testimonials = items.map((item) => ({
-      ...item,
-      images: Array.isArray(item.images) ? item.images.slice(0, 3) : [],
-    })).filter((item) => item.images.length >= 1);
+    const testimonials = items
+      .map((item) => ({
+        ...item,
+        images: Array.isArray(item.images) ? item.images.slice(0, 3) : [],
+      }))
+      .filter((item) => item.images.length >= 1);
 
     return res.json({ ok: true, items: testimonials });
   } catch (err) {
     console.error("Homepage testimonial lookup failed", err.message);
-    return res.status(500).json({ ok: false, error: "Unable to load testimonials." });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load testimonials." });
   }
 });
 
@@ -10796,8 +11968,14 @@ const staticAssetOptions = {
   },
 };
 
-app.use("/assets", express.static(path.join(rootPath, "assets"), staticAssetOptions));
-app.use("/vendor", express.static(path.join(rootPath, "vendor"), staticAssetOptions));
+app.use(
+  "/assets",
+  express.static(path.join(rootPath, "assets"), staticAssetOptions),
+);
+app.use(
+  "/vendor",
+  express.static(path.join(rootPath, "vendor"), staticAssetOptions),
+);
 app.use(
   "/whatsapp",
   express.static(path.join(rootPath, "whatsapp"), staticAssetOptions),
@@ -10920,15 +12098,30 @@ module.exports = {
   _test: {
     app,
     setDatabaseForTests(database) {
-      if (process.env.NODE_ENV !== "test") throw new Error("Test database injection disabled");
-      db = database; mongoReady = true;
+      if (process.env.NODE_ENV !== "test")
+        throw new Error("Test database injection disabled");
+      db = database;
+      mongoReady = true;
     },
-    dispatchWhatsappWebhook, enqueueMessage, processIncomingMessage, drainWhatsappInbox, persistWhatsappWebhook,
-    schedulePaidOrderAutomation, sendReviewRequestWhatsapp,
-    scheduleWhatsappJob, cancelWhatsappJobs, processDueWhatsappJobs, recoverStuckWhatsappJobs,
-    recordWhatsappJobStatus, runWhatsappQualityGate, sendTemplateMessage,
-    notifyWhatsappAdminsOfNewOrder, notifyCustomerCareAdmins, findOrderByReference,
-    getGupshupTemplateId, sanitizeWhatsappTemplateParameter,
+    dispatchWhatsappWebhook,
+    enqueueMessage,
+    processIncomingMessage,
+    drainWhatsappInbox,
+    persistWhatsappWebhook,
+    schedulePaidOrderAutomation,
+    sendReviewRequestWhatsapp,
+    scheduleWhatsappJob,
+    cancelWhatsappJobs,
+    processDueWhatsappJobs,
+    recoverStuckWhatsappJobs,
+    recordWhatsappJobStatus,
+    runWhatsappQualityGate,
+    sendTemplateMessage,
+    notifyWhatsappAdminsOfNewOrder,
+    notifyCustomerCareAdmins,
+    findOrderByReference,
+    getGupshupTemplateId,
+    sanitizeWhatsappTemplateParameter,
     acquisitionDateRange,
     cleanAcquisitionFilter,
     PRODUCTS,
