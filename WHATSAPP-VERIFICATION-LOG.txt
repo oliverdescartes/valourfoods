@@ -1,0 +1,87 @@
+Synthetic mocked end-to-end verification only; these are not production delivery receipts.
+Final npm test: 63 passed, 0 failed (32 WhatsApp tests plus 31 existing tests).
+Phone-like values are masked.
+
+[WHATSAPP][INBOUND] {
+  messageId: 'same',
+  recipient: '***3210',
+  action: 'MENU',
+  state: 'idle'
+}
+
+[WHATSAPP][STATE] {
+  sessionId: '6aa57c07784faebd34f32ca3',
+  before: 'idle',
+  after: 'idle'
+}
+
+Gupshup WhatsApp template send attempt {
+  recipient: '***3210',
+  templateName: 'valour_post_cook_feedback',
+  templateId: '00000000-0000-4000-8000-000000000010',
+  languageCode: 'en_US',
+  parameterCount: 0,
+  sanitizedParameterIndexes: []
+}
+
+[WHATSAPP][SUBMITTED] {
+  jobKey: 'post_cook_feedback:6aa57c11784faebd34f32cfb:tutorial-no-response:92212419-b026-4aea-8b25-b074c66d8ae9',
+  recipient: '***3210',
+  templateName: 'valour_post_cook_feedback',
+  providerMessageId: 'provider-48',
+  providerStatus: 'submitted',
+  explanation: 'Gupshup accepted the request; this is not delivery confirmation'
+}
+
+[WHATSAPP][CALLBACK] {
+  providerMessageId: 'provider-48',
+  whatsappMessageId: null,
+  status: 'delivered',
+  matchedJob: true,
+  matchedOutbound: true,
+  recipient: 'missing',
+  errorCode: null,
+  timestamp: '2026-09-12T16:21:39.915Z'
+}
+
+[WHATSAPP][JOB_SCHEDULE] {
+  trigger: 'new_lead',
+  jobKey: 'new_lead:6aa57c07784faebd34f32ca3:1',
+  scheduled: true,
+  reason: 'new_event',
+  scheduledAt: 2026-09-13T03:30:00.000Z
+}
+
+[WHATSAPP][JOB_CANCEL] { count: 0, reason: 'customer_left_cooking' }
+
+[WHATSAPP][SEND_ERROR] {
+  jobKey: 'cooking_reminder:***3210:timeout',
+  recipient: '***3210',
+  attemptCount: 1,
+  willRetry: false,
+  reason: 'reconcile_before_resend',
+  error: 'timeout'
+}
+
+[WHATSAPP][CUSTOMER_CARE_ALERT_SENT] {
+  caseId: 'VLR-MTYLEKSW-U6P8',
+  recipient: '***8132',
+  customer: '***3210',
+  providerMessageId: 'provider-56',
+  providerStatus: 'submitted'
+}
+
+[WHATSAPP][CUSTOMER_CARE_ALERT_FAILED] {
+  caseId: 'VLR-MTYLEL21-06L7',
+  recipient: '***8132',
+  customer: '***3210',
+  error: { message: 'Provider rejected submission' }
+}
+
+[WHATSAPP][ADMIN_NEW_ORDER_ALERT_SENT] {
+  orderId: '6aa57c14784faebd34f32d6e',
+  recipient: '***8132',
+  providerMessageId: 'provider-95'
+}
+
+[WHATSAPP][INBOUND_NEEDS_REVIEW] { messageId: 'interrupted', reason: 'handler_interrupted' }

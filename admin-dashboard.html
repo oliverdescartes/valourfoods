@@ -29,6 +29,7 @@
       }
       body {
         margin: 0;
+        overflow-x: hidden;
       }
       .shell {
         width: min(1440px, calc(100% - 28px));
@@ -41,6 +42,12 @@
         justify-content: space-between;
         gap: 20px;
         margin-bottom: 24px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
       .brand {
         font-weight: 900;
@@ -114,6 +121,14 @@
         display: flex;
         gap: 8px;
         margin-bottom: 16px;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+      }
+      .tabs .tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
       .tab.is-active {
         background: var(--red);
@@ -350,7 +365,8 @@
         color: #1c6338;
       }
       .wa-status.failed,
-      .wa-status.cancelled {
+      .wa-status.cancelled,
+      .wa-status.delivery_unknown {
         background: #f8dddd;
         color: #8f1e1e;
       }
@@ -532,6 +548,85 @@
         font-size: 12px;
         font-weight: 800;
       }
+      .template-layout {
+        display: grid;
+        grid-template-columns: minmax(300px, 480px) minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+      .template-compose,
+      .template-history {
+        min-width: 0;
+      }
+      .template-details {
+        margin: 12px 0 16px;
+        padding: 12px;
+        border-radius: 10px;
+        background: #f6ede3;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .template-parameters {
+        display: grid;
+        gap: 12px;
+      }
+      .template-preview {
+        margin: 16px 0;
+        border: 1px solid #cddbcf;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #e9f4e9;
+      }
+      .template-preview-header {
+        padding: 28px 14px;
+        background: #dfe8df;
+        color: #526052;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .template-preview-body {
+        padding: 14px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.45;
+      }
+      .template-preview-footer {
+        padding: 0 14px 12px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .template-preview-buttons {
+        display: grid;
+        gap: 1px;
+        background: #d4e0d5;
+      }
+      .template-preview-buttons span {
+        padding: 10px 14px;
+        background: #f7fff7;
+        color: #176b44;
+        text-align: center;
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .template-history-list {
+        display: grid;
+        gap: 10px;
+        max-height: 670px;
+        overflow: auto;
+      }
+      .template-send-row {
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fff;
+      }
+      .template-send-row .wa-meta {
+        align-items: center;
+      }
       .login {
         position: fixed;
         inset: 0;
@@ -574,6 +669,7 @@
         }
         .acquisition-metrics { grid-template-columns: repeat(2, 1fr); }
         .report-grid { grid-template-columns: 1fr; }
+        .template-layout { grid-template-columns: 1fr; }
       }
       @media (max-width: 760px) {
         .inbox-layout {
@@ -598,6 +694,23 @@
         }
         header {
           align-items: flex-start;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .header-actions {
+          width: 100%;
+          justify-content: stretch;
+        }
+        .header-actions .btn {
+          flex: 1 1 0;
+        }
+        h1 {
+          font-size: clamp(28px, 10vw, 38px);
+          line-height: 1.05;
+        }
+        .tabs {
+          margin-inline: -9px;
+          padding-inline: 9px;
         }
         .metrics,
         .toolbar,
@@ -618,7 +731,7 @@
           margin-top: 10px;
         }
         .assignment {
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
         }
         .panel {
           padding: 14px;
@@ -632,6 +745,37 @@
         .wa-status {
           display: inline-block;
           margin-top: 8px;
+        }
+        .pagination {
+          gap: 10px;
+        }
+        .pagination .btn {
+          padding-inline: 12px;
+        }
+        .inbox-toolbar {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        .template-history-list {
+          max-height: none;
+        }
+      }
+      @media (max-width: 420px) {
+        .metrics,
+        .acquisition-metrics,
+        .wa-flow {
+          grid-template-columns: 1fr;
+        }
+        .metric,
+        .order-card,
+        .wa-card {
+          padding: 14px;
+        }
+        .message-timeline {
+          padding: 12px;
+        }
+        .message-bubble {
+          max-width: 94%;
         }
       }
     </style>
@@ -657,7 +801,7 @@
           <p class="brand">VALOUR ADMIN</p>
           <h1>Operations dashboard</h1>
         </div>
-        <div>
+        <div class="header-actions">
           <button class="btn ghost" id="refresh">Refresh</button>
           <button class="btn ghost" id="logout">Log out</button>
         </div>
@@ -671,6 +815,8 @@
           Acquisition &amp; funnel</button
         ><button class="btn ghost tab" data-tab="whatsapp">
           Delivery monitor</button
+        ><button class="btn ghost tab" data-tab="templates">
+          Send WhatsApp</button
         ><button class="btn ghost tab" data-tab="coupons">
           Customer coupons
         </button
@@ -816,6 +962,50 @@
           <p class="empty">No WhatsApp jobs loaded.</p>
         </div>
       </section>
+      <section class="panel" id="templates-panel" hidden>
+        <div class="template-layout">
+          <div class="template-compose">
+            <h2>Send a WhatsApp template</h2>
+            <p class="muted">
+              Send one configured, approved template to a WhatsApp number. Use
+              the recipient's country code and enter each template value in the
+              order shown.
+            </p>
+            <form id="template-send-form">
+              <div class="field">
+                <label for="template-phone">WhatsApp phone number</label>
+                <input id="template-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" required />
+              </div>
+              <div class="field" style="margin-top:12px">
+                <label for="template-select">Approved template</label>
+                <select id="template-select" required>
+                  <option value="">Open this tab to load templates</option>
+                </select>
+              </div>
+              <div class="template-details" id="template-details">
+                Select a template to see its configuration.
+              </div>
+              <h3>Complete message preview</h3>
+              <article class="template-preview" id="template-preview">
+                <div class="template-preview-header" id="template-preview-header" hidden></div>
+                <div class="template-preview-body" id="template-preview-body">Select a template to view its full text.</div>
+                <div class="template-preview-footer" id="template-preview-footer" hidden></div>
+                <div class="template-preview-buttons" id="template-preview-buttons"></div>
+              </article>
+              <div class="template-parameters" id="template-parameters"></div>
+              <button class="btn" id="template-send-button" type="submit" style="margin-top:16px">Send template</button>
+              <p class="notice" id="template-send-message" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+          <div class="template-history">
+            <h2>Recent manual sends</h2>
+            <p class="muted">Submitted means Gupshup accepted the request. Delivered and Read are confirmed by provider callbacks.</p>
+            <div class="template-history-list" id="template-history-list">
+              <p class="empty">No manual sends loaded.</p>
+            </div>
+          </div>
+        </div>
+      </section>
       <section class="panel" id="coupons-panel" hidden>
         <div class="coupon-layout">
           <div>
@@ -944,6 +1134,9 @@
       let activeTab = "orders";
       let conversations = [];
       let selectedConversationPhone = "";
+      let whatsappTemplates = [];
+      let recentTemplateSends = [];
+      let pendingTemplateRequestId = "";
       const $ = (selector) => document.querySelector(selector);
       const escapeHtml = (value) =>
         String(value ?? "").replace(
@@ -1001,8 +1194,12 @@
           },
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(data.error || `Request failed (${response.status})`);
+        if (!response.ok) {
+          const error = new Error(data.error || `Request failed (${response.status})`);
+          error.status = response.status;
+          error.data = data;
+          throw error;
+        }
         return data;
       }
       function renderMetrics(metrics) {
@@ -1197,11 +1394,12 @@
         );
         $("#whatsapp-summary").innerHTML = [
           ["Today", total],
-          ["Submitted", counts.submitted || 0],
-          ["Sent", (counts.sent || 0) + (counts.enqueued || 0)],
+          ["Submitted", (counts.submitted || 0) + (counts.enqueued || 0)],
+          ["Sent", counts.sent || 0],
           ["Delivered", counts.delivered || 0],
           ["Read", counts.read || 0],
           ["Failed", counts.failed || 0],
+          ["Needs reconciliation", counts.delivery_unknown || 0],
         ]
           .map(([label, value]) => `<span>${label}: ${value}</span>`)
           .join("");
@@ -1228,17 +1426,101 @@
                 const flow = steps
                   .map((step, index) => {
                     const done = current >= index + 1;
-                    const stamp =
-                      job[`${step.key}At`] ||
-                      (step.key === "sent" ? job.enqueuedAt : null);
+                    const stamp = job[`${step.key}At`];
                     return `<div class="wa-step ${done ? "done" : ""} ${failed && !done ? "failed" : ""}"><strong>${step.label}</strong><time>${stamp ? dateTime(stamp) : done ? "Confirmed" : "Waiting"}</time></div>`;
                   })
                   .join("");
-                const error = whatsappError(job.error);
+                const error = job.status === "delivery_unknown"
+                  ? "Delivery is unconfirmed. Check provider callbacks before attempting another send."
+                  : whatsappError(job.error);
                 return `<article class="wa-card"><div class="wa-meta"><div><div class="wa-title">${escapeHtml(job.trigger || job.templateName)}</div><div class="wa-sub">${escapeHtml(job.phone)} · ${escapeHtml(job.templateName)} · created ${dateTime(job.createdAt)}</div><div class="wa-sub">Provider ID: ${escapeHtml(job.providerMessageId || "Waiting for submission")}</div></div><span class="wa-status ${escapeHtml(job.status)}">${escapeHtml(job.status)}</span></div><div class="wa-flow">${flow}</div>${error ? `<p class="wa-error">${escapeHtml(error)}</p>` : ""}</article>`;
               })
               .join("")
           : "<p class='empty'>No WhatsApp message jobs have been created yet.</p>";
+      }
+      function selectedWhatsappTemplate() {
+        return whatsappTemplates.find(
+          (template) => template.key === $("#template-select").value,
+        );
+      }
+      function renderTemplatePreview() {
+        const template = selectedWhatsappTemplate();
+        const values = [...document.querySelectorAll("[data-template-parameter]")]
+          .map((input) => input.value.trim());
+        const substitute = (text) => String(text || "").replace(
+          /\{\{(\d+)\}\}/g,
+          (placeholder, number) => values[Number(number) - 1] || placeholder,
+        );
+        const header = $("#template-preview-header");
+        header.hidden = !template?.mediaType;
+        header.textContent = template?.mediaType
+          ? `${template.mediaType} header from the configured template media`
+          : "";
+        $("#template-preview-body").textContent = template?.bodyText ||
+          "Full template text is not configured.";
+        if (template?.bodyText) {
+          $("#template-preview-body").textContent = substitute(template.bodyText);
+        }
+        const footer = $("#template-preview-footer");
+        footer.hidden = !template?.footerText;
+        footer.textContent = substitute(template?.footerText);
+        $("#template-preview-buttons").innerHTML = (template?.buttons || [])
+          .map((label) => `<span>${escapeHtml(label)}</span>`)
+          .join("");
+      }
+      function renderTemplateFields() {
+        const template = selectedWhatsappTemplate();
+        if (!template) {
+          $("#template-details").textContent = "Select an available template to see its configuration.";
+          $("#template-parameters").innerHTML = "";
+          $("#template-send-button").disabled = true;
+          renderTemplatePreview();
+          return;
+        }
+        $("#template-details").innerHTML = template.available
+          ? `<strong>${escapeHtml(template.templateName)}</strong><br>Template ID: ${escapeHtml(template.templateId)}<br>Language: ${escapeHtml(template.languageCode)} · ${template.mediaType ? `${escapeHtml(template.mediaType)} header` : "text only"} · ${template.parameterCount} ${template.parameterCount === 1 ? "value" : "values"}`
+          : `<strong>${escapeHtml(template.label)}</strong><br><span class="error">Unavailable: ${escapeHtml(template.configurationError)}</span>`;
+        $("#template-parameters").innerHTML = template.parameterLabels
+          .map(
+            (label, index) =>
+              `<div class="field"><label for="template-param-${index}">{{${index + 1}}} ${escapeHtml(label)}</label><input id="template-param-${index}" data-template-parameter maxlength="1024" required /></div>`,
+          )
+          .join("");
+        $("#template-parameters")
+          .querySelectorAll("[data-template-parameter]")
+          .forEach((input) => input.addEventListener("input", renderTemplatePreview));
+        $("#template-send-button").disabled = !template.available;
+        renderTemplatePreview();
+      }
+      function renderTemplateHistory() {
+        $("#template-history-list").innerHTML = recentTemplateSends.length
+          ? recentTemplateSends
+              .map((item) => {
+                const error = item.status === "delivery_unknown"
+                  ? "Delivery is unconfirmed. Check callbacks before sending this message again."
+                  : whatsappError(item.error);
+                return `<article class="template-send-row"><div class="wa-meta"><div><div class="wa-title">${escapeHtml(item.templateLabel || item.templateName)}</div><div class="wa-sub">+${escapeHtml(item.phone)} · ${item.parameterCount} ${item.parameterCount === 1 ? "value" : "values"} · ${dateTime(item.createdAt)}</div><div class="wa-sub">Provider ID: ${escapeHtml(item.providerMessageId || "No confirmed provider ID")}</div></div><span class="wa-status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></div>${error ? `<p class="wa-error">${escapeHtml(error)}</p>` : ""}</article>`;
+              })
+              .join("")
+          : "<p class='empty'>No manual template messages have been sent.</p>";
+      }
+      async function loadTemplateManager() {
+        const data = await api("/api/admin/whatsapp/templates");
+        whatsappTemplates = data.templates || [];
+        recentTemplateSends = data.recentSends || [];
+        const current = $("#template-select").value;
+        $("#template-select").innerHTML = whatsappTemplates
+          .map(
+            (template) =>
+              `<option value="${escapeHtml(template.key)}" ${template.available ? "" : "disabled"}>${escapeHtml(template.label)}${template.available ? "" : " (not configured)"}</option>`,
+          )
+          .join("");
+        const selected = whatsappTemplates.find(
+          (template) => template.key === current && template.available,
+        ) || whatsappTemplates.find((template) => template.available);
+        $("#template-select").value = selected?.key || "";
+        renderTemplateFields();
+        renderTemplateHistory();
       }
       function renderConversationList() {
         const list = $("#conversation-list");
@@ -1398,9 +1680,16 @@
         $("#url-output").textContent = value;
         if (value) await navigator.clipboard.writeText(value);
       });
-      $("#refresh").addEventListener("click", () =>
-        loadDashboard().catch(showLoadError),
-      );
+      $("#refresh").addEventListener("click", async () => {
+        try {
+          await loadDashboard();
+          if (activeTab === "templates") await loadTemplateManager();
+          if (activeTab === "conversations") await loadConversations();
+          if (activeTab === "acquisition") await loadAcquisition();
+        } catch (error) {
+          showLoadError(error);
+        }
+      });
       $("#previous").addEventListener("click", () => {
         currentPage--;
         loadDashboard().catch(showLoadError);
@@ -1426,14 +1715,62 @@
           $("#acquisition-panel").hidden = activeTab !== "acquisition";
           $("#conversations-panel").hidden = activeTab !== "conversations";
           $("#whatsapp-panel").hidden = activeTab !== "whatsapp";
+          $("#templates-panel").hidden = activeTab !== "templates";
           $("#coupons-panel").hidden = activeTab !== "coupons";
           $("#delivery-settings-panel").hidden = activeTab !== "delivery";
           if (activeTab === "conversations")
             loadConversations().catch(showLoadError);
           if (activeTab === "acquisition")
             loadAcquisition().catch(showLoadError);
+          if (activeTab === "templates")
+            loadTemplateManager().catch(showLoadError);
         }),
       );
+      $("#template-select").addEventListener("change", renderTemplateFields);
+      $("#template-send-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const template = selectedWhatsappTemplate();
+        if (!template?.available) return;
+        const message = $("#template-send-message");
+        const button = $("#template-send-button");
+        pendingTemplateRequestId ||= globalThis.crypto?.randomUUID?.() ||
+          `send_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const payload = {
+          requestId: pendingTemplateRequestId,
+          templateKey: template.key,
+          phone: $("#template-phone").value,
+          parameters: [...document.querySelectorAll("[data-template-parameter]")].map(
+            (input) => input.value,
+          ),
+        };
+        button.disabled = true;
+        message.className = "notice";
+        message.textContent = "Submitting to Gupshup...";
+        try {
+          const data = await api("/api/admin/whatsapp/templates/send", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          pendingTemplateRequestId = "";
+          const status = data.send?.status || "submitted";
+          message.className = status === "delivery_unknown" || status === "failed"
+            ? "notice error"
+            : "notice success";
+          message.textContent = status === "delivery_unknown"
+            ? "Submission outcome is unknown. Check the recent-send status before trying again."
+            : status === "failed"
+              ? "The provider rejected this send."
+              : data.duplicate
+                ? `This request was already recorded with status: ${status}.`
+                : "Template submitted. Delivery status will update from WhatsApp callbacks.";
+          await loadTemplateManager();
+        } catch (error) {
+          if (error.status) pendingTemplateRequestId = "";
+          message.className = "notice error";
+          message.textContent = error.message;
+          button.disabled = false;
+        }
+      });
       $("#conversation-search-form").addEventListener("submit", (event) => {
         event.preventDefault();
         selectedConversationPhone = "";
@@ -1542,8 +1879,13 @@
           $("#login-message").textContent =
             "Admin token expired or is invalid.";
         } else {
-          $("#orders").innerHTML =
-            `<p class='empty error'>${escapeHtml(error.message)}</p>`;
+          if (activeTab === "templates") {
+            $("#template-send-message").className = "notice error";
+            $("#template-send-message").textContent = error.message;
+          } else {
+            $("#orders").innerHTML =
+              `<p class='empty error'>${escapeHtml(error.message)}</p>`;
+          }
         }
       }
       if (token) {
@@ -1552,6 +1894,7 @@
       setInterval(() => {
         if (!token) return;
         if (activeTab === "whatsapp") loadDashboard().catch(showLoadError);
+        if (activeTab === "templates") loadTemplateManager().catch(showLoadError);
         if (activeTab === "conversations") {
           loadConversations()
             .then(

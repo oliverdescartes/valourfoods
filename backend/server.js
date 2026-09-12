@@ -55,6 +55,7 @@ const REQUIRED_ENV = [
   "GUPSHUP_API_KEY",
   "GUPSHUP_APP_NAME",
   "GUPSHUP_SOURCE_NUMBER",
+  "WHATSAPP_WEBHOOK_TOKEN",
   "FAST2SMS_API_KEY",
   "WHATSAPP_ORDER_TEMPLATE_NAME",
   "PUBLIC_SITE_URL",
@@ -81,6 +82,10 @@ const metaDelivery = meta.install(
   () => collections().metaEvents,
 );
 const phoneQueues = new Map();
+const inbound = require("./whatsapp-inbound");
+const whatsappInbox = require("./whatsapp-inbox").createWhatsappInbox({
+  collection: name => db.collection(name), process: processIncomingMessage, log: console.log,
+});
 const DEPENDENCY_RETRY_MS = 30000;
 let mongoReady = false;
 let wabaSubscribed = false;
@@ -125,6 +130,8 @@ function collections() {
     hesitationRecovery: db.collection("hesitation_recovery"),
     reviews: db.collection("reviews"),
     messageJobs: db.collection("message_jobs"),
+    adminTemplateSends: db.collection("admin_template_sends"),
+    whatsappStatuses: db.collection("whatsapp_status_events"),
     customerEvents: db.collection("customer_events"),
     analyticsEvents: db.collection("analytics_events"),
     metaEvents: db.collection("meta_events"),
@@ -271,6 +278,7 @@ async function connectDB() {
     flowDefinitions,
     reviews,
     messageJobs,
+    adminTemplateSends,
     customerEvents,
     analyticsEvents,
     metaEvents,
@@ -342,12 +350,20 @@ async function connectDB() {
     }),
     reviews.createIndex({ orderReference: 1 }, { unique: true }),
     reviews.createIndex({ createdAt: -1 }),
+    db.collection("whatsapp_inbox").createIndex({ eventId: 1 }, { unique: true }),
+    db.collection("whatsapp_inbox").createIndex({ status: 1, receivedAt: 1 }),
+    db.collection("whatsapp_phone_locks").createIndex({ phone: 1 }, { unique: true }),
+    collections().whatsappStatuses.createIndex({ eventKey: 1 }, { unique: true }),
+    collections().whatsappStatuses.createIndex({ receivedAt: 1 }, { expireAfterSeconds: 2592000 }),
     messageJobs.createIndex({ jobKey: 1 }, { unique: true }),
     messageJobs.createIndex({ status: 1, scheduledAt: 1 }),
     messageJobs.createIndex({ providerMessageId: 1 }, { sparse: true }),
     messageJobs.createIndex({ createdAt: -1 }),
     messageJobs.createIndex({ phone: 1, sentAt: -1 }),
     messageJobs.createIndex({ phone: 1, submittedAt: -1 }),
+    adminTemplateSends.createIndex({ requestId: 1 }, { unique: true }),
+    adminTemplateSends.createIndex({ providerMessageId: 1 }, { sparse: true }),
+    adminTemplateSends.createIndex({ createdAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
     analyticsEvents.createIndex({ eventId: 1 }, { unique: true }),
@@ -430,7 +446,7 @@ function matchesAny(text, options) {
   return options.includes(normalizeText(text));
 }
 
-const WHATSAPP_ROUTER_VERSION = "menu-routing-v3";
+const WHATSAPP_ROUTER_VERSION = "durable-actions-v4";
 
 function compactSignalFields(fields = {}) {
   return Object.fromEntries(
@@ -754,7 +770,7 @@ async function markConversationStarted({ userId, sessionId }) {
       },
     );
     const customer = await users.findOne({ _id: userId });
-    void scheduleWhatsappJob({
+    await scheduleWhatsappJob({
       event: "new_lead",
       phone: customer?.phone,
       customerId: userId,
@@ -846,9 +862,12 @@ const GUPSHUP_TEMPLATE_URL = "https://api.gupshup.io/wa/api/v1/template/msg";
 const DEFAULT_CUSTOMER_CARE_TEMPLATE_NAME = "valour_customer_care_alertv1";
 const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
   "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
-const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID = "1071618388950122";
+const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID =
+  "680c3021-6889-4c60-86b4-6ebb0c7d7b1b";
 const DEFAULT_DELIVERED_TEMPLATE_ID =
   "ed4e4f64-b494-4c44-94ae-effb751cf40c";
+const DEFAULT_COD_PREPAID_TEMPLATE_ID =
+  "515b2202-ab03-4fb3-a2de-32f896d04953";
 
 function buildGupshupForm(recipient, fields = {}) {
   const form = new URLSearchParams({
@@ -866,10 +885,9 @@ function buildGupshupForm(recipient, fields = {}) {
 }
 
 function getGupshupTemplateId(templateName, languageCode) {
-  if (
-    /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName) ||
-    /^\d{10,30}$/.test(templateName)
-  ) {
+  if (templateName === "1071618388950122") return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  if (/^\d+$/.test(templateName)) throw new Error("Use the internal Gupshup template UUID, not the Meta external ID");
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateName)) {
     return templateName;
   }
 
@@ -904,13 +922,32 @@ function getGupshupTemplateId(templateName, languageCode) {
     );
   }
 
+  if (templateId === "1071618388950122") return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(templateId)) throw new Error("Invalid internal Gupshup template ID");
   return templateId;
+}
+
+function assertWhatsappAccepted(data) {
+  if (!getProviderMessageId(data) || /^(error|failed|rejected)$/i.test(data?.status || "")) {
+    const error = new Error("Gupshup rejected outbound message");
+    if (/^(error|failed|rejected)$/i.test(data?.status || "")) {
+      error.response = { status: 400, data: { message: "Provider rejected submission" } };
+    } else {
+      error.code = "SUBMISSION_UNCONFIRMED";
+      error.request = {}; // A successful HTTP response without an ID is not safe to retry.
+    }
+    throw error;
+  }
+}
+
+function isUncertainWhatsappSend(error) {
+  return !error.response && Boolean(error.request || /ETIMEDOUT|ECONNRESET|ECONNABORTED|EPIPE/.test(error.code || "")) || Number(error.response?.status) >= 500;
 }
 
 async function sendMessage(phone, body) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp text send attempt", {
-    recipient,
+    recipient: maskWhatsappPhone(recipient),
     bodyLength: body.length,
   });
 
@@ -929,9 +966,11 @@ async function sendMessage(phone, body) {
       },
     );
 
+    assertWhatsappAccepted(response.data);
     console.log("Gupshup WhatsApp text send accepted", {
-      recipient,
-      result: response.data,
+      recipient: maskWhatsappPhone(recipient),
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
 
     await saveOutboundWhatsappMessage({
@@ -945,7 +984,7 @@ async function sendMessage(phone, body) {
   } catch (err) {
     console.error(
       "Gupshup WhatsApp text send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
@@ -954,7 +993,7 @@ async function sendMessage(phone, body) {
 async function sendListMessage(phone, message) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp list send attempt", {
-    recipient,
+    recipient: maskWhatsappPhone(recipient),
     optionCount: message.items?.reduce(
       (count, section) => count + (section.options?.length || 0),
       0,
@@ -974,9 +1013,11 @@ async function sendListMessage(phone, message) {
       },
     );
 
+    assertWhatsappAccepted(response.data);
     console.log("Gupshup WhatsApp list send accepted", {
-      recipient,
-      result: response.data,
+      recipient: maskWhatsappPhone(recipient),
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
     await saveOutboundWhatsappMessage({
       phone: recipient,
@@ -988,7 +1029,7 @@ async function sendListMessage(phone, message) {
   } catch (err) {
     console.error(
       "Gupshup WhatsApp list send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
@@ -997,8 +1038,8 @@ async function sendListMessage(phone, message) {
 async function sendImageMessage(phone, imageUrl, caption) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp image send attempt", {
-    recipient,
-    imageUrl,
+    recipient: maskWhatsappPhone(recipient),
+    mediaType: "image",
     captionLength: caption.length,
   });
 
@@ -1022,9 +1063,11 @@ async function sendImageMessage(phone, imageUrl, caption) {
       },
     );
 
+    assertWhatsappAccepted(response.data);
     console.log("Gupshup WhatsApp image send accepted", {
-      recipient,
-      result: response.data,
+      recipient: maskWhatsappPhone(recipient),
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
 
     await saveOutboundWhatsappMessage({
@@ -1039,7 +1082,7 @@ async function sendImageMessage(phone, imageUrl, caption) {
   } catch (err) {
     console.error(
       "Gupshup WhatsApp image send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
@@ -1048,8 +1091,8 @@ async function sendImageMessage(phone, imageUrl, caption) {
 async function sendVideoMessage(phone, videoUrl, caption) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp video send attempt", {
-    recipient,
-    videoUrl,
+    recipient: maskWhatsappPhone(recipient),
+    mediaType: "video",
     captionLength: caption.length,
   });
 
@@ -1072,9 +1115,11 @@ async function sendVideoMessage(phone, videoUrl, caption) {
       },
     );
 
+    assertWhatsappAccepted(response.data);
     console.log("Gupshup WhatsApp video send accepted", {
-      recipient,
-      result: response.data,
+      recipient: maskWhatsappPhone(recipient),
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
 
     await saveOutboundWhatsappMessage({
@@ -1089,10 +1134,17 @@ async function sendVideoMessage(phone, videoUrl, caption) {
   } catch (err) {
     console.error(
       "Gupshup WhatsApp video send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
+}
+
+function sanitizeWhatsappTemplateParameter(value) {
+  return String(value ?? "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/ {2,}/g, " ")
+    .trim();
 }
 
 async function sendTemplateMessage(
@@ -1103,24 +1155,31 @@ async function sendTemplateMessage(
 ) {
   const recipient = normalizeWhatsappRecipient(phone);
   const templateId = getGupshupTemplateId(templateName, languageCode);
+  const sanitizedBodyParams = bodyParams.map(sanitizeWhatsappTemplateParameter);
   const validatedMedia = validateWhatsappTemplatePayload(
     templateName,
-    bodyParams,
+    sanitizedBodyParams,
   );
+  const sanitizedParameterIndexes = bodyParams
+    .map((value, index) =>
+      String(value ?? "") === sanitizedBodyParams[index] ? null : index + 1,
+    )
+    .filter(Boolean);
 
   console.log("Gupshup WhatsApp template send attempt", {
-    recipient,
+    recipient: maskWhatsappPhone(recipient),
     templateName,
     templateId,
     languageCode,
-    parameterCount: bodyParams.length,
+    parameterCount: sanitizedBodyParams.length,
+    sanitizedParameterIndexes,
   });
 
   try {
     const templateFields = {
       template: {
         id: templateId,
-        params: bodyParams.map(String),
+        params: sanitizedBodyParams,
       },
     };
     const media = validatedMedia || getWhatsappTemplateMedia(templateName);
@@ -1143,25 +1202,29 @@ async function sendTemplateMessage(
       },
     );
 
+    const providerMessageId = getProviderMessageId(response.data);
+    assertWhatsappAccepted(response.data);
+
     console.log("Gupshup WhatsApp template send accepted", {
-      recipient,
+      recipient: maskWhatsappPhone(recipient),
       templateName,
       mediaType: media?.type || null,
-      result: response.data,
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
 
     await saveOutboundWhatsappMessage({
       phone: recipient,
       type: "template",
-      content: `Template: ${templateName}${bodyParams.length ? ` — ${bodyParams.join(" · ")}` : ""}`,
-      providerMessageId: getProviderMessageId(response.data),
+      content: `Template: ${templateName}${sanitizedBodyParams.length ? ` — ${sanitizedBodyParams.join(" · ")}` : ""}`,
+      providerMessageId,
     });
 
     return response.data;
   } catch (err) {
     console.error(
       "Gupshup WhatsApp template send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
@@ -1182,7 +1245,7 @@ const WHATSAPP_REORDER_DELAY_MS = 7 * 24 * 60 * 60_000;
 async function sendQuickReplyMessage(phone, message) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp quick-reply send attempt", {
-    recipient,
+    recipient: maskWhatsappPhone(recipient),
     buttonCount: message.options?.length || 0,
     msgid: message.msgid,
   });
@@ -1199,9 +1262,11 @@ async function sendQuickReplyMessage(phone, message) {
         timeout: 10000,
       },
     );
+    assertWhatsappAccepted(response.data);
     console.log("Gupshup WhatsApp quick-reply send accepted", {
-      recipient,
-      result: response.data,
+      recipient: maskWhatsappPhone(recipient),
+      providerMessageId: getProviderMessageId(response.data),
+      status: "submitted",
     });
     await saveOutboundWhatsappMessage({
       phone: recipient,
@@ -1216,7 +1281,7 @@ async function sendQuickReplyMessage(phone, message) {
   } catch (err) {
     console.error(
       "Gupshup WhatsApp quick-reply send failed",
-      err.response?.data || err.message,
+      err.code || "provider_submission_failed",
     );
     throw err;
   }
@@ -1246,6 +1311,11 @@ const WHATSAPP_AUTOMATION = {
   },
   cod_confirmation: {
     env: "WHATSAPP_COD_TEMPLATE_NAME",
+    kind: "transactional",
+  },
+  cod_prepaid_confirmation: {
+    env: "WHATSAPP_COD_PREPAID_TEMPLATE_ID",
+    defaultTemplate: DEFAULT_COD_PREPAID_TEMPLATE_ID,
     kind: "transactional",
   },
   order_status_update: {
@@ -1283,6 +1353,8 @@ function normalizeWhatsappProductId(productId = "") {
 }
 
 const WHATSAPP_TEMPLATE_CONTRACTS = {
+  [DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID]: { parameterCount: 6, mediaType: null },
+  [DEFAULT_COD_PREPAID_TEMPLATE_ID]: { parameterCount: 3, mediaType: null },
   valour_new_lead: { parameterCount: 1, mediaType: "image" },
   valour_product_demo: { parameterCount: 1, mediaType: "image" },
   valour_high_intent: { parameterCount: 0, mediaType: "image" },
@@ -1300,8 +1372,9 @@ const WHATSAPP_TEMPLATE_CONTRACTS = {
 };
 
 function validateWhatsappTemplatePayload(templateName, parameters = []) {
-  const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
-  if (!contract) return null;
+  const canonical = templateName === "1071618388950122" ? DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID : templateName;
+  const contract = WHATSAPP_TEMPLATE_CONTRACTS[canonical];
+  if (!contract) throw new Error(`Missing template contract for ${templateName}`);
   if (
     !Array.isArray(parameters) ||
     parameters.length !== contract.parameterCount
@@ -1310,6 +1383,7 @@ function validateWhatsappTemplatePayload(templateName, parameters = []) {
       `Template ${templateName} requires ${contract.parameterCount} parameters; received ${parameters?.length ?? 0}`,
     );
   }
+  if (parameters.some(value => !String(value).trim() || String(value).length > 1024)) throw new Error(`Template ${templateName} has invalid parameter length`);
   const media = getWhatsappTemplateMedia(templateName);
   if (contract.mediaType && media?.type !== contract.mediaType) {
     throw new Error(
@@ -1326,7 +1400,8 @@ function validateWhatsappTemplatePayload(templateName, parameters = []) {
 
 function validateWhatsappAutomationConfig() {
   for (const [event, definition] of Object.entries(WHATSAPP_AUTOMATION)) {
-    const templateName = process.env[definition.env];
+    const templateName =
+      process.env[definition.env] || definition.defaultTemplate;
     if (!templateName) continue;
     if (!WHATSAPP_TEMPLATE_CONTRACTS[templateName]) {
       throw new Error(
@@ -1364,6 +1439,9 @@ function automationLanguage(event) {
   }
   if (event === "review_request") {
     return process.env.WHATSAPP_REVIEW_TEMPLATE_LANGUAGE || "en_US";
+  }
+  if (event === "cod_prepaid_confirmation") {
+    return process.env.WHATSAPP_COD_PREPAID_TEMPLATE_LANGUAGE || "en_US";
   }
   const suffix = event.toUpperCase().replace(/[^A-Z0-9]/g, "_");
   return (
@@ -1435,7 +1513,8 @@ async function scheduleWhatsappJob({
   const definition = WHATSAPP_AUTOMATION[event];
   if (!definition)
     throw new Error(`Unknown WhatsApp automation event: ${event}`);
-  const templateName = process.env[definition.env];
+  const templateName =
+    process.env[definition.env] || definition.defaultTemplate;
   if (!templateName) {
     console.log(
       `WhatsApp automation skipped: ${definition.env} is not configured`,
@@ -1444,6 +1523,7 @@ async function scheduleWhatsappJob({
   }
   const recipient = normalizeWhatsappRecipient(phone);
   if (!recipient) return { scheduled: false, reason: "missing_phone" };
+  parameters = parameters.map(sanitizeWhatsappTemplateParameter);
   validateWhatsappTemplatePayload(templateName, parameters);
   const subject =
     getOrderReference(order) || String(sessionId || customerId || recipient);
@@ -1453,6 +1533,10 @@ async function scheduleWhatsappJob({
       ? nextIstSendTime(scheduledAt)
       : scheduledAt;
   try {
+    const rearmed = await collections().messageJobs.updateOne({ jobKey, status: "failed" }, {
+      $set: { status: "scheduled", templateName, parameters, scheduledAt: sendAt, attemptCount: 0, recoveryReason: "fresh_trigger_after_definite_failure" },
+      $unset: { submissionStartedAt: "", processingStartedAt: "", providerMessageId: "" },
+    });
     const result = await collections().messageJobs.updateOne(
       { jobKey },
       {
@@ -1479,14 +1563,14 @@ async function scheduleWhatsappJob({
       },
       { upsert: true },
     );
-    const scheduled = result.upsertedCount === 1;
+    const scheduled = result.upsertedCount === 1 || rearmed.modifiedCount === 1;
     if (
       scheduled &&
       definition.kind === "transactional" &&
       sendAt <= new Date()
     ) {
       setImmediate(() => {
-        void processDueWhatsappJobs().catch((err) =>
+        void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) =>
           console.error(
             "Immediate WhatsApp job processing failed",
             err.message,
@@ -1494,6 +1578,7 @@ async function scheduleWhatsappJob({
         );
       });
     }
+    console.log("[WHATSAPP][JOB_SCHEDULE]", { trigger: event, jobKey, scheduled, reason: scheduled ? "new_event" : "duplicate", scheduledAt: sendAt });
     return { scheduled, jobKey };
   } catch (err) {
     if (err?.code === 11000)
@@ -1503,8 +1588,8 @@ async function scheduleWhatsappJob({
 }
 
 async function cancelWhatsappJobs(filter, reason) {
-  return collections().messageJobs.updateMany(
-    { ...filter, status: "scheduled" },
+  const result = await collections().messageJobs.updateMany(
+    { ...filter, $or: [{ status: "scheduled" }, { status: "processing", submissionStartedAt: { $exists: false } }] },
     {
       $set: {
         status: "cancelled",
@@ -1513,6 +1598,8 @@ async function cancelWhatsappJobs(filter, reason) {
       },
     },
   );
+  console.log("[WHATSAPP][JOB_CANCEL]", { count: result.modifiedCount, reason });
+  return result;
 }
 
 async function resolveAutomationOrder(job) {
@@ -1543,6 +1630,9 @@ async function runWhatsappQualityGate(job) {
     return { action: "cancel", reason: "invalid_template_parameters" };
   }
   const order = await resolveAutomationOrder(job);
+  if (order && /cancel|refund/i.test(`${order.shippingStatus || ""} ${order.paymentStatus || ""}`) && job.trigger !== "order_status_update") {
+    return { action: "cancel", reason: "order_cancelled_or_refunded" };
+  }
   if (
     ["checkout_reminder", "price_delivery_followup"].includes(job.trigger) &&
     order &&
@@ -1597,6 +1687,9 @@ async function runWhatsappQualityGate(job) {
   if (openSupport && job.kind === "marketing") {
     return { action: "cancel", reason: "unresolved_support_case" };
   }
+  if ((job.kind === "marketing" || job.trigger === "delivered_ready_to_cook") && nextIstSendTime(new Date()) > new Date()) {
+    return { action: "reschedule", reason: "outside_sending_hours", scheduledAt: nextIstSendTime(new Date()) };
+  }
   if (job.kind === "marketing") {
     const now = new Date();
     const [dailyCount, weeklyCount] = await Promise.all([
@@ -1627,7 +1720,7 @@ async function runWhatsappQualityGate(job) {
       const user = await collections().users.findOne({
         phone: { $regex: `${String(job.phone).slice(-10)}$` },
       });
-      if (user?.last_seen_at && user.last_seen_at > job.createdAt) {
+      if (user?.last_seen_at && user.last_seen_at > job.createdAt && user.last_seen_at.getTime() + 24 * 60 * 60_000 > Date.now()) {
         return {
           action: "reschedule",
           reason: "recent_customer_reply",
@@ -1646,7 +1739,7 @@ async function processDueWhatsappJobs() {
   while (true) {
     const job = await collections().messageJobs.findOneAndUpdate(
       { status: "scheduled", scheduledAt: { $lte: new Date() } },
-      { $set: { status: "processing", processingStartedAt: new Date() } },
+      { $set: { status: "processing", processingStartedAt: new Date(), claimToken: crypto.randomUUID() } },
       { sort: { scheduledAt: 1 }, returnDocument: "after" },
     );
     if (!job) break;
@@ -1662,7 +1755,7 @@ async function processDueWhatsappJobs() {
       const decision = await runWhatsappQualityGate(job);
       if (decision.action === "cancel") {
         await collections().messageJobs.updateOne(
-          { _id: job._id },
+          { _id: job._id, status: "processing", claimToken: job.claimToken },
           {
             $set: {
               status: "cancelled",
@@ -1679,7 +1772,7 @@ async function processDueWhatsappJobs() {
       }
       if (decision.action === "reschedule") {
         await collections().messageJobs.updateOne(
-          { _id: job._id },
+          { _id: job._id, status: "processing", claimToken: job.claimToken },
           {
             $set: {
               status: "scheduled",
@@ -1691,23 +1784,30 @@ async function processDueWhatsappJobs() {
         );
         continue;
       }
+      const sendClaim = await collections().messageJobs.updateOne(
+        { _id: job._id, status: "processing", claimToken: job.claimToken },
+        { $set: { submissionStartedAt: new Date() } },
+      );
+      if (!sendClaim.matchedCount) continue; // Cancelled before the HTTP request.
+      job.submissionStartedAt = new Date();
       const result = await sendTemplateMessage(
         job.phone,
         job.templateName,
         job.languageCode,
         job.parameters,
       );
+      job.acceptedProviderId = getProviderMessageId(result);
       if (job.trigger === "post_cook_feedback" && job.sessionId) {
-        await updateSession(job.sessionId, {
+        await collections().sessions.updateOne({ _id: job.sessionId, current_state: { $in: ["guided_cooking", "post_cook_feedback"] } }, { $set: {
           current_state: "post_cook_feedback",
           last_flow_state: "post_cook_feedback",
           post_cook_feedback_prompted_at: new Date(),
           last_left_at: new Date(),
-        });
+        } });
       }
       const providerMessageId = getProviderMessageId(result);
       await collections().messageJobs.updateOne(
-        { _id: job._id },
+        { _id: job._id, status: "processing", claimToken: job.claimToken },
         {
           $set: {
             status: "submitted",
@@ -1718,6 +1818,7 @@ async function processDueWhatsappJobs() {
           $unset: { processingStartedAt: "" },
         },
       );
+      await reconcileWhatsappStatus(providerMessageId);
       console.log("[WHATSAPP][SUBMITTED]", {
         jobKey: job.jobKey,
         recipient: maskWhatsappPhone(job.phone),
@@ -1729,17 +1830,19 @@ async function processDueWhatsappJobs() {
       });
     } catch (err) {
       const attemptCount = Number(job.attemptCount || 0) + 1;
-      const permanent = /template|parameter|invalid phone|destination/i.test(
+      const permanent = /template|parameter|invalid phone|destination|rejected/i.test(
         String(err.response?.data?.message || err.message),
       );
+      const uncertain = Boolean(job.acceptedProviderId) || isUncertainWhatsappSend(err);
       const failed = permanent || attemptCount >= WHATSAPP_JOB_MAX_ATTEMPTS;
       const delay =
         Math.min(60, 5 * 3 ** Math.max(0, attemptCount - 1)) * 60_000;
       await collections().messageJobs.updateOne(
-        { _id: job._id },
+        { _id: job._id, status: "processing", claimToken: job.claimToken },
         {
           $set: {
-            status: failed ? "failed" : "scheduled",
+            status: uncertain ? "delivery_unknown" : failed ? "failed" : "scheduled",
+            ...(job.acceptedProviderId ? { providerMessageId: job.acceptedProviderId } : {}),
             attemptCount,
             scheduledAt: new Date(Date.now() + delay),
             lastError: String(err.response?.data?.message || err.message).slice(
@@ -1748,14 +1851,15 @@ async function processDueWhatsappJobs() {
             ),
             failedAt: failed ? new Date() : null,
           },
-          $unset: { processingStartedAt: "" },
+          $unset: { processingStartedAt: "", ...(!uncertain ? { submissionStartedAt: "" } : {}) },
         },
       );
       console.error("[WHATSAPP][SEND_ERROR]", {
         jobKey: job.jobKey,
         recipient: maskWhatsappPhone(job.phone),
         attemptCount,
-        willRetry: !failed,
+        willRetry: !failed && !uncertain,
+        reason: uncertain ? "reconcile_before_resend" : "submission_rejected",
         error: String(err.response?.data?.message || err.message).slice(0, 500),
       });
     }
@@ -1764,11 +1868,23 @@ async function processDueWhatsappJobs() {
 
 async function recoverStuckWhatsappJobs() {
   if (!mongoReady) return;
+  for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
+    for (const [collectionName, prefix] of [["orders", "adminOrderAlerts"], ["supportCases", "adminAlerts"]]) {
+      const root = `${prefix}.${recipient}`;
+      await collections()[collectionName].updateMany({ [`${root}.status`]: "processing", [`${root}.claimedAt`]: { $lt: new Date(Date.now() - 10 * 60_000) } }, {
+        $set: { [`${root}.status`]: "delivery_unknown", [`${root}.recoveryReason`]: "interrupted_admin_alert" },
+      });
+    }
+  }
+  await collections().messageJobs.updateMany({ status: "processing", processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) }, submissionStartedAt: { $exists: true } }, {
+    $set: { status: "delivery_unknown", recoveryReason: "submission_may_have_reached_provider" },
+  });
   await collections().messageJobs.updateMany(
     {
       status: "processing",
       processingStartedAt: { $lt: new Date(Date.now() - 10 * 60_000) },
       providerMessageId: null,
+      submissionStartedAt: { $exists: false },
     },
     {
       $set: {
@@ -1786,11 +1902,13 @@ function startWhatsappJobWorker() {
   void recoverStuckWhatsappJobs()
     .then(() => Promise.all([
       processDueWhatsappJobs(),
+      drainWhatsappInbox(),
       processAbandonedCheckoutOtpAlerts(),
     ]))
     .catch((err) => console.error("WhatsApp job worker failed", err.message));
   whatsappJobTimer = setInterval(() => {
-    void processDueWhatsappJobs().catch((err) =>
+    void drainWhatsappInbox().catch(error => console.error("[WHATSAPP][INBOX_ERROR]", { code: error.code || "database_error" }));
+    void recoverStuckWhatsappJobs().then(processDueWhatsappJobs).catch((err) =>
       console.error("WhatsApp job worker failed", err.message),
     );
     void processAbandonedCheckoutOtpAlerts().catch((err) =>
@@ -1799,7 +1917,7 @@ function startWhatsappJobWorker() {
   }, WHATSAPP_JOB_POLL_MS);
 }
 
-async function recordWhatsappJobStatus(status = {}) {
+async function recordWhatsappJobStatus(status = {}, persist = true) {
   if (!mongoReady || !status.id) return;
   const normalized = String(status.status || "").toLowerCase();
   const allowed = new Set([
@@ -1811,6 +1929,9 @@ async function recordWhatsappJobStatus(status = {}) {
     "failed",
   ]);
   if (!allowed.has(normalized)) return;
+  if (persist) await collections().whatsappStatuses.updateOne({ eventKey: `${status.id}:${normalized}` }, {
+    $set: { status, receivedAt: new Date() },
+  }, { upsert: true });
   const rawTimestamp = Number(status.timestamp);
   const timestamp = Number.isFinite(rawTimestamp)
     ? new Date(
@@ -1833,14 +1954,21 @@ async function recordWhatsappJobStatus(status = {}) {
     read: ["processing", "submitted", "enqueued", "sent", "delivered", "read"],
     failed: ["processing", "submitted", "enqueued", "sent", "failed"],
   }[normalized];
+  allowedPreviousStatuses.push("delivery_unknown");
   const result = await collections().messageJobs.updateOne(
+    { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
+    { $set: updates },
+  );
+  const manualSendResult = await collections().adminTemplateSends.updateOne(
     { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
     { $set: updates },
   );
   const outboundIds = [status.id, status.whatsappMessageId].filter(Boolean);
   const outboundResult = outboundIds.length
     ? await collections().messages.updateOne(
-        { provider_message_id: { $in: outboundIds }, direction: "outbound" },
+        { provider_message_id: { $in: outboundIds }, direction: "outbound", $or: [
+          { delivery_status: { $exists: false } }, { delivery_status: { $in: allowedPreviousStatuses } },
+        ] },
         {
           $set: {
             delivery_status: normalized,
@@ -1853,18 +1981,27 @@ async function recordWhatsappJobStatus(status = {}) {
         },
       )
     : { matchedCount: 0 };
+  for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
+    for (const [collectionName, prefix] of [["orders", "adminOrderAlerts"], ["supportCases", "adminAlerts"]]) {
+      const root = `${prefix}.${recipient}`;
+      await collections()[collectionName].updateOne({ [`${root}.providerMessageId`]: { $in: outboundIds }, [`${root}.status`]: { $in: allowedPreviousStatuses } }, {
+        $set: { [`${root}.status`]: normalized, [`${root}.${normalized}At`]: timestamp },
+      });
+    }
+  }
   const label = normalized === "failed" ? "FAILED" : "CALLBACK";
   console.log(`[WHATSAPP][${label}]`, {
     providerMessageId: status.id,
     whatsappMessageId: status.whatsappMessageId || null,
     status: normalized,
     matchedJob: result.matchedCount === 1,
+    matchedAdminSend: manualSendResult.matchedCount === 1,
     matchedOutbound: outboundResult.matchedCount === 1,
     recipient: maskWhatsappPhone(status.destination || status.recipient_id),
-    errors: status.errors || null,
+    errorCode: status.errors?.code || status.errors?.[0]?.code || null,
     timestamp: timestamp.toISOString(),
   });
-  if (!result.matchedCount && !outboundResult.matchedCount) {
+  if (!result.matchedCount && !manualSendResult.matchedCount && !outboundResult.matchedCount) {
     console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
       providerMessageId: status.id,
       status: normalized,
@@ -1874,61 +2011,14 @@ async function recordWhatsappJobStatus(status = {}) {
   }
 }
 
+async function reconcileWhatsappStatus(providerMessageId) {
+  if (!providerMessageId || !mongoReady) return;
+  const events = await collections().whatsappStatuses.find({ "status.id": providerMessageId }).sort({ receivedAt: 1 }).toArray();
+  for (const event of events) await recordWhatsappJobStatus(event.status, false);
+}
+
 function parseGupshupV2Webhook(body = {}) {
-  const payload = body.payload || {};
-  if (body.type === "message-event") {
-    const eventType = String(payload.type || "").toLowerCase();
-    return {
-      status: {
-        id: payload.gsId || payload.id,
-        whatsappMessageId: payload.gsId
-          ? payload.id
-          : payload.payload?.whatsappMessageId,
-        destination: payload.destination,
-        status: eventType,
-        timestamp: payload.ts || body.timestamp,
-        errors:
-          eventType === "failed"
-            ? payload.payload || { code: payload.code, reason: payload.reason }
-            : undefined,
-      },
-      message: null,
-    };
-  }
-  if (body.type !== "message") return { status: null, message: null };
-  const inner = payload.payload || {};
-  const from =
-    payload.source ||
-    payload.sender?.phone ||
-    payload.phone ||
-    inner.sender?.phone;
-  const menuPostback = resolveMainMenuPostback(
-    inner.title,
-    inner.text,
-    inner.postbackText,
-    inner.body,
-    inner.payload,
-  );
-  const text =
-    menuPostback ||
-    inner.postbackText ||
-    inner.text ||
-    inner.title ||
-    inner.body ||
-    inner.payload ||
-    "";
-  if (!from) return { status: null, message: null };
-  return {
-    status: null,
-    message: {
-      from: String(from),
-      id: payload.id || `gupshup-${body.timestamp || Date.now()}`,
-      type: payload.type || "text",
-      text: { body: String(text) },
-      profileName: payload.sender?.name || inner.sender?.name || "",
-      gupshupPayload: payload,
-    },
-  };
+  return inbound.parseNative(body);
 }
 
 async function saveInboundMessage({
@@ -2053,10 +2143,15 @@ async function getOrCreateSession(userId) {
 async function updateSession(sessionId, updates) {
   const { sessions } = collections();
 
+  const before = updates.current_state ? await sessions.findOne({ _id: sessionId }) : null;
   await sessions.updateOne(
     { _id: sessionId },
     { $set: { ...updates, updated_at: new Date() } },
   );
+  if (before && ["guided_cooking", "post_cook_feedback"].includes(before.current_state) && !["guided_cooking", "post_cook_feedback"].includes(updates.current_state)) {
+    await cancelWhatsappJobs({ sessionId, trigger: "post_cook_feedback" }, "customer_left_cooking");
+  }
+  if (updates.current_state) console.log("[WHATSAPP][STATE]", { sessionId: String(sessionId), before: before?.current_state || "idle", after: updates.current_state });
 }
 
 async function resetToIdle(sessionId) {
@@ -2247,7 +2342,10 @@ async function findOrderByReference(reference, phone = "") {
 
   const order = await orders.findOne(query);
 
-  if (order) return order;
+  if (order) {
+    if (!phoneDigits || [order.phone, order.whatsappPhone].some(value => normalizeIndianPhone(value) === phoneDigits)) return order;
+    return null;
+  }
 
   if (!phoneDigits) return null;
 
@@ -2265,6 +2363,11 @@ async function findOrderByReference(reference, phone = "") {
         item._id.toString() === reference,
     ) || null
   );
+}
+
+async function findLatestWhatsappOrder(phone) {
+  const suffix = `${normalizeIndianPhone(phone)}$`;
+  return collections().orders.findOne({ $or: [{ phone: { $regex: suffix } }, { whatsappPhone: { $regex: suffix } }] }, { sort: { createdAt: -1 } });
 }
 
 function formatProductsForWhatsapp(products = []) {
@@ -2295,12 +2398,7 @@ function getPublicOrderItems(order = {}) {
 }
 
 function getWhatsappOrderRecipients(order) {
-  const defaultRecipient = normalizeWhatsappRecipient(
-    process.env.DEFAULT_WHATSAPP_ORDER_PHONE,
-  );
-
   return [
-    defaultRecipient,
     normalizeWhatsappRecipient(order.phone),
     normalizeWhatsappRecipient(order.whatsappPhone),
   ].filter((recipient, index, recipients) => {
@@ -2349,7 +2447,7 @@ function getOrderTemplateParams(order) {
   return [
     orderNumber,
     total,
-    `${formatProductsForWhatsapp(order.products)}\nExpected delivery: ${getExpectedDeliveryText(order)}`,
+    `${formatProductsForWhatsapp(order.products)} · Expected delivery: ${getExpectedDeliveryText(order)}`,
     createOrderTrackingToken(order),
   ];
 }
@@ -2360,11 +2458,124 @@ function getCodTemplateParams(order) {
 
   return [
     orderNumber,
-    `${formatProductsForWhatsapp(order.products)}\nExpected delivery: ${getExpectedDeliveryText(order)}`,
+    `${formatProductsForWhatsapp(order.products)} · Expected delivery: ${getExpectedDeliveryText(order)}`,
     total,
     createOrderPaymentToken(order),
     createOrderTrackingToken(order),
   ];
+}
+
+const ADMIN_WHATSAPP_TEMPLATE_METADATA = {
+  new_lead: { label: "New lead welcome", parameterLabels: ["Dish name"], bodyText: "Welcome to VALOUR 👋\n\nMaking {{1}} at home can now be simple. Explore our ready-to-cook liquid spice and see how it works.", buttons: ["Explore product"] },
+  product_demo: { label: "Product demonstration", parameterLabels: ["Dish name"], bodyText: "Make {{1}} with VALOUR Velvety Butter Chicken Liquid Spice.\n\nThe cooking base handles the slow work. Add chicken and finish the dish at home.", buttons: ["Watch cooking demo", "Order online"] },
+  high_intent_followup: { label: "High-intent follow-up", parameterLabels: [], bodyText: "Still thinking about your next butter chicken?\n\nVALOUR gives you the complete cooking base, so you can get rich, balanced flavour without building the sauce from scratch.", buttons: ["Explore VALOUR"] },
+  price_delivery_followup: { label: "Price and delivery follow-up", parameterLabels: ["Product name", "Price", "Delivery estimate"], bodyText: "Here are the details you asked for:\n\nProduct: {{1}}\nPrice: {{2}}\nDelivery: {{3}}\n\nOrder online when you're ready.", buttons: ["Order online"] },
+  checkout_reminder: { label: "Checkout reminder", parameterLabels: ["Product name", "Amount"], bodyText: "You left {{1}} in checkout.\n\nYour total is {{2}}. Complete your order when you're ready.", buttons: ["Complete order"] },
+  order_confirmation: { label: "Prepaid order confirmation", parameterLabels: ["Order number", "Amount", "Items and delivery estimate", "Tracking button token"], bodyText: "Your VALOUR order {{1}} is confirmed.\n\nAmount paid: {{2}}\nOrder details: {{3}}\n\nUse the button below to track your order.", buttons: ["Track order"] },
+  cod_confirmation: { label: "Cash on Delivery confirmation", parameterLabels: ["Order number", "Items and delivery estimate", "Amount", "Payment button token", "Tracking button token"], bodyText: "Your VALOUR order {{1}} is confirmed for Cash on Delivery.\n\nOrder details: {{2}}\nAmount due: {{3}}\n\nPay online now or track your order using the buttons below.", buttons: ["Pay online", "Track order"] },
+  cod_prepaid_confirmation: { label: "COD converted to prepaid", parameterLabels: ["Order number", "Amount paid", "Tracking button token"], bodyText: "Your payment for VALOUR order {{1}} was successful.\n\nAmount paid: {{2}}\nPayment method: Online payment\n\nYour order has been updated from Cash on Delivery to Prepaid. No payment will be collected at delivery.\n\nUse the button below to track your order.", buttons: ["Track order"] },
+  order_status_update: { label: "Order status update", parameterLabels: ["Order number", "Shipping status", "Payment method", "Payment status", "Expected delivery", "Tracking button token"], bodyText: "VALOUR order {{1}} update\n\nShipping status: {{2}}\nPayment method: {{3}}\nPayment status: {{4}}\nExpected delivery: {{5}}\n\nUse the button below to track your order.", buttons: ["Track order"] },
+  delivered_ready_to_cook: { label: "Delivered and ready to cook", parameterLabels: ["Order number"], bodyText: "Your VALOUR order {{1}} has been delivered 🎉\n\nYour Velvety Butter Chicken Liquid Spice is ready when you are. Use the button below to start cooking.", buttons: ["Start cooking"] },
+  cooking_reminder: { label: "Cooking reminder", parameterLabels: ["Dish name"], bodyText: "Ready to cook {{1}}?\n\nYour VALOUR cooking guide is waiting. Open WhatsApp and choose Cooking Video whenever you're ready.", buttons: ["Watch cooking video"] },
+  post_cook_feedback: { label: "Post-cook feedback", parameterLabels: [], bodyText: "How did your VALOUR meal turn out?\n\nChoose an option below to share your experience.", buttons: ["Loved it ❤️", "Could be better"] },
+  review_request: { label: "Review request", parameterLabels: [], bodyText: "Enjoyed your VALOUR meal?\n\nWe'd love to hear from you. Use the button below to rate VALOUR.", buttons: ["Rate VALOUR", "Not now"] },
+  reorder_reminder: { label: "Reorder reminder", parameterLabels: ["Product name"], bodyText: "Ready for another {{1}} night?\n\nReorder VALOUR Velvety Butter Chicken Liquid Spice and make dinner easy again.", buttons: ["Reorder"] },
+};
+
+function getWhatsappTemplateTextOverrides() {
+  if (!process.env.WHATSAPP_TEMPLATE_TEXTS) return {};
+  try {
+    const parsed = JSON.parse(process.env.WHATSAPP_TEMPLATE_TEXTS);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getAdminWhatsappTemplateCatalog() {
+  const textOverrides = getWhatsappTemplateTextOverrides();
+  return Object.entries(ADMIN_WHATSAPP_TEMPLATE_METADATA).map(
+    ([key, metadata]) => {
+      const definition = WHATSAPP_AUTOMATION[key];
+      const templateName = process.env[definition.env] || definition.defaultTemplate || "";
+      const languageCode = automationLanguage(key);
+      const contract = WHATSAPP_TEMPLATE_CONTRACTS[templateName];
+      const configuredOverride = textOverrides[templateName] || textOverrides[key] || {};
+      const textOverride = typeof configuredOverride === "string"
+        ? { bodyText: configuredOverride }
+        : configuredOverride;
+      let templateId = "";
+      let configurationError = "";
+      try {
+        if (!templateName) throw new Error("Template name is not configured");
+        if (!contract) throw new Error("Template contract is not configured");
+        if (contract.parameterCount !== metadata.parameterLabels.length) {
+          throw new Error("Template parameter labels do not match its contract");
+        }
+        validateWhatsappTemplatePayload(
+          templateName,
+          Array.from({ length: contract.parameterCount }, () => "Configuration check"),
+        );
+        templateId = getGupshupTemplateId(templateName, languageCode);
+      } catch (error) {
+        configurationError = error.message;
+      }
+      return {
+        key,
+        label: metadata.label,
+        templateName,
+        templateId,
+        languageCode,
+        parameterCount: contract?.parameterCount ?? metadata.parameterLabels.length,
+        parameterLabels: metadata.parameterLabels,
+        bodyText: String(textOverride.bodyText || metadata.bodyText || ""),
+        footerText: String(textOverride.footerText || metadata.footerText || ""),
+        buttons: Array.isArray(textOverride.buttons)
+          ? textOverride.buttons.map(String)
+          : metadata.buttons || [],
+        mediaType: contract?.mediaType || null,
+        available: Boolean(templateId && contract && !configurationError),
+        configurationError,
+      };
+    },
+  );
+}
+
+function normalizeAdminWhatsappPhone(phone = "") {
+  const raw = String(phone).trim();
+  if (!/^\+?[0-9 ()-]+$/.test(raw)) return "";
+  const recipient = normalizeWhatsappRecipient(raw);
+  return /^\d{8,15}$/.test(recipient) ? recipient : "";
+}
+
+function serializeAdminTemplateSend(record = {}) {
+  return {
+    requestId: record.requestId || "",
+    templateKey: record.templateKey || "",
+    templateLabel: record.templateLabel || record.templateName || "",
+    templateName: record.templateName || "",
+    templateId: record.templateId || "",
+    phone: record.phone || "",
+    parameterCount: Number(record.parameterCount) || 0,
+    status: record.status || "processing",
+    providerMessageId: record.providerMessageId || "",
+    createdAt: record.createdAt || null,
+    submittedAt: record.submittedAt || null,
+    sentAt: record.sentAt || null,
+    deliveredAt: record.deliveredAt || null,
+    readAt: record.readAt || null,
+    failedAt: record.failedAt || null,
+    statusUpdatedAt: record.statusUpdatedAt || null,
+    error: record.error || record.providerErrors || "",
+  };
+}
+
+function getCodPrepaidTemplateParams(order) {
+  const orderNumber = order.orderNumber || formatOrderNumber(order._id);
+  const total = `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")}`;
+
+  // Gupshup expects dynamic URL-button values after the body variables.
+  return [orderNumber, total, createOrderTrackingToken(order)];
 }
 
 function getOrderStatusTemplateParams(order) {
@@ -2828,8 +3039,10 @@ async function saveOutboundWhatsappMessage({
       content: String(content || "").slice(0, 10000),
       media_url: String(mediaUrl || "").slice(0, 2000),
       provider_message_id: providerMessageId || null,
+      delivery_status: "submitted",
       created_at: new Date(),
     });
+    await reconcileWhatsappStatus(providerMessageId);
   } catch (error) {
     if (error?.code !== 11000) {
       console.error(
@@ -2928,9 +3141,7 @@ async function sendOrderConfirmationWhatsapp(order) {
   const templateParams = getOrderTemplateParams(order);
 
   console.log("WhatsApp order confirmation debug", {
-    orderPhone: order.phone,
-    defaultPhone: process.env.DEFAULT_WHATSAPP_ORDER_PHONE,
-    recipients,
+    recipients: recipients.map(maskWhatsappPhone),
     hasImageUrl: Boolean(imageUrl),
     imageUrl,
     canSendImage,
@@ -3043,11 +3254,17 @@ async function schedulePaidOrderAutomation(order) {
     },
     "payment_completed",
   );
+  const isCodPrepaidConversion =
+    order.paymentConversion === "cod_to_prepaid";
   return scheduleWhatsappJob({
-    event: "order_confirmation",
+    event: isCodPrepaidConversion
+      ? "cod_prepaid_confirmation"
+      : "order_confirmation",
     phone,
     order,
-    parameters: getOrderTemplateParams(order),
+    parameters: isCodPrepaidConversion
+      ? getCodPrepaidTemplateParams(order)
+      : getOrderTemplateParams(order),
     scheduledAt: new Date(),
     occurrence: orderReference || "1",
   });
@@ -3089,7 +3306,7 @@ async function startOrderTrackingFlow({ session, phone }) {
     segment: "tracking_intent",
   });
 
-  await sendMessage(
+  await sendActionButtons(
     phone,
     `Please reply with your VALOUR order number.
 
@@ -3097,7 +3314,8 @@ Example: VALOUR-123ABC
 
 You can find it on the order success page after payment.
 
-If you cannot find the order number, reply HELP.`,
+If you cannot find the order number, tap Help.`,
+    [{ type: "text", title: "Help", postbackText: "HELP" }, { type: "text", title: "Main menu", postbackText: "MENU" }], "valour_tracking_help",
   );
 }
 
@@ -3109,7 +3327,7 @@ async function startTrackingRecovery({ session, phone }) {
     activationPreference: "track_order",
     segment: "tracking_recovery",
   });
-  await sendMessage(
+  await sendActionButtons(
     phone,
     `We can help find your order.
 
@@ -3117,7 +3335,8 @@ Please send these two details in ONE message:
 1. Registered phone number
 2. Delivery pincode
 
-Example: 9233054806, 799003`,
+Example: 9876543210, 799003`,
+    [{ type: "text", title: "Need help", postbackText: "NEED_HELP" }, { type: "text", title: "Main menu", postbackText: "MENU" }], "valour_tracking_recovery",
   );
 }
 
@@ -3142,6 +3361,10 @@ async function handleTrackingLookupDetails({ session, text, phone }) {
     return;
   }
 
+  if (details.phone !== normalizeIndianPhone(phone)) {
+    await sendMainMenuButton(phone, "For privacy, please message us from the phone used for your order, or select Customer Care from the main menu.");
+    return;
+  }
   const { orders } = collections();
   const matches = await orders
     .find({
@@ -3307,11 +3530,7 @@ For damaged or leaking products, include what arrived and the condition of the p
 const DEFAULT_CUSTOMER_CARE_PHONES = ["917005328132", "919233054806"];
 
 function getCustomerCareAlertRecipients() {
-  const configured = String(process.env.WHATSAPP_CUSTOMER_CARE_PHONES || "")
-    .split(",")
-    .map((value) => normalizeWhatsappRecipient(value))
-    .filter(Boolean);
-  return [...new Set([...configured, ...DEFAULT_CUSTOMER_CARE_PHONES])];
+  return [...DEFAULT_CUSTOMER_CARE_PHONES];
 }
 
 function buildCustomerCareAlertParams({ caseId, customerName, phone, details }) {
@@ -3356,7 +3575,7 @@ async function handleCustomerCareAdminCommand({ phone, text }) {
   const sender = normalizeWhatsappRecipient(phone);
   if (!getCustomerCareAlertRecipients().includes(sender)) return false;
   const command = parseCustomerCareAdminCommand(text);
-  const looksLikeCommand = /^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\b/i.test(
+  const looksLikeCommand = /^(DONE|RESOLVED|PENDING|REOPEN|STATUS)\s+VLR-/i.test(
     String(text || "").trim(),
   );
   if (!command) {
@@ -3460,6 +3679,7 @@ Address: ${addressParts.join(", ") || "Not recorded"}`;
 }
 
 async function sendRecentOrdersToWhatsappAdmin(phone) {
+  if (!isWhatsappOrderAdmin(phone)) return;
   const recipient = normalizeWhatsappRecipient(phone);
   const recentOrders = await collections().orders
     .find({})
@@ -3502,7 +3722,10 @@ async function sendRecentOrdersToWhatsappAdmin(phone) {
 }
 
 async function handleWhatsappAdminOrderLookup({ phone, text }) {
-  if (!isWhatsappOrderAdmin(phone)) return false;
+  if (!isWhatsappOrderAdmin(phone)) {
+    if (/^ADMIN_/i.test(String(text).trim())) { await sendMainMenuButton(phone, "This action is available only to VALOUR admins."); return true; }
+    return false;
+  }
   const value = String(text || "").trim();
   const lower = normalizeText(value);
 
@@ -3646,11 +3869,19 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
 
   for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
     const claimPath = `adminOrderAlerts.${recipient}.claimedAt`;
+    const templateIdPath = `adminOrderAlerts.${recipient}.templateId`;
     const claim = await collections().orders.findOneAndUpdate(
-      { _id: order._id, [claimPath]: { $exists: false } },
+      {
+        _id: order._id,
+        $or: [
+          { [claimPath]: { $exists: false } },
+          { [`adminOrderAlerts.${recipient}.status`]: "failed" },
+        ],
+      },
       {
         $set: {
           [claimPath]: new Date(),
+          [templateIdPath]: templateIdentifier,
           [`adminOrderAlerts.${recipient}.status`]: "processing",
         },
       },
@@ -3669,6 +3900,7 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
       mode: templateIdentifier ? "template" : "session_message",
     });
 
+    let acceptedProviderId = null;
     try {
       const providerResult = templateIdentifier
         ? await sendTemplateMessage(
@@ -3688,6 +3920,7 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
             "valour_admin_new_order",
           );
       const providerMessageId = getProviderMessageId(providerResult);
+      acceptedProviderId = providerMessageId;
       await collections().orders.updateOne(
         { _id: order._id },
         {
@@ -3699,6 +3932,7 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
           },
         },
       );
+      await reconcileWhatsappStatus(providerMessageId);
       results.push({ recipient, sent: true, providerMessageId });
       console.log("[WHATSAPP][ADMIN_NEW_ORDER_ALERT_SENT]", {
         orderId: String(order._id),
@@ -3710,13 +3944,13 @@ async function notifyWhatsappAdminsOfNewOrder(order) {
         { _id: order._id },
         {
           $set: {
-            [`adminOrderAlerts.${recipient}.status`]: "failed",
+            [`adminOrderAlerts.${recipient}.status`]: (Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? "delivery_unknown" : "failed",
             [`adminOrderAlerts.${recipient}.failedAt`]: new Date(),
             [`adminOrderAlerts.${recipient}.error`]: String(
               error.response?.data?.message || error.message,
             ).slice(0, 500),
           },
-          $unset: { [claimPath]: "" },
+          ...(!(Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? { $unset: { [claimPath]: "" } } : {}),
         },
       );
       results.push({ recipient, sent: false, error: error.message });
@@ -3786,13 +4020,19 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
   console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_START]", {
     caseId,
     templateName,
-    templateId: getGupshupTemplateId(templateName, language),
+    templateConfigured: Boolean(templateName),
     language,
     recipients: recipients.map(maskWhatsappPhone),
     parameterLengths: parameters.map((value) => String(value).length),
   });
 
   for (const recipient of recipients) {
+    const root = `adminAlerts.${recipient}`;
+    const claim = await collections().supportCases.findOneAndUpdate({ case_id: caseId, $or: [
+      { [`${root}.status`]: { $exists: false } }, { [`${root}.status`]: "failed" },
+    ] }, { $set: { [`${root}.status`]: "processing", [`${root}.claimedAt`]: new Date() } }, { returnDocument: "after" });
+    if (!claim) { results.push({ recipient, sent: false, reason: "already_claimed_or_missing_case" }); continue; }
+    let acceptedProviderId = null;
     try {
       const result = await sendTemplateMessage(
         recipient,
@@ -3801,12 +4041,17 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
         parameters,
       );
       const providerMessageId = getProviderMessageId(result);
+      acceptedProviderId = providerMessageId;
       const providerStatus = String(result?.status || "").toLowerCase();
       if (!providerMessageId || ["error", "failed", "rejected"].includes(providerStatus)) {
         throw new Error(
           `Gupshup did not accept the Customer Care alert: ${JSON.stringify(result).slice(0, 700)}`,
         );
       }
+      await collections().supportCases.updateOne({ case_id: caseId }, { $set: {
+        [`${root}.status`]: "submitted", [`${root}.providerMessageId`]: providerMessageId, [`${root}.submittedAt`]: new Date(),
+      } });
+      await reconcileWhatsappStatus(providerMessageId);
       results.push({ recipient, sent: true, providerMessageId });
       console.log("[WHATSAPP][CUSTOMER_CARE_ALERT_SENT]", {
         caseId,
@@ -3816,6 +4061,9 @@ async function notifyCustomerCareAdmins({ caseId, user, phone, details }) {
         providerStatus: providerStatus || "submitted",
       });
     } catch (error) {
+      await collections().supportCases.updateOne({ case_id: caseId }, { $set: {
+        [`${root}.status`]: (Boolean(acceptedProviderId) || isUncertainWhatsappSend(error)) ? "delivery_unknown" : "failed", [`${root}.errorCode`]: error.code || "provider_rejected",
+      } });
       results.push({ recipient, sent: false, error: String(error.message).slice(0, 300) });
       console.error("[WHATSAPP][CUSTOMER_CARE_ALERT_FAILED]", {
         caseId,
@@ -4275,7 +4523,7 @@ User message: ${text}`,
       const productId = result.productId || session.selected_product;
       const product = PRODUCT_CATALOG[productId];
       if (product) {
-        void scheduleWhatsappJob({
+        await scheduleWhatsappJob({
           event: "price_delivery_followup",
           phone,
           customerId: userId,
@@ -4338,7 +4586,7 @@ function getWhatsappProductImageUrl() {
     if (!/\.webp(?:\?|$)/i.test(configuredUrl)) return configuredUrl;
   }
   if (!process.env.PUBLIC_SITE_URL) return "";
-  return `${process.env.PUBLIC_SITE_URL.replace(/\/$/, "")}/vendor/cdn/cdn/shop/files/velevty_butter_mockupM.png`;
+  return `${process.env.PUBLIC_SITE_URL.replace(/\/$/, "")}/whatsapp/velvety-butter.png`;
 }
 
 function getProductSectionUrl() {
@@ -4370,9 +4618,10 @@ ${description}`;
     try {
       await sendImageMessage(phone, imageUrl, content);
     } catch (error) {
-      console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
+      if (isUncertainWhatsappSend(error)) throw error;
+    console.error("[WHATSAPP][PRODUCT_IMAGE_FAILED]", {
         recipient: maskWhatsappPhone(phone),
-        imageUrl,
+        mediaType: "image",
         error: error.response?.data || error.message,
         fallback: "text",
       });
@@ -4398,9 +4647,9 @@ ${description}`;
         postbackText: "PRODUCT_START_COOKING",
       },
       {
-        type: "url",
+        type: "text",
         title: "Order online",
-        url: getProductSectionUrl(),
+        postbackText: "MENU_ORDER",
       },
       {
         type: "text",
@@ -4423,7 +4672,7 @@ async function handleProductCatalog({ session, text, phone }) {
     cooking_type: product.cookingType,
   });
   await sendProductDetails(phone, product);
-  void scheduleWhatsappJob({
+  await scheduleWhatsappJob({
     event: "product_demo",
     phone,
     customerId: session.user_id,
@@ -4434,7 +4683,7 @@ async function handleProductCatalog({ session, text, phone }) {
   }).catch((err) =>
     console.error("Product-demo scheduling failed", err.message),
   );
-  void scheduleWhatsappJob({
+  await scheduleWhatsappJob({
     event: "high_intent_followup",
     phone,
     customerId: session.user_id,
@@ -4489,7 +4738,7 @@ function getCookingIntroVideoUrl(product) {
   const configuredUrl = String(process.env[product.videoEnvKey] || "").trim();
   const publicSiteUrl = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
   const compatibleMp4Url = publicSiteUrl
-    ? `${publicSiteUrl}/vendor/cdn/cdn/shop/files/cook_btr_chick_vlr_final.mp4`
+    ? `${publicSiteUrl}/whatsapp/cooking-tutorial.mp4`
     : "";
 
   // WhatsApp/Gupshup may accept a .mov request but later fail its delivery.
@@ -4513,7 +4762,7 @@ async function sendCookingIntro(phone, product, { includeCaption = true } = {}) 
   try {
     console.log("[WHATSAPP][COOKING_VIDEO_SELECTED]", {
       recipient: maskWhatsappPhone(phone),
-      videoUrl,
+      mediaType: "video",
       format: /\.mp4(?:\?|$)/i.test(videoUrl) ? "mp4" : "unknown",
     });
     const caption = includeCaption
@@ -4522,6 +4771,7 @@ async function sendCookingIntro(phone, product, { includeCaption = true } = {}) 
     const result = await sendVideoMessage(phone, videoUrl, caption);
     return { sent: true, result };
   } catch (err) {
+    if (isUncertainWhatsappSend(err)) throw err;
     console.error(
       "WhatsApp cooking intro video failed",
       err.response?.data || err.message,
@@ -4612,6 +4862,7 @@ async function sendQuickCookingDemo(phone) {
     const result = await sendVideoMessage(phone, videoUrl, caption);
     return { sent: true, result };
   } catch (error) {
+    if (isUncertainWhatsappSend(error)) throw error;
     console.error("WhatsApp quick cooking demo failed", {
       recipient: maskWhatsappPhone(phone),
       error: error.response?.data || error.message,
@@ -4644,7 +4895,7 @@ Watch the video to see how.`;
   try {
     console.log("[WHATSAPP][LID_VIDEO_SEND_ATTEMPT]", {
       recipient: maskWhatsappPhone(phone),
-      videoUrl,
+      mediaType: "video",
     });
     const result = await sendVideoMessage(phone, videoUrl, caption);
     console.log("[WHATSAPP][LID_VIDEO_SENT]", {
@@ -4653,9 +4904,10 @@ Watch the video to see how.`;
     });
     return { sent: true, result };
   } catch (error) {
+    if (isUncertainWhatsappSend(error)) throw error;
     console.error("[WHATSAPP][LID_VIDEO_FAILED]", {
       recipient: maskWhatsappPhone(phone),
-      videoUrl,
+      mediaType: "video",
       error: error.response?.data || error.message,
     });
     await sendMessage(phone, `${caption}\n\nVideo: ${videoUrl}`);
@@ -4670,6 +4922,10 @@ async function beginTutorialCooking({
   product,
   suppressVideoCaption = false,
 }) {
+  await cancelWhatsappJobs({ phone: normalizeWhatsappRecipient(phone), trigger: { $in: ["new_lead", "product_demo", "high_intent_followup", "price_delivery_followup", "cooking_reminder"] } }, "customer_started_cooking");
+  const tutorialRunId = session.current_state === "guided_cooking" && session.tutorial_run_id
+    ? session.tutorial_run_id : crypto.randomUUID();
+  if (tutorialRunId !== session.tutorial_run_id) await cancelWhatsappJobs({ sessionId: session._id, trigger: "post_cook_feedback" }, "new_cooking_journey");
   const videoResult = await sendCookingIntro(phone, product, {
     includeCaption: !suppressVideoCaption,
   });
@@ -4686,6 +4942,8 @@ async function beginTutorialCooking({
     last_cooking_step_number: null,
     last_cooking_total_steps: null,
     last_cooking_step_text: null,
+    tutorial_run_id: tutorialRunId,
+    tutorial_completed_at: null,
     tutorial_video_sent: videoResult.sent,
     tutorial_video_sent_at: videoResult.sent ? new Date() : null,
     last_left_at: new Date(),
@@ -4703,12 +4961,13 @@ async function beginTutorialCooking({
   );
 
   await sendCookingDonePrompt(phone, product, videoResult.sent);
-  void scheduleWhatsappJob({
+  if (!videoResult.sent) return;
+  await scheduleWhatsappJob({
     event: "post_cook_feedback",
     phone,
     customerId: userId,
     sessionId: session._id,
-    occurrence: "tutorial-no-response",
+    occurrence: `tutorial-no-response:${tutorialRunId}`,
     parameters: [],
     scheduledAt: new Date(Date.now() + 30 * 60_000),
     metadata: {
@@ -5089,7 +5348,10 @@ async function handleQuantity({ session, text, phone, userId }) {
 }
 
 async function completeCooking({ session, phone, userId }) {
+  session = { ...session, selected_product: session.selected_product || "velvety_butter", selected_recipe: session.selected_recipe || PRODUCTS.velvety_butter.recipeId };
   const { cookingOutcomes } = collections();
+  const completion = await collections().sessions.updateOne({ _id: session._id, tutorial_completed_at: null }, { $set: { tutorial_completed_at: new Date() } });
+  if (!completion.modifiedCount) { await sendMainMenuButton(phone, "Thanks, your cooking completion is already recorded."); return; }
   const completedSegment = `${session.selected_product || "unknown_product"}_completed_cooking`;
 
   await cookingOutcomes.insertOne({
@@ -5144,12 +5406,12 @@ async function completeCooking({ session, phone, userId }) {
     phone,
     "Cooking complete. We’ll check in shortly to hear how it turned out.",
   );
-  void scheduleWhatsappJob({
+  await scheduleWhatsappJob({
     event: "post_cook_feedback",
     phone,
     customerId: userId,
     sessionId: session._id,
-    occurrence: "customer-completed",
+    occurrence: `customer-completed:${session.tutorial_run_id || session._id}`,
     parameters: [],
     scheduledAt: new Date(Date.now() + 30 * 60_000),
   })
@@ -5163,12 +5425,9 @@ async function completeCooking({ session, phone, userId }) {
       console.error("Post-cook feedback scheduling failed", err.message),
     );
 
-  const order = await collections().orders.findOne(
-    { phone: { $regex: `${String(phone).slice(-10)}$` } },
-    { sort: { createdAt: -1 } },
-  );
+  const order = await findLatestWhatsappOrder(phone);
   if (order) {
-    void scheduleWhatsappJob({
+    await scheduleWhatsappJob({
       event: "reorder_reminder",
       phone,
       customerId: userId,
@@ -5259,7 +5518,9 @@ async function recordPostCookFeedback({ session, userId, feedbackType }) {
             : "cook_feedback_received",
         updated_at: new Date(),
       },
+      $setOnInsert: { user_id: userId, session_id: session._id, product_id: session.selected_product, created_at: new Date(), outcome: "feedback_without_done" },
     },
+    { upsert: true },
   );
   await updateSession(session._id, {
     feedbackType,
@@ -5293,10 +5554,7 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
 
   if (lower === "1" || lower.includes("loved")) {
     await recordPostCookFeedback({ session, userId, feedbackType });
-    const order = await collections().orders.findOne(
-      { phone: { $regex: `${String(phone).slice(-10)}$` } },
-      { sort: { createdAt: -1 } },
-    );
+    const order = await findLatestWhatsappOrder(phone);
     await sendMessage(
       phone,
       order
@@ -5315,10 +5573,7 @@ ${getReviewUrl(order)}`
     lower.includes("could've been better")
   ) {
     await recordPostCookFeedback({ session, userId, feedbackType });
-    const order = await collections().orders.findOne(
-      { phone: { $regex: `${String(phone).slice(-10)}$` } },
-      { sort: { createdAt: -1 } },
-    );
+    const order = await findLatestWhatsappOrder(phone);
     await sendMessage(
       phone,
       order
@@ -5801,26 +6056,7 @@ async function handleWhatsappOrderState({ session, text, phone }) {
 }
 
 function getInboundMessageText(message = {}) {
-  const gupshupInner = message.gupshupPayload?.payload || {};
-  const menuPostback = resolveMainMenuPostback(
-    message.interactive?.list_reply,
-    message.interactive?.button_reply,
-    message.button,
-    message.text?.body,
-    gupshupInner,
-  );
-  if (menuPostback) return menuPostback;
-
-  const value =
-    message.interactive?.list_reply?.id ||
-    message.interactive?.list_reply?.title ||
-    message.interactive?.button_reply?.id ||
-    message.interactive?.button_reply?.title ||
-    message.button?.payload ||
-    message.button?.text ||
-    message.text?.body ||
-    "";
-  return String(value).trim();
+  return inbound.readInbound(message).text;
 }
 
 function resolveMainMenuPostback(...values) {
@@ -5946,8 +6182,9 @@ async function handleMainMenuAction({ action, session, user, phone }) {
 }
 
 async function processIncomingMessage(message) {
-  const phone = message.from;
-  const text = getInboundMessageText(message);
+  const phone = normalizeWhatsappRecipient(message.from);
+  const parsed = inbound.readInbound(message);
+  const text = ({ OPEN_LID: "how to open the lid", RATE: "rate valour", NOT_NOW: "not now", TOMORROW: "tomorrow", WEEKEND: "this weekend", LATER: "remind me later" })[parsed.action] || parsed.text;
   const lower = normalizeText(text);
   const directOrderItems = parseOrderItems(text);
   const messageSignals = getMessageSignals(message);
@@ -5965,8 +6202,10 @@ async function processIncomingMessage(message) {
   });
 
   if (!isNewMessage) {
+    console.log("[WHATSAPP][DUPLICATE_SKIPPED]", { messageId: message.id });
     return;
   }
+  console.log("[WHATSAPP][INBOUND]", { messageId: message.id, recipient: maskWhatsappPhone(phone), action: parsed.action || (/^ADMIN_/i.test(text) ? "admin_action" : "state_input"), state: session.current_state });
 
   if (await handleWhatsappAdminOrderLookup({ phone, text })) {
     return;
@@ -6008,9 +6247,10 @@ async function processIncomingMessage(message) {
 
   console.log("Incoming WhatsApp message", {
     routerVersion: WHATSAPP_ROUTER_VERSION,
-    phone,
+    phone: maskWhatsappPhone(phone),
+    messageId: message.id,
     state: activeSession.current_state,
-    text,
+    action: inbound.readInbound(message).action || "state_input",
     providerType: message.type || null,
   });
 
@@ -6031,7 +6271,46 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  const earlyMainMenuAction = getMainMenuAction(text);
+  const selection = inbound.readInbound(message);
+  // Explicit taps interrupt every state; ordinary issue text belongs to support.
+  const inSupport = activeSession.current_state.startsWith("support_");
+  const supportText = !selection.explicit && (!selection.action || ["NEED_HELP", "MENU_SUPPORT"].includes(selection.action));
+  if (selection.explicit || !inSupport || (selection.action && !["NEED_HELP", "MENU_SUPPORT"].includes(selection.action))) {
+    const action = selection.action;
+    if (action === "MENU") {
+      await resetToIdle(session._id);
+      await cancelWhatsappJobs({ sessionId: session._id, trigger: "post_cook_feedback" }, "customer_left_cooking");
+      await sendMainMenu(phone);
+      return;
+    }
+    if (getMainMenuAction(action || "")) {
+      await handleMainMenuAction({ action: getMainMenuAction(action), session: activeSession, user, phone });
+      return;
+    }
+    if (action === "OPEN_LID") { await sendLidOpeningHelp(phone); return; }
+    if (/^SUPPORT_/i.test(selection.action || text) && (selection.explicit || /^SUPPORT_/i.test(text))) {
+      await handleSupportCategory({ session: activeSession, text: selection.action || text, phone }); return;
+    }
+    if (action === "DONE") {
+      if (activeSession.current_state !== "post_cook_feedback") {
+        await completeCooking({ session: activeSession, phone, userId: user._id });
+      } else await sendMessage(phone, "Thanks. We will check in shortly to hear how it turned out.");
+      return;
+    }
+    if (action === "LOVED" || action === "BETTER") {
+      await handlePostCookFeedback({ session: activeSession, text: action === "LOVED" ? "Loved it" : "Could be better", phone, userId: user._id }); return;
+    }
+    if (action === "NEED_HELP") {
+      if (activeSession.support_category?.key === "order_status" && activeSession.current_state === "support_awaiting_order_id") {
+        await startTrackingRecovery({ session: activeSession, phone });
+      } else {
+        await updateSession(session._id, { current_state: "support_awaiting_details", support_category: SUPPORT_CATEGORIES["5"], support_order_id: null });
+        await sendMainMenuButton(phone, "Please describe your issue in one message so VALOUR Customer Care can help.");
+      }
+      return;
+    }
+  }
+  const earlyMainMenuAction = selection.explicit ? getMainMenuAction(selection.action || text) : null;
   if (earlyMainMenuAction) {
     await handleMainMenuAction({
       action: earlyMainMenuAction,
@@ -6042,17 +6321,17 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (activeSession.current_state === "support_select_category") {
+  if (supportText && activeSession.current_state === "support_select_category") {
     await handleSupportCategory({ session: activeSession, text, phone });
     return;
   }
 
-  if (activeSession.current_state === "support_awaiting_order_id") {
+  if (supportText && activeSession.current_state === "support_awaiting_order_id") {
     await handleSupportOrderId({ session: activeSession, text, phone });
     return;
   }
 
-  if (activeSession.current_state === "support_awaiting_details") {
+  if (supportText && activeSession.current_state === "support_awaiting_details") {
     await createSupportCase({
       session: activeSession,
       user,
@@ -6063,10 +6342,7 @@ async function processIncomingMessage(message) {
   }
 
   if (lower === "rate valour") {
-    const latestOrder = await collections().orders.findOne(
-      { phone: { $regex: `${String(phone).slice(-10)}$` } },
-      { sort: { createdAt: -1 } },
-    );
+    const latestOrder = await findLatestWhatsappOrder(phone);
     await sendMessage(
       phone,
       latestOrder
@@ -6157,10 +6433,7 @@ async function processIncomingMessage(message) {
       "remind me later",
     ])
   ) {
-    const latestOrder = await collections().orders.findOne(
-      { phone: { $regex: `${String(phone).slice(-10)}$` } },
-      { sort: { createdAt: -1 } },
-    );
+    const latestOrder = await findLatestWhatsappOrder(phone);
     const reminder = await scheduleWhatsappJob({
       event: "cooking_reminder",
       phone,
@@ -6236,7 +6509,7 @@ async function processIncomingMessage(message) {
     return;
   }
 
-  if (activeSession.current_state === "product_selection") {
+  if (["product_selection", "awaiting_quantity", "product_exploration", "cooking_scenario"].includes(activeSession.current_state)) {
     // Migrate sessions left in the retired product-selection state directly
     // into the Velvety Butter tutorial journey.
     await startCookingFlow({ session: activeSession, phone, userId: user._id });
@@ -6481,16 +6754,17 @@ async function processIncomingMessage(message) {
 }
 
 function enqueueMessage(message) {
-  const phone = message.from;
+  const phone = normalizeWhatsappRecipient(message.from);
   const previous = phoneQueues.get(phone) || Promise.resolve();
   const next = previous
     .catch(() => {})
-    .then(() => processIncomingMessage(message))
-    .catch((err) => {
-      console.error(
-        "Failed to process WhatsApp message",
-        err.response?.data || err,
-      );
+    .then(() => whatsappInbox.run(message))
+    .catch(async (err) => {
+      console.error("[WHATSAPP][ROUTE_ERROR]", { messageId: message.id, recipient: maskWhatsappPhone(phone), code: err.code || "handler_failed", uncertain: isUncertainWhatsappSend(err) });
+      if (!isUncertainWhatsappSend(err)) {
+        try { await sendMessage(phone, "We could not complete that request. Please try again, or reply MENU to choose another option."); }
+        catch (_) { console.error("[WHATSAPP][FALLBACK_UNAVAILABLE]", { messageId: message.id, recipient: maskWhatsappPhone(phone) }); }
+      }
     })
     .finally(() => {
       if (phoneQueues.get(phone) === next) {
@@ -6499,6 +6773,7 @@ function enqueueMessage(message) {
     });
 
   phoneQueues.set(phone, next);
+  return next;
 }
 
 const WABA_ID = process.env.WABA_ID;
@@ -6587,7 +6862,7 @@ app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-  console.log("Webhook verification attempt", { mode, token });
+  console.log("Webhook verification attempt", { mode });
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
     return res.status(200).send(challenge);
@@ -6600,111 +6875,41 @@ app.get("/webhook/gupshup", (req, res) => {
   console.log("attempted gupshup");
 });
 
-app.post("/webhook/gupshup", (req, res) => {
-  console.log("Gupshup webhook:", JSON.stringify(req.body, null, 2));
+async function persistWhatsappWebhook(body) {
+  const { messages, statuses } = inbound.parseWebhook(body);
+  await whatsappInbox.persist(messages);
+  await Promise.all(statuses.map(status => recordWhatsappJobStatus(status)));
+  return messages;
+}
 
-  // Acknowledge Gupshup immediately so downstream work does not cause retries.
-  res.sendStatus(200);
+async function dispatchWhatsappWebhook(body) {
+  const messages = await persistWhatsappWebhook(body);
+  await Promise.all(messages.map(enqueueMessage));
+}
 
-  const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-  const nativeGupshup = parseGupshupV2Webhook(req.body);
-  const message = value?.messages?.[0] || nativeGupshup.message;
-  if (message && !message.profileName) {
-    message.profileName = value?.contacts?.[0]?.profile?.name || "";
-  }
-  const wrappedStatus = value?.statuses?.[0];
-  const isCallbackSetupEvent = wrappedStatus?.type === "set-callback";
-  const status =
-    wrappedStatus?.id && wrappedStatus?.status
-      ? {
-          ...wrappedStatus,
-          // Gupshup's WABA-style callback uses gs_id for the ID returned by
-          // the send API and id for Meta's WhatsApp message ID.
-          id: wrappedStatus.gs_id || wrappedStatus.id,
-          whatsappMessageId: wrappedStatus.gs_id ? wrappedStatus.id : undefined,
-        }
-      : nativeGupshup.status;
+async function drainWhatsappInbox() {
+  if (!mongoReady) return;
+  await Promise.all((await whatsappInbox.pending()).map(enqueueMessage));
+}
 
-  if (isCallbackSetupEvent) {
-    console.log("[WHATSAPP][CALLBACK_CONFIGURED]", {
-      gsAppId: req.body?.gs_app_id || null,
-      accountObject: req.body?.object || null,
-      explanation:
-        "Gupshup confirmed the callback URL; this is not a message delivery event",
-    });
+async function receiveWhatsappWebhook(req, res) {
+  const expected = Buffer.from(process.env.WHATSAPP_WEBHOOK_TOKEN || "");
+  const received = Buffer.from(String(req.get("x-whatsapp-webhook-token") || req.query.token || ""));
+  if (!expected.length || expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+    return res.sendStatus(401);
   }
-
-  if (status) {
-    void recordWhatsappJobStatus(status).catch((err) =>
-      console.error("Gupshup job status update failed", err.message),
-    );
-    console.dir(
-      {
-        event: "Gupshup WhatsApp delivery status webhook",
-        id: status.id,
-        recipientId: status.recipient_id,
-        status: status.status,
-        timestamp: status.timestamp,
-        errors: status.errors,
-        conversation: status.conversation,
-        pricing: status.pricing,
-      },
-      { depth: null },
-    );
+  if (!mongoReady) return res.sendStatus(503);
+  try {
+    const messages = await persistWhatsappWebhook(req.body);
+    res.sendStatus(200);
+    for (const message of messages) void enqueueMessage(message);
+  } catch (error) {
+    console.error("[WHATSAPP][WEBHOOK_PERSIST_FAILED]", { code: error.code || "database_error" });
+    res.sendStatus(503);
   }
-
-  if (message) {
-    console.log("Gupshup WhatsApp inbound message webhook", {
-      from: message.from,
-      id: message.id,
-      type: message.type,
-    });
-    enqueueMessage(message);
-  }
-});
-app.post("/webhook", (req, res) => {
-  const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-  const message = value?.messages?.[0];
-  const status = value?.statuses?.[0];
-  console.log("=========== POST RECEIVED ===========");
-  console.log("Webhook path:", req.originalUrl);
-  console.dir(req.body, { depth: null });
-  console.log("=====================================");
-  // Acknowledge Meta immediately so slow downstream work does not cause retries.
-  res.sendStatus(200);
-  console.log("WhatsApp text send accepted", {
-    recipient: "919233054806",
-    result: message ? "message" : status ? "status" : "unknown",
-  });
-
-  if (status) {
-    void recordWhatsappJobStatus(status).catch((err) =>
-      console.error("WhatsApp job status update failed", err.message),
-    );
-    console.dir(
-      {
-        event: "WhatsApp delivery status webhook",
-        id: status.id,
-        recipientId: status.recipient_id,
-        status: status.status,
-        timestamp: status.timestamp,
-        errors: status.errors,
-        conversation: status.conversation,
-        pricing: status.pricing,
-      },
-      { depth: null },
-    );
-  }
-  console.log(message);
-  if (message) {
-    console.log("WhatsApp inbound message webhook", {
-      from: message.from,
-      id: message.id,
-      type: message.type,
-    });
-    enqueueMessage(message);
-  }
-});
+}
+app.post("/webhook/gupshup", receiveWhatsappWebhook);
+app.post("/webhook", receiveWhatsappWebhook);
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -6815,27 +7020,8 @@ app.post("/api/payment/webhook", async (req, res) => {
       if (paidAttempt)
         await recordCouponRedemption(paidAttempt, payment.order_id);
       if (paidAttempt?.completedOrderId) {
-        const notificationClaim = await paymentAttempts.findOneAndUpdate(
-          {
-            razorpayOrderId: payment.order_id,
-            completedOrderId: paidAttempt.completedOrderId,
-            successNotifiedAt: { $exists: false },
-          },
-          { $set: { successNotifiedAt: new Date(), updatedAt: new Date() } },
-          { returnDocument: "after" },
-        );
-        if (notificationClaim) {
-          const completedOrder = await orders.findOne({
-            _id: paidAttempt.completedOrderId,
-          });
-          if (completedOrder)
-            void schedulePaidOrderAutomation(completedOrder).catch((err) =>
-              console.error(
-                "Paid-order automation scheduling failed",
-                err.message,
-              ),
-            );
-        }
+        const completedOrder = await orders.findOne({ _id: paidAttempt.completedOrderId });
+        if (completedOrder) await schedulePaidOrderAutomation(completedOrder);
       } else if (paidAttempt) {
         console.log("[WHATSAPP][PAYMENT_CAPTURED_AWAITING_ORDER]", {
           razorpayOrderId: payment.order_id,
@@ -8164,6 +8350,169 @@ function serializeAdminConversationMessage(message = {}) {
   };
 }
 
+app.get("/api/admin/whatsapp/templates", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const recent = await collections().adminTemplateSends
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
+    return res.json({
+      ok: true,
+      templates: getAdminWhatsappTemplateCatalog(),
+      recentSends: recent.map(serializeAdminTemplateSend),
+    });
+  } catch (error) {
+    console.error("Admin WhatsApp template catalog load failed", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "Unable to load WhatsApp templates",
+    });
+  }
+});
+
+app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const requestId = String(req.body?.requestId || "").trim();
+  const templateKey = String(req.body?.templateKey || "").trim();
+  const phone = normalizeAdminWhatsappPhone(req.body?.phone);
+  const parameters = Array.isArray(req.body?.parameters)
+    ? req.body.parameters.map(sanitizeWhatsappTemplateParameter)
+    : null;
+  if (!/^[a-zA-Z0-9_-]{8,100}$/.test(requestId)) {
+    return res.status(400).json({ ok: false, error: "Invalid send request ID" });
+  }
+  if (!phone) {
+    return res.status(400).json({
+      ok: false,
+      error: "Enter a valid WhatsApp number with country code",
+    });
+  }
+  const template = getAdminWhatsappTemplateCatalog().find(
+    (item) => item.key === templateKey,
+  );
+  if (!template) {
+    return res.status(400).json({ ok: false, error: "Unknown WhatsApp template" });
+  }
+  if (!template.available) {
+    return res.status(503).json({
+      ok: false,
+      error: `Template is unavailable: ${template.configurationError}`,
+    });
+  }
+  try {
+    validateWhatsappTemplatePayload(template.templateName, parameters);
+  } catch (error) {
+    return res.status(400).json({ ok: false, error: error.message });
+  }
+
+  const { adminTemplateSends } = collections();
+  const existing = await adminTemplateSends.findOne({ requestId });
+  if (existing) {
+    return res.json({
+      ok: true,
+      duplicate: true,
+      send: serializeAdminTemplateSend(existing),
+    });
+  }
+  const now = new Date();
+  const record = {
+    requestId,
+    source: "admin_dashboard",
+    templateKey,
+    templateLabel: template.label,
+    templateName: template.templateName,
+    templateId: template.templateId,
+    languageCode: template.languageCode,
+    phone,
+    parameterCount: parameters.length,
+    status: "processing",
+    createdAt: now,
+    submissionStartedAt: now,
+  };
+  try {
+    await adminTemplateSends.insertOne(record);
+  } catch (error) {
+    if (error?.code === 11000) {
+      const duplicate = await adminTemplateSends.findOne({ requestId });
+      return res.json({
+        ok: true,
+        duplicate: true,
+        send: serializeAdminTemplateSend(duplicate || record),
+      });
+    }
+    console.error("Admin WhatsApp send audit creation failed", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "Unable to create the WhatsApp send record",
+    });
+  }
+
+  try {
+    const providerResponse = await sendTemplateMessage(
+      phone,
+      template.templateName,
+      template.languageCode,
+      parameters,
+    );
+    const providerMessageId = getProviderMessageId(providerResponse);
+    const submittedAt = new Date();
+    await adminTemplateSends.updateOne(
+      { requestId, status: "processing" },
+      {
+        $set: {
+          status: "submitted",
+          submittedAt,
+          statusUpdatedAt: submittedAt,
+          providerMessageId,
+        },
+        $unset: { submissionStartedAt: "" },
+      },
+    );
+    await reconcileWhatsappStatus(providerMessageId);
+    const saved = await adminTemplateSends.findOne({ requestId });
+    return res.status(201).json({
+      ok: true,
+      duplicate: false,
+      send: serializeAdminTemplateSend(saved || { ...record, status: "submitted", submittedAt, providerMessageId }),
+    });
+  } catch (error) {
+    const uncertain = isUncertainWhatsappSend(error);
+    const status = uncertain ? "delivery_unknown" : "failed";
+    const failedAt = new Date();
+    const errorMessage = String(error.response?.data?.message || error.message || "Provider submission failed").slice(0, 300);
+    await adminTemplateSends.updateOne(
+      { requestId, status: "processing" },
+      {
+        $set: {
+          status,
+          failedAt,
+          statusUpdatedAt: failedAt,
+          error: errorMessage,
+        },
+        $unset: { submissionStartedAt: "" },
+      },
+    );
+    const saved = await adminTemplateSends.findOne({ requestId });
+    if (uncertain) {
+      return res.status(202).json({
+        ok: true,
+        send: serializeAdminTemplateSend(saved),
+      });
+    }
+    return res.status(502).json({
+      ok: false,
+      error: "Gupshup rejected the template submission",
+      send: serializeAdminTemplateSend(saved),
+    });
+  }
+});
+
 app.get("/api/admin/whatsapp/conversations", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -9404,7 +9753,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       },
       "replaced_by_payment_attempt",
     );
-    void scheduleWhatsappJob({
+    await scheduleWhatsappJob({
       event: "checkout_reminder",
       phone: paymentAttempt.phone,
       order: { ...paymentAttempt, _id: paymentAttemptResult.insertedId },
@@ -9617,23 +9966,8 @@ app.post("/api/payment/verify", async (req, res) => {
 
     let whatsappConfirmation = { sent: false, reason: "not_attempted" };
     try {
-      // Claim the notification once so browser verification and Razorpay webhooks cannot duplicate it.
-      const notificationClaim =
-        await collections().paymentAttempts.findOneAndUpdate(
-          { razorpayOrderId, successNotifiedAt: { $exists: false } },
-          {
-            $set: {
-              paymentStatus: "paid",
-              razorpayPaymentId,
-              successNotifiedAt: new Date(),
-              updatedAt: new Date(),
-            },
-          },
-          { returnDocument: "after" },
-        );
-      whatsappConfirmation = notificationClaim
-        ? await schedulePaidOrderAutomation(orderForResponse)
-        : { sent: false, reason: "already_notified" };
+      whatsappConfirmation = await schedulePaidOrderAutomation(orderForResponse);
+      await collections().paymentAttempts.updateOne({ razorpayOrderId }, { $set: { successNotifiedAt: new Date(), updatedAt: new Date() } });
       console.log(
         "WhatsApp order confirmation scheduling result",
         whatsappConfirmation,
@@ -9851,7 +10185,7 @@ app.get("/api/cod-payment/:token", async (req, res) => {
 app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
   const adminToken = process.env.ORDER_ADMIN_TOKEN;
 
-  if (adminToken && req.headers["x-admin-token"] !== adminToken) {
+  if (!adminToken || req.headers["x-admin-token"] !== adminToken) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 
@@ -10013,7 +10347,7 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         order: updatedOrder,
         parameters: getOrderStatusTemplateParams(updatedOrder),
         scheduledAt: new Date(),
-        occurrence: `${String(updatedOrder.shippingStatus || "update").toLowerCase()}:${Date.now()}`,
+        occurrence: crypto.createHash("sha256").update(JSON.stringify(getOrderStatusTemplateParams(updatedOrder))).digest("hex").slice(0, 20),
       });
       whatsappUpdate = {
         sent: false,
@@ -10585,6 +10919,16 @@ if (require.main === module) {
 module.exports = {
   _test: {
     app,
+    setDatabaseForTests(database) {
+      if (process.env.NODE_ENV !== "test") throw new Error("Test database injection disabled");
+      db = database; mongoReady = true;
+    },
+    dispatchWhatsappWebhook, enqueueMessage, processIncomingMessage, drainWhatsappInbox, persistWhatsappWebhook,
+    schedulePaidOrderAutomation, sendReviewRequestWhatsapp,
+    scheduleWhatsappJob, cancelWhatsappJobs, processDueWhatsappJobs, recoverStuckWhatsappJobs,
+    recordWhatsappJobStatus, runWhatsappQualityGate, sendTemplateMessage,
+    notifyWhatsappAdminsOfNewOrder, notifyCustomerCareAdmins, findOrderByReference,
+    getGupshupTemplateId, sanitizeWhatsappTemplateParameter,
     acquisitionDateRange,
     cleanAcquisitionFilter,
     PRODUCTS,
@@ -10627,6 +10971,7 @@ module.exports = {
     getOrderReference,
     getOrderTemplateParams,
     getCodTemplateParams,
+    getCodPrepaidTemplateParams,
     getOrderStatusTemplateParams,
     getDeliveryTimingFromRules,
     formatDeliveryTiming,
