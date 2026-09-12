@@ -46,7 +46,7 @@ test("stock status blocks zero and insufficient quantities", () => {
   assert.equal(buildStockStatus(request, enough).available, true);
 });
 
-test("admin can set stock to zero and checkout reports it unavailable", async () => {
+test("zero stock preserves product pricing while checkout reports it unavailable", async () => {
   const database = createDatabase();
   setDatabaseForTests(database);
   process.env.ORDER_ADMIN_TOKEN = "stock-test-token";
@@ -55,6 +55,9 @@ test("admin can set stock to zero and checkout reports it unavailable", async ()
     name: "Velvety Butter Chicken",
     size: "520 ml",
     active: true,
+    pricePaise: 35000,
+    compareAtPaise: 35000,
+    weightKg: 0.52,
   });
   await database.collection("pricing_rules").insertOne({
     _id: "checkout",
@@ -104,8 +107,10 @@ test("admin can set stock to zero and checkout reports it unavailable", async ()
         pincode: "799001",
       }),
     });
-    assert.equal(quote.status, 409);
-    assert.equal((await quote.json()).code, "OUT_OF_STOCK");
+    assert.equal(quote.status, 200);
+    const priced = await quote.json();
+    assert.equal(priced.quote.items[0].unitPricePaise, 35000);
+    assert.equal(priced.quote.totalPaise, 35000);
     assert.equal(await database.collection("orders").countDocuments({}), 0);
   });
 });

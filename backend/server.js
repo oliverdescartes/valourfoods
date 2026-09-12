@@ -8507,7 +8507,13 @@ async function consumeStock(items) {
   return consumed;
 }
 
-async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
+async function buildAuthoritativeQuote({
+  items,
+  pincode,
+  couponCode,
+  phone,
+  enforceStock = false,
+}) {
   const requestedItems = normaliseCartItems(items);
   const { products, pricingRules, universalCoupons, hiddenCoupons } =
     collections();
@@ -8553,7 +8559,7 @@ async function buildAuthoritativeQuote({ items, pincode, couponCode, phone }) {
       ? hiddenCoupons.findOne({ code: enteredCode, active: true })
       : null,
   ]);
-  assertStockAvailable(requestedItems, catalogue);
+  if (enforceStock) assertStockAvailable(requestedItems, catalogue);
   if (!storedRules)
     throw new Error("Checkout pricing rules have not been configured");
   const universalCoupon = isCouponAvailable(universalCouponCandidate, now)
@@ -10914,6 +10920,7 @@ app.post("/api/orders/cod", async (req, res) => {
         pincode: customerOrder.pincode,
         couponCode: rawOrder.coupon,
         phone: customerOrder.phone,
+        enforceStock: true,
       });
       const websiteOrder = {
         ...customerOrder,
@@ -11061,6 +11068,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       pincode: customerOrder.pincode,
       couponCode: rawOrder.coupon,
       phone: customerOrder.phone,
+      enforceStock: true,
     });
     const websiteOrder = {
       ...customerOrder,
