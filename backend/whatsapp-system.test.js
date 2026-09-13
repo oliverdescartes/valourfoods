@@ -401,6 +401,19 @@ test("configured Gupshup V2 callbacks remain compatible without a custom header"
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 
+test("wrapped Gupshup WABA delivery callbacks work without a custom header",async()=>{
+  fresh();
+  rows('message_jobs').push({_id:new ObjectId(),providerMessageId:'wrapped-gs-id',status:'submitted'});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const event={object:'whatsapp_business_account',entry:[{changes:[{value:{messaging_product:'whatsapp',statuses:[{id:'wrapped-wa-id',gs_id:'wrapped-gs-id',status:'delivered',timestamp:Math.floor(Date.now()/1000),recipient_id:phone}]}}]}]};
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/webhook/gupshup`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(event)});
+    assert.equal(response.status,200);
+    assert.equal(rows('message_jobs')[0].status,'delivered');
+    assert.equal(rows('message_jobs')[0].whatsappMessageId,'wrapped-wa-id');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
 test("website events schedule product/demo and abandoned-checkout production delays",async()=>{
   fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   try{

@@ -7678,23 +7678,60 @@ async function receiveWhatsappWebhook(req, res) {
       req.body.payload &&
       typeof req.body.payload === "object",
   );
+  const wrappedValues = Array.isArray(req.body?.entry)
+    ? req.body.entry.flatMap((entry) =>
+        Array.isArray(entry?.changes)
+          ? entry.changes.map((change) => change?.value).filter(Boolean)
+          : [],
+      )
+    : [];
+  const wrappedStatuses = wrappedValues.flatMap((value) =>
+    Array.isArray(value.statuses) ? value.statuses : [],
+  );
+  const wrappedMessages = wrappedValues.flatMap((value) =>
+    Array.isArray(value.messages) ? value.messages : [],
+  );
+  const hasValidWrappedStatus = wrappedStatuses.some(
+    (status) =>
+      status &&
+      (status.gs_id || status.id) &&
+      ["submitted", "enqueued", "sent", "delivered", "read", "failed"].includes(
+        String(status.status || "").toLowerCase(),
+      ),
+  );
+  const hasValidWrappedMessage = wrappedMessages.some(
+    (message) => message?.id && normalizeWhatsappRecipient(message.from),
+  );
+  const isWrappedGupshupEvent = Boolean(
+    req.path === "/webhook/gupshup" &&
+      wrappedValues.length &&
+      (hasValidWrappedStatus || hasValidWrappedMessage),
+  );
   const nativeSource = normalizeWhatsappRecipient(
     req.body?.payload?.source || req.body?.payload?.sender?.phone,
   );
+  const wrappedAdminSource = wrappedMessages.some((message) =>
+    DEFAULT_CUSTOMER_CARE_PHONES.includes(
+      normalizeWhatsappRecipient(message?.from),
+    ),
+  );
   const attemptsAdminCommandWithoutToken = Boolean(
     !tokenAuthorized &&
-      req.body?.type === "message" &&
-      nativeSource &&
-      DEFAULT_CUSTOMER_CARE_PHONES.includes(nativeSource),
+      ((req.body?.type === "message" &&
+        nativeSource &&
+        DEFAULT_CUSTOMER_CARE_PHONES.includes(nativeSource)) ||
+        wrappedAdminSource),
   );
   if (
     !tokenAuthorized &&
-    (!isNativeGupshupEvent || attemptsAdminCommandWithoutToken)
+    (!(isNativeGupshupEvent || isWrappedGupshupEvent) ||
+      attemptsAdminCommandWithoutToken)
   ) {
     console.warn("[WHATSAPP][WEBHOOK_AUTH_REJECTED]", {
       path: req.path,
       tokenConfigured: Boolean(expectedWebhookToken),
       nativeGupshupEvent: isNativeGupshupEvent,
+      wrappedGupshupEvent: isWrappedGupshupEvent,
     });
     return res.status(401).json({ ok: false, error: "Unauthorized webhook" });
   }
