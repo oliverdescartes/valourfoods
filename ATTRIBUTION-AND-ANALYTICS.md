@@ -22,15 +22,15 @@ Counts are limited by consent, browser blocking, cleared storage, and cross-devi
 | Public page load | automatic `page_view` | `PageView` | `PageView` | Shared generated event ID for Pixel/CAPI |
 | Product becomes visible | `view_item` | `ViewContent` | `ViewContent` | Shared generated event ID |
 | Add to cart | `add_to_cart` | `AddToCart` | `AddToCart` | Shared generated event ID |
-| Checkout begins | `begin_checkout` | `InitiateCheckout` | `InitiateCheckout` | One browser trigger per checkout load; shared event ID |
-| Payment method selected | `add_payment_info` | `AddPaymentInfo` | `AddPaymentInfo` | One logical event per deliberate selection; shared event ID |
+| Final order button clicked from review | `begin_checkout` | `InitiateCheckout` | `InitiateCheckout` | One shared event ID per click attempt |
+| Payment choice submitted with final order click | `add_payment_info` | `AddPaymentInfo` | `AddPaymentInfo` | One shared event ID per click attempt |
 | Checkout details submitted | `generate_lead` | `Lead` | `Lead` | Stable checkout event ID; refresh/double-submit guard |
 | WhatsApp support click | — | `Contact` | `Contact` | Shared generated event ID |
-| Successful purchase | `purchase` | `Purchase` | `Purchase` | `purchase_<database order id>` on both sides; durable CAPI retries reuse it |
+| Final order button clicked from review | `purchase` | `Purchase` | `Purchase` | `purchase_checkout_<attempt id>` on both sides; a later saved order reuses the ID |
 | Checkout UI signals | existing `valour_*` events | selected custom events | selected custom events | Shared event ID per call |
 | Product/recipe section visibility | — | `ProductSliderView`, `LooksTastesSectionView` | Browser only | Intersection observer disconnects after the first qualifying view |
 
-Online Purchase becomes eligible only after payment signature/amount validation and capture evidence. COD Purchase becomes eligible once the idempotently-created COD order is stored. Failed, pending, cancelled, duplicate, and WhatsApp-channel orders do not create website Purchase events.
+The seven advertising-funnel events (`Purchase`, `valour_purchase`, `InitiateCheckout`, `AddPaymentInfo`, `valour_begin_checkout`, `valour_payment_select`, and `valour_checkout_step_review`) now describe a deliberate click on the final order button from the review step. They fire before stock and order-result checks, so the click is measured even when stock is zero, payment is cancelled or fails, or no order is saved. Business reports continue to count purchases from saved orders rather than these advertising click events.
 
 ## Campaign links
 

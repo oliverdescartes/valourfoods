@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 const { isIP } = require("node:net");
 const proxyaddr = require("proxy-addr");
 const CUSTOM = ["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`);
-const ALLOWED = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", ...CUSTOM]);
+const ALLOWED = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Purchase", "valour_purchase", "Lead", "Contact", ...CUSTOM]);
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const text = value => typeof value === "string" ? value.trim().slice(0, 256) : "";
 const letters = value => text(value).toLowerCase().replace(/[^\p{L}]/gu, "");
@@ -123,8 +123,9 @@ function purchaseData(order) {
 function confirmed(order) {
   return !order.metaPurchase?.requiresCapture && order.channel === "website" && Boolean(order._id) && order.purchaseIntent === "completed" && (order.paymentStatus === "paid" || (order.paymentMethod === "COD" && order.paymentStatus === "pending_cod"));
 }
-function pending(req, now = new Date()) {
-  return { status: "pending", attempts: 0, eventTime: Math.floor(now.getTime() / 1000), nextAt: now, sourceUrl: sourceUrl(req.get("referer")) || sourceUrl("/checkout"), userData: requestData(req) };
+function pending(req, now = new Date(), eventId = "") {
+  const safeEventId = /^[A-Za-z0-9_-]{8,128}$/.test(eventId) ? eventId : "";
+  return { status: "pending", attempts: 0, eventTime: Math.floor(now.getTime() / 1000), nextAt: now, sourceUrl: sourceUrl(req.get("referer")) || sourceUrl("/checkout"), userData: requestData(req), ...(safeEventId ? { eventId: safeEventId } : {}) };
 }
 async function send(event, { env = process.env, fetchImpl = fetch } = {}) {
   const cfg = config(env);
@@ -181,7 +182,7 @@ function install(app, getOrders, getPaymentAttempts, getMetaEvents) {
     if (!url) return reject(400, "source_url_not_allowed");
     const data = customData(body.custom_data);
     if (body.custom_data?.currency != null && body.custom_data.currency !== "INR") return reject(400, "invalid_currency");
-    if (["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return reject(400, "invalid_commerce_data");
+    if (["ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Purchase", "valour_purchase"].includes(body.event_name) && (!data.contents?.length || data.currency !== "INR" || data.value == null || data.content_type !== "product")) return reject(400, "invalid_commerce_data");
     const deliveryPayload = { event_name: body.event_name, event_id: body.event_id, event_time: body.event_time, event_source_url: url, user_data: { ...matching(body.customer), ...requestUserData }, custom_data: data };
     let diagnosticsCollection;
     let shouldSend = true;
@@ -288,11 +289,11 @@ function install(app, getOrders, getPaymentAttempts, getMetaEvents) {
         }
         let result = { ok: false, retry: false, code: "unconfirmed" };
         try {
-          if (confirmed(order)) result = await send({ event_name: "Purchase", event_id: `purchase_${order._id}`, event_time: order.metaPurchase.eventTime, event_source_url: order.metaPurchase.sourceUrl, user_data: { ...matching(order), ...order.metaPurchase.userData }, custom_data: purchaseData(order) });
+          if (confirmed(order)) result = await send({ event_name: "Purchase", event_id: order.metaPurchase.eventId || `purchase_${order._id}`, event_time: order.metaPurchase.eventTime, event_source_url: order.metaPurchase.sourceUrl, user_data: { ...matching(order), ...order.metaPurchase.userData }, custom_data: purchaseData(order) });
         } catch { result = { ok: false, retry: false, code: "snapshot" }; }
         const status = result.ok ? "sent" : result.retry && order.metaPurchase.attempts < 12 ? "pending" : "failed";
         await orders.updateOne({ _id: order._id, "metaPurchase.attempts": order.metaPurchase.attempts }, { $set: { "metaPurchase.status": status, "metaPurchase.nextAt": new Date(Date.now() + Math.min(3600000, 10000 * 2 ** order.metaPurchase.attempts)), "metaPurchase.httpStatus": result.status || null, "metaPurchase.errorCode": result.code || null, "metaPurchase.updatedAt": new Date() }, ...(status !== "pending" ? { $unset: { "metaPurchase.userData": "" } } : {}) });
-        console.info("[META]", { event: "Purchase", eventId: `purchase_${order._id}`, status, httpStatus: result.status, code: result.code });
+        console.info("[META]", { event: "Purchase", eventId: order.metaPurchase.eventId || `purchase_${order._id}`, status, httpStatus: result.status, code: result.code });
       }
     } catch { console.warn("[META] Purchase delivery deferred"); } finally { running = false; }
   }

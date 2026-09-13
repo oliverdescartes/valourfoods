@@ -7,9 +7,9 @@ The audited implementation supplies shared browser/server event IDs and relevant
 ## Evidence
 
 - Both live hostnames return the expected Pixel ID, 2927690960901306, from `/api/meta/config`.
-- The deployed `/meta-pixel.js` on both hostnames matches the local helper after normalizing line endings. Live homepage and checkout code use the shared tracking helper; checkout retains the captured-payment gate for online Purchase.
+- The deployed state recorded by this older verification retained the captured-payment gate for online Purchase. The current local implementation has since changed Purchase and six related checkout events to fire on the final order-button click, before stock/payment outcome; it still requires deployment and a new live verification.
 - An empty observation request from each allowed origin returns `400 event_not_allowed`, confirming the endpoint is reachable and those origins pass validation. This deliberately invalid probe sends no event to Meta and does not prove valid-event delivery.
-- PageView, ViewContent, AddToCart and InitiateCheckout share the Pixel `eventID` with CAPI `event_id`. Purchase uses `purchase_<order ID>` in both channels. The separate custom `valour_purchase` event is intentionally distinct; it is not a second standard Purchase.
+- Pixel and CAPI share each event ID. Current click-based Purchase uses `purchase_checkout_<attempt ID>`; a subsequently saved order reuses that ID. The custom `valour_purchase` uses its own `valour_purchase_checkout_<attempt ID>`.
 - Commerce payloads include INR value, product IDs, quantities and contents. Server Purchase uses the persisted pricing snapshot. Matching data is normalized and hashed where required; IP, user agent and existing valid browser/click cookies are included when available. This is code evidence, not a measurement of live match quality.
 - All 11 automated integration tests pass. Their Meta responses are mocked; they verify payload construction and matching IDs, not receipt by Meta.
 - The user's earlier deployed PageView log reports `accepted: true`, HTTP 200 and test events enabled. The current implementation requires `events_received === 1` to report acceptance. This supports receipt of that individual server event only.

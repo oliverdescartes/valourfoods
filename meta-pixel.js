@@ -7,8 +7,7 @@
     window.valourMeta = { track() {} };
     return;
   }
-  const mirrored = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", ...["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`)]);
-  const successGated = new Set(["Purchase", "valour_purchase", "InitiateCheckout", "AddPaymentInfo", "valour_begin_checkout", "valour_payment_select", "valour_checkout_step_review"]);
+  const mirrored = new Set(["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Lead", "Contact", "valour_purchase", ...["coupon_applied", "payment_failed", "coupon_invalid", "otp_send", "cart_quantity_update", "user_verified", "checkout_step_cart", "delivery_area_unavailable", "checkout_view", "begin_checkout", "payment_select", "remove_from_cart", "checkout_progress_click", "checkout_step_review"].map(x => `valour_${x}`)]);
   const seen = new Set();
   let ready = false;
   const queue = [];
@@ -24,7 +23,6 @@
     try {
       if (!ready) { queue.push([command, name, data, options]); return; }
       if (!mirrored.has(name) && name !== "Purchase" && name !== "valour_purchase") return original(command, name, data, options);
-      if (successGated.has(name) && data.order_confirmed !== true) return;
       const purchase = name === "Purchase" || name === "valour_purchase";
       if (purchase && !data.order_id) return;
       const eventId = purchase ? `${name === "Purchase" ? "purchase" : "valour_purchase"}_${data.order_id}` : options.eventID || crypto.randomUUID();
@@ -49,10 +47,10 @@
         seen.add(key);
         try { localStorage.setItem(key, "1"); } catch { /* Stable ID still deduplicates. */ }
       }
-      if (purchase) {
+      if (name === "Purchase" && data.order_confirmed === true) {
         void fetch("/api/meta/browser-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", keepalive: true, body: JSON.stringify({ event_name: "Purchase", event_id: eventId }) }).catch(() => {});
       }
-      if (mirrored.has(name)) {
+      if (mirrored.has(name) || (name === "Purchase" && data.order_confirmed !== true)) {
         let customer = {};
         try {
           const values = window.valourMeta.customer?.() || {};

@@ -44,6 +44,9 @@ test("Purchase uses authoritative rupees, quantities and real order ID", () => {
   assert.equal(meta.confirmed({ ...saved, paymentMethod: "online", paymentStatus: "paid" }), true);
   assert.equal(meta.confirmed({ ...saved, channel: "whatsapp" }), false);
   assert.equal(meta.confirmed({ ...saved, paymentMethod: "online", paymentStatus: "paid", metaPurchase: { requiresCapture: true } }), false);
+  const request = { ip: "203.0.113.1", get: () => "" };
+  assert.equal(meta.pending(request, new Date(), "purchase_checkout_attempt123").eventId, "purchase_checkout_attempt123");
+  assert.equal(meta.pending(request, new Date(), "invalid event id").eventId, undefined);
 });
 test("transport protects token and test mode, validates time and classifies failures", async () => {
   let captured;
@@ -67,7 +70,7 @@ test("transport protects token and test mode, validates time and classifies fail
   assert.equal(report.includes(aliases.META_CAPI_ACCESS_TOKEN), false);
   assert.equal(report.includes(aliases.META_CAPI_TOKEN), false);
 });
-test("restricted HTTP endpoint rejects fake Purchase, foreign origin and arbitrary payload", async () => {
+test("restricted HTTP endpoint accepts complete click Purchase data and rejects malformed requests", async () => {
   const tokens = [process.env.META_CAPI_ACCESS_TOKEN, process.env.META_CAPI_TOKEN];
   delete process.env.META_CAPI_ACCESS_TOKEN; delete process.env.META_CAPI_TOKEN;
   const old = process.env.PUBLIC_SITE_URL; process.env.PUBLIC_SITE_URL = "https://example.test";
@@ -76,7 +79,8 @@ test("restricted HTTP endpoint rejects fake Purchase, foreign origin and arbitra
   const url = `http://127.0.0.1:${server.address().port}/api/meta/events`;
   try {
     const body = { ...event(), custom_data: {} }; delete body.user_data;
-    for (const [payload, origin, status] of [[{ ...body, event_name: "Purchase" }, "https://example.test", 400], [{ ...body, event_name: "valour_purchase" }, "https://example.test", 400], [body, "https://evil.test", 403], [{ ...body, access_token: "bad" }, "https://example.test", 400], [{ ...body, event_name: "AddToCart" }, "https://example.test", 400], [body, "https://example.test", 204]]) {
+    const clickPurchase = { ...body, event_name: "Purchase", custom_data: { currency: "INR", value: 450, content_type: "product", order_id: "checkout_attempt_123", contents: [{ id: "spice", quantity: 1, item_price: 450 }] } };
+    for (const [payload, origin, status] of [[{ ...body, event_name: "Purchase" }, "https://example.test", 400], [{ ...body, event_name: "valour_purchase" }, "https://example.test", 400], [clickPurchase, "https://example.test", 204], [body, "https://evil.test", 403], [{ ...body, access_token: "bad" }, "https://example.test", 400], [{ ...body, event_name: "AddToCart" }, "https://example.test", 400], [body, "https://example.test", 204]]) {
       const response = await fetch(url, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(payload) }); assert.equal(response.status, status);
     }
   } finally { worker.stop(); await new Promise(resolve => server.close(resolve)); if (old == null) delete process.env.PUBLIC_SITE_URL; else process.env.PUBLIC_SITE_URL = old; for (const [index, key] of ["META_CAPI_ACCESS_TOKEN", "META_CAPI_TOKEN"].entries()) { if (tokens[index] == null) delete process.env[key]; else process.env[key] = tokens[index]; } }
@@ -129,7 +133,7 @@ test("non-purchase CAPI failures retry durably with the original browser event I
     assert.deepEqual(sentIds, [body.event_id, body.event_id]); assert.equal(document.status, "accepted"); assert.equal(document.capiAttempts, 2); assert.equal(document.deliveryPayload, undefined);
   } finally { worker.stop(); await new Promise(resolve => server.close(resolve)); global.fetch = oldFetch; restore(); }
 });
-test("browser shares IDs, queues before init, strips PII and prevents refresh/back duplicate Purchase", async () => {
+test("browser shares IDs, accepts order-click funnel events and deduplicates Purchase", async () => {
   const source = fs.readFileSync(require.resolve("../meta-pixel.js"), "utf8");
   const store = new Map(); const pixels = []; const requests = [];
   function browser() {
@@ -147,21 +151,21 @@ test("browser shares IDs, queues before init, strips PII and prevents refresh/ba
   client.track("track", "AddPaymentInfo", { currency: "INR", value: 450, contents: [{ id: "spice", quantity: 1 }] });
   client.track("trackCustom", "valour_purchase", { order_id: "blocked123", value: 450 });
   client.track("trackCustom", "valour_begin_checkout", { value: 450 });
-  assert.equal(pixels.some(x => ["Purchase", "InitiateCheckout", "AddPaymentInfo", "valour_purchase", "valour_begin_checkout"].includes(x[1])), false);
+  assert.equal(pixels.some(x => ["Purchase", "InitiateCheckout", "AddPaymentInfo", "valour_purchase", "valour_begin_checkout"].includes(x[1])), true);
   const confirmedFunnel = { currency: "INR", value: 450, contents: [{ id: "spice", quantity: 1 }], order_confirmed: true };
   client.track("track", "InitiateCheckout", confirmedFunnel);
   client.track("track", "AddPaymentInfo", confirmedFunnel);
-  assert.equal(pixels.filter(x => x[1] === "InitiateCheckout").length, 1);
-  assert.equal(pixels.filter(x => x[1] === "AddPaymentInfo").length, 1);
+  assert.equal(pixels.filter(x => x[1] === "InitiateCheckout").length, 2);
+  assert.equal(pixels.filter(x => x[1] === "AddPaymentInfo").length, 2);
   const confirmedPurchase = { order_id: "order12345678", value: 450, currency: "INR", order_confirmed: true };
   client.track("track", "Purchase", confirmedPurchase);
   client.track("track", "Purchase", confirmedPurchase);
   const refreshed = browser(); await new Promise(setImmediate);
   refreshed.track("track", "Purchase", confirmedPurchase);
   refreshed.track("track", "Purchase", { order_id: "different123", value: 450, currency: "INR", order_confirmed: true });
-  assert.equal(pixels.filter(x => x[1] === "Purchase").length, 2);
-  assert.equal(pixels.find(x => x[1] === "Purchase")[3].eventID, "purchase_order12345678");
-  assert.equal(requests.some(x => x.url === "/api/meta/events" && x.body.event_name === "Purchase"), false);
+  assert.equal(pixels.filter(x => x[1] === "Purchase").length, 3);
+  assert.equal(pixels.find(x => x[1] === "Purchase")[3].eventID, "purchase_blocked123");
+  assert.equal(requests.some(x => x.url === "/api/meta/events" && x.body.event_name === "Purchase"), true);
   assert.equal(requests.some(x => x.url === "/api/meta/browser-attempt" && x.body.event_name === "Purchase"), true);
 });
 
@@ -254,7 +258,7 @@ test("HTTP rejections expose safe reason codes for origin, timestamps, payloads 
       [{ ...body, event_time: 1 }, "https://liquidspice.in", "invalid_event_time"],
       [{ ...body, event_name: "TestEvent" }, "https://liquidspice.in", "event_not_allowed"],
       [{ ...body, event_id: "12345" }, "https://liquidspice.in", "invalid_event_id"],
-      [{ ...body, event_name: "Purchase" }, "https://liquidspice.in", "event_not_allowed"],
+      [{ ...body, event_name: "Purchase" }, "https://liquidspice.in", "invalid_commerce_data"],
       [{ ...body, access_token: "private-value" }, "https://liquidspice.in", "invalid_payload_shape"],
       [{ ...body, event_source_url: "https://evil.test/private" }, "https://liquidspice.in", "source_url_not_allowed"],
       [{ ...body, custom_data: { currency: "USD" } }, "https://liquidspice.in", "invalid_currency"],

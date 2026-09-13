@@ -8350,6 +8350,11 @@ function normalizeOrderPayload(order = {}) {
     sourcePage: String(rawConsent.sourcePage || "/checkout.html").slice(0, 300),
     capturedAt: new Date(rawConsent.capturedAt || Date.now()),
   };
+  const metaPurchaseEventId = /^[A-Za-z0-9_-]{8,128}$/.test(
+    String(order.metaPurchaseEventId || ""),
+  )
+    ? String(order.metaPurchaseEventId)
+    : "";
   const signals = compactSignalFields({
     source: order.source || tracking.source,
     campaign: order.campaign || tracking.campaign,
@@ -8406,6 +8411,7 @@ function normalizeOrderPayload(order = {}) {
     shippingCharge: Number(totals.shipping) || 0,
     totalAmount: Number(totals.total) || 0,
     whatsappConsent,
+    ...(metaPurchaseEventId ? { metaPurchaseEventId } : {}),
     ...signals,
     ...campaignAttribution,
     ...(attributionDetails ? { attribution: attributionDetails } : {}),
@@ -11330,7 +11336,7 @@ app.post("/api/orders/cod", async (req, res) => {
       const codOrder = {
         ...websiteOrder,
         ...deliverySnapshot,
-        metaPurchase: meta.pending(req, now),
+        metaPurchase: meta.pending(req, now, websiteOrder.metaPurchaseEventId),
         checkoutIdempotencyKey: idempotencyKey,
         razorpayOrderId: `cod_${idempotencyKey}`,
         channel: "website",
@@ -11669,7 +11675,11 @@ app.post("/api/payment/verify", async (req, res) => {
     };
 
     delete savedOrder._id;
-    savedOrder.metaPurchase = meta.pending(req, savedOrder.createdAt);
+    savedOrder.metaPurchase = meta.pending(
+      req,
+      savedOrder.createdAt,
+      savedOrder.metaPurchaseEventId,
+    );
     // Advertising waits for capture even though the existing order flow accepts authorization.
     savedOrder.metaPurchase.requiresCapture =
       razorpayPayment.status !== "captured";

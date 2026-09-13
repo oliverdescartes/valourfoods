@@ -316,13 +316,6 @@ function saveState() {
   }
 }
 
-const META_SUCCESS_GATED_EVENTS = new Set([
-  "valour_begin_checkout",
-  "valour_checkout_step_review",
-  "valour_payment_select",
-  "valour_purchase",
-]);
-
 function trackEvent(name, payload = {}, options = {}) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event: name, ...payload });
@@ -331,21 +324,14 @@ function trackEvent(name, payload = {}, options = {}) {
     window.gtag("event", name, payload);
   }
 
-  const metaAllowed =
-    !META_SUCCESS_GATED_EVENTS.has(name) || options.orderConfirmed === true;
-  if (window.fbq && metaAllowed) {
+  if (window.fbq) {
     window.valourMeta?.track("trackCustom", name, {
       ...payload,
-      ...(META_SUCCESS_GATED_EVENTS.has(name)
-        ? { order_confirmed: true }
-        : {}),
-    });
+    }, options.eventID ? { eventID: options.eventID } : {});
   }
 }
 
 if (window.valourMeta) window.valourMeta.customer = () => getFormValues();
-
-let metaInitiateCheckoutTracked = false;
 
 function getMetaContents(items = []) {
   return items.map((item) => ({
@@ -358,52 +344,6 @@ function getMetaContents(items = []) {
   }));
 }
 
-function trackMetaInitiateCheckout(quote, orderConfirmed = false) {
-  if (
-    !orderConfirmed ||
-    metaInitiateCheckoutTracked ||
-    typeof window.fbq !== "function"
-  )
-    return;
-
-  const contents = getMetaContents(quote.items);
-  if (!contents.length) return;
-
-  metaInitiateCheckoutTracked = true;
-  window.valourMeta?.track("track", "InitiateCheckout", {
-    content_ids: contents.map((item) => item.id),
-    content_type: "product",
-    contents,
-    num_items: contents.reduce((total, item) => total + item.quantity, 0),
-    value: Number(quote.totalPaise) / 100,
-    currency: quote.currency || "INR",
-    order_confirmed: true,
-  });
-}
-
-function trackMetaAddPaymentInfo(orderConfirmed = false) {
-  if (!orderConfirmed) return;
-  const contents = getMetaContents(state.cart);
-  if (!contents.length) return;
-  const key = `valour_add_payment_event_${state.paymentMethod}`;
-  let eventId = "";
-  try { eventId = sessionStorage.getItem(key) || ""; } catch { /* storage may be unavailable */ }
-  if (!eventId) {
-    eventId = `payment_${state.paymentMethod}_${window.crypto?.randomUUID?.() || Date.now()}`.replace(/[^A-Za-z0-9_-]/g, "");
-    try { sessionStorage.setItem(key, eventId); } catch { /* event ID still deduplicates this call */ }
-  }
-  window.valourMeta?.track("track", "AddPaymentInfo", {
-    content_ids: contents.map(item => item.id),
-    content_type: "product",
-    contents,
-    num_items: contents.reduce((total, item) => total + item.quantity, 0),
-    value: Number(state.totals.total) || 0,
-    currency: "INR",
-    payment_method: state.paymentMethod,
-    order_confirmed: true,
-  }, { eventID: eventId });
-}
-
 function trackMetaPurchase({
   value,
   currency = "INR",
@@ -412,7 +352,6 @@ function trackMetaPurchase({
   orderConfirmed = false,
 }) {
   if (
-    !orderConfirmed ||
     typeof window.fbq !== "function" ||
     !Number.isFinite(Number(value))
   )
@@ -427,59 +366,60 @@ function trackMetaPurchase({
     value: Number(value),
     currency,
     order_id: String(orderId || ""),
-    order_confirmed: true,
+    order_confirmed: Boolean(orderConfirmed),
   });
 }
 
-function isSuccessfulOrderResult(result) {
-  if (!result?.ok || !result.orderId || !result.order) return false;
-  const paymentStatus = String(result.order.paymentStatus || "").toLowerCase();
-  const paymentMethod = String(result.order.paymentMethod || "").toLowerCase();
-  return (
-    paymentStatus === "paid" ||
-    (paymentMethod === "cod" && paymentStatus === "pending_cod")
+function trackMetaOrderButtonClick() {
+  if (state.step !== CHECKOUT_STEPS.REVIEW || !state.cart.length) return null;
+  const attemptId = `checkout_${window.crypto?.randomUUID?.() || Date.now()}`.replace(
+    /[^A-Za-z0-9_-]/g,
+    "",
   );
-}
-
-function trackConfirmedMetaCustom(name, payload) {
-  if (!META_SUCCESS_GATED_EVENTS.has(name) || !window.fbq) return;
-  window.valourMeta?.track("trackCustom", name, {
-    ...payload,
-    order_confirmed: true,
-  });
-}
-
-function trackSuccessfulMetaFunnel(result) {
-  if (!isSuccessfulOrderResult(result)) return false;
-  const order = result.order;
-  const quote = order.pricingSnapshot || {
-    items: order.products || state.cart,
-    totalPaise: Math.round(Number(order.totalAmount || state.totals.total) * 100),
-    currency: order.currency || "INR",
+  const contents = getMetaContents(state.cart);
+  const value = Number(state.totals.total) || 0;
+  const commerce = {
+    content_ids: contents.map((item) => item.id),
+    content_type: "product",
+    contents,
+    num_items: contents.reduce((total, item) => total + item.quantity, 0),
+    value,
+    currency: "INR",
+    payment_method: state.paymentMethod,
+    order_id: attemptId,
+    order_confirmed: false,
   };
-  trackMetaInitiateCheckout(quote, true);
-  trackMetaAddPaymentInfo(true);
-  trackConfirmedMetaCustom(
+  state.metaPurchaseEventId = `purchase_${attemptId}`;
+  window.valourMeta?.track("track", "InitiateCheckout", commerce, {
+    eventID: `initiate_${attemptId}`,
+  });
+  window.valourMeta?.track("track", "AddPaymentInfo", commerce, {
+    eventID: `payment_${attemptId}`,
+  });
+  trackEvent(
     "valour_checkout_step_review",
-    {
-      value: Number(order.totalAmount) || state.totals.total,
-      currency: order.currency || "INR",
-    },
+    { ...commerce, step: "review" },
+    { eventID: `review_${attemptId}` },
   );
-  trackConfirmedMetaCustom(
+  trackEvent(
     "valour_payment_select",
-    { payment_method: order.paymentMethod || state.paymentMethod },
+    commerce,
+    { eventID: `payment_select_${attemptId}` },
   );
-  trackConfirmedMetaCustom(
+  trackEvent(
     "valour_begin_checkout",
-    {
-      value: Number(order.totalAmount) || state.totals.total,
-      currency: order.currency || "INR",
-      coupon: order.couponCode || state.coupon,
-      payment_method: order.paymentMethodLabel || order.paymentMethod,
-    },
+    { ...commerce, coupon: state.coupon },
+    { eventID: `begin_${attemptId}` },
   );
-  return true;
+  trackEvent("valour_purchase", commerce);
+  trackMetaPurchase({
+    value,
+    currency: "INR",
+    items: state.cart,
+    orderId: attemptId,
+    orderConfirmed: false,
+  });
+  return attemptId;
 }
 
 function showToast(message, type = "success") {
@@ -880,6 +820,7 @@ function buildOrderPayload() {
     totals: { ...state.totals },
     coupon: state.coupon,
     phoneVerificationToken: getStoredUser()?.phoneVerificationToken || "",
+    metaPurchaseEventId: state.metaPurchaseEventId || "",
     whatsappConsent: getWhatsappConsent(),
     tracking,
   };
@@ -1530,10 +1471,6 @@ function showReviewStep() {
   document
     .querySelector(".mobile-summary-panel")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  trackEvent("valour_checkout_step_review", {
-    value: state.totals.total,
-    currency: "INR",
-  });
   reportCheckoutDetailsSubmitted();
 }
 
@@ -1830,6 +1767,8 @@ async function placeOrder(event) {
     return;
   }
 
+  trackMetaOrderButtonClick();
+
   setOrderLoading(true);
   try {
     if (!(await confirmCartIsInStock())) return;
@@ -1860,13 +1799,6 @@ async function placeOrder(event) {
       ? "Placing your COD order..."
       : `Opening ${getPaymentMethodLabel()} payment...`,
   );
-  trackEvent("valour_begin_checkout", {
-    value: state.totals.total,
-    currency: "INR",
-    coupon: state.coupon,
-    payment_method: getPaymentMethodLabel(),
-  });
-
   let razorpayOrder = null;
   try {
     renderSummary();
@@ -1898,21 +1830,6 @@ async function placeOrder(event) {
           paymentMethodLabel: "Cash on delivery",
         }),
       );
-      const confirmedForMeta = trackSuccessfulMetaFunnel(codOrder);
-      trackEvent("valour_purchase", {
-        order_id: codOrder.orderId,
-        value: codOrder.order.totalAmount,
-        currency: "INR",
-        items: codOrder.order.products,
-        payment_method: "COD",
-      }, { orderConfirmed: confirmedForMeta });
-      trackMetaPurchase({
-        value: codOrder.order.totalAmount,
-        currency: codOrder.order.currency || "INR",
-        items: codOrder.order.products,
-        orderId: codOrder.orderId,
-        orderConfirmed: confirmedForMeta,
-      });
       state.cart = [];
       state.coupon = null;
       localStorage.removeItem(STORAGE_KEY);
@@ -1967,22 +1884,6 @@ async function placeOrder(event) {
         paymentMethodLabel: getPaymentMethodLabel(),
       }),
     );
-
-    const confirmedForMeta = trackSuccessfulMetaFunnel(verifiedOrder);
-    trackEvent("valour_purchase", {
-      order_id: verifiedOrder.orderId,
-      value: verifiedOrder.order.totalAmount,
-      currency: "INR",
-      items: state.cart,
-      razorpay_order_id: verifiedOrder.order?.razorpayOrderId,
-    }, { orderConfirmed: confirmedForMeta });
-    if (verifiedOrder.metaPurchaseConfirmed) trackMetaPurchase({
-      value: verifiedOrder.order.totalAmount,
-      currency: verifiedOrder.order?.currency || "INR",
-      items: verifiedOrder.order.products,
-      orderId: verifiedOrder.orderId,
-      orderConfirmed: confirmedForMeta,
-    });
 
     state.cart = [];
     state.coupon = null;
@@ -2125,9 +2026,6 @@ function bindEvents() {
   document.querySelectorAll("[data-payment-input]").forEach((input) => {
     input.addEventListener("change", () => {
       setPaymentMethod(input.value);
-      trackEvent("valour_payment_select", {
-        payment_method: input.value,
-      });
       updateProgress();
     });
   });
