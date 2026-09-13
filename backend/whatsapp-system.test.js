@@ -162,6 +162,32 @@ test("admin dashboard sends only configured templates with validation, idempoten
   } finally { await new Promise(resolve=>server.close(resolve)); }
 });
 
+test("admin conversation list supports messages without a matching user profile",async()=>{
+  fresh();
+  rows('messages').push({
+    _id:new ObjectId(),
+    user_id:new ObjectId(),
+    phone,
+    role:'user',
+    type:'text',
+    content:'Hello',
+    message_id:'orphan-profile-message',
+    created_at:new Date(),
+  });
+  const server=api.app.listen(0,'127.0.0.1');
+  await new Promise(resolve=>server.once('listening',resolve));
+  try {
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/whatsapp/conversations`,{
+      headers:{'x-admin-token':'test-admin'},
+    });
+    assert.equal(response.status,200);
+    const body=await response.json();
+    assert.equal(body.conversations.length,1);
+    assert.equal(body.conversations[0].customerName,'WhatsApp customer');
+    assert.equal(body.conversations[0].phone,phone);
+  } finally { await new Promise(resolve=>server.close(resolve)); }
+});
+
 test("atomic job claim, definite rejection retry, uncertainty quarantine and expired claim recovery",async()=>{
   fresh();await api.scheduleWhatsappJob({event:'cooking_reminder',phone,parameters:['Butter Chicken'],scheduledAt:new Date(Date.now()+60000)});
   const job=rows('message_jobs')[0];job.scheduledAt=new Date(0);

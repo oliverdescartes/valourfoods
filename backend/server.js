@@ -9226,10 +9226,10 @@ function serializeAdminWhatsappJob(job = {}) {
 
 function getAdminConversationName(user = {}, order = {}) {
   return (
-    user.profileName ||
-    user.customerName ||
-    user.name ||
-    order.customerName ||
+    user?.profileName ||
+    user?.customerName ||
+    user?.name ||
+    order?.customerName ||
     "WhatsApp customer"
   );
 }
