@@ -5,7 +5,8 @@ const normalizeAction = (value) => String(value || "").normalize("NFKC")
   .toLowerCase().replace(/[^\p{L}\p{N}_\s'-]/gu, " ").replace(/\s+/g, " ").trim();
 const aliases = {};
 for (const [action, names] of Object.entries({
-  MENU: ["menu", "main menu", "back", "product_back", "hi", "hello", "hey", "restart", "start over", "stop", "cancel"],
+  MENU: ["menu", "main menu", "back", "product_back", "hi", "hello", "hey", "restart", "start over", "cancel"],
+  OPT_OUT: ["stop", "unsubscribe", "opt out", "opt-out", "stop messages", "stop marketing", "cancel marketing", "no promotions"],
   MENU_COOK: ["menu_cook", "start cooking", "product_start_cooking", "start guided cooking", "cook butter chicken", "watch the valour cooking tutorial", "cooking video", "cooking_video", "delivered_cooking_video", "watch cooking video", "video", "watch video", "watch cooking demo", "tutorial"],
   MENU_EXPLORE: ["menu_explore", "explore product", "explore the product", "explore products", "explore valour products"],
   MENU_ORDER: ["menu_order", "menu_buy", "buy now", "order now", "order online"],

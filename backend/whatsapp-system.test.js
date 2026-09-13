@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const { ObjectId } = require("mongodb");
 const { createDatabase } = require("./whatsapp-test-db");
 const parser = require("./whatsapp-inbound");
-Object.assign(process.env, { NODE_ENV: "test", MONGO_URI: "mongodb://127.0.0.1:1/isolated", OPENROUTER_API_KEY: "mock", RAZORPAY_KEY_ID: "mock", RAZORPAY_KEY_SECRET: "mock", GUPSHUP_API_KEY: "mock", GUPSHUP_APP_NAME: "mock", GUPSHUP_SOURCE_NUMBER: "919999999999", TRACKING_TOKEN_SECRET: "test-only", ORDER_ADMIN_TOKEN: "test-admin", PUBLIC_SITE_URL: "https://liquidspice.in", WHATSAPP_VELVETY_BUTTER_VIDEO_URL: "https://liquidspice.in/whatsapp/tutorial.mp4", WHATSAPP_LID_OPENING_VIDEO_URL: "https://liquidspice.in/whatsapp/open-the-lid.mp4", WHATSAPP_TUTORIAL_FOLLOWUP_DELAY_MS: "2000" });
+Object.assign(process.env, { NODE_ENV: "test", MONGO_URI: "mongodb://127.0.0.1:1/isolated", OPENROUTER_API_KEY: "mock", RAZORPAY_KEY_ID: "mock", RAZORPAY_KEY_SECRET: "mock", GUPSHUP_API_KEY: "mock", GUPSHUP_APP_NAME: "mock", GUPSHUP_SOURCE_NUMBER: "919999999999", TRACKING_TOKEN_SECRET: "test-only", ORDER_ADMIN_TOKEN: "test-admin", PUBLIC_SITE_URL: "https://liquidspice.in", WHATSAPP_MARKETING_ENABLED: "true", WHATSAPP_VELVETY_BUTTER_VIDEO_URL: "https://liquidspice.in/whatsapp/tutorial.mp4", WHATSAPP_LID_OPENING_VIDEO_URL: "https://liquidspice.in/whatsapp/open-the-lid.mp4", WHATSAPP_TUTORIAL_FOLLOWUP_DELAY_MS: "2000" });
 process.env.WHATSAPP_COD_PREPAID_TEMPLATE_ID = "515b2202-ab03-4fb3-a2de-32f896d04953";
 // Block all provider/AI HTTP traffic; outbound WhatsApp submission is mocked below.
 const axios = require("axios");
@@ -27,7 +27,7 @@ axios.post=async (url,form)=>{
   if(failure){const result=await failure(payload);if(result)return result;}
   payload.providerId=`provider-${++serial}`;sent.push(payload);return {data:{status:"submitted",messageId:payload.providerId}};
 };
-function fresh(){db=createDatabase();sent=[];failure=null;api.setDatabaseForTests(db);return db;}
+function fresh(){db=createDatabase();sent=[];failure=null;api.setDatabaseForTests(db);db.collection('users').rows.push({_id:new ObjectId(),phone,segment:'new_lead',whatsappConsentStatus:'granted',whatsappConsentCategories:['order_updates','offers'],whatsappConsentVersion:'checkout-whatsapp-v1',created_at:new Date()});return db;}
 const rows=name=>db.collection(name).rows;
 const session=()=>rows('sessions').find(s=>s.active);
 const textPayload=(text,id=`in-${++serial}`,from=phone)=>({entry:[{changes:[{value:{messages:[{id,from,type:"text",text:{body:text}}]}}]}]});
@@ -418,9 +418,10 @@ test("website events schedule product/demo and abandoned-checkout production del
   fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   try{
     for(const [event,trigger,hours] of [['product_explored','product_demo',18],['recipe_video_clicked','high_intent_followup',24],['checkout_details_submitted','checkout_reminder',1]]){
-      const before=Date.now();const response=await fetch(`http://127.0.0.1:${server.address().port}/api/customer-events`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({event,eventId:`event-${event}`,phone,productId:'velvety-butter-chicken',productName:'Velvety Butter Chicken Liquid Spice',orderValue:'Rs. 350',cartId:'isolated-cart'})});
+      const before=Date.now();const response=await fetch(`http://127.0.0.1:${server.address().port}/api/customer-events`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({event,eventId:`event-${event}`,phone,productId:'velvety-butter-chicken',productName:'Velvety Butter Chicken Liquid Spice',orderValue:'Rs. 350',cartId:'isolated-cart',whatsappConsent:true,consentSourcePage:'/checkout.html'})});
       assert.equal(response.status,200);const job=rows('message_jobs').find(j=>j.trigger===trigger);assert.ok(job);assert.ok(+job.scheduledAt>=before+hours*3600000);
     }
+    const consent=rows('whatsapp_consent_events').at(-1);assert.equal(consent.status,'granted');assert.equal(consent.wording,'Send me order updates and offers from VALOUR on WhatsApp. I can opt out at any time.');assert.equal(consent.sourcePage,'/checkout.html');assert.deepEqual(consent.acceptedCategories,['order_updates','offers']);assert.ok(consent.occurredAt instanceof Date);
     const own=order();await api.schedulePaidOrderAutomation(own);assert.ok(rows('message_jobs').filter(j=>['checkout_reminder','product_demo','high_intent_followup'].includes(j.trigger)).every(j=>j.status==='cancelled'));
     await new Promise(resolve=>setImmediate(resolve));await api.processDueWhatsappJobs();
   }finally{await new Promise(resolve=>server.close(resolve));}
@@ -450,4 +451,23 @@ test("forged webhook cannot impersonate an allowed admin without ingress authent
     }
     assert.equal(rows('whatsapp_inbox').length,0);assert.equal(sent.length,0);
   }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("marketing kill switch blocks scheduling while transactional updates remain available",async()=>{
+  fresh();process.env.WHATSAPP_MARKETING_ENABLED='false';
+  try {
+    const marketing=await api.scheduleWhatsappJob({event:'product_demo',phone,parameters:['Velvety Butter Chicken'],scheduledAt:new Date()});
+    assert.equal(marketing.scheduled,false);assert.equal(marketing.reason,'marketing_paused_for_compliance');
+    const service=await api.scheduleWhatsappJob({event:'cooking_reminder',phone,parameters:['Butter Chicken'],scheduledAt:new Date(Date.now()+60000)});
+    assert.equal(service.scheduled,true);
+  } finally {process.env.WHATSAPP_MARKETING_ENABLED='true';}
+});
+
+test("STOP records revocation, cancels marketing and confirms unsubscribe",async()=>{
+  fresh();await api.scheduleWhatsappJob({event:'product_demo',phone,parameters:['Velvety Butter Chicken'],scheduledAt:new Date(Date.now()+60000)});
+  await receive('STOP');
+  assert.equal(rows('users').find(user=>user.phone===phone).whatsappConsentStatus,'revoked');
+  assert.equal(rows('whatsapp_consent_events').at(-1).status,'revoked');
+  assert.equal(rows('message_jobs').find(job=>job.kind==='marketing').status,'cancelled');
+  assert.match(sent.at(-1).message.text,/unsubscribed/i);
 });

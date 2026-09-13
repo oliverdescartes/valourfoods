@@ -861,6 +861,51 @@ img {
   grid-column: 1 / -1;
 }
 
+.whatsapp-consent-field {
+  margin-top: 4px;
+  border: 1px solid rgba(88, 54, 35, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 248, 239, 0.72);
+  padding: 14px 16px;
+}
+
+.field .whatsapp-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 0;
+  color: var(--deep);
+  font-size: 13px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.whatsapp-consent input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  flex: 0 0 auto;
+  accent-color: var(--deep);
+}
+
+.whatsapp-consent-field small {
+  display: block;
+  margin: 8px 0 0 29px;
+  color: var(--soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.checkout-operator-disclosure {
+  margin: 20px auto 110px;
+  padding: 0 20px;
+  max-width: 760px;
+  color: var(--soft);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .field label {
   display: block;
   margin-bottom: 8px;

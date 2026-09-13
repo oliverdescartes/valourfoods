@@ -300,6 +300,18 @@
                 />
                 <p class="field-error" data-error-for="pincode"></p>
               </div>
+              <div class="field form-wide whatsapp-consent-field">
+                <label class="whatsapp-consent" for="whatsapp-consent">
+                  <input
+                    id="whatsapp-consent"
+                    name="whatsappConsent"
+                    type="checkbox"
+                    value="yes"
+                  />
+                  <span>Send me order updates and offers from VALOUR on WhatsApp. I can opt out at any time.</span>
+                </label>
+                <small>This is optional and unticked by default. Reply STOP at any time to stop promotional messages.</small>
+              </div>
             </div>
           </form>
 
@@ -796,6 +808,9 @@
       </div>
     </div>
 
-    <script src="checkout-script.js?v=20260913-delivery-estimate-1" defer></script>
+    <p class="checkout-operator-disclosure">
+      VALOUR is a brand owned and operated by Cosmos Foods, Agartala, Tripura.
+    </p>
+    <script src="checkout-script.js?v=20260913-whatsapp-consent-1" defer></script>
   </body>
 </html>

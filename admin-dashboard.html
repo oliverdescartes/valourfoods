@@ -1067,6 +1067,18 @@
               <button class="btn" id="template-send-button" type="submit" style="margin-top:16px">Send template</button>
               <p class="notice" id="template-send-message" role="status" aria-live="polite"></p>
             </form>
+            <div class="template-details" style="margin-top:24px">
+              <h2>Consent and transaction proof</h2>
+              <p class="muted">Look up the stored WhatsApp consent history and matching real orders before responding to an account review.</p>
+              <form id="whatsapp-compliance-form">
+                <div class="field">
+                  <label for="compliance-phone">Customer phone</label>
+                  <input id="compliance-phone" type="tel" inputmode="tel" placeholder="+91 98765 43210" required />
+                </div>
+                <button class="btn" type="submit" style="margin-top:12px">Load proof</button>
+              </form>
+              <div id="whatsapp-compliance-result" style="margin-top:14px" aria-live="polite"></div>
+            </div>
           </div>
           <div class="template-history">
             <h2>Recent manual sends</h2>
@@ -1919,6 +1931,26 @@
           message.className = "notice error";
           message.textContent = error.message;
           button.disabled = false;
+        }
+      });
+      $("#whatsapp-compliance-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = $("#whatsapp-compliance-result");
+        result.innerHTML = "<p class='muted'>Loading stored proof...</p>";
+        try {
+          const phone = $("#compliance-phone").value.trim();
+          const data = await api(`/api/admin/whatsapp/compliance?phone=${encodeURIComponent(phone)}`);
+          const consent = data.currentConsent || {};
+          const events = data.consentEvents || [];
+          const orders = data.transactionProof || [];
+          result.innerHTML = `<p><strong>Marketing:</strong> ${data.marketingEnabled ? "Enabled for consented customers" : "Paused for compliance review"}</p>
+            <p><strong>Current consent:</strong> ${escapeHtml(consent.status || "not_recorded")} ${consent.updatedAt ? `on ${dateTime(consent.updatedAt)}` : ""}</p>
+            <p><strong>Accepted categories:</strong> ${escapeHtml((consent.categories || []).join(", ") || "None")}</p>
+            <p><strong>Consent records:</strong> ${events.length} &nbsp; <strong>Matching orders:</strong> ${orders.length}</p>
+            ${events.length ? `<details><summary>Consent history</summary>${events.map(item => `<p class="muted">${dateTime(item.occurredAt)} · ${escapeHtml(item.status)} · ${escapeHtml(item.source)} · ${escapeHtml(item.wording)}</p>`).join("")}</details>` : ""}
+            ${orders.length ? `<details><summary>Transaction history</summary>${orders.map(item => `<p class="muted">${escapeHtml(item.orderNumber || item.orderId)} · ${dateTime(item.createdAt)} · ${escapeHtml(item.paymentStatus || "")} · ${money(item.totalAmount)}</p>`).join("")}</details>` : ""}`;
+        } catch (error) {
+          result.innerHTML = `<p class="notice error">${escapeHtml(error.message)}</p>`;
         }
       });
       $("#conversation-search-form").addEventListener("submit", (event) => {

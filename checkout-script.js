@@ -8,6 +8,9 @@ const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const DELIVERY_CITY = "agartala";
 const DELIVERY_STATE = "tripura";
 const OTP_HELP_WHATSAPP_PHONE = "919233054806";
+const WHATSAPP_CONSENT_TEXT =
+  "Send me order updates and offers from VALOUR on WhatsApp. I can opt out at any time.";
+const WHATSAPP_CONSENT_VERSION = "checkout-whatsapp-v1";
 // The Express app serves both the storefront and API. Keeping requests on the
 // current origin avoids stale deployment-domain mappings and works locally too.
 const API_BASE = window.location.origin;
@@ -179,6 +182,19 @@ function getFormValues() {
       typeof value === "string" ? value.trim() : value,
     ]),
   );
+}
+
+function getWhatsappConsent() {
+  const granted = Boolean(dom.form.elements.whatsappConsent?.checked);
+  return {
+    granted,
+    wording: WHATSAPP_CONSENT_TEXT,
+    version: WHATSAPP_CONSENT_VERSION,
+    acceptedCategories: granted ? ["order_updates", "offers"] : [],
+    source: "website_checkout",
+    sourcePage: window.location.pathname || "/checkout.html",
+    capturedAt: new Date().toISOString(),
+  };
 }
 
 function getStoredUser() {
@@ -592,6 +608,7 @@ async function getJSON(url) {
 
 function reportCheckoutDetailsSubmitted() {
   const values = getFormValues();
+  const whatsappConsent = getWhatsappConsent();
   if (!values.phone) return;
   const eventKey = "valour_checkout_event_id";
   let eventId = sessionStorage.getItem(eventKey);
@@ -611,6 +628,12 @@ function reportCheckoutDetailsSubmitted() {
     cartId: eventId,
     productName: state.cart.map((item) => item.name).join(", "),
     orderValue: money(state.totals.total),
+    whatsappConsent: whatsappConsent.granted,
+    whatsappConsentText: whatsappConsent.wording,
+    whatsappConsentVersion: whatsappConsent.version,
+    whatsappConsentCategories: whatsappConsent.acceptedCategories,
+    consentSource: whatsappConsent.source,
+    consentSourcePage: whatsappConsent.sourcePage,
     attribution: window.valourAttribution?.get?.() || null,
   }).catch((error) =>
     console.warn("Unable to record checkout event", error.message),
@@ -857,6 +880,7 @@ function buildOrderPayload() {
     totals: { ...state.totals },
     coupon: state.coupon,
     phoneVerificationToken: getStoredUser()?.phoneVerificationToken || "",
+    whatsappConsent: getWhatsappConsent(),
     tracking,
   };
 }

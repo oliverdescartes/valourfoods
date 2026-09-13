@@ -133,6 +133,7 @@ function collections() {
     messageJobs: db.collection("message_jobs"),
     adminTemplateSends: db.collection("admin_template_sends"),
     whatsappStatuses: db.collection("whatsapp_status_events"),
+    whatsappConsentEvents: db.collection("whatsapp_consent_events"),
     customerEvents: db.collection("customer_events"),
     analyticsEvents: db.collection("analytics_events"),
     metaEvents: db.collection("meta_events"),
@@ -359,6 +360,7 @@ async function connectDB() {
     messageJobs,
     adminTemplateSends,
     customerEvents,
+    whatsappConsentEvents,
     analyticsEvents,
     metaEvents,
     couponAssignments,
@@ -455,6 +457,8 @@ async function connectDB() {
     adminTemplateSends.createIndex({ createdAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
+    whatsappConsentEvents.createIndex({ eventId: 1 }, { unique: true }),
+    whatsappConsentEvents.createIndex({ phone: 1, occurredAt: -1 }),
     analyticsEvents.createIndex({ eventId: 1 }, { unique: true }),
     analyticsEvents.createIndex({ occurredAt: -1, event: 1 }),
     analyticsEvents.createIndex({ "attribution.visitorId": 1, occurredAt: -1 }),
@@ -552,6 +556,13 @@ async function connectDB() {
     ],
   );
 
+  if (!isWhatsappMarketingEnabled()) {
+    await cancelWhatsappJobs(
+      { kind: "marketing" },
+      "marketing_paused_for_compliance",
+    );
+  }
+
   mongoReady = true;
   console.log("MongoDB connected");
   startWhatsappJobWorker();
@@ -566,6 +577,136 @@ function matchesAny(text, options) {
 }
 
 const WHATSAPP_ROUTER_VERSION = "durable-actions-v4";
+const WHATSAPP_CONSENT_TEXT =
+  "Send me order updates and offers from VALOUR on WhatsApp. I can opt out at any time.";
+const WHATSAPP_CONSENT_VERSION = "checkout-whatsapp-v1";
+const WHATSAPP_CONSENT_CATEGORIES = ["order_updates", "offers"];
+
+function isWhatsappMarketingEnabled() {
+  return (
+    String(process.env.WHATSAPP_MARKETING_ENABLED || "false").toLowerCase() ===
+    "true"
+  );
+}
+
+function normalizeConsentCategories(value) {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set(WHATSAPP_CONSENT_CATEGORIES);
+  return [
+    ...new Set(
+      value
+        .map((item) => String(item || "").trim())
+        .filter((item) => allowed.has(item)),
+    ),
+  ];
+}
+
+async function hasActiveWhatsappMarketingConsent(phone) {
+  const user = await findUserByPhone(phone);
+  return Boolean(
+    user?.whatsappConsentStatus === "granted" &&
+      Array.isArray(user.whatsappConsentCategories) &&
+      user.whatsappConsentCategories.includes("offers"),
+  );
+}
+
+async function recordWhatsappConsent({
+  phone,
+  granted,
+  wording = WHATSAPP_CONSENT_TEXT,
+  version = WHATSAPP_CONSENT_VERSION,
+  categories = WHATSAPP_CONSENT_CATEGORIES,
+  source = "website_checkout",
+  sourcePage = "/checkout.html",
+  eventId = crypto.randomUUID(),
+}) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  if (!recipient) return null;
+  const occurredAt = new Date();
+  const acceptedCategories = granted
+    ? normalizeConsentCategories(categories)
+    : [];
+  const status = granted ? "granted" : "declined";
+  const event = {
+    eventId: String(eventId).slice(0, 160),
+    phone: recipient,
+    status,
+    granted: Boolean(granted),
+    wording: String(wording || WHATSAPP_CONSENT_TEXT).slice(0, 500),
+    version: String(version || WHATSAPP_CONSENT_VERSION).slice(0, 100),
+    source: String(source || "website_checkout").slice(0, 100),
+    sourcePage: String(sourcePage || "/checkout.html").slice(0, 300),
+    acceptedCategories,
+    occurredAt,
+  };
+  let persistedEvent = event;
+  try {
+    await collections().whatsappConsentEvents.insertOne(event);
+  } catch (error) {
+    if (error?.code !== 11000) throw error;
+    persistedEvent =
+      (await collections().whatsappConsentEvents.findOne({
+        eventId: event.eventId,
+      })) || event;
+  }
+  const user = await getOrCreateUser(recipient);
+  await collections().users.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        whatsappConsentStatus: persistedEvent.status,
+        whatsappConsentCategories: persistedEvent.acceptedCategories,
+        whatsappConsentUpdatedAt: persistedEvent.occurredAt,
+        whatsappConsentVersion: persistedEvent.version,
+        whatsappConsentSource: persistedEvent.source,
+      },
+    },
+  );
+  if (!persistedEvent.granted) {
+    await cancelWhatsappJobs(
+      { phone: recipient, kind: "marketing" },
+      "whatsapp_consent_not_granted",
+    );
+  }
+  return persistedEvent;
+}
+
+async function revokeWhatsappMarketingConsent(phone) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  if (!recipient) return null;
+  const occurredAt = new Date();
+  const event = {
+    eventId: crypto.randomUUID(),
+    phone: recipient,
+    status: "revoked",
+    granted: false,
+    wording: "Customer requested WhatsApp marketing opt-out.",
+    version: "whatsapp-stop-v1",
+    source: "whatsapp_stop",
+    sourcePage: "whatsapp_inbound",
+    acceptedCategories: [],
+    occurredAt,
+  };
+  await collections().whatsappConsentEvents.insertOne(event);
+  const user = await getOrCreateUser(recipient);
+  await collections().users.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        whatsappConsentStatus: "revoked",
+        whatsappConsentCategories: [],
+        whatsappConsentUpdatedAt: occurredAt,
+        whatsappConsentVersion: event.version,
+        whatsappConsentSource: event.source,
+      },
+    },
+  );
+  await cancelWhatsappJobs(
+    { phone: recipient, kind: "marketing" },
+    "customer_opted_out",
+  );
+  return event;
+}
 
 function compactSignalFields(fields = {}) {
   return Object.fromEntries(
@@ -1658,6 +1799,26 @@ async function scheduleWhatsappJob({
   const definition = WHATSAPP_AUTOMATION[event];
   if (!definition)
     throw new Error(`Unknown WhatsApp automation event: ${event}`);
+  if (definition.kind === "marketing") {
+    if (!isWhatsappMarketingEnabled()) {
+      console.log("[WHATSAPP][MARKETING_SKIPPED]", {
+        trigger: event,
+        reason: "marketing_paused_for_compliance",
+      });
+      return {
+        scheduled: false,
+        reason: "marketing_paused_for_compliance",
+      };
+    }
+    if (!(await hasActiveWhatsappMarketingConsent(phone))) {
+      console.log("[WHATSAPP][MARKETING_SKIPPED]", {
+        trigger: event,
+        recipient: maskWhatsappPhone(phone),
+        reason: "marketing_consent_not_granted",
+      });
+      return { scheduled: false, reason: "marketing_consent_not_granted" };
+    }
+  }
   const templateName =
     process.env[definition.env] || definition.defaultTemplate;
   if (!templateName) {
@@ -1796,6 +1957,14 @@ async function resolveAutomationOrder(job) {
 }
 
 async function runWhatsappQualityGate(job) {
+  if (job.kind === "marketing") {
+    if (!isWhatsappMarketingEnabled()) {
+      return { action: "cancel", reason: "marketing_paused_for_compliance" };
+    }
+    if (!(await hasActiveWhatsappMarketingConsent(job.phone))) {
+      return { action: "cancel", reason: "marketing_consent_not_granted" };
+    }
+  }
   if (
     !job.templateName ||
     !Array.isArray(job.parameters) ||
@@ -2971,6 +3140,7 @@ function getAdminWhatsappTemplateCatalog() {
           ? textOverride.buttons.map(String)
           : metadata.buttons || [],
         mediaType: contract?.mediaType || null,
+        kind: definition.kind,
         available: Boolean(templateId && contract && !configurationError),
         configurationError,
       };
@@ -6879,6 +7049,19 @@ async function processIncomingMessage(message) {
     state: session.current_state,
   });
 
+  if (parsed.action === "OPT_OUT") {
+    await revokeWhatsappMarketingConsent(phone);
+    await resetToIdle(session._id);
+    await sendMessage(
+      phone,
+      "You are unsubscribed from VALOUR promotional WhatsApp messages. We may still send essential updates for orders you place or reply when you contact support.",
+    );
+    console.log("[WHATSAPP][OPT_OUT_RECORDED]", {
+      recipient: maskWhatsappPhone(phone),
+    });
+    return;
+  }
+
   if (await handleWhatsappAdminOrderLookup({ phone, text })) {
     return;
   }
@@ -6937,7 +7120,7 @@ async function processIncomingMessage(message) {
   // Navigation overrides every flow. Once support is active, its replies must
   // be handled before generic intent detection; otherwise an issue such as
   // "need help" restarts support instead of creating the case.
-  if (matchesAny(lower, ["menu", "restart", "start over", "stop", "cancel"])) {
+  if (matchesAny(lower, ["menu", "restart", "start over", "cancel"])) {
     await resetToIdle(session._id);
     await sendMainMenu(phone);
     return;
@@ -8153,6 +8336,20 @@ function normalizeOrderPayload(order = {}) {
   const checkout = order.checkout || {};
   const totals = order.totals || {};
   const tracking = order.tracking || {};
+  const rawConsent = order.whatsappConsent || {};
+  const consentGranted = rawConsent.granted === true;
+  const whatsappConsent = {
+    status: consentGranted ? "granted" : "declined",
+    granted: consentGranted,
+    wording: WHATSAPP_CONSENT_TEXT,
+    version: WHATSAPP_CONSENT_VERSION,
+    acceptedCategories: consentGranted
+      ? WHATSAPP_CONSENT_CATEGORIES
+      : [],
+    source: "website_checkout",
+    sourcePage: String(rawConsent.sourcePage || "/checkout.html").slice(0, 300),
+    capturedAt: new Date(rawConsent.capturedAt || Date.now()),
+  };
   const signals = compactSignalFields({
     source: order.source || tracking.source,
     campaign: order.campaign || tracking.campaign,
@@ -8208,6 +8405,7 @@ function normalizeOrderPayload(order = {}) {
     subtotal: Number(totals.subtotal) || 0,
     shippingCharge: Number(totals.shipping) || 0,
     totalAmount: Number(totals.total) || 0,
+    whatsappConsent,
     ...signals,
     ...campaignAttribution,
     ...(attributionDetails ? { attribution: attributionDetails } : {}),
@@ -9360,6 +9558,69 @@ app.get("/api/admin/whatsapp/templates", async (req, res) => {
   }
 });
 
+app.get("/api/admin/whatsapp/compliance", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const phone = normalizeAdminWhatsappPhone(req.query?.phone);
+  if (!phone) {
+    return res.status(400).json({
+      ok: false,
+      error: "Enter a valid WhatsApp number with country code",
+    });
+  }
+  try {
+    const [user, consentEvents, orders] = await Promise.all([
+      findUserByPhone(phone),
+      collections()
+        .whatsappConsentEvents.find({ phone })
+        .sort({ occurredAt: -1 })
+        .limit(50)
+        .toArray(),
+      collections()
+        .orders.find({ phone: { $regex: `${phone.slice(-10)}$` } })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .toArray(),
+    ]);
+    return res.json({
+      ok: true,
+      business: {
+        legalOperator: "Cosmos Foods",
+        brand: "VALOUR",
+        relationship: "VALOUR is a brand owned and operated by Cosmos Foods.",
+      },
+      marketingEnabled: isWhatsappMarketingEnabled(),
+      currentConsent: user
+        ? {
+            status: user.whatsappConsentStatus || "not_recorded",
+            categories: user.whatsappConsentCategories || [],
+            version: user.whatsappConsentVersion || null,
+            source: user.whatsappConsentSource || null,
+            updatedAt: user.whatsappConsentUpdatedAt || null,
+          }
+        : { status: "not_recorded", categories: [] },
+      consentEvents,
+      transactionProof: orders.map((order) => ({
+        orderId: String(order._id || ""),
+        orderNumber: order.orderNumber || null,
+        createdAt: order.createdAt || null,
+        paymentMethod: order.paymentMethod || null,
+        paymentStatus: order.paymentStatus || null,
+        shippingStatus: order.shippingStatus || null,
+        totalAmount: order.totalAmount || null,
+        whatsappConsent: order.whatsappConsent || null,
+      })),
+    });
+  } catch (error) {
+    console.error("Admin WhatsApp compliance evidence load failed", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "Unable to load WhatsApp compliance evidence",
+    });
+  }
+});
+
 app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -9394,6 +9655,20 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
       ok: false,
       error: `Template is unavailable: ${template.configurationError}`,
     });
+  }
+  if (template.kind === "marketing") {
+    if (!isWhatsappMarketingEnabled()) {
+      return res.status(423).json({
+        ok: false,
+        error: "Marketing WhatsApp messages are paused for compliance review",
+      });
+    }
+    if (!(await hasActiveWhatsappMarketingConsent(phone))) {
+      return res.status(403).json({
+        ok: false,
+        error: "This phone number has no active WhatsApp marketing consent",
+      });
+    }
   }
   try {
     validateWhatsappTemplatePayload(template.templateName, parameters);
@@ -10839,6 +11114,34 @@ app.post("/api/customer-events", async (req, res) => {
     }
     recordingStage = "inserting_event";
     try {
+      const consentGranted = req.body.whatsappConsent === true;
+      const consentSnapshot =
+        event === "checkout_details_submitted"
+          ? {
+              status: consentGranted ? "granted" : "declined",
+              wording: WHATSAPP_CONSENT_TEXT,
+              version: WHATSAPP_CONSENT_VERSION,
+              acceptedCategories: consentGranted
+                ? WHATSAPP_CONSENT_CATEGORIES
+                : [],
+              source: "website_checkout",
+              sourcePage: String(
+                req.body.consentSourcePage || "/checkout.html",
+              ).slice(0, 300),
+            }
+          : null;
+      if (consentSnapshot) {
+        await recordWhatsappConsent({
+          phone,
+          granted: consentGranted,
+          wording: WHATSAPP_CONSENT_TEXT,
+          version: WHATSAPP_CONSENT_VERSION,
+          categories: WHATSAPP_CONSENT_CATEGORIES,
+          source: consentSnapshot.source,
+          sourcePage: consentSnapshot.sourcePage,
+          eventId: `${eventId.slice(0, 120)}:whatsapp-consent:${consentGranted ? "granted" : "declined"}`,
+        });
+      }
       await collections().customerEvents.insertOne({
         eventId,
         event,
@@ -10849,6 +11152,7 @@ app.post("/api/customer-events", async (req, res) => {
         cartId: String(req.body.cartId || "").slice(0, 160) || null,
         occurredAt: new Date(),
         source: "website",
+        ...(consentSnapshot ? { whatsappConsent: consentSnapshot } : {}),
         attribution: acquisition.attribution(req.body.attribution),
       });
     } catch (err) {
