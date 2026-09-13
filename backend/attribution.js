@@ -9,7 +9,7 @@ function text(value, max = 256) {
 }
 function touch(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const result = Object.fromEntries(TOUCH_KEYS.map(key => [key, text(value[key], ["landingPage", "fbclid", "gclid"].includes(key) ? 1500 : 256)]));
+  const result = Object.fromEntries(TOUCH_KEYS.map(key => [key, key === "capturedAt" ? value[key] : text(value[key], ["landingPage", "fbclid", "gclid"].includes(key) ? 1500 : 256)]));
   result.channel = CHANNELS.has(result.channel) ? result.channel : "unknown";
   const date = new Date(result.capturedAt);
   result.capturedAt = Number.isNaN(date.getTime()) ? null : date;

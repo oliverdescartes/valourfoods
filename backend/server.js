@@ -381,6 +381,9 @@ async function connectDB() {
   }
   await Promise.all([
     users.createIndex({ phone: 1 }, { unique: true }),
+    users.createIndex({ last_seen_at: -1, created_at: -1 }),
+    users.createIndex({ acquisitionChannel: 1, last_seen_at: -1 }),
+    users.createIndex({ whatsappConsentStatus: 1, last_seen_at: -1 }),
     sessions.createIndex({ user_id: 1, active: 1 }),
     messages.createIndex({ message_id: 1 }, { unique: true, sparse: true }),
     messages.createIndex({ phone: 1, created_at: -1 }),
@@ -760,6 +763,47 @@ async function updateUserSignals(userId, fields = {}) {
   }
 }
 
+async function persistUserAttribution(user, rawAttribution) {
+  if (!user?._id) return false;
+  const attribution = acquisition.attribution(rawAttribution);
+  if (!attribution) return false;
+
+  const existing = user.attribution || {};
+  const merged = {
+    visitorId: attribution.visitorId,
+    sessionId: attribution.sessionId,
+    firstTouch:
+      existing.firstTouch ||
+      attribution.firstTouch ||
+      attribution.currentSession ||
+      null,
+    latestNonDirect:
+      attribution.latestNonDirect || existing.latestNonDirect || null,
+    currentSession: attribution.currentSession || null,
+    updatedAt: new Date(),
+  };
+  const selected =
+    merged.latestNonDirect || merged.currentSession || merged.firstTouch || {};
+
+  await collections().users.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        attribution: merged,
+        acquisitionChannel: selected.channel || "unknown",
+        acquisitionSource: selected.source || "",
+        acquisitionMedium: selected.medium || "",
+        acquisitionCampaign: selected.campaign || "",
+        acquisitionContent: selected.content || "",
+        acquisitionLandingPage: selected.landingPage || "",
+        attribution_updated_at: merged.updatedAt,
+      },
+    },
+  );
+  user.attribution = merged;
+  return true;
+}
+
 function isStartCookingIntent(text = "") {
   const lower = normalizeText(text);
 
@@ -1079,6 +1123,10 @@ async function recordCompletedOrderIntelligence(order) {
   const phoneDigits = normalizeIndianPhone(order.phone);
 
   if (!phoneDigits) return;
+  const user =
+    (await findUserByPhone(phoneDigits)) ||
+    (await getOrCreateUser(normalizeWhatsappRecipient(phoneDigits)));
+  await persistUserAttribution(user, order.attribution);
 
   const intelligence = compactSignalFields({
     productId: order.productId || order.selected_product,
@@ -1097,7 +1145,7 @@ async function recordCompletedOrderIntelligence(order) {
   });
 
   await users.updateOne(
-    { phone: { $regex: `${phoneDigits}$` } },
+    { _id: user._id },
     {
       $set: { ...intelligence, signal_updated_at: new Date() },
       $inc: { leadScore: getLeadScoreDelta("", "completed_order") },
@@ -9540,6 +9588,66 @@ function serializeAdminConversationMessage(message = {}) {
   };
 }
 
+function serializeAdminUser(user = {}, orderSummary = {}) {
+  const attribution = user.attribution || {};
+  const touch =
+    attribution.latestNonDirect ||
+    attribution.currentSession ||
+    attribution.firstTouch ||
+    {};
+  return {
+    id: String(user._id || ""),
+    phone: normalizeWhatsappRecipient(user.phone),
+    name:
+      user.profileName ||
+      user.customerName ||
+      user.name ||
+      orderSummary.latestOrder?.customerName ||
+      "VALOUR customer",
+    email: user.email || orderSummary.latestOrder?.email || "",
+    createdAt: user.created_at || user.createdAt || null,
+    lastSeenAt: user.last_seen_at || user.updated_at || user.created_at || null,
+    segment: user.segment || "",
+    leadScore: Number(user.leadScore) || 0,
+    purchaseIntent: user.purchaseIntent || "",
+    productId: user.productId || user.selected_product || "",
+    consent: {
+      status: user.whatsappConsentStatus || "not_recorded",
+      categories: Array.isArray(user.whatsappConsentCategories)
+        ? user.whatsappConsentCategories
+        : [],
+      updatedAt: user.whatsappConsentUpdatedAt || null,
+      source: user.whatsappConsentSource || "",
+    },
+    acquisition: {
+      channel: user.acquisitionChannel || touch.channel || "unknown",
+      source: user.acquisitionSource || touch.source || "",
+      medium: user.acquisitionMedium || touch.medium || "",
+      campaign: user.acquisitionCampaign || touch.campaign || "",
+      content: user.acquisitionContent || touch.content || "",
+      landingPage: user.acquisitionLandingPage || touch.landingPage || "",
+      firstTouch: attribution.firstTouch || null,
+      latestNonDirect: attribution.latestNonDirect || null,
+      currentSession: attribution.currentSession || null,
+    },
+    orderCount: Number(orderSummary.orderCount) || 0,
+    lifetimeValue: Number(orderSummary.lifetimeValue) || 0,
+    latestOrder: orderSummary.latestOrder
+      ? {
+          id: String(orderSummary.latestOrder._id || ""),
+          orderNumber:
+            orderSummary.latestOrder.orderNumber ||
+            (orderSummary.latestOrder._id
+              ? formatOrderNumber(orderSummary.latestOrder._id)
+              : ""),
+          createdAt: orderSummary.latestOrder.createdAt || null,
+          totalAmount: Number(orderSummary.latestOrder.totalAmount) || 0,
+          shippingStatus: orderSummary.latestOrder.shippingStatus || "",
+        }
+      : null,
+  };
+}
+
 app.get("/api/admin/whatsapp/templates", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -10454,6 +10562,185 @@ app.get("/api/admin/acquisition.csv", async (req, res) => {
   }
 });
 
+app.get("/api/admin/users", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(
+      100,
+      Math.max(10, Number.parseInt(req.query.limit, 10) || 25),
+    );
+    const search = String(req.query.search || "").trim().slice(0, 100);
+    const channel = String(req.query.channel || "").trim().slice(0, 40);
+    const consentStatus = String(req.query.consentStatus || "")
+      .trim()
+      .slice(0, 40);
+    const filter = {};
+    if (search) {
+      const pattern = new RegExp(escapeMongoRegex(search), "i");
+      filter.$or = [
+        { phone: pattern },
+        { profileName: pattern },
+        { customerName: pattern },
+        { name: pattern },
+        { email: pattern },
+      ];
+    }
+    if (channel) filter.acquisitionChannel = channel;
+    if (consentStatus === "not_recorded") {
+      filter.whatsappConsentStatus = { $exists: false };
+    } else if (["granted", "declined", "revoked"].includes(consentStatus)) {
+      filter.whatsappConsentStatus = consentStatus;
+    }
+
+    const now = new Date();
+    const istNow = new Date(now.getTime() + 330 * 60_000);
+    istNow.setUTCHours(0, 0, 0, 0);
+    const todayStart = new Date(istNow.getTime() - 330 * 60_000);
+    const { users, orders } = collections();
+    const [rows, total, totalUsers, newToday, consentedUsers] =
+      await Promise.all([
+        users
+          .find(filter)
+          .sort({ last_seen_at: -1, created_at: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .toArray(),
+        users.countDocuments(filter),
+        users.countDocuments({}),
+        users.countDocuments({
+          $or: [
+            { created_at: { $gte: todayStart } },
+            { createdAt: { $gte: todayStart } },
+          ],
+        }),
+        users.countDocuments({ whatsappConsentStatus: "granted" }),
+      ]);
+
+    const phonePatterns = rows
+      .map((user) => normalizeWhatsappRecipient(user.phone).slice(-10))
+      .filter(Boolean)
+      .map((phone) => ({ phone: { $regex: `${escapeMongoRegex(phone)}$` } }));
+    const pageOrders = phonePatterns.length
+      ? await orders
+          .find({ $or: phonePatterns })
+          .sort({ createdAt: -1 })
+          .toArray()
+      : [];
+    const orderSummaryByPhone = new Map();
+    for (const order of pageOrders) {
+      const key = normalizeWhatsappRecipient(order.phone || order.whatsappPhone).slice(-10);
+      if (!key) continue;
+      const summary = orderSummaryByPhone.get(key) || {
+        orderCount: 0,
+        lifetimeValue: 0,
+        latestOrder: order,
+      };
+      summary.orderCount += 1;
+      summary.lifetimeValue += Number(order.totalAmount) || 0;
+      orderSummaryByPhone.set(key, summary);
+    }
+
+    return res.json({
+      ok: true,
+      generatedAt: now,
+      metrics: { totalUsers, newToday, consentedUsers },
+      users: rows.map((user) =>
+        serializeAdminUser(
+          user,
+          orderSummaryByPhone.get(
+            normalizeWhatsappRecipient(user.phone).slice(-10),
+          ),
+        ),
+      ),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Admin users load failed", { error: error.message });
+    return res.status(500).json({ ok: false, error: "Unable to load customers" });
+  }
+});
+
+app.get("/api/admin/users/:id", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  if (!ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ ok: false, error: "Invalid customer ID" });
+  }
+  try {
+    const { users, orders, messages, messageJobs, whatsappConsentEvents } =
+      collections();
+    const user = await users.findOne({ _id: new ObjectId(req.params.id) });
+    if (!user) {
+      return res.status(404).json({ ok: false, error: "Customer not found" });
+    }
+    const phone = normalizeWhatsappRecipient(user.phone);
+    const phoneSuffix = phone.slice(-10);
+    const phoneFilter = phoneSuffix
+      ? { $regex: `${escapeMongoRegex(phoneSuffix)}$` }
+      : "__missing__";
+    const [orderRows, messageRows, consentRows, jobRows, messageCount, jobCount] = await Promise.all([
+      orders.find({ phone: phoneFilter }).sort({ createdAt: -1 }).toArray(),
+      messages
+        .find({ $or: [{ user_id: user._id }, { phone: phoneFilter }] })
+        .sort({ created_at: -1 })
+        .limit(30)
+        .toArray(),
+      whatsappConsentEvents
+        .find({ phone })
+        .sort({ occurredAt: -1 })
+        .limit(25)
+        .toArray(),
+      messageJobs.find({ phone }).sort({ createdAt: -1 }).limit(20).toArray(),
+      messages.countDocuments({ $or: [{ user_id: user._id }, { phone: phoneFilter }] }),
+      messageJobs.countDocuments({ phone }),
+    ]);
+    const orderValue = orderRows.reduce(
+      (total, order) => total + (Number(order.totalAmount) || 0),
+      0,
+    );
+    return res.json({
+      ok: true,
+      user: serializeAdminUser(user, {
+        orderCount: orderRows.length,
+        lifetimeValue: orderValue,
+        latestOrder: orderRows[0],
+      }),
+      summary: {
+        orderCount: orderRows.length,
+        orderValue,
+        messageCount,
+        whatsappJobCount: jobCount,
+      },
+      orders: orderRows.slice(0, 25).map(serializeAdminOrder),
+      consentEvents: consentRows.map((event) => ({
+        status: event.status || "",
+        categories: event.acceptedCategories || [],
+        source: event.source || "",
+        occurredAt: event.occurredAt || null,
+        wording: event.wording || "",
+      })),
+      recentMessages: messageRows
+        .reverse()
+        .map(serializeAdminConversationMessage),
+      recentWhatsappJobs: jobRows.map(serializeAdminWhatsappJob),
+    });
+  } catch (error) {
+    console.error("Admin user detail load failed", { error: error.message });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Unable to load customer details" });
+  }
+});
+
 app.get("/api/admin/dashboard", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -11109,6 +11396,7 @@ app.post("/api/customer-events", async (req, res) => {
   }
   let recordingStage = "initializing";
   try {
+    const websiteAttribution = acquisition.attribution(req.body.attribution);
     const eventId = String(req.body.eventId || crypto.randomUUID()).slice(
       0,
       160,
@@ -11118,6 +11406,7 @@ app.post("/api/customer-events", async (req, res) => {
     if (!customer?._id) {
       throw new Error("Customer record is unavailable after creation");
     }
+    await persistUserAttribution(customer, websiteAttribution);
     recordingStage = "inserting_event";
     try {
       const consentGranted = req.body.whatsappConsent === true;
@@ -11159,7 +11448,7 @@ app.post("/api/customer-events", async (req, res) => {
         occurredAt: new Date(),
         source: "website",
         ...(consentSnapshot ? { whatsappConsent: consentSnapshot } : {}),
-        attribution: acquisition.attribution(req.body.attribution),
+        attribution: websiteAttribution,
       });
     } catch (err) {
       if (err?.code === 11000) return res.json({ ok: true, duplicate: true });

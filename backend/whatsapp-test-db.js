@@ -54,7 +54,7 @@ class Collection {
   find(filter = {}) {
     let rows = this.rows.filter(row => matches(row, filter));
     const cursor = { sort(spec) { rows.sort((a, b) => { for (const [key, direction] of Object.entries(spec)) { const x=get(a,key), y=get(b,key); if(x>y)return direction;if(x<y)return -direction; } return 0; }); return cursor; },
-      limit(n) { rows = rows.slice(0, n); return cursor; }, project() { return cursor; }, async toArray() { return rows.map(r => ({ ...r })); } };
+      skip(n) { rows = rows.slice(n); return cursor; }, limit(n) { rows = rows.slice(0, n); return cursor; }, project() { return cursor; }, async toArray() { return rows.map(r => ({ ...r })); } };
     return cursor;
   }
   async findOne(filter, opts = {}) { return (await this.find(filter).sort(opts.sort || {}).limit(1).toArray())[0] || null; }

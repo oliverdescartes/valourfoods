@@ -10,9 +10,9 @@ async function withServer(run) {
   finally { await new Promise(resolve => server.close(resolve)); }
 }
 
-test("acquisition reporting and CSV endpoints require the admin token", async () => {
+test("acquisition and customer-management endpoints require the admin token", async () => {
   await withServer(async base => {
-    for (const path of ["/api/admin/acquisition", "/api/admin/acquisition.csv"]) {
+    for (const path of ["/api/admin/acquisition", "/api/admin/acquisition.csv", "/api/admin/users", "/api/admin/users/507f1f77bcf86cd799439011"]) {
       const response = await fetch(base + path);
       assert.equal(response.status, 401);
     }
@@ -26,6 +26,23 @@ test("attribution browser code is served while unknown root files remain private
     assert.match(await attribution.text(), /latestNonDirect/);
     assert.equal((await fetch(base + "/backend/.env")).status, 404);
   });
+});
+
+test("admin dashboard exposes responsive customer management and workflow actions", () => {
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "admin-dashboard.html"), "utf8");
+  for (const marker of [
+    'data-tab="customers"',
+    'id="customers-panel"',
+    'id="customer-search"',
+    'id="customer-detail"',
+    'data-customer-action="orders"',
+    'data-customer-action="conversation"',
+    'data-customer-action="template"',
+    'data-customer-action="consent"',
+    'data-customer-action="coupon"',
+    "/api/admin/users",
+  ]) assert.match(html, new RegExp(marker));
+  assert.match(html, /@media \(max-width: 760px\)[\s\S]*\.customer-layout \{ grid-template-columns: 1fr; \}/);
 });
 
 test("admin date filters use complete Asia/Kolkata calendar days", () => {

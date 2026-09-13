@@ -15,6 +15,10 @@ The admin report uses Asia/Kolkata dates. “Latest non-direct” is the default
 
 Counts are limited by consent, browser blocking, cleared storage, and cross-device use. “Meta accepted” means the Graph API accepted the server request. Meta processing, deduplication, and ad attribution must be checked in Events Manager.
 
+When a visitor supplies a phone number during checkout, the matching `users` record stores the complete first-touch, latest-non-direct and current-session attribution. It also stores searchable summary fields: `acquisitionChannel`, `acquisitionSource`, `acquisitionMedium`, `acquisitionCampaign`, `acquisitionContent`, and `acquisitionLandingPage`. A completed website order repeats this update so an order can repair a missed earlier customer-event write. Existing users without recorded website attribution remain unknown until evidence from a later website interaction or order is available; the system does not invent a source for them.
+
+The Admin Dashboard **Customers** tab lists all customer records with newest activity first. Administrators can search by name, phone or email; filter by acquisition channel or WhatsApp consent; inspect first/latest attribution, order totals and consent history; and move the selected phone into the existing Orders, WhatsApp history, template, consent-proof or coupon workflows.
+
 ## Event inventory
 
 | Action | GA4 event | Meta browser | Meta server | Duplicate control |

@@ -414,6 +414,32 @@ test("wrapped Gupshup WABA delivery callbacks work without a custom header",asyn
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 
+test("website customer records preserve first touch and update their latest acquisition source",async()=>{
+  fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  const touch=(source,medium,channel)=>({source,medium,campaign:`${source}-campaign`,content:'creative-1',term:'',id:'campaign-1',fbclid:'',gclid:'',channel,landingPage:'/',referrer:'',capturedAt:new Date().toISOString()});
+  const send=async(eventId,source,medium,channel)=>fetch(`http://127.0.0.1:${server.address().port}/api/customer-events`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({event:'lead_created',eventId,phone,attribution:{visitorId:'vis_123456789012',sessionId:`ses_${eventId}_123456789012`,firstTouch:touch('google','cpc','paid_search'),latestNonDirect:touch(source,medium,channel),currentSession:touch(source,medium,channel)}})});
+  try{
+    assert.equal((await send('acquisition-first','google','cpc','paid_search')).status,200);
+    assert.equal((await send('acquisition-latest','instagram','paid_social','paid_social')).status,200);
+    const user=rows('users')[0];
+    assert.equal(user.attribution.firstTouch.source,'google');
+    assert.equal(user.attribution.latestNonDirect.source,'instagram');
+    assert.equal(user.acquisitionChannel,'paid_social');
+    assert.equal(user.acquisitionSource,'instagram');
+    assert.equal(user.acquisitionMedium,'paid_social');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("admin can list newest customers and open a customer detail record",async()=>{
+  fresh();const user=rows('users')[0];user.profileName='Asha';user.acquisitionChannel='paid_social';user.acquisitionSource='instagram';user.last_seen_at=new Date();order();rows('whatsapp_consent_events').push({phone,status:'granted',acceptedCategories:['offers'],source:'website_checkout',occurredAt:new Date(),wording:'Consent text'});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  const headers={'x-admin-token':'test-admin'};
+  try{
+    const listResponse=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/users`,{headers});assert.equal(listResponse.status,200);const list=await listResponse.json();assert.equal(list.users[0].name,'Asha');assert.equal(list.users[0].acquisition.source,'instagram');assert.equal(list.metrics.totalUsers,1);
+    const detailResponse=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/users/${user._id}`,{headers});assert.equal(detailResponse.status,200);const detail=await detailResponse.json();assert.equal(detail.summary.orderCount,1);assert.equal(detail.orders[0].orderNumber,'VALOUR-ABC123');assert.equal(detail.consentEvents[0].status,'granted');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
 test("website events schedule product/demo and abandoned-checkout production delays",async()=>{
   fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   try{
