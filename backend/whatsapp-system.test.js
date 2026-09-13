@@ -212,6 +212,16 @@ test("callbacks arriving before persistence reconcile; out-of-order statuses nev
   assert.equal(rows('message_jobs')[0].status,'read');assert.equal(rows('messages')[0].delivery_status,'read');assert.equal(rows('whatsapp_status_events').length,2);
 });
 
+test("delivery callbacks also match the WhatsApp ID learned from enqueued status",async()=>{
+  fresh();
+  rows('message_jobs').push({_id:new ObjectId(),providerMessageId:'gupshup-1',status:'submitted'});
+  rows('messages').push({_id:new ObjectId(),provider_message_id:'gupshup-1',direction:'outbound',delivery_status:'submitted'});
+  await api.recordWhatsappJobStatus({id:'gupshup-1',whatsappMessageId:'wa-1',status:'enqueued',timestamp:Date.now()});
+  await api.recordWhatsappJobStatus({id:'wa-1',status:'delivered',timestamp:Date.now()});
+  assert.equal(rows('message_jobs')[0].status,'delivered');
+  assert.equal(rows('messages')[0].delivery_status,'delivered');
+});
+
 test("checkout/payment, reorder and support quality gates cancel obsolete jobs",async()=>{
   fresh();const own=order();const base={templateName:'valour_cooking_reminder',parameters:['dish'],phone,orderId:own._id,createdAt:new Date(),kind:'transactional'};
   assert.equal((await api.runWhatsappQualityGate({...base,trigger:'checkout_reminder'})).reason,'payment_completed');
@@ -371,8 +381,23 @@ test("Meta HTTP webhook batches messages and keeps delivery callbacks out of rou
   fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   try{
     const payload=textPayload('Hi','http-message');payload.entry[0].changes[0].value.statuses=[{id:'http-status',status:'sent',timestamp:Date.now()}];
-    const response=await fetch(`http://127.0.0.1:${server.address().port}/webhook/gupshup`,{method:'POST',headers:{'content-type':'application/json','x-whatsapp-webhook-token':'isolated-inbound-secret'},body:JSON.stringify(payload)});assert.equal(response.status,200);
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/webhook/gupshup?token=isolated-inbound-secret`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});assert.equal(response.status,200);
     await api.drainWhatsappInbox();assert.equal(rows('whatsapp_inbox').length,1);assert.equal(rows('whatsapp_status_events').length,1);assert.equal(sent.length,1);
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("configured Gupshup V2 callbacks remain compatible without a custom header",async()=>{
+  fresh();
+  rows('message_jobs').push({_id:new ObjectId(),providerMessageId:'native-gs-id',status:'submitted'});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const event={app:'mock',timestamp:Date.now(),version:2,type:'message-event',payload:{id:'native-gs-id',type:'failed',destination:phone,payload:{code:1008,reason:'User is not opted in'}}};
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/webhook/gupshup`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(event)});
+    assert.equal(response.status,200);
+    assert.equal(rows('message_jobs')[0].status,'failed');
+    assert.equal(rows('message_jobs')[0].providerErrors.reason,'User is not opted in');
+    const wrongApp=await fetch(`http://127.0.0.1:${server.address().port}/webhook/gupshup`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...event,app:'wrong-app'})});
+    assert.equal(wrongApp.status,401);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 

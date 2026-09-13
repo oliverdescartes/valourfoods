@@ -48,7 +48,7 @@ function parseNative(body = {}) {
     id: payload.gsId || payload.id,
     whatsappMessageId: payload.gsId ? payload.id : payload.payload?.whatsappMessageId,
     destination: payload.destination, status: payload.type,
-    timestamp: payload.ts || body.timestamp,
+    timestamp: payload.ts || payload.payload?.ts || body.timestamp,
     errors: payload.type === "failed" ? payload.payload || { code: payload.code } : undefined,
   } };
   if (body.type !== "message") return { message: null, status: null };

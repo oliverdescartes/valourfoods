@@ -2206,19 +2206,34 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
     failed: ["processing", "submitted", "enqueued", "sent", "failed"],
   }[normalized];
   allowedPreviousStatuses.push("delivery_unknown");
+  const outboundIds = [status.id, status.whatsappMessageId].filter(Boolean);
   const result = await collections().messageJobs.updateOne(
-    { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
+    {
+      $or: [
+        { providerMessageId: { $in: outboundIds } },
+        { whatsappMessageId: { $in: outboundIds } },
+      ],
+      status: { $in: allowedPreviousStatuses },
+    },
     { $set: updates },
   );
   const manualSendResult = await collections().adminTemplateSends.updateOne(
-    { providerMessageId: status.id, status: { $in: allowedPreviousStatuses } },
+    {
+      $or: [
+        { providerMessageId: { $in: outboundIds } },
+        { whatsappMessageId: { $in: outboundIds } },
+      ],
+      status: { $in: allowedPreviousStatuses },
+    },
     { $set: updates },
   );
-  const outboundIds = [status.id, status.whatsappMessageId].filter(Boolean);
   const outboundResult = outboundIds.length
     ? await collections().messages.updateOne(
         {
-          provider_message_id: { $in: outboundIds },
+          $or: [
+            { provider_message_id: { $in: outboundIds } },
+            { whatsapp_message_id: { $in: outboundIds } },
+          ],
           direction: "outbound",
           $or: [
             { delivery_status: { $exists: false } },
@@ -2229,6 +2244,9 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
           $set: {
             delivery_status: normalized,
             delivery_status_updated_at: timestamp,
+            ...(status.whatsappMessageId
+              ? { whatsapp_message_id: status.whatsappMessageId }
+              : {}),
             ...(normalized === "sent" ? { sent_at: timestamp } : {}),
             ...(normalized === "delivered" ? { delivered_at: timestamp } : {}),
             ...(normalized === "read" ? { read_at: timestamp } : {}),
@@ -7634,15 +7652,50 @@ async function receiveWhatsappWebhook(req, res) {
     process.env.WHATSAPP_WEBHOOK_TOKEN || "",
   );
   const suppliedWebhookToken = String(
-    req.get("x-whatsapp-webhook-token") || "",
+    req.get("x-whatsapp-webhook-token") || req.query.token || "",
   );
   const expectedBuffer = Buffer.from(expectedWebhookToken);
   const suppliedBuffer = Buffer.from(suppliedWebhookToken);
+  const tokenAuthorized = Boolean(
+    expectedWebhookToken &&
+      expectedBuffer.length === suppliedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, suppliedBuffer),
+  );
+  const isNativeGupshupEvent = Boolean(
+    req.path === "/webhook/gupshup" &&
+      req.body &&
+      String(req.body.app || "") === String(process.env.GUPSHUP_APP_NAME || "") &&
+      Number(req.body.version) === 2 &&
+      [
+        "message",
+        "message-event",
+        "user-event",
+        "template-event",
+        "account-event",
+        "system-event",
+        "billing-event",
+      ].includes(String(req.body.type || "")) &&
+      req.body.payload &&
+      typeof req.body.payload === "object",
+  );
+  const nativeSource = normalizeWhatsappRecipient(
+    req.body?.payload?.source || req.body?.payload?.sender?.phone,
+  );
+  const attemptsAdminCommandWithoutToken = Boolean(
+    !tokenAuthorized &&
+      req.body?.type === "message" &&
+      nativeSource &&
+      DEFAULT_CUSTOMER_CARE_PHONES.includes(nativeSource),
+  );
   if (
-    !expectedWebhookToken ||
-    expectedBuffer.length !== suppliedBuffer.length ||
-    !crypto.timingSafeEqual(expectedBuffer, suppliedBuffer)
+    !tokenAuthorized &&
+    (!isNativeGupshupEvent || attemptsAdminCommandWithoutToken)
   ) {
+    console.warn("[WHATSAPP][WEBHOOK_AUTH_REJECTED]", {
+      path: req.path,
+      tokenConfigured: Boolean(expectedWebhookToken),
+      nativeGupshupEvent: isNativeGupshupEvent,
+    });
     return res.status(401).json({ ok: false, error: "Unauthorized webhook" });
   }
   if (!mongoReady) {
@@ -7653,7 +7706,7 @@ async function receiveWhatsappWebhook(req, res) {
     const messages = await persistWhatsappWebhook(req.body);
 
     // Acknowledge Gupshup immediately.
-    res.sendStatus(200);
+    res.status(200).end();
 
     // Process messages asynchronously after acknowledging the webhook.
     for (const message of messages) {
