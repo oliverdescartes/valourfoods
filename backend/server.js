@@ -1127,6 +1127,15 @@ async function recordCompletedOrderIntelligence(order) {
     (await findUserByPhone(phoneDigits)) ||
     (await getOrCreateUser(normalizeWhatsappRecipient(phoneDigits)));
   await persistUserAttribution(user, order.attribution);
+  const checkoutProfile = normalizeCheckoutUserProfile({
+    name: order.customerName,
+    email: order.email,
+    address: order.address,
+    landmark: order.landmark,
+    city: order.city,
+    state: order.state,
+    pincode: order.pincode,
+  });
 
   const intelligence = compactSignalFields({
     productId: order.productId || order.selected_product,
@@ -1147,7 +1156,23 @@ async function recordCompletedOrderIntelligence(order) {
   await users.updateOne(
     { _id: user._id },
     {
-      $set: { ...intelligence, signal_updated_at: new Date() },
+      $set: {
+        ...intelligence,
+        ...checkoutProfile,
+        ...(Object.keys(checkoutProfile).length
+          ? {
+              checkoutProfile: {
+                ...checkoutProfile,
+                source: "completed_order",
+                updatedAt: new Date(),
+              },
+              profile_updated_at: new Date(),
+            }
+          : {}),
+        signal_updated_at: new Date(),
+        last_order_at: order.createdAt || new Date(),
+        last_seen_at: new Date(),
+      },
       $inc: { leadScore: getLeadScoreDelta("", "completed_order") },
     },
   );
@@ -8443,6 +8468,7 @@ function normalizeOrderPayload(order = {}) {
       .trim()
       .toLowerCase(),
     address: String(checkout.address || "").trim(),
+    landmark: String(checkout.landmark || "").trim(),
     city: String(checkout.city || "").trim(),
     state: String(checkout.state || "").trim(),
     pincode: String(checkout.pincode || "").trim(),
@@ -9576,6 +9602,35 @@ function getAdminConversationName(user = {}, order = {}) {
   );
 }
 
+function normalizeCheckoutUserProfile(details = {}) {
+  return compactSignalFields({
+    customerName: cleanCheckoutOtpDetail(details.name || details.customerName, 200),
+    email: cleanCheckoutOtpDetail(details.email, 250).toLowerCase(),
+    address: cleanCheckoutOtpDetail(details.address, 400),
+    landmark: cleanCheckoutOtpDetail(details.landmark, 200),
+    city: cleanCheckoutOtpDetail(details.city, 100),
+    state: cleanCheckoutOtpDetail(details.state, 100),
+    pincode: cleanCheckoutOtpDetail(details.pincode, 6),
+  });
+}
+
+async function persistCheckoutUserProfile(userId, details, source) {
+  const profile = normalizeCheckoutUserProfile(details);
+  if (!userId || !Object.keys(profile).length) return profile;
+  const now = new Date();
+  await collections().users.updateOne(
+    { _id: userId },
+    {
+      $set: {
+        ...profile,
+        checkoutProfile: { ...profile, source, updatedAt: now },
+        profile_updated_at: now,
+      },
+    },
+  );
+  return profile;
+}
+
 function serializeAdminConversationMessage(message = {}) {
   return {
     id: String(message._id || message.message_id || ""),
@@ -9605,11 +9660,20 @@ function serializeAdminUser(user = {}, orderSummary = {}) {
       orderSummary.latestOrder?.customerName ||
       "VALOUR customer",
     email: user.email || orderSummary.latestOrder?.email || "",
+    address: user.address || orderSummary.latestOrder?.address || "",
+    landmark: user.landmark || orderSummary.latestOrder?.landmark || "",
+    city: user.city || orderSummary.latestOrder?.city || "",
+    state: user.state || orderSummary.latestOrder?.state || "",
+    pincode: user.pincode || orderSummary.latestOrder?.pincode || "",
+    profileUpdatedAt:
+      user.profile_updated_at || user.checkoutProfile?.updatedAt || null,
     createdAt: user.created_at || user.createdAt || null,
     lastSeenAt: user.last_seen_at || user.updated_at || user.created_at || null,
     segment: user.segment || "",
     leadScore: Number(user.leadScore) || 0,
     purchaseIntent: user.purchaseIntent || "",
+    feedbackType: user.feedbackType || user.feedback_type || "",
+    latestFeedback: user.latestFeedback || null,
     productId: user.productId || user.selected_product || "",
     consent: {
       status: user.whatsappConsentStatus || "not_recorded",
@@ -10586,6 +10650,11 @@ app.get("/api/admin/users", async (req, res) => {
         { customerName: pattern },
         { name: pattern },
         { email: pattern },
+        { address: pattern },
+        { landmark: pattern },
+        { city: pattern },
+        { state: pattern },
+        { pincode: pattern },
       ];
     }
     if (channel) filter.acquisitionChannel = channel;
@@ -10676,8 +10745,17 @@ app.get("/api/admin/users/:id", async (req, res) => {
     return res.status(400).json({ ok: false, error: "Invalid customer ID" });
   }
   try {
-    const { users, orders, messages, messageJobs, whatsappConsentEvents } =
-      collections();
+    const {
+      users,
+      orders,
+      messages,
+      messageJobs,
+      whatsappConsentEvents,
+      customerEvents,
+      cookingOutcomes,
+      reviews,
+      supportCases,
+    } = collections();
     const user = await users.findOne({ _id: new ObjectId(req.params.id) });
     if (!user) {
       return res.status(404).json({ ok: false, error: "Customer not found" });
@@ -10687,7 +10765,18 @@ app.get("/api/admin/users/:id", async (req, res) => {
     const phoneFilter = phoneSuffix
       ? { $regex: `${escapeMongoRegex(phoneSuffix)}$` }
       : "__missing__";
-    const [orderRows, messageRows, consentRows, jobRows, messageCount, jobCount] = await Promise.all([
+    const [
+      orderRows,
+      messageRows,
+      consentRows,
+      jobRows,
+      eventRows,
+      cookingRows,
+      reviewRows,
+      supportRows,
+      messageCount,
+      jobCount,
+    ] = await Promise.all([
       orders.find({ phone: phoneFilter }).sort({ createdAt: -1 }).toArray(),
       messages
         .find({ $or: [{ user_id: user._id }, { phone: phoneFilter }] })
@@ -10700,6 +10789,26 @@ app.get("/api/admin/users/:id", async (req, res) => {
         .limit(25)
         .toArray(),
       messageJobs.find({ phone }).sort({ createdAt: -1 }).limit(20).toArray(),
+      customerEvents
+        .find({ $or: [{ customerId: user._id }, { phone }] })
+        .sort({ occurredAt: -1 })
+        .limit(50)
+        .toArray(),
+      cookingOutcomes
+        .find({ user_id: user._id })
+        .sort({ updated_at: -1, created_at: -1 })
+        .limit(25)
+        .toArray(),
+      reviews
+        .find({ phone: phoneFilter })
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(25)
+        .toArray(),
+      supportCases
+        .find({ $or: [{ user_id: user._id }, { phone }] })
+        .sort({ updated_at: -1, created_at: -1 })
+        .limit(25)
+        .toArray(),
       messages.countDocuments({ $or: [{ user_id: user._id }, { phone: phoneFilter }] }),
       messageJobs.countDocuments({ phone }),
     ]);
@@ -10707,6 +10816,83 @@ app.get("/api/admin/users/:id", async (req, res) => {
       (total, order) => total + (Number(order.totalAmount) || 0),
       0,
     );
+    const eventLabels = {
+      lead_created: "Lead created",
+      product_viewed: "Product viewed",
+      product_explored: "Product explored",
+      recipe_video_clicked: "Recipe video opened",
+      checkout_started: "Checkout started",
+      checkout_details_submitted: "Checkout details submitted",
+    };
+    const actionHistory = [
+      ...eventRows.map((event) => ({
+        type: "website",
+        label: eventLabels[event.event] || event.event || "Website activity",
+        detail: event.productId || "VALOUR website",
+        occurredAt: event.occurredAt || null,
+      })),
+      ...orderRows.map((order) => ({
+        type: "order",
+        label: "Order placed",
+        detail: `${order.orderNumber || formatOrderNumber(order._id)} · ₹${Number(order.totalAmount) || 0} · ${order.paymentStatus || order.paymentMethod || "payment pending"}`,
+        occurredAt: order.createdAt || null,
+      })),
+      ...cookingRows.map((outcome) => ({
+        type: "feedback",
+        label: outcome.feedbackType || outcome.feedback_type
+          ? "Cooking feedback received"
+          : "Cooking journey completed",
+        detail:
+          outcome.feedbackType ||
+          outcome.feedback_type ||
+          outcome.outcome ||
+          outcome.product_id ||
+          "VALOUR product",
+        occurredAt: outcome.updated_at || outcome.created_at || null,
+      })),
+      ...reviewRows.map((review) => ({
+        type: "feedback",
+        label: `Review submitted${review.rating ? ` · ${review.rating}/5` : ""}`,
+        detail:
+          [
+            ...(Array.isArray(review.feedback) ? review.feedback : []),
+            review.review,
+            review.repurchaseIntent,
+          ]
+            .filter(Boolean)
+            .join(" · ") || "Customer review",
+        occurredAt: review.updatedAt || review.createdAt || null,
+      })),
+      ...supportRows.map((support) => ({
+        type: "support",
+        label: `Support request · ${support.status || "open"}`,
+        detail: support.details || support.category?.label || "Customer support",
+        occurredAt: support.updated_at || support.created_at || null,
+      })),
+      ...consentRows.map((consent) => ({
+        type: "consent",
+        label: `WhatsApp consent ${consent.status || "updated"}`,
+        detail: consent.source || "Consent preference",
+        occurredAt: consent.occurredAt || null,
+      })),
+      ...messageRows
+        .filter((message) => message.role === "user")
+        .map((message) => ({
+          type: "whatsapp",
+          label: "WhatsApp message received",
+          detail: String(message.content || message.type || "Customer message").slice(0, 240),
+          occurredAt: message.created_at || null,
+        })),
+    ]
+      .filter((action) => action.occurredAt)
+      .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
+      .slice(0, 60);
+    const feedbackHistory = actionHistory.filter(
+      (action) => action.type === "feedback",
+    );
+    const lastActivityAt = [user.last_seen_at, ...actionHistory.map((action) => action.occurredAt)]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a))[0] || null;
     return res.json({
       ok: true,
       user: serializeAdminUser(user, {
@@ -10719,6 +10905,9 @@ app.get("/api/admin/users/:id", async (req, res) => {
         orderValue,
         messageCount,
         whatsappJobCount: jobCount,
+        lastOrderAt: orderRows[0]?.createdAt || user.last_order_at || null,
+        lastActivityAt,
+        latestFeedback: feedbackHistory[0] || null,
       },
       orders: orderRows.slice(0, 25).map(serializeAdminOrder),
       consentEvents: consentRows.map((event) => ({
@@ -10732,6 +10921,7 @@ app.get("/api/admin/users/:id", async (req, res) => {
         .reverse()
         .map(serializeAdminConversationMessage),
       recentWhatsappJobs: jobRows.map(serializeAdminWhatsappJob),
+      actionHistory,
     });
   } catch (error) {
     console.error("Admin user detail load failed", { error: error.message });
@@ -11407,6 +11597,29 @@ app.post("/api/customer-events", async (req, res) => {
       throw new Error("Customer record is unavailable after creation");
     }
     await persistUserAttribution(customer, websiteAttribution);
+    await collections().users.updateOne(
+      { _id: customer._id },
+      {
+        $set: {
+          last_seen_at: new Date(),
+          lastAction: {
+            type: event,
+            productId: productId || null,
+            occurredAt: new Date(),
+          },
+        },
+      },
+    );
+    if (event === "checkout_details_submitted") {
+      recordingStage = "verifying_checkout_profile";
+      await verifyCheckoutPhoneIdentity(req.body.phoneVerificationToken, phone);
+      recordingStage = "saving_checkout_profile";
+      await persistCheckoutUserProfile(
+        customer._id,
+        req.body.checkoutDetails || {},
+        "website_checkout",
+      );
+    }
     recordingStage = "inserting_event";
     try {
       const consentGranted = req.body.whatsappConsent === true;
@@ -11507,7 +11720,7 @@ app.post("/api/customer-events", async (req, res) => {
       stack: err.stack,
     });
     res
-      .status(500)
+      .status(err.statusCode || 500)
       .json({ ok: false, error: "Unable to record customer event" });
   }
 });
@@ -12677,6 +12890,27 @@ app.post("/api/reviews/:token", async (req, res) => {
         createdAt: now,
         updatedAt: now,
       });
+      const publicReviewUser = await findUserByPhone(submittedPhone);
+      if (publicReviewUser?._id) {
+        await collections().users.updateOne(
+          { _id: publicReviewUser._id },
+          {
+            $set: {
+              feedbackType: "review_submitted",
+              latestFeedback: {
+                rating,
+                feedback,
+                review: reviewText,
+                repurchaseIntent,
+                source: "public_review_link",
+                occurredAt: now,
+              },
+              last_seen_at: now,
+              lastAction: { type: "review_submitted", occurredAt: now },
+            },
+          },
+        );
+      }
       return res.status(201).json({ ok: true, reviewId });
     }
 
@@ -12716,6 +12950,30 @@ app.post("/api/reviews/:token", async (req, res) => {
       },
       { upsert: true },
     );
+
+    const reviewUser = await findUserByPhone(orderPhone);
+    if (reviewUser?._id) {
+      const now = new Date();
+      await collections().users.updateOne(
+        { _id: reviewUser._id },
+        {
+          $set: {
+            feedbackType: "review_submitted",
+            latestFeedback: {
+              rating,
+              feedback,
+              review: reviewText,
+              repurchaseIntent,
+              orderReference,
+              source: "verified_order_review",
+              occurredAt: now,
+            },
+            last_seen_at: now,
+            lastAction: { type: "review_submitted", occurredAt: now },
+          },
+        },
+      );
+    }
 
     await cancelWhatsappJobs(
       { orderId: order._id, trigger: "review_request" },
@@ -13144,5 +13402,6 @@ module.exports = {
     nextIstSendTime,
     sanitizeReassuranceText,
     shouldTryBrandNLU,
+    signCheckoutPhoneToken,
   },
 };

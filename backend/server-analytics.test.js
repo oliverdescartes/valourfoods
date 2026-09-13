@@ -40,6 +40,15 @@ test("admin dashboard exposes responsive customer management and workflow action
     'data-customer-action="template"',
     'data-customer-action="consent"',
     'data-customer-action="coupon"',
+    '"Full name", user.name',
+    '"Address", user.address',
+    '"Landmark", user.landmark',
+    '"Pincode", user.pincode',
+    '"Last order", dateTime',
+    '"Purchase intent", user.purchaseIntent',
+    '"Latest feedback", summary.latestFeedback',
+    '<h3>Action history</h3>',
+    'Lead score',
     "/api/admin/users",
   ]) assert.match(html, new RegExp(marker));
   assert.match(html, /@media \(max-width: 760px\)[\s\S]*\.customer-layout \{ grid-template-columns: 1fr; \}/);
