@@ -142,7 +142,7 @@ test("template IDs/counts and sanitization protect signed links",async()=>{
 });
 
 test("admin dashboard sends only configured templates with validation, idempotency and callback tracking",async()=>{
-  fresh();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  fresh();const trackedOrder=order({orderNumber:'VALOUR-TRACK1',customerName:'Tracking Customer',createdAt:new Date()});const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   const base=`http://127.0.0.1:${server.address().port}/api/admin/whatsapp/templates`;
   const headers={'content-type':'application/json','x-admin-token':'test-admin'};
   try {
@@ -151,6 +151,10 @@ test("admin dashboard sends only configured templates with validation, idempoten
     const catalog=await catalogResponse.json();
     assert.ok(catalog.templates.some(item=>item.key==='cooking_reminder'&&item.available&&item.parameterCount===1));
     assert.match(catalog.templates.find(item=>item.key==='cod_prepaid_confirmation').bodyText,/No payment will be collected at delivery/);
+    assert.equal((await fetch(`${base}/tracking-link`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone})})).status,401);
+    const trackingResponse=await fetch(`${base}/tracking-link`,{method:'POST',headers,body:JSON.stringify({phone:'+91 98765 43210',orderNumber:trackedOrder.orderNumber})});assert.equal(trackingResponse.status,200);
+    const tracking=await trackingResponse.json();assert.equal(tracking.order.orderNumber,'VALOUR-TRACK1');assert.match(tracking.trackingUrl,/\/track-order\.html\?t=/);assert.ok(tracking.buttonToken);
+    const publicTracking=await fetch(`http://127.0.0.1:${server.address().port}/api/order-tracking/${encodeURIComponent(tracking.buttonToken)}`);assert.equal(publicTracking.status,200);assert.equal((await publicTracking.json()).order.orderNumber,'VALOUR-TRACK1');
     const invalid=await fetch(`${base}/send`,{method:'POST',headers,body:JSON.stringify({requestId:'manual-invalid-1',templateKey:'cooking_reminder',phone:'123',parameters:['Butter Chicken']})});
     assert.equal(invalid.status,400);
     const payload={requestId:'manual-send-123',templateKey:'cooking_reminder',phone:'+91 98765 43210',parameters:['Butter Chicken']};

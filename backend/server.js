@@ -9950,6 +9950,72 @@ app.get("/api/admin/whatsapp/templates", async (req, res) => {
   }
 });
 
+app.post("/api/admin/whatsapp/templates/tracking-link", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const phone = normalizeAdminWhatsappPhone(req.body?.phone);
+  const orderNumber = normalizeOrderReference(req.body?.orderNumber || "");
+  if (!phone) {
+    return res.status(400).json({
+      ok: false,
+      error: "Enter a valid WhatsApp number with country code",
+    });
+  }
+  if (!process.env.TRACKING_TOKEN_SECRET) {
+    return res.status(503).json({
+      ok: false,
+      error: "Order tracking is not configured",
+    });
+  }
+  const baseUrl = String(process.env.PUBLIC_SITE_URL || "")
+    .trim()
+    .replace(/\/$/, "");
+  if (!baseUrl) {
+    return res.status(503).json({
+      ok: false,
+      error: "Public website URL is not configured",
+    });
+  }
+
+  try {
+    const order = orderNumber
+      ? await findOrderByReference(orderNumber, phone)
+      : await findLatestWhatsappOrder(phone);
+    if (!order) {
+      return res.status(404).json({
+        ok: false,
+        error: orderNumber
+          ? "No matching order was found for this phone number and order number"
+          : "No order was found for this phone number",
+      });
+    }
+    const buttonToken = createOrderTrackingToken(order);
+    const resolvedOrderNumber =
+      order.orderNumber || formatOrderNumber(order._id);
+    return res.json({
+      ok: true,
+      buttonToken,
+      trackingUrl: `${baseUrl}/track-order.html?t=${encodeURIComponent(buttonToken)}`,
+      order: {
+        id: String(order._id),
+        orderNumber: resolvedOrderNumber,
+        customerName: order.customerName || "VALOUR customer",
+        phone: normalizeWhatsappRecipient(order.phone || order.whatsappPhone),
+        shippingStatus: order.shippingStatus || "Order confirmed",
+        paymentStatus: order.paymentStatus || "Confirmed",
+        totalAmount: Number(order.totalAmount) || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Admin tracking link generation failed", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "Unable to generate the tracking link",
+    });
+  }
+});
+
 app.get("/api/admin/whatsapp/compliance", async (req, res) => {
   if (!isAuthorizedAdminRequest(req)) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -12093,11 +12159,24 @@ app.post("/api/orders/out-of-stock-intent", async (req, res) => {
         const inserted = await orders.insertOne(preOrderRecord);
         savedPreOrder = { ...preOrderRecord, _id: inserted.insertedId };
         preOrderCreated = true;
+        console.log("[CHECKOUT][ZERO_STOCK_PREORDER_CREATED]", {
+          orderId: String(inserted.insertedId),
+          orderReference: preOrderRecord.orderNumber,
+          recipient: maskWhatsappPhone(preOrderRecord.phone),
+          unavailableSkus: stock.unavailableItems.map((item) => item.sku),
+        });
       } catch (error) {
         if (error?.code !== 11000) throw error;
         savedPreOrder = await orders.findOne({ checkoutIdempotencyKey });
         if (!savedPreOrder) throw error;
       }
+    }
+    if (!preOrderCreated) {
+      console.log("[CHECKOUT][ZERO_STOCK_PREORDER_REUSED]", {
+        orderId: String(savedPreOrder._id),
+        orderReference: savedPreOrder.orderNumber,
+        recipient: maskWhatsappPhone(savedPreOrder.phone),
+      });
     }
 
     const customer = await getOrCreateUser(

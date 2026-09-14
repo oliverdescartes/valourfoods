@@ -584,6 +584,24 @@
         display: grid;
         gap: 12px;
       }
+      .template-parameter-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .template-parameter-row input {
+        min-width: 0;
+        flex: 1;
+      }
+      .template-parameter-row .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      .tracking-link-result {
+        margin-top: 6px;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
       .template-preview {
         margin: 16px 0;
         border: 1px solid #cddbcf;
@@ -1377,6 +1395,8 @@
       let whatsappTemplates = [];
       let recentTemplateSends = [];
       let pendingTemplateRequestId = "";
+      let renderedTemplateKey = "";
+      const templateParameterDrafts = new Map();
       let stockProducts = [];
       const $ = (selector) => document.querySelector(selector);
       const escapeHtml = (value) =>
@@ -1770,6 +1790,15 @@
           (template) => template.key === $("#template-select").value,
         );
       }
+      function saveRenderedTemplateDraft() {
+        if (!renderedTemplateKey) return;
+        templateParameterDrafts.set(
+          renderedTemplateKey,
+          [...document.querySelectorAll("[data-template-parameter]")].map(
+            (input) => input.value,
+          ),
+        );
+      }
       function renderTemplatePreview() {
         const template = selectedWhatsappTemplate();
         const values = [...document.querySelectorAll("[data-template-parameter]")]
@@ -1795,11 +1824,51 @@
           .map((label) => `<span>${escapeHtml(label)}</span>`)
           .join("");
       }
+      async function generateTemplateTrackingLink(parameterIndex) {
+        const template = selectedWhatsappTemplate();
+        const input = $(`#template-param-${parameterIndex}`);
+        const result = $(`#template-tracking-result-${parameterIndex}`);
+        const button = document.querySelector(
+          `[data-generate-tracking="${parameterIndex}"]`,
+        );
+        const phone = $("#template-phone").value;
+        const orderNumberIndex = template?.parameterLabels.findIndex(
+          (label) => label === "Order number",
+        );
+        const orderNumber = orderNumberIndex >= 0
+          ? $(`#template-param-${orderNumberIndex}`)?.value.trim()
+          : "";
+        button.disabled = true;
+        result.className = "tracking-link-result muted";
+        result.textContent = "Finding the order and generating its secure link...";
+        try {
+          const data = await api("/api/admin/whatsapp/templates/tracking-link", {
+            method: "POST",
+            body: JSON.stringify({ phone, orderNumber }),
+          });
+          input.value = data.buttonToken;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          if (orderNumberIndex >= 0 && !orderNumber) {
+            const orderInput = $(`#template-param-${orderNumberIndex}`);
+            orderInput.value = data.order.orderNumber;
+            orderInput.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          result.className = "tracking-link-result notice success";
+          result.innerHTML = `Linked to <strong>${escapeHtml(data.order.orderNumber)}</strong> for ${escapeHtml(data.order.customerName)}. <a href="${escapeHtml(data.trackingUrl)}" target="_blank" rel="noopener">Open tracking page</a>`;
+        } catch (error) {
+          result.className = "tracking-link-result notice error";
+          result.textContent = error.message;
+        } finally {
+          button.disabled = false;
+        }
+      }
       function renderTemplateFields() {
+        saveRenderedTemplateDraft();
         const template = selectedWhatsappTemplate();
         if (!template) {
           $("#template-details").textContent = "Select an available template to see its configuration.";
           $("#template-parameters").innerHTML = "";
+          renderedTemplateKey = "";
           $("#template-send-button").disabled = true;
           renderTemplatePreview();
           return;
@@ -1807,15 +1876,47 @@
         $("#template-details").innerHTML = template.available
           ? `<strong>${escapeHtml(template.templateName)}</strong><br>Template ID: ${escapeHtml(template.templateId)}<br>Language: ${escapeHtml(template.languageCode)} · ${template.mediaType ? `${escapeHtml(template.mediaType)} header` : "text only"} · ${template.parameterCount} ${template.parameterCount === 1 ? "value" : "values"}`
           : `<strong>${escapeHtml(template.label)}</strong><br><span class="error">Unavailable: ${escapeHtml(template.configurationError)}</span>`;
-        $("#template-parameters").innerHTML = template.parameterLabels
-          .map(
-            (label, index) =>
-              `<div class="field"><label for="template-param-${index}">{{${index + 1}}} ${escapeHtml(label)}</label><input id="template-param-${index}" data-template-parameter maxlength="1024" required /></div>`,
-          )
-          .join("");
-        $("#template-parameters")
-          .querySelectorAll("[data-template-parameter]")
-          .forEach((input) => input.addEventListener("input", renderTemplatePreview));
+        const existingInputs = [
+          ...document.querySelectorAll("[data-template-parameter]"),
+        ];
+        const fieldsAlreadyRendered =
+          renderedTemplateKey === template.key &&
+          existingInputs.length === template.parameterLabels.length;
+        if (!fieldsAlreadyRendered) {
+          $("#template-parameters").innerHTML = template.parameterLabels
+            .map(
+              (label, index) => {
+                const trackingControl = label === "Tracking button token"
+                  ? `<button class="btn ghost" type="button" data-generate-tracking="${index}">Generate link</button>`
+                  : "";
+                const trackingResult = label === "Tracking button token"
+                  ? `<div class="tracking-link-result" id="template-tracking-result-${index}" aria-live="polite"></div>`
+                  : "";
+                return `<div class="field"><label for="template-param-${index}">{{${index + 1}}} ${escapeHtml(label)}</label><div class="template-parameter-row"><input id="template-param-${index}" data-template-parameter maxlength="1024" required />${trackingControl}</div>${trackingResult}</div>`;
+              },
+            )
+            .join("");
+          const draft = templateParameterDrafts.get(template.key) || [];
+          $("#template-parameters")
+            .querySelectorAll("[data-template-parameter]")
+            .forEach((input, index) => {
+              input.value = draft[index] || "";
+              input.addEventListener("input", () => {
+                saveRenderedTemplateDraft();
+                renderTemplatePreview();
+              });
+            });
+          $("#template-parameters")
+            .querySelectorAll("[data-generate-tracking]")
+            .forEach((button) =>
+              button.addEventListener("click", () =>
+                generateTemplateTrackingLink(
+                  Number(button.dataset.generateTracking),
+                ),
+              ),
+            );
+        }
+        renderedTemplateKey = template.key;
         $("#template-send-button").disabled = !template.available;
         renderTemplatePreview();
       }

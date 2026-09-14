@@ -1446,11 +1446,28 @@ async function confirmCartIsInStock() {
   }
   openOutOfStockModal(result.stock?.unavailableItems || []);
   try {
-    await reportOutOfStockOrderIntent();
+    const preOrderResult = await reportOutOfStockOrderIntent();
+    console.info("[CHECKOUT][PREORDER_RECORDED]", {
+      orderReference: preOrderResult.orderReference,
+      created: preOrderResult.preOrder?.created === true,
+    });
+    showToast(
+      `Your request was recorded as pre-order ${preOrderResult.orderReference}.`,
+    );
   } catch (error) {
-    console.warn(
-      "Unable to send the out-of-stock order alert to admins",
-      error.message,
+    if (error.code === "STOCK_AVAILABLE") {
+      closeOutOfStockModal();
+      sessionStorage.removeItem(OUT_OF_STOCK_INTENT_KEY);
+      return true;
+    }
+    console.error("[CHECKOUT][PREORDER_SAVE_FAILED]", {
+      status: error.status || null,
+      code: error.code || null,
+      message: error.message,
+    });
+    showToast(
+      "Stock is unavailable and we couldn't save your pre-order. Please try again.",
+      "error",
     );
   }
   return false;
