@@ -155,6 +155,8 @@ test("admin dashboard sends only configured templates with validation, idempoten
     const trackingResponse=await fetch(`${base}/tracking-link`,{method:'POST',headers,body:JSON.stringify({phone:'+91 98765 43210',orderNumber:trackedOrder.orderNumber})});assert.equal(trackingResponse.status,200);
     const tracking=await trackingResponse.json();assert.equal(tracking.order.orderNumber,'VALOUR-TRACK1');assert.match(tracking.trackingUrl,/\/track-order\.html\?t=/);assert.ok(tracking.buttonToken);
     const publicTracking=await fetch(`http://127.0.0.1:${server.address().port}/api/order-tracking/${encodeURIComponent(tracking.buttonToken)}`);assert.equal(publicTracking.status,200);assert.equal((await publicTracking.json()).order.orderNumber,'VALOUR-TRACK1');
+    const manualResponse=await fetch(`${base}/tracking-link`,{method:'POST',headers,body:JSON.stringify({phone:'+91 76289 63053',orderNumber:'VALOUR-7C4A92',trackingDetails:{shippingStatus:'out for delivery',paymentMethod:'cash on delivery',paymentStatus:'payment due',expectedDelivery:'today, 8:00 pm'}})});assert.equal(manualResponse.status,200);
+    const manual=await manualResponse.json();assert.equal(manual.order.manuallyEntered,true);const manualPublic=await fetch(`http://127.0.0.1:${server.address().port}/api/order-tracking/${encodeURIComponent(manual.buttonToken)}`);assert.equal(manualPublic.status,200);const manualOrder=(await manualPublic.json()).order;assert.equal(manualOrder.orderNumber,'VALOUR-7C4A92');assert.equal(manualOrder.shippingStatus,'out for delivery');assert.equal(manualOrder.paymentMethod,'cash on delivery');assert.equal(manualOrder.paymentStatus,'payment due');assert.equal(manualOrder.expectedDelivery,'today, 8:00 pm');assert.equal(manualOrder.totalAmount,null);
     const invalid=await fetch(`${base}/send`,{method:'POST',headers,body:JSON.stringify({requestId:'manual-invalid-1',templateKey:'cooking_reminder',phone:'123',parameters:['Butter Chicken']})});
     assert.equal(invalid.status,400);
     const payload={requestId:'manual-send-123',templateKey:'cooking_reminder',phone:'+91 98765 43210',parameters:['Butter Chicken']};
@@ -501,6 +503,18 @@ test("admin can list newest customers and open a customer detail record",async()
   try{
     const listResponse=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/users`,{headers});assert.equal(listResponse.status,200);const list=await listResponse.json();assert.equal(list.users[0].name,'Asha');assert.equal(list.users[0].acquisition.source,'instagram');assert.equal(list.users[0].leadScore,42);assert.equal(list.users[0].purchaseIntent,'high');assert.equal(list.users[0].feedbackType,'loved_it');assert.equal(list.metrics.totalUsers,1);
     const detailResponse=await fetch(`http://127.0.0.1:${server.address().port}/api/admin/users/${user._id}`,{headers});assert.equal(detailResponse.status,200);const detail=await detailResponse.json();assert.equal(detail.summary.orderCount,1);assert.ok(detail.summary.lastOrderAt);assert.ok(detail.summary.lastActivityAt);assert.match(detail.summary.latestFeedback.detail,/Loved the taste/);assert.equal(detail.orders[0].orderNumber,'VALOUR-ABC123');assert.equal(detail.consentEvents[0].status,'granted');assert.ok(detail.actionHistory.some(action=>action.label==='Checkout started'));assert.ok(detail.actionHistory.some(action=>action.label.startsWith('Review submitted')));assert.ok(detail.actionHistory.some(action=>action.label==='Cooking feedback received'));assert.equal(detail.user.email,'asha@example.com');assert.equal(detail.user.address,'12 Palace Road');assert.equal(detail.user.landmark,'Near City Centre');assert.equal(detail.user.city,'Agartala');assert.equal(detail.user.state,'Tripura');assert.equal(detail.user.pincode,'799001');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("admin can record explicit customer-requested WhatsApp marketing consent with evidence",async()=>{
+  fresh();const user=rows('users')[0];user.whatsappConsentStatus='revoked';user.whatsappConsentCategories=[];
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/api/admin/whatsapp/compliance/consent`;const headers={'content-type':'application/json','x-admin-token':'test-admin'};
+  try{
+    const rejected=await fetch(url,{method:'POST',headers,body:JSON.stringify({phone,consentMethod:'in_person',evidenceNote:'Customer asked in person.',confirmed:false})});assert.equal(rejected.status,400);
+    const response=await fetch(url,{method:'POST',headers,body:JSON.stringify({phone,consentMethod:'in_person',evidenceNote:'Customer asked in person on 14 September to receive VALOUR offers.',confirmed:true})});assert.equal(response.status,201);
+    const event=rows('whatsapp_consent_events').at(-1);assert.equal(event.status,'granted');assert.equal(event.source,'admin_recorded_customer_request');assert.equal(event.consentMethod,'in_person');assert.match(event.evidenceNote,/Customer asked in person/);assert.equal(event.recordedBy,'authenticated_admin');assert.deepEqual(event.acceptedCategories,['order_updates','offers']);
+    assert.equal(user.whatsappConsentStatus,'granted');assert.ok(user.whatsappConsentCategories.includes('offers'));assert.equal(user.lastAction.type,'whatsapp_marketing_consent_recorded');
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 

@@ -623,6 +623,9 @@ async function recordWhatsappConsent({
   source = "website_checkout",
   sourcePage = "/checkout.html",
   eventId = crypto.randomUUID(),
+  consentMethod = "",
+  evidenceNote = "",
+  recordedBy = "",
 }) {
   const recipient = normalizeWhatsappRecipient(phone);
   if (!recipient) return null;
@@ -642,6 +645,13 @@ async function recordWhatsappConsent({
     sourcePage: String(sourcePage || "/checkout.html").slice(0, 300),
     acceptedCategories,
     occurredAt,
+    ...(consentMethod
+      ? { consentMethod: String(consentMethod).slice(0, 100) }
+      : {}),
+    ...(evidenceNote
+      ? { evidenceNote: String(evidenceNote).slice(0, 500) }
+      : {}),
+    ...(recordedBy ? { recordedBy: String(recordedBy).slice(0, 100) } : {}),
   };
   let persistedEvent = event;
   try {
@@ -3527,6 +3537,76 @@ function createOrderTrackingToken(order, now = Date.now()) {
     .digest("base64url");
 
   return `${payload}.${signature}`;
+}
+
+function cleanManualTrackingValue(value, maxLength = 200) {
+  return String(value || "")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function createManualOrderTrackingToken(details = {}, now = Date.now()) {
+  const tracking = {
+    orderNumber: normalizeOrderReference(details.orderNumber),
+    shippingStatus: cleanManualTrackingValue(details.shippingStatus),
+    paymentMethod: cleanManualTrackingValue(details.paymentMethod),
+    paymentStatus: cleanManualTrackingValue(details.paymentStatus),
+    expectedDelivery: cleanManualTrackingValue(details.expectedDelivery),
+  };
+  if (Object.values(tracking).some((value) => !value)) {
+    throw new Error("Complete all order tracking fields before generating the link");
+  }
+  const payload = Buffer.from(
+    JSON.stringify({
+      purpose: "manual_order_tracking",
+      ...tracking,
+      expiresAt: Math.floor(now / 1000) + ORDER_TRACKING_TOKEN_TTL_SECONDS,
+    }),
+    "utf8",
+  ).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function readManualOrderTrackingToken(token = "", now = Date.now()) {
+  const parts = String(token).split(".");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const [payload, signature] = parts;
+  const expected = crypto
+    .createHmac("sha256", process.env.TRACKING_TOKEN_SECRET)
+    .update(payload)
+    .digest("base64url");
+  const receivedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    receivedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
+    if (parsed.purpose !== "manual_order_tracking") return null;
+    if (!parsed.expiresAt || parsed.expiresAt < Math.floor(now / 1000))
+      return null;
+    const tracking = {
+      orderNumber: normalizeOrderReference(parsed.orderNumber),
+      shippingStatus: cleanManualTrackingValue(parsed.shippingStatus),
+      paymentMethod: cleanManualTrackingValue(parsed.paymentMethod),
+      paymentStatus: cleanManualTrackingValue(parsed.paymentStatus),
+      expectedDelivery: cleanManualTrackingValue(parsed.expectedDelivery),
+    };
+    return Object.values(tracking).every(Boolean) ? tracking : null;
+  } catch (_error) {
+    return null;
+  }
 }
 
 function readOrderTrackingToken(token = "", now = Date.now()) {
@@ -9979,6 +10059,33 @@ app.post("/api/admin/whatsapp/templates/tracking-link", async (req, res) => {
   }
 
   try {
+    const manualDetails = req.body?.trackingDetails;
+    if (manualDetails && typeof manualDetails === "object") {
+      const buttonToken = createManualOrderTrackingToken({
+        orderNumber,
+        shippingStatus: manualDetails.shippingStatus,
+        paymentMethod: manualDetails.paymentMethod,
+        paymentStatus: manualDetails.paymentStatus,
+        expectedDelivery: manualDetails.expectedDelivery,
+      });
+      return res.json({
+        ok: true,
+        buttonToken,
+        trackingUrl: `${baseUrl}/track-order.html?t=${encodeURIComponent(buttonToken)}`,
+        order: {
+          orderNumber,
+          customerName: "VALOUR customer",
+          phone,
+          shippingStatus: cleanManualTrackingValue(manualDetails.shippingStatus),
+          paymentStatus: cleanManualTrackingValue(manualDetails.paymentStatus),
+          paymentMethod: cleanManualTrackingValue(manualDetails.paymentMethod),
+          expectedDelivery: cleanManualTrackingValue(
+            manualDetails.expectedDelivery,
+          ),
+          manuallyEntered: true,
+        },
+      });
+    }
     const order = orderNumber
       ? await findOrderByReference(orderNumber, phone)
       : await findLatestWhatsappOrder(phone);
@@ -10075,6 +10182,90 @@ app.get("/api/admin/whatsapp/compliance", async (req, res) => {
     return res.status(500).json({
       ok: false,
       error: "Unable to load WhatsApp compliance evidence",
+    });
+  }
+});
+
+app.post("/api/admin/whatsapp/compliance/consent", async (req, res) => {
+  if (!isAuthorizedAdminRequest(req)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  const phone = normalizeAdminWhatsappPhone(req.body?.phone);
+  const confirmed = req.body?.confirmed === true;
+  const consentMethod = String(req.body?.consentMethod || "").trim();
+  const evidenceNote = String(req.body?.evidenceNote || "")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const allowedMethods = new Set([
+    "in_person",
+    "phone_call",
+    "whatsapp_message",
+    "written_request",
+  ]);
+  if (!phone) {
+    return res.status(400).json({
+      ok: false,
+      error: "Enter a valid WhatsApp number with country code",
+    });
+  }
+  if (!confirmed) {
+    return res.status(400).json({
+      ok: false,
+      error: "Confirm that the customer explicitly requested WhatsApp marketing",
+    });
+  }
+  if (!allowedMethods.has(consentMethod)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Select how the customer provided consent",
+    });
+  }
+  if (evidenceNote.length < 10 || evidenceNote.length > 500) {
+    return res.status(400).json({
+      ok: false,
+      error: "Add an evidence note between 10 and 500 characters",
+    });
+  }
+
+  try {
+    const occurredAt = new Date();
+    const event = await recordWhatsappConsent({
+      phone,
+      granted: true,
+      wording:
+        "Customer explicitly requested VALOUR order updates and marketing offers on WhatsApp and was informed they can opt out at any time.",
+      version: "admin-recorded-explicit-consent-v1",
+      categories: WHATSAPP_CONSENT_CATEGORIES,
+      source: "admin_recorded_customer_request",
+      sourcePage: "admin-dashboard",
+      eventId: `admin-consent:${crypto.randomUUID()}`,
+      consentMethod,
+      evidenceNote,
+      recordedBy: "authenticated_admin",
+    });
+    const user = await findUserByPhone(phone);
+    if (user) {
+      await collections().users.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            last_seen_at: occurredAt,
+            lastAction: {
+              type: "whatsapp_marketing_consent_recorded",
+              occurredAt,
+              source: "admin_dashboard",
+            },
+          },
+        },
+      );
+    }
+    return res.status(201).json({ ok: true, consent: event });
+  } catch (error) {
+    console.error("Admin WhatsApp consent recording failed", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "Unable to record WhatsApp consent",
     });
   }
 });
@@ -13325,7 +13516,32 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
 });
 
 app.get("/api/order-tracking/:token", async (req, res) => {
-  const orderReference = readOrderTrackingToken(req.params.token);
+  const manualTracking = readManualOrderTrackingToken(req.params.token);
+  const orderReference = manualTracking
+    ? null
+    : readOrderTrackingToken(req.params.token);
+  if (manualTracking) {
+    return res.json({
+      ok: true,
+      order: {
+        orderNumber: manualTracking.orderNumber,
+        paymentStatus: manualTracking.paymentStatus,
+        paymentMethod: manualTracking.paymentMethod,
+        totalAmount: null,
+        currency: "INR",
+        shippingStatus: manualTracking.shippingStatus,
+        courierName: null,
+        trackingUrl: null,
+        expectedDelivery: manualTracking.expectedDelivery,
+        expectedDeliveryAt: null,
+        deliveryTimeValue: null,
+        deliveryTimeUnit: null,
+        items: [],
+        updatedAt: null,
+        manuallyEntered: true,
+      },
+    });
+  }
   if (!orderReference) {
     return res.status(400).json({ ok: false, error: "Invalid tracking link" });
   }

@@ -56,6 +56,8 @@ test("admin dashboard exposes responsive customer management and workflow action
     'fieldsAlreadyRendered',
     'data-generate-tracking',
     '/api/admin/whatsapp/templates/tracking-link',
+    'id="admin-consent-form"',
+    '/api/admin/whatsapp/compliance/consent',
     "/api/admin/users",
   ]) assert.match(html, new RegExp(marker));
   assert.match(html, /@media \(max-width: 760px\)[\s\S]*\.customer-layout \{ grid-template-columns: 1fr; \}/);

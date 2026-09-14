@@ -1250,6 +1250,29 @@
                 <button class="btn" type="submit" style="margin-top:12px">Load proof</button>
               </form>
               <div id="whatsapp-compliance-result" style="margin-top:14px" aria-live="polite"></div>
+              <form id="admin-consent-form" style="margin-top:20px">
+                <h3>Record customer-requested consent</h3>
+                <p class="muted">Use this only when the customer explicitly asked to receive VALOUR offers on WhatsApp. The phone number above will be used.</p>
+                <div class="field">
+                  <label for="admin-consent-method">How consent was provided</label>
+                  <select id="admin-consent-method" required>
+                    <option value="in_person">In person</option>
+                    <option value="phone_call">Phone call</option>
+                    <option value="whatsapp_message">WhatsApp message</option>
+                    <option value="written_request">Other written request</option>
+                  </select>
+                </div>
+                <div class="field" style="margin-top:12px">
+                  <label for="admin-consent-note">Evidence note</label>
+                  <textarea id="admin-consent-note" minlength="10" maxlength="500" placeholder="Example: Customer asked me in person on 14 September to send VALOUR offers on WhatsApp." required></textarea>
+                </div>
+                <label class="check" style="margin-top:12px">
+                  <input id="admin-consent-confirmed" type="checkbox" required />
+                  I confirm this customer explicitly requested WhatsApp marketing and understands they can opt out at any time.
+                </label>
+                <button class="btn" type="submit" style="margin-top:12px">Record marketing consent</button>
+                <p class="notice" id="admin-consent-message" role="status" aria-live="polite"></p>
+              </form>
             </div>
           </div>
           <div class="template-history">
@@ -1838,13 +1861,26 @@
         const orderNumber = orderNumberIndex >= 0
           ? $(`#template-param-${orderNumberIndex}`)?.value.trim()
           : "";
+        const parameterValue = (label) => {
+          const index = template?.parameterLabels.indexOf(label) ?? -1;
+          return index >= 0 ? $(`#template-param-${index}`)?.value.trim() : "";
+        };
+        const manualValues = {
+          shippingStatus: parameterValue("Shipping status"),
+          paymentMethod: parameterValue("Payment method"),
+          paymentStatus: parameterValue("Payment status"),
+          expectedDelivery: parameterValue("Expected delivery"),
+        };
+        const trackingDetails = Object.values(manualValues).every(Boolean)
+          ? manualValues
+          : undefined;
         button.disabled = true;
         result.className = "tracking-link-result muted";
         result.textContent = "Finding the order and generating its secure link...";
         try {
           const data = await api("/api/admin/whatsapp/templates/tracking-link", {
             method: "POST",
-            body: JSON.stringify({ phone, orderNumber }),
+            body: JSON.stringify({ phone, orderNumber, trackingDetails }),
           });
           input.value = data.buttonToken;
           input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1854,7 +1890,10 @@
             orderInput.dispatchEvent(new Event("input", { bubbles: true }));
           }
           result.className = "tracking-link-result notice success";
-          result.innerHTML = `Linked to <strong>${escapeHtml(data.order.orderNumber)}</strong> for ${escapeHtml(data.order.customerName)}. <a href="${escapeHtml(data.trackingUrl)}" target="_blank" rel="noopener">Open tracking page</a>`;
+          const source = data.order.manuallyEntered
+            ? "using the details entered above"
+            : `for ${escapeHtml(data.order.customerName)}`;
+          result.innerHTML = `Linked to <strong>${escapeHtml(data.order.orderNumber)}</strong> ${source}. <a href="${escapeHtml(data.trackingUrl)}" target="_blank" rel="noopener">Open tracking page</a>`;
         } catch (error) {
           result.className = "tracking-link-result notice error";
           result.textContent = error.message;
@@ -2326,8 +2365,7 @@
           button.disabled = false;
         }
       });
-      $("#whatsapp-compliance-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
+      async function loadWhatsappComplianceProof() {
         const result = $("#whatsapp-compliance-result");
         result.innerHTML = "<p class='muted'>Loading stored proof...</p>";
         try {
@@ -2340,10 +2378,43 @@
             <p><strong>Current consent:</strong> ${escapeHtml(consent.status || "not_recorded")} ${consent.updatedAt ? `on ${dateTime(consent.updatedAt)}` : ""}</p>
             <p><strong>Accepted categories:</strong> ${escapeHtml((consent.categories || []).join(", ") || "None")}</p>
             <p><strong>Consent records:</strong> ${events.length} &nbsp; <strong>Matching orders:</strong> ${orders.length}</p>
-            ${events.length ? `<details><summary>Consent history</summary>${events.map(item => `<p class="muted">${dateTime(item.occurredAt)} · ${escapeHtml(item.status)} · ${escapeHtml(item.source)} · ${escapeHtml(item.wording)}</p>`).join("")}</details>` : ""}
+            ${events.length ? `<details><summary>Consent history</summary>${events.map(item => `<p class="muted">${dateTime(item.occurredAt)} · ${escapeHtml(item.status)} · ${escapeHtml(item.source)}${item.consentMethod ? ` · ${escapeHtml(item.consentMethod.replaceAll("_", " "))}` : ""} · ${escapeHtml(item.wording)}${item.evidenceNote ? `<br>Evidence: ${escapeHtml(item.evidenceNote)}` : ""}</p>`).join("")}</details>` : ""}
             ${orders.length ? `<details><summary>Transaction history</summary>${orders.map(item => `<p class="muted">${escapeHtml(item.orderNumber || item.orderId)} · ${dateTime(item.createdAt)} · ${escapeHtml(item.paymentStatus || "")} · ${money(item.totalAmount)}</p>`).join("")}</details>` : ""}`;
         } catch (error) {
           result.innerHTML = `<p class="notice error">${escapeHtml(error.message)}</p>`;
+        }
+      }
+      $("#whatsapp-compliance-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await loadWhatsappComplianceProof();
+      });
+      $("#admin-consent-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = event.currentTarget.querySelector("button[type='submit']");
+        const message = $("#admin-consent-message");
+        button.disabled = true;
+        message.className = "notice";
+        message.textContent = "Recording consent...";
+        try {
+          await api("/api/admin/whatsapp/compliance/consent", {
+            method: "POST",
+            body: JSON.stringify({
+              phone: $("#compliance-phone").value.trim(),
+              consentMethod: $("#admin-consent-method").value,
+              evidenceNote: $("#admin-consent-note").value,
+              confirmed: $("#admin-consent-confirmed").checked,
+            }),
+          });
+          message.className = "notice success";
+          message.textContent = "WhatsApp marketing consent recorded with audit evidence.";
+          $("#admin-consent-note").value = "";
+          $("#admin-consent-confirmed").checked = false;
+          await loadWhatsappComplianceProof();
+        } catch (error) {
+          message.className = "notice error";
+          message.textContent = error.message;
+        } finally {
+          button.disabled = false;
         }
       });
       $("#conversation-search-form").addEventListener("submit", (event) => {

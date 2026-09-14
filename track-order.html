@@ -211,13 +211,15 @@
           "Here is the latest update for your VALOUR order.";
         setText("#status", order.shippingStatus);
         setText("#order-number", order.orderNumber);
-        setText(
-          "#order-total",
-          new Intl.NumberFormat("en-IN", {
+        const total = document.querySelector("#order-total");
+        if (typeof order.totalAmount === "number") {
+          total.textContent = new Intl.NumberFormat("en-IN", {
             style: "currency",
             currency: order.currency || "INR",
-          }).format(order.totalAmount || 0),
-        );
+          }).format(order.totalAmount);
+        } else {
+          total.parentElement.hidden = true;
+        }
         setText(
           "#payment",
           [order.paymentStatus, order.paymentMethod]
@@ -235,8 +237,7 @@
           li.textContent = `${item.name}${size} · Qty ${item.quantity}${price}`;
           items.appendChild(li);
         });
-        if (!order.items?.length)
-          items.innerHTML = "<li>Order items unavailable</li>";
+        if (!order.items?.length) items.closest(".items").hidden = true;
         document.querySelector("#details").hidden = false;
       }
       loadTracking().catch((error) => {
