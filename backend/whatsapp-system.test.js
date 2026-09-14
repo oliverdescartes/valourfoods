@@ -68,28 +68,30 @@ test("explore sends image, description and supported navigation; order online an
   await tap("Need Help");await tap("PRODUCT_BACK");assert.equal(session().current_state,"idle");
 });
 
-test("all video labels interrupt stale states; tutorial Done schedules feedback once",async()=>{
+test("all video labels start the tutorial but experience feedback waits for Done",async()=>{
   fresh();
   for(const label of ["Cooking Video","Watch Video","Watch cooking demo","VIDEO","PRODUCT_START_COOKING"]){
     await tap("Need Help");await tap(label);assert.equal(session().current_state,"guided_cooking");
     assert.equal(sent.at(-2).message.type,"video");assert.equal(sent.at(-1).message.options[0].postbackText,"DONE");
+    assert.ok(!rows('message_jobs').some(j=>j.trigger==='post_cook_feedback'&&j.status==='scheduled'));
   }
   await tap("Done");const count=rows('cooking_outcomes').length;await tap("Done");assert.equal(rows('cooking_outcomes').length,count);
   assert.equal(session().current_state,"post_cook_feedback");
-  assert.ok(rows('message_jobs').some(j=>j.trigger==='post_cook_feedback'&&j.status==='cancelled'));
-  assert.equal(rows('message_jobs').filter(j=>j.jobKey.includes('customer-completed')).length,1);
+  const experienceJobs=rows('message_jobs').filter(j=>j.trigger==='post_cook_feedback'&&j.status==='scheduled');assert.equal(experienceJobs.length,1);assert.ok(+experienceJobs[0].scheduledAt>=Date.now()+29*60000);
+  assert.equal(rows('message_jobs').filter(j=>j.jobKey.includes('valour-experience')).length,1);
 });
 
-test("no-Done fallback flows through worker, approved-contract payload, callback and feedback review",async()=>{
-  fresh();const own=order();await tap("VIDEO");
-  const job=rows('message_jobs').find(j=>j.trigger==='post_cook_feedback');job.scheduledAt=new Date(0);
+test("48-hour no-tutorial fallback sends the VALOUR experience request and opens review",async()=>{
+  fresh();const own=order({shippingStatus:'Order confirmed'});const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/api/orders/${own.orderNumber}/shipping-status`,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});assert.equal(response.status,200);await new Promise(resolve=>server.close(resolve));
+  const job=rows('message_jobs').find(j=>j.trigger==='post_cook_feedback');assert.equal(job.metadata.reason,'delivered_without_tutorial');assert.ok(+job.scheduledAt>=Date.now()+47*3600000);job.scheduledAt=new Date(0);
   // Leave unrelated marketing jobs in the future.
   rows('message_jobs').filter(j=>j!==job).forEach(j=>j.scheduledAt=new Date(Date.now()+86400000));
-  await api.processDueWhatsappJobs();assert.equal(job.status,"submitted");assert.equal(session().current_state,"post_cook_feedback");
+  await api.processDueWhatsappJobs();assert.equal(job.status,"submitted");
   assert.deepEqual(sent.at(-1).template.params,[]);
   await api.dispatchWhatsappWebhook({type:"message-event",payload:{type:"delivered",id:job.providerMessageId,ts:Date.now()}});
   assert.equal(job.status,"delivered");
-  await tap("Loved it ❤️");assert.match(sent.at(-1).message.text,/review/);assert.ok(rows('cooking_outcomes').some(o=>o.feedbackType==='loved_it'));
+  await tap("Loved my experience");assert.match(sent.at(-1).message.text,/quick review/);assert.ok(rows('cooking_outcomes').some(o=>o.feedbackType==='loved_it'));
   await tap("Could be better");assert.match(sent.at(-1).message.text,/improve/);assert.ok(own);
 });
 
@@ -225,6 +227,7 @@ test("delivery callbacks also match the WhatsApp ID learned from enqueued status
 test("checkout/payment, reorder and support quality gates cancel obsolete jobs",async()=>{
   fresh();const own=order();const base={templateName:'valour_cooking_reminder',parameters:['dish'],phone,orderId:own._id,createdAt:new Date(),kind:'transactional'};
   assert.equal((await api.runWhatsappQualityGate({...base,trigger:'checkout_reminder'})).reason,'payment_completed');
+  assert.equal((await api.runWhatsappQualityGate({...base,trigger:'new_lead'})).reason,'customer_already_ordered');
   assert.equal((await api.runWhatsappQualityGate({...base,trigger:'delivered_ready_to_cook'})).reason,'order_not_delivered');
   order({createdAt:new Date()});assert.equal((await api.runWhatsappQualityGate({...base,trigger:'reorder_reminder'})).reason,'customer_reordered');
 });
@@ -234,16 +237,64 @@ test("new order alert uses six parameters, fixed UUID, both admins and no duplic
   assert.equal(sent.length,2);assert.ok(sent.every(p=>p.template.id==='680c3021-6889-4c60-86b4-6ebb0c7d7b1b'&&p.template.params.length===6));
 });
 
-test("dashboard Delivered schedules dedicated invitation at 15 minutes and reorder at 7 days",async()=>{
-  fresh();const own=order();const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+test("zero-stock final order creates one categorized pre-order and sends the complete admin template once",async()=>{
+  fresh();
+  rows('products').push({_id:new ObjectId(),sku:'velvety-butter-chicken',name:'Velvety Butter Chicken',size:'520 ml',active:true,pricePaise:35000,compareAtPaise:35000,weightKg:0.52,stockQuantity:0});
+  rows('pricing_rules').push({_id:'checkout',freeShippingThresholdPaise:0,defaultShippingPaise:0,deliveryTimeValue:3,deliveryTimeUnit:'hours',coupons:{}});
+  const intentId='stock_intent_12345678';
+  const payload={intentId,order:{checkout:{name:'Ananya Sen',phone:phone.slice(-10),email:'ananya@example.com',address:'18 Lake View Road',landmark:'Near Heritage Park',city:'Agartala',state:'Tripura',pincode:'799001'},payment:{method:'upi',label:'UPI'},products:[{id:'velvety-butter-chicken',name:'Velvety Butter Chicken',size:'520 ml',price:350,quantity:1}],totals:{subtotal:350,shipping:0,discount:0,total:350},phoneVerificationToken:api.signCheckoutPhoneToken(phone.slice(-10),'stock-intent-test'),whatsappConsent:{granted:false,sourcePage:'/checkout.html'}}};
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const send=()=>fetch(`http://127.0.0.1:${server.address().port}/api/orders/out-of-stock-intent`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    const response=await send();assert.equal(response.status,201);const body=await response.json();assert.equal(body.adminAlerts.submitted,2);assert.equal(body.stock.available,false);assert.equal(body.preOrder.created,true);assert.equal(body.preOrder.status,'awaiting_stock');assert.equal(body.preOrder.stockStatusAtOrder,'out_of_stock');assert.equal(body.preOrder.paymentStatus,'not_collected_preorder');
+    assert.equal(sent.length,2);assert.ok(sent.every(message=>message.template.id==='680c3021-6889-4c60-86b4-6ebb0c7d7b1b'));
+    for(const message of sent){const params=message.template.params;assert.equal(params.length,6);assert.match(params[0],/^VALOUR-STOCK-/);assert.equal(params[1],'Ananya Sen');assert.equal(params[2],`+${phone}`);assert.match(params[3],/Velvety Butter Chicken.*1/);assert.match(params[4],/^Triggered order\. no stock \| Rs\. 350 \| UPI$/);assert.match(params[5],/18 Lake View Road, Near Heritage Park, Agartala, Tripura, 799001/);}
+    assert.ok(rows('admin_template_sends').every(record=>record.source==='out_of_stock_checkout'&&record.status==='submitted'));
+    assert.equal(rows('orders').length,1);const preOrder=rows('orders')[0];assert.equal(preOrder.isPreOrder,true);assert.equal(preOrder.orderType,'pre_order');assert.equal(preOrder.preOrderStatus,'awaiting_stock');assert.equal(preOrder.stockStatusAtOrder,'out_of_stock');assert.equal(preOrder.shippingStatus,'Pre-order - awaiting stock');assert.equal(preOrder.paymentStatus,'not_collected_preorder');assert.equal(preOrder.purchaseIntent,'pre_order');assert.equal(preOrder.customerName,'Ananya Sen');assert.equal(preOrder.landmark,'Near Heritage Park');assert.equal(preOrder.products[0].quantity,1);
+    assert.equal(rows('customer_events').filter(event=>event.event==='out_of_stock_order_intent').length,1);assert.equal(rows('users')[0].lastAction.type,'out_of_stock_order_intent');
+    const duplicate=await send();assert.equal(duplicate.status,200);const duplicateBody=await duplicate.json();assert.equal(duplicateBody.preOrder.created,false);assert.equal(duplicateBody.adminAlerts.duplicates,2);assert.equal(sent.length,2);assert.equal(rows('orders').length,1);assert.equal(rows('customer_events').filter(event=>event.event==='out_of_stock_order_intent').length,1);
+    rows('products')[0].stockQuantity=5;payload.intentId='stock_intent_available';const available=await send();assert.equal(available.status,409);assert.equal(sent.length,2);
+    assert.equal(rows('orders').length,1);
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("dashboard Delivered sends only the dedicated template once and cancels stale funnel jobs",async()=>{
+  fresh();const own=order();
+  await api.scheduleWhatsappJob({event:'new_lead',phone,customerId:rows('users')[0]._id,parameters:['Butter Chicken'],scheduledAt:new Date(Date.now()+3600000)});
+  await api.scheduleWhatsappJob({event:'product_demo',phone,customerId:rows('users')[0]._id,parameters:['Butter Chicken'],scheduledAt:new Date(Date.now()+3600000)});
+  await api.scheduleWhatsappJob({event:'order_status_update',phone,order:own,parameters:api.getOrderStatusTemplateParams(own),scheduledAt:new Date(Date.now()+3600000)});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   try{
     const url=`http://127.0.0.1:${server.address().port}/api/orders/${own.orderNumber}/shipping-status`;
     const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});
     assert.equal(response.status,200);const result=await response.json();assert.equal(result.whatsappUpdate.event,'delivered_ready_to_cook');
-    assert.ok(!rows('message_jobs').some(j=>j.trigger==='order_status_update'));
+    assert.equal(result.whatsappUpdate.templateId,'ed4e4f64-b494-4c44-94ae-effb751cf40c');
+    assert.ok(rows('message_jobs').filter(j=>['new_lead','product_demo','order_status_update'].includes(j.trigger)).every(j=>j.status==='cancelled'));
     const invitation=rows('message_jobs').find(j=>j.trigger==='delivered_ready_to_cook');assert.ok(+invitation.scheduledAt>=Date.now()+14*60000);
+    const experienceFallback=rows('message_jobs').find(j=>j.trigger==='post_cook_feedback'&&j.status==='scheduled');assert.equal(experienceFallback.metadata.reason,'delivered_without_tutorial');assert.ok(+experienceFallback.scheduledAt>=Date.now()+47*3600000);
     const reorder=rows('message_jobs').find(j=>j.trigger==='reorder_reminder');assert.ok(+reorder.scheduledAt>=Date.now()+7*86400000-1000);
+    const repeated=await fetch(url,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});assert.equal(repeated.status,200);assert.equal((await repeated.json()).whatsappUpdate.reason,'already_delivered');
+    const duplicateOrder=order({orderNumber:'VALOUR-DUPLICATE',shippingStatus:'Order confirmed'});
+    const duplicateResponse=await fetch(`http://127.0.0.1:${server.address().port}/api/orders/${duplicateOrder.orderNumber}/shipping-status`,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});assert.equal(duplicateResponse.status,200);assert.equal((await duplicateResponse.json()).whatsappUpdate.reason,'duplicate');
+    assert.equal(rows('message_jobs').filter(j=>j.trigger==='delivered_ready_to_cook').length,1);
   }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("opening the tutorial cancels the 48-hour fallback and Done schedules one 30-minute experience request",async()=>{
+  fresh();const own=order({shippingStatus:'Order confirmed'});const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/orders/${own.orderNumber}/shipping-status`,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});assert.equal(response.status,200);
+    const fallback=rows('message_jobs').find(job=>job.trigger==='post_cook_feedback'&&job.metadata?.reason==='delivered_without_tutorial');assert.equal(fallback.status,'scheduled');
+    await tap('Cooking Video');assert.equal(fallback.status,'cancelled');assert.ok(!rows('message_jobs').some(job=>job.trigger==='post_cook_feedback'&&job.status==='scheduled'));
+    const before=Date.now();await tap('Done');const experience=rows('message_jobs').find(job=>job.trigger==='post_cook_feedback'&&job.status==='scheduled');assert.equal(experience.metadata.reason,'customer_completed_tutorial');assert.ok(+experience.scheduledAt>=before+29*60000);
+    await tap('Done');assert.equal(rows('message_jobs').filter(job=>job.trigger==='post_cook_feedback'&&job.status==='scheduled').length,1);
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("a customer with an existing order never receives the new-lead template on first reply",async()=>{
+  fresh();order();await receive('Hi');
+  assert.ok(!rows('message_jobs').some(job=>job.trigger==='new_lead'));
+  assert.ok(!sent.some(message=>message.template?.id==='4af9295c-c067-4f5e-ba7c-df860a263a79'));
 });
 
 test("pending inbound survives restart; interrupted handlers are not replayed",async()=>{
@@ -427,6 +478,15 @@ test("website customer records preserve first touch and update their latest acqu
     assert.equal(user.acquisitionChannel,'paid_social');
     assert.equal(user.acquisitionSource,'instagram');
     assert.equal(user.acquisitionMedium,'paid_social');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("successful checkout OTP verification immediately persists all customer details",async()=>{
+  fresh();const challengeId=require('crypto').randomUUID();const otp='482615';rows('otp_challenges').push({_id:new ObjectId(),challengeId,phone:phone.slice(-10),otpHash:api.hashCheckoutOtp(challengeId,phone.slice(-10),otp),attemptCount:0,status:'sent',expiresAt:new Date(Date.now()+300000),checkoutDetails:{name:'Ananya Sen',email:'ANANYA@EXAMPLE.COM',address:'18 Lake View Road',landmark:'Near Heritage Park',city:'Agartala',state:'Tripura',pincode:'799001',whatsappConsent:{granted:true,wording:'Send me order updates and offers from VALOUR on WhatsApp. I can opt out at any time.',version:'checkout-whatsapp-v1',acceptedCategories:['order_updates','offers'],source:'website_checkout',sourcePage:'/checkout.html'}}});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/api/auth/otp/verify`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone:phone.slice(-10),challengeId,otp})});assert.equal(response.status,200);const body=await response.json();assert.ok(body.verificationToken);
+    const user=rows('users')[0];assert.equal(user.customerName,'Ananya Sen');assert.equal(user.email,'ananya@example.com');assert.equal(user.address,'18 Lake View Road');assert.equal(user.landmark,'Near Heritage Park');assert.equal(user.city,'Agartala');assert.equal(user.state,'Tripura');assert.equal(user.pincode,'799001');assert.equal(user.checkoutProfile.source,'checkout_phone_verification');assert.ok(user.phoneVerifiedAt instanceof Date);assert.equal(user.lastAction.type,'checkout_phone_verified');assert.equal(user.whatsappConsentStatus,'granted');assert.deepEqual(user.whatsappConsentCategories,['order_updates','offers']);assert.equal(rows('whatsapp_consent_events').at(-1).eventId,`checkout-otp:${challengeId}:whatsapp-consent`);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 

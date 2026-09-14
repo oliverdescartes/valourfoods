@@ -49,6 +49,9 @@ test("admin dashboard exposes responsive customer management and workflow action
     '"Latest feedback", summary.latestFeedback',
     '<h3>Action history</h3>',
     'Lead score',
+    'PRE-ORDER · ZERO STOCK',
+    'Pre-order recorded while stock was zero',
+    'Awaiting-stock pre-orders',
     "/api/admin/users",
   ]) assert.match(html, new RegExp(marker));
   assert.match(html, /@media \(max-width: 760px\)[\s\S]*\.customer-layout \{ grid-template-columns: 1fr; \}/);

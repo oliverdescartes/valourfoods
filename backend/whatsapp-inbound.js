@@ -15,7 +15,7 @@ for (const [action, names] of Object.entries({
   NEED_HELP: ["need help", "need_help", "help", "delivered_need_help", "speak to customer care"],
   OPEN_LID: ["how to open the lid", "how_to_open_the_lid", "open the lid", "delivered_open_lid"],
   DONE: ["done", "finished", "complete", "completed", "cooked"],
-  LOVED: ["loved it", "loved_it"],
+  LOVED: ["loved it", "loved_it", "loved my experience", "loved_my_experience"],
   BETTER: ["could be better", "could_be_better", "could've been better"],
   RATE: ["rate valour"], NOT_NOW: ["not now"],
   TOMORROW: ["tomorrow"], WEEKEND: ["this weekend", "weekend"], LATER: ["remind me later"],

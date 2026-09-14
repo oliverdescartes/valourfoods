@@ -5,6 +5,7 @@ const CUSTOMER_DETAILS_KEY = "valour_customer_shipping_details";
 const USER_KEY = "user";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
+const OUT_OF_STOCK_INTENT_KEY = "valour_out_of_stock_order_intent";
 const DELIVERY_CITY = "agartala";
 const DELIVERY_STATE = "tripura";
 const OTP_HELP_WHATSAPP_PHONE = "919233054806";
@@ -1390,6 +1391,48 @@ function setOrderLoading(loading) {
   }
 }
 
+function getOutOfStockIntentId(order) {
+  const signature = JSON.stringify({
+    phone: order.checkout?.phone || "",
+    products: (order.products || []).map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+    })),
+    total: order.totals?.total || 0,
+    paymentMethod: order.payment?.method || "",
+  });
+  try {
+    const saved = JSON.parse(
+      sessionStorage.getItem(OUT_OF_STOCK_INTENT_KEY) || "null",
+    );
+    if (
+      saved?.signature === signature &&
+      /^[A-Za-z0-9_-]{8,100}$/.test(saved.intentId || "")
+    ) {
+      return saved.intentId;
+    }
+  } catch (_error) {
+    // A new ID below safely replaces an invalid session value.
+  }
+  const intentId = `stock_${window.crypto?.randomUUID?.() || Date.now()}`.replace(
+    /[^A-Za-z0-9_-]/g,
+    "",
+  );
+  sessionStorage.setItem(
+    OUT_OF_STOCK_INTENT_KEY,
+    JSON.stringify({ signature, intentId }),
+  );
+  return intentId;
+}
+
+async function reportOutOfStockOrderIntent() {
+  const order = buildOrderPayload();
+  return postJSON(`${API_BASE}/api/orders/out-of-stock-intent`, {
+    intentId: getOutOfStockIntentId(order),
+    order,
+  });
+}
+
 async function confirmCartIsInStock() {
   const result = await postJSON(`${API_BASE}/api/stock/check`, {
     items: state.cart.map((item) => ({
@@ -1397,8 +1440,19 @@ async function confirmCartIsInStock() {
       quantity: item.quantity,
     })),
   });
-  if (result.stock?.available) return true;
+  if (result.stock?.available) {
+    sessionStorage.removeItem(OUT_OF_STOCK_INTENT_KEY);
+    return true;
+  }
   openOutOfStockModal(result.stock?.unavailableItems || []);
+  try {
+    await reportOutOfStockOrderIntent();
+  } catch (error) {
+    console.warn(
+      "Unable to send the out-of-stock order alert to admins",
+      error.message,
+    );
+  }
   return false;
 }
 
@@ -1635,6 +1689,7 @@ async function startOtpVerification(nextAction = null) {
     city: values.city,
     state: values.state,
     pincode: values.pincode,
+    whatsappConsent: getWhatsappConsent(),
   };
   otpState.sending = true;
   showToast("Sending verification code...");

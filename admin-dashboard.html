@@ -191,6 +191,19 @@
         background: #fff0c9;
         color: #785600;
       }
+      .badge.preorder {
+        background: #f7dede;
+        color: #831a1a;
+      }
+      .preorder-notice {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid #d79b91;
+        border-radius: 10px;
+        background: #fff1ee;
+        color: #6f1717;
+        line-height: 1.45;
+      }
       .order-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -991,6 +1004,7 @@
             placeholder="Order, customer, phone, tracking…"
           /><select id="shipping-filter">
             <option value="">All shipping statuses</option>
+            <option value="Pre-order - awaiting stock">Pre-order - awaiting stock</option>
             <option>Order confirmed</option>
             <option>Processing</option>
             <option>Packed</option>
@@ -1003,6 +1017,7 @@
             <option value="paid">Paid</option>
             <option value="pending_cod">Pending COD</option>
             <option value="pending">Pending payment</option>
+            <option value="not_collected_preorder">Not collected — pre-order</option>
             <option value="failed">Failed</option></select
           ><button class="btn">Apply</button>
         </form>
@@ -1430,7 +1445,8 @@
       }
       function renderMetrics(metrics) {
         const rows = [
-          ["Total orders", metrics.totalOrders],
+          ["Confirmed orders", metrics.totalOrders],
+          ["Awaiting-stock pre-orders", metrics.preOrders || 0],
           ["Orders today", metrics.todayOrders],
           ["Pending fulfilment", metrics.pendingOrders],
           ["Delivered", metrics.deliveredOrders],
@@ -1600,6 +1616,7 @@
         $("#delivery-timing-current").textContent = timing.label;
       }
       const statusOptions = [
+        "Pre-order - awaiting stock",
         "Order confirmed",
         "Processing",
         "Packed",
@@ -1625,14 +1642,22 @@
         const attr = order.attribution || {};
         const attribution = `<span class="label">Acquisition</span><strong>${escapeHtml([attr.channel, attr.source, attr.medium].filter(Boolean).join(" / ") || "Unknown")}</strong><p>${escapeHtml([attr.campaign, attr.content].filter(Boolean).join(" / ") || "No campaign/creative")}</p>`;
         const isPaid = String(order.paymentStatus).toLowerCase() === "paid";
-        const paymentUpdateControl = isPaid
+        const paymentUpdateControl = order.isPreOrder
+          ? `<div><span class="label">Payment status</span><span class="value">Not collected — awaiting stock</span></div>`
+          : isPaid
           ? `<div><span class="label">Payment status</span><span class="value paid-state">Paid</span></div>`
           : `<label class="check payment-check"><input type="checkbox" name="markPaid"> Mark this order as paid</label>`;
         const manualDeliveryValue = dateTimeInputValue(
           order.manualExpectedDeliveryAt,
         );
         items = attribution + items;
-        return `<article class="order-card"><div class="order-head"><div><div class="order-number">${escapeHtml(order.orderNumber)}</div><div class="muted">${dateTime(order.createdAt)}</div></div><div class="badges"><span class="badge ${order.paymentStatus === "paid" ? "paid" : "cod"}">${escapeHtml(order.paymentStatus || "Unknown payment")}</span><span class="badge">${escapeHtml(order.shippingStatus)}</span></div></div><div class="order-grid"><div><span class="label">Customer</span><span class="value">${escapeHtml(order.customerName)}</span></div><div><span class="label">Phone</span><span class="value">${escapeHtml(order.phone)}</span></div><div><span class="label">Payment</span><span class="value">${escapeHtml(order.paymentMethod)} · ${money(order.totalAmount)}</span></div><div><span class="label">Delivery address</span><span class="value">${escapeHtml([order.address, order.city, order.state, order.pincode].filter(Boolean).join(", "))}</span></div><div><span class="label">Expected delivery</span><span class="value">${escapeHtml(order.expectedDeliveryText || "Not available")}</span></div></div><div class="items">${items}</div><details><summary>Update fulfilment</summary><form class="status-form" data-order-form="${escapeHtml(order.id)}"><div><span class="label">Shipping status</span><select name="shippingStatus">${options}</select></div>${paymentUpdateControl}<div><span class="label">Courier / delivery person</span><input name="courierName" value="${escapeHtml(order.courierName)}"></div><div><span class="label">Tracking number</span><input name="trackingNumber" value="${escapeHtml(order.trackingNumber)}"></div><div class="wide"><span class="label">Tracking URL</span><input name="trackingUrl" value="${escapeHtml(order.trackingUrl)}"></div><div class="wide"><span class="label">Expected delivery date and time</span><input type="datetime-local" name="expectedDeliveryAtLocal" value="${escapeHtml(manualDeliveryValue)}"><small class="muted">India time (IST). Leave blank to keep the order's current delivery promise.</small></div><label class="check"><input type="checkbox" name="notifyWhatsapp" checked> Send WhatsApp update</label><div><button class="btn" type="submit">Save status</button></div><p class="notice wide" data-status-message></p></form></details></article>`;
+        const preOrderNotice = order.isPreOrder
+          ? `<div class="preorder-notice"><strong>Pre-order recorded while stock was zero.</strong><br>Payment has not been collected. Restore stock before confirming fulfilment with the customer.</div>`
+          : "";
+        const fulfilment = order.isPreOrder
+          ? ""
+          : `<details><summary>Update fulfilment</summary><form class="status-form" data-order-form="${escapeHtml(order.id)}"><div><span class="label">Shipping status</span><select name="shippingStatus">${options}</select></div>${paymentUpdateControl}<div><span class="label">Courier / delivery person</span><input name="courierName" value="${escapeHtml(order.courierName)}"></div><div><span class="label">Tracking number</span><input name="trackingNumber" value="${escapeHtml(order.trackingNumber)}"></div><div class="wide"><span class="label">Tracking URL</span><input name="trackingUrl" value="${escapeHtml(order.trackingUrl)}"></div><div class="wide"><span class="label">Expected delivery date and time</span><input type="datetime-local" name="expectedDeliveryAtLocal" value="${escapeHtml(manualDeliveryValue)}"><small class="muted">India time (IST). Leave blank to keep the order's current delivery promise.</small></div><label class="check"><input type="checkbox" name="notifyWhatsapp" checked> Send WhatsApp update</label><div><button class="btn" type="submit">Save status</button></div><p class="notice wide" data-status-message></p></form></details>`;
+        return `<article class="order-card"><div class="order-head"><div><div class="order-number">${escapeHtml(order.orderNumber)}</div><div class="muted">${dateTime(order.createdAt)}</div></div><div class="badges">${order.isPreOrder ? '<span class="badge preorder">PRE-ORDER · ZERO STOCK</span>' : ""}<span class="badge ${order.paymentStatus === "paid" ? "paid" : "cod"}">${escapeHtml(order.paymentStatus || "Unknown payment")}</span><span class="badge">${escapeHtml(order.shippingStatus)}</span></div></div>${preOrderNotice}<div class="order-grid"><div><span class="label">Customer</span><span class="value">${escapeHtml(order.customerName)}</span></div><div><span class="label">Phone</span><span class="value">${escapeHtml(order.phone)}</span></div><div><span class="label">Payment</span><span class="value">${escapeHtml(order.paymentMethod)} · ${money(order.totalAmount)}</span></div><div><span class="label">Delivery address</span><span class="value">${escapeHtml([order.address, order.landmark, order.city, order.state, order.pincode].filter(Boolean).join(", "))}</span></div><div><span class="label">Expected delivery</span><span class="value">${escapeHtml(order.isPreOrder ? "Awaiting stock" : order.expectedDeliveryText || "Not available")}</span></div></div><div class="items">${items}</div>${fulfilment}</article>`;
       }
       function renderOrders() {
         const container = $("#orders");

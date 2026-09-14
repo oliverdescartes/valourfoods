@@ -48,7 +48,7 @@ class Collection {
     if (this.name === "whatsapp_phone_locks" && this.rows.some(row=>row.phone===doc.phone)) throw Object.assign(new Error("duplicate phone lease"),{code:11000});
   }
   async insertOne(doc) {
-    for (const key of ["message_id", "jobKey", "eventKey", "case_id", "requestId"]) if (doc[key] && this.rows.some(r => r[key] === doc[key])) throw Object.assign(new Error("duplicate"), { code: 11000 });
+    for (const key of ["message_id", "jobKey", "eventKey", "eventId", "case_id", "requestId"]) if (doc[key] && this.rows.some(r => r[key] === doc[key])) throw Object.assign(new Error("duplicate"), { code: 11000 });
     doc = { ...doc, _id: doc._id || new ObjectId() }; this.rows.push(doc); return { insertedId: doc._id };
   }
   find(filter = {}) {

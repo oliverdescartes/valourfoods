@@ -399,6 +399,7 @@ async function connectDB() {
     orders.createIndex({ createdAt: -1 }),
     orders.createIndex({ shippingStatus: 1, createdAt: -1 }),
     orders.createIndex({ paymentStatus: 1, createdAt: -1 }),
+    orders.createIndex({ isPreOrder: 1, preOrderStatus: 1, createdAt: -1 }),
     orders.createIndex(
       { checkoutIdempotencyKey: 1 },
       { unique: true, sparse: true },
@@ -1074,6 +1075,25 @@ async function markConversationStarted({ userId, sessionId }) {
       },
     );
     const customer = await users.findOne({ _id: userId });
+    const existingOrder = customer?.phone
+      ? await collections().orders.findOne({
+          phone: {
+            $regex: `${normalizeWhatsappRecipient(customer.phone).slice(-10)}$`,
+          },
+          $or: [
+            { paymentStatus: { $in: ["paid", "confirmed", "pending_cod"] } },
+            { shippingStatus: { $not: /cancelled|refunded/i } },
+          ],
+        })
+      : null;
+    if (existingOrder) {
+      console.log("[WHATSAPP][NEW_LEAD_SKIPPED]", {
+        recipient: maskWhatsappPhone(customer.phone),
+        reason: "existing_order",
+        orderId: String(existingOrder._id || ""),
+      });
+      return;
+    }
     await scheduleWhatsappJob({
       event: "new_lead",
       phone: customer?.phone,
@@ -1218,6 +1238,9 @@ function buildGupshupForm(recipient, fields = {}) {
 function getGupshupTemplateId(templateName, languageCode) {
   if (templateName === "1071618388950122")
     return DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  // The delivered workflow has a fixed, approved Gupshup template contract.
+  // Do not let a stale registry mapping redirect it to another template.
+  if (templateName === "valour_delivered") return DEFAULT_DELIVERED_TEMPLATE_ID;
   if (/^\d+$/.test(templateName))
     throw new Error(
       "Use the internal Gupshup template UUID, not the Meta external ID",
@@ -1590,6 +1613,8 @@ const WHATSAPP_MARKETING_WEEKLY_CAP =
 let whatsappJobTimer = null;
 
 const WHATSAPP_DELIVERED_DELAY_MS = 15 * 60_000;
+const WHATSAPP_EXPERIENCE_FALLBACK_DELAY_MS = 48 * 60 * 60_000;
+const WHATSAPP_EXPERIENCE_AFTER_DONE_DELAY_MS = 30 * 60_000;
 const WHATSAPP_REORDER_DELAY_MS = 7 * 24 * 60 * 60_000;
 
 async function sendQuickReplyMessage(phone, message) {
@@ -1682,7 +1707,7 @@ const WHATSAPP_AUTOMATION = {
   },
   post_cook_feedback: {
     env: "WHATSAPP_POST_COOK_TEMPLATE_NAME",
-    kind: "transactional",
+    kind: "marketing",
   },
   review_request: { env: "WHATSAPP_REVIEW_TEMPLATE_NAME", kind: "marketing" },
   reorder_reminder: {
@@ -1868,6 +1893,7 @@ async function scheduleWhatsappJob({
   scheduledAt = new Date(),
   occurrence = "1",
   metadata = {},
+  dedupeSubject = "",
 }) {
   const definition = WHATSAPP_AUTOMATION[event];
   if (!definition)
@@ -1905,7 +1931,9 @@ async function scheduleWhatsappJob({
   parameters = parameters.map(sanitizeWhatsappTemplateParameter);
   validateWhatsappTemplatePayload(templateName, parameters);
   const subject =
-    getOrderReference(order) || String(sessionId || customerId || recipient);
+    String(dedupeSubject || "") ||
+    getOrderReference(order) ||
+    String(sessionId || customerId || recipient);
   const jobKey = `${event}:${subject}:${occurrence}`;
   const sendAt =
     definition.kind === "marketing"
@@ -1980,7 +2008,11 @@ async function scheduleWhatsappJob({
       reason: scheduled ? "new_event" : "duplicate",
       scheduledAt: sendAt,
     });
-    return { scheduled, jobKey };
+    return {
+      scheduled,
+      reason: scheduled ? "new_event" : "duplicate",
+      jobKey,
+    };
   } catch (err) {
     if (err?.code === 11000)
       return { scheduled: false, reason: "duplicate", jobKey };
@@ -2072,6 +2104,16 @@ async function runWhatsappQualityGate(job) {
     });
     if (paidOrder) return { action: "cancel", reason: "payment_completed" };
   }
+  if (job.trigger === "new_lead") {
+    const existingOrder = await collections().orders.findOne({
+      phone: { $regex: `${String(job.phone).slice(-10)}$` },
+      paymentStatus: { $in: ["paid", "confirmed", "pending_cod"] },
+      shippingStatus: { $not: /cancelled|refunded/i },
+    });
+    if (existingOrder) {
+      return { action: "cancel", reason: "customer_already_ordered" };
+    }
+  }
   if (
     job.trigger === "delivered_ready_to_cook" &&
     !String(order?.shippingStatus || "")
@@ -2088,16 +2130,23 @@ async function runWhatsappQualityGate(job) {
     });
     if (newerOrder) return { action: "cancel", reason: "customer_reordered" };
   }
-  if (job.trigger === "post_cook_feedback" && job.sessionId) {
-    const session = await collections().sessions.findOne({
-      _id: job.sessionId,
+  if (
+    job.trigger === "post_cook_feedback" &&
+    job.metadata?.reason === "tutorial_no_response_fallback"
+  ) {
+    return { action: "cancel", reason: "legacy_cooking_feedback_replaced" };
+  }
+  if (job.trigger === "post_cook_feedback") {
+    const priorExperienceRequest = await collections().messageJobs.findOne({
+      _id: { $ne: job._id },
+      trigger: "post_cook_feedback",
+      ...(job.orderId ? { orderId: job.orderId } : { phone: job.phone }),
+      status: {
+        $in: ["submitted", "sent", "delivered", "read", "delivery_unknown"],
+      },
     });
-    if (!session)
-      return { action: "cancel", reason: "cooking_session_not_found" };
-    if (
-      !["guided_cooking", "post_cook_feedback"].includes(session.current_state)
-    ) {
-      return { action: "cancel", reason: "cooking_journey_no_longer_active" };
+    if (priorExperienceRequest) {
+      return { action: "cancel", reason: "experience_request_already_sent" };
     }
   }
   const openSupport = await collections().supportCases.findOne({
@@ -3128,11 +3177,11 @@ const ADMIN_WHATSAPP_TEMPLATE_METADATA = {
     buttons: ["Watch cooking video"],
   },
   post_cook_feedback: {
-    label: "Post-cook feedback",
+    label: "VALOUR experience feedback",
     parameterLabels: [],
     bodyText:
-      "How did your VALOUR meal turn out?\n\nChoose an option below to share your experience.",
-    buttons: ["Loved it ❤️", "Could be better"],
+      "How was your overall experience with VALOUR?\n\nFrom ordering and delivery to packaging, cooking and taste, we’d love to hear what you enjoyed and what we can improve.",
+    buttons: ["Loved my experience", "Could be better"],
   },
   review_request: {
     label: "Review request",
@@ -4576,6 +4625,7 @@ function buildAdminNewOrderMessage(order) {
   );
   const address = [
     order.address || order.addressLine || order.deliveryDetails?.addressLine,
+    order.landmark || order.deliveryDetails?.landmark,
     order.locality || order.deliveryDetails?.locality,
     order.city || order.deliveryDetails?.city,
     order.state || order.deliveryDetails?.state,
@@ -4610,6 +4660,7 @@ function buildAdminNewOrderTemplateParams(order) {
   );
   const address = [
     order.address || order.addressLine || order.deliveryDetails?.addressLine,
+    order.landmark || order.deliveryDetails?.landmark,
     order.locality || order.deliveryDetails?.locality,
     order.city || order.deliveryDetails?.city,
     order.state || order.deliveryDetails?.state,
@@ -4629,11 +4680,140 @@ function buildAdminNewOrderTemplateParams(order) {
     clean(customerPhone ? `+${customerPhone}` : "Not recorded", 30),
     clean(formatProductsForWhatsapp(order.products || []), 500),
     clean(
-      `Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} · ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`,
+      `${order.outOfStockIntent ? "Triggered order. no stock | " : ""}Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} | ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`,
       200,
     ),
     clean(address || "Not recorded", 500),
   ];
+}
+
+async function notifyWhatsappAdminsOfOutOfStockIntent(
+  order,
+  dedupeId,
+  clientIntentId,
+) {
+  const templateIdentifier = DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  const language =
+    process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_LANGUAGE || "en_US";
+  const parameters = buildAdminNewOrderTemplateParams({
+    ...order,
+    outOfStockIntent: true,
+  });
+  const results = [];
+
+  for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
+    const requestId = `stock_${dedupeId}_${recipient}`;
+    const now = new Date();
+    const record = {
+      requestId,
+      source: "out_of_stock_checkout",
+      templateKey: "admin_new_order",
+      templateLabel: "Admin out-of-stock order intent",
+      templateName: templateIdentifier,
+      templateId: getGupshupTemplateId(templateIdentifier, language),
+      languageCode: language,
+      phone: recipient,
+      parameterCount: parameters.length,
+      parameters,
+      intentId: clientIntentId,
+      dedupeId,
+      orderReference: order.orderNumber,
+      customerPhone: normalizeWhatsappRecipient(order.phone),
+      unavailableItems: order.unavailableItems || [],
+      status: "processing",
+      createdAt: now,
+      submissionStartedAt: now,
+    };
+
+    try {
+      await collections().adminTemplateSends.insertOne(record);
+    } catch (error) {
+      if (error?.code === 11000) {
+        const existing = await collections().adminTemplateSends.findOne({
+          requestId,
+        });
+        results.push({
+          recipient,
+          sent: false,
+          duplicate: true,
+          status: existing?.status || "already_recorded",
+          providerMessageId: existing?.providerMessageId || null,
+        });
+        continue;
+      }
+      throw error;
+    }
+
+    let acceptedProviderId = null;
+    try {
+      const providerResponse = await sendTemplateMessage(
+        recipient,
+        templateIdentifier,
+        language,
+        parameters,
+      );
+      const providerMessageId = getProviderMessageId(providerResponse);
+      acceptedProviderId = providerMessageId;
+      const submittedAt = new Date();
+      await collections().adminTemplateSends.updateOne(
+        { requestId, status: "processing" },
+        {
+          $set: {
+            status: "submitted",
+            submittedAt,
+            statusUpdatedAt: submittedAt,
+            providerMessageId,
+          },
+          $unset: { submissionStartedAt: "" },
+        },
+      );
+      await reconcileWhatsappStatus(providerMessageId);
+      results.push({ recipient, sent: true, providerMessageId });
+      console.log("[WHATSAPP][ADMIN_OUT_OF_STOCK_ALERT_SENT]", {
+        intentId: clientIntentId,
+        dedupeId,
+        orderReference: order.orderNumber,
+        recipient: maskWhatsappPhone(recipient),
+        providerMessageId,
+      });
+    } catch (error) {
+      const uncertain =
+        Boolean(acceptedProviderId) || isUncertainWhatsappSend(error);
+      const failedAt = new Date();
+      await collections().adminTemplateSends.updateOne(
+        { requestId, status: "processing" },
+        {
+          $set: {
+            status: uncertain ? "delivery_unknown" : "failed",
+            failedAt,
+            statusUpdatedAt: failedAt,
+            error: String(
+              error.response?.data?.message || error.message,
+            ).slice(0, 500),
+            ...(acceptedProviderId
+              ? { providerMessageId: acceptedProviderId }
+              : {}),
+          },
+          $unset: { submissionStartedAt: "" },
+        },
+      );
+      results.push({
+        recipient,
+        sent: false,
+        status: uncertain ? "delivery_unknown" : "failed",
+        error: error.message,
+      });
+      console.error("[WHATSAPP][ADMIN_OUT_OF_STOCK_ALERT_FAILED]", {
+        intentId: clientIntentId,
+        dedupeId,
+        orderReference: order.orderNumber,
+        recipient: maskWhatsappPhone(recipient),
+        error: error.response?.data || error.message,
+      });
+    }
+  }
+
+  return results;
 }
 
 async function notifyWhatsappAdminsOfNewOrder(order) {
@@ -5793,9 +5973,23 @@ async function beginTutorialCooking({
       : crypto.randomUUID();
   if (tutorialRunId !== session.tutorial_run_id)
     await cancelWhatsappJobs(
-      { sessionId: session._id, trigger: "post_cook_feedback" },
+      {
+        sessionId: session._id,
+        trigger: "post_cook_feedback",
+        "metadata.reason": "tutorial_no_response_fallback",
+      },
       "new_cooking_journey",
     );
+  await cancelWhatsappJobs(
+    {
+      phone: normalizeWhatsappRecipient(phone),
+      trigger: "post_cook_feedback",
+      "metadata.reason": {
+        $in: ["delivered_without_tutorial", "tutorial_no_response_fallback"],
+      },
+    },
+    "customer_opened_cooking_tutorial",
+  );
   const videoResult = await sendCookingIntro(phone, product, {
     includeCaption: !suppressVideoCaption,
   });
@@ -5831,29 +6025,6 @@ async function beginTutorialCooking({
   );
 
   await sendCookingDonePrompt(phone, product, videoResult.sent);
-  if (!videoResult.sent) return;
-  await scheduleWhatsappJob({
-    event: "post_cook_feedback",
-    phone,
-    customerId: userId,
-    sessionId: session._id,
-    occurrence: `tutorial-no-response:${tutorialRunId}`,
-    parameters: [],
-    scheduledAt: new Date(Date.now() + 30 * 60_000),
-    metadata: {
-      reason: "tutorial_no_response_fallback",
-      productId: product.id,
-    },
-  })
-    .then((result) =>
-      console.log("[WHATSAPP][POST_COOK_FALLBACK_SCHEDULED]", {
-        recipient: maskWhatsappPhone(phone),
-        ...result,
-      }),
-    )
-    .catch((err) =>
-      console.error("Post-cook fallback scheduling failed", err.message),
-    );
 }
 
 async function sendCookingDonePrompt(phone, product, videoWasSent = true) {
@@ -6281,25 +6452,35 @@ async function completeCooking({ session, phone, userId }) {
 
   await cancelWhatsappJobs(
     {
-      sessionId: session._id,
+      phone: normalizeWhatsappRecipient(phone),
       trigger: "post_cook_feedback",
-      "metadata.reason": "tutorial_no_response_fallback",
+      "metadata.reason": {
+        $in: ["delivered_without_tutorial", "tutorial_no_response_fallback"],
+      },
     },
     "customer_confirmed_cooking_complete",
   );
 
   await sendMessage(
     phone,
-    "Cooking complete. We’ll check in shortly to hear how it turned out.",
+    "Cooking complete. We’ll check in shortly to hear about your VALOUR experience.",
   );
+  const order = await findLatestWhatsappOrder(phone);
   await scheduleWhatsappJob({
     event: "post_cook_feedback",
     phone,
     customerId: userId,
+    order,
     sessionId: session._id,
-    occurrence: `customer-completed:${session.tutorial_run_id || session._id}`,
+    occurrence: order
+      ? "valour-experience"
+      : `valour-experience:${session.tutorial_run_id || session._id}`,
     parameters: [],
-    scheduledAt: new Date(Date.now() + 30 * 60_000),
+    scheduledAt: new Date(Date.now() + WHATSAPP_EXPERIENCE_AFTER_DONE_DELAY_MS),
+    metadata: {
+      reason: "customer_completed_tutorial",
+      productId: session.selected_product,
+    },
   })
     .then((result) =>
       console.log("[WHATSAPP][POST_COOK_FEEDBACK_SCHEDULED]", {
@@ -6308,10 +6489,9 @@ async function completeCooking({ session, phone, userId }) {
       }),
     )
     .catch((err) =>
-      console.error("Post-cook feedback scheduling failed", err.message),
+      console.error("VALOUR experience feedback scheduling failed", err.message),
     );
 
-  const order = await findLatestWhatsappOrder(phone);
   if (order) {
     await scheduleWhatsappJob({
       event: "reorder_reminder",
@@ -6435,7 +6615,7 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
   const feedbackType = getFeedbackType(text);
   if (feedbackType) {
     await cancelWhatsappJobs(
-      { sessionId: session._id, trigger: "post_cook_feedback" },
+      { phone: normalizeWhatsappRecipient(phone), trigger: "post_cook_feedback" },
       "feedback_received",
     );
     await cancelWhatsappJobs(
@@ -6450,11 +6630,11 @@ async function handlePostCookFeedback({ session, text, phone, userId }) {
     await sendMessage(
       phone,
       order
-        ? `That’s wonderful to hear! We’re glad VALOUR made your Butter Chicken easier and delicious.
+        ? `We’re delighted you enjoyed your VALOUR experience.
 
-Would you leave us a quick review? It only takes a moment:
+Please share it with us in this quick review:
 ${getReviewUrl(order)}`
-        : "That’s wonderful to hear! We’re glad VALOUR made your Butter Chicken easier and delicious. We could not find your order to create the review link—reply HELP and we’ll assist you.",
+        : "We’re delighted you enjoyed your VALOUR experience. We could not find your order to create the review link—reply HELP and we’ll assist you.",
     );
     await resetToIdle(session._id);
     return;
@@ -6469,13 +6649,11 @@ ${getReviewUrl(order)}`
     await sendMessage(
       phone,
       order
-        ? `Thanks for telling us—we’d love to make your next cook better.
+        ? `Thank you for being honest. Your feedback helps us improve VALOUR.
 
-Please tell us what we could improve in this quick review:
-${getReviewUrl(order)}
-
-If you’d like personal help, reply HELP and our team will assist you.`
-        : "Thanks for telling us—we’d love to make your next cook better. We could not find your order to create the review link—reply HELP and we’ll assist you.",
+Please tell us what could have been better using this short review:
+${getReviewUrl(order)}`
+        : "Thank you for being honest. We could not find your order to create the review link—reply HELP and we’ll assist you.",
     );
     await resetToIdle(session._id);
     return;
@@ -9057,6 +9235,7 @@ function cleanCheckoutOtpDetail(value, maxLength = 300) {
 
 function getCheckoutOtpDetails(body = {}) {
   const details = body.checkoutDetails || {};
+  const consent = details.whatsappConsent || {};
   return {
     name: cleanCheckoutOtpDetail(details.name, 200),
     email: cleanCheckoutOtpDetail(details.email, 250).toLowerCase(),
@@ -9065,6 +9244,18 @@ function getCheckoutOtpDetails(body = {}) {
     city: cleanCheckoutOtpDetail(details.city, 100),
     state: cleanCheckoutOtpDetail(details.state, 100),
     pincode: cleanCheckoutOtpDetail(details.pincode, 6),
+    whatsappConsent: {
+      granted: consent.granted === true,
+      wording: WHATSAPP_CONSENT_TEXT,
+      version: WHATSAPP_CONSENT_VERSION,
+      acceptedCategories:
+        consent.granted === true ? WHATSAPP_CONSENT_CATEGORIES : [],
+      source: "website_checkout",
+      sourcePage: cleanCheckoutOtpDetail(
+        consent.sourcePage || "/checkout.html",
+        300,
+      ),
+    },
   };
 }
 
@@ -9283,23 +9474,6 @@ app.post("/api/auth/otp/send", async (req, res) => {
   }
 
   try {
-    const existingUser = await findUserByPhone(phone);
-    if (existingUser) {
-      const verifiedAt = new Date();
-      const challengeId = crypto.randomUUID();
-      return res.json({
-        ok: true,
-        existingUser: true,
-        verificationToken: signCheckoutPhoneToken(
-          phone,
-          challengeId,
-          verifiedAt.getTime(),
-        ),
-        phone: `+91${phone}`,
-        verifiedAt: verifiedAt.toISOString(),
-      });
-    }
-
     const { otpChallenges } = collections();
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const recent = await otpChallenges
@@ -9468,6 +9642,38 @@ app.post("/api/auth/otp/verify", async (req, res) => {
     }
 
     const verifiedAt = new Date();
+    const user = await getOrCreateUser(normalizeWhatsappRecipient(phone));
+    await persistCheckoutUserProfile(
+      user._id,
+      challenge.checkoutDetails || {},
+      "checkout_phone_verification",
+    );
+    await collections().users.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          phoneVerifiedAt: verifiedAt,
+          last_seen_at: verifiedAt,
+          lastAction: {
+            type: "checkout_phone_verified",
+            occurredAt: verifiedAt,
+          },
+        },
+      },
+    );
+    const verifiedConsent = challenge.checkoutDetails?.whatsappConsent;
+    if (verifiedConsent) {
+      await recordWhatsappConsent({
+        phone,
+        granted: verifiedConsent.granted === true,
+        wording: verifiedConsent.wording,
+        version: verifiedConsent.version,
+        categories: verifiedConsent.acceptedCategories,
+        source: verifiedConsent.source,
+        sourcePage: verifiedConsent.sourcePage,
+        eventId: `checkout-otp:${challengeId}:whatsapp-consent`,
+      });
+    }
     await otpChallenges.updateOne(
       { challengeId, status: "sent" },
       {
@@ -9525,6 +9731,7 @@ function serializeAdminOrder(order = {}) {
     phone: order.phone || order.whatsappPhone || "",
     email: order.email || "",
     address: order.address || "",
+    landmark: order.landmark || "",
     city: order.city || "",
     state: order.state || "",
     pincode: order.pincode || "",
@@ -9538,6 +9745,13 @@ function serializeAdminOrder(order = {}) {
     paymentMethod: order.paymentMethodLabel || order.paymentMethod || "",
     paymentStatus: order.paymentStatus || "",
     shippingStatus: order.shippingStatus || "Order confirmed",
+    orderType: order.orderType || "standard_order",
+    isPreOrder: order.isPreOrder === true,
+    preOrderStatus: order.preOrderStatus || "",
+    stockStatusAtOrder: order.stockStatusAtOrder || "",
+    unavailableItems: Array.isArray(order.unavailableItems)
+      ? order.unavailableItems
+      : [],
     courierName: order.courierName || "",
     trackingNumber: order.trackingNumber || order.awbCode || "",
     trackingUrl: order.trackingUrl || "",
@@ -10812,10 +11026,18 @@ app.get("/api/admin/users/:id", async (req, res) => {
       messages.countDocuments({ $or: [{ user_id: user._id }, { phone: phoneFilter }] }),
       messageJobs.countDocuments({ phone }),
     ]);
-    const orderValue = orderRows.reduce(
+    const completedOrderRows = orderRows.filter(
+      (order) =>
+        order.isPreOrder !== true &&
+        ["paid", "pending_cod", "confirmed"].includes(order.paymentStatus),
+    );
+    const orderValue = completedOrderRows.reduce(
       (total, order) => total + (Number(order.totalAmount) || 0),
       0,
     );
+    const preOrderCount = orderRows.filter(
+      (order) => order.isPreOrder === true,
+    ).length;
     const eventLabels = {
       lead_created: "Lead created",
       product_viewed: "Product viewed",
@@ -10823,6 +11045,7 @@ app.get("/api/admin/users/:id", async (req, res) => {
       recipe_video_clicked: "Recipe video opened",
       checkout_started: "Checkout started",
       checkout_details_submitted: "Checkout details submitted",
+      out_of_stock_order_intent: "Order attempted while out of stock",
     };
     const actionHistory = [
       ...eventRows.map((event) => ({
@@ -10833,7 +11056,10 @@ app.get("/api/admin/users/:id", async (req, res) => {
       })),
       ...orderRows.map((order) => ({
         type: "order",
-        label: "Order placed",
+        label:
+          order.isPreOrder === true
+            ? "Pre-order placed while out of stock"
+            : "Order placed",
         detail: `${order.orderNumber || formatOrderNumber(order._id)} · ₹${Number(order.totalAmount) || 0} · ${order.paymentStatus || order.paymentMethod || "payment pending"}`,
         occurredAt: order.createdAt || null,
       })),
@@ -10896,12 +11122,13 @@ app.get("/api/admin/users/:id", async (req, res) => {
     return res.json({
       ok: true,
       user: serializeAdminUser(user, {
-        orderCount: orderRows.length,
+        orderCount: completedOrderRows.length,
         lifetimeValue: orderValue,
         latestOrder: orderRows[0],
       }),
       summary: {
-        orderCount: orderRows.length,
+        orderCount: completedOrderRows.length,
+        preOrderCount,
         orderValue,
         messageCount,
         whatsappJobCount: jobCount,
@@ -10978,6 +11205,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
       totalOrders,
       todayOrders,
       pendingOrders,
+      preOrders,
       deliveredOrders,
       paidRevenueRows,
       rules,
@@ -10993,10 +11221,18 @@ app.get("/api/admin/dashboard", async (req, res) => {
         .limit(limit)
         .toArray(),
       orders.countDocuments(orderFilter),
-      orders.countDocuments({}),
-      orders.countDocuments({ createdAt: { $gte: todayStart } }),
+      orders.countDocuments({ isPreOrder: { $ne: true } }),
       orders.countDocuments({
+        isPreOrder: { $ne: true },
+        createdAt: { $gte: todayStart },
+      }),
+      orders.countDocuments({
+        isPreOrder: { $ne: true },
         shippingStatus: { $not: /^delivered$|cancelled/i },
+      }),
+      orders.countDocuments({
+        isPreOrder: true,
+        preOrderStatus: "awaiting_stock",
       }),
       orders.countDocuments({ shippingStatus: /^delivered$/i }),
       orders
@@ -11046,6 +11282,7 @@ app.get("/api/admin/dashboard", async (req, res) => {
         totalOrders,
         todayOrders,
         pendingOrders,
+        preOrders,
         deliveredOrders,
         paidRevenue: Number(paidRevenueRows[0]?.total) || 0,
       },
@@ -11639,16 +11876,25 @@ app.post("/api/customer-events", async (req, res) => {
             }
           : null;
       if (consentSnapshot) {
-        await recordWhatsappConsent({
-          phone,
-          granted: consentGranted,
-          wording: WHATSAPP_CONSENT_TEXT,
-          version: WHATSAPP_CONSENT_VERSION,
-          categories: WHATSAPP_CONSENT_CATEGORIES,
-          source: consentSnapshot.source,
-          sourcePage: consentSnapshot.sourcePage,
-          eventId: `${eventId.slice(0, 120)}:whatsapp-consent:${consentGranted ? "granted" : "declined"}`,
-        });
+        const currentConsentUser = await findUserByPhone(phone);
+        const requestedConsentStatus = consentGranted ? "granted" : "declined";
+        const consentAlreadyCurrent =
+          currentConsentUser?.whatsappConsentStatus === requestedConsentStatus &&
+          currentConsentUser?.whatsappConsentVersion ===
+            WHATSAPP_CONSENT_VERSION &&
+          currentConsentUser?.whatsappConsentSource === "website_checkout";
+        if (!consentAlreadyCurrent) {
+          await recordWhatsappConsent({
+            phone,
+            granted: consentGranted,
+            wording: WHATSAPP_CONSENT_TEXT,
+            version: WHATSAPP_CONSENT_VERSION,
+            categories: WHATSAPP_CONSENT_CATEGORIES,
+            source: consentSnapshot.source,
+            sourcePage: consentSnapshot.sourcePage,
+            eventId: `${eventId.slice(0, 120)}:whatsapp-consent:${consentGranted ? "granted" : "declined"}`,
+          });
+        }
       }
       await collections().customerEvents.insertOne({
         eventId,
@@ -11742,6 +11988,200 @@ app.post("/api/stock/check", async (req, res) => {
     return res.status(400).json({
       ok: false,
       error: error.message || "Unable to check stock",
+    });
+  }
+});
+
+app.post("/api/orders/out-of-stock-intent", async (req, res) => {
+  const intentId = String(req.body?.intentId || "").trim();
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(intentId)) {
+    return res.status(400).json({
+      ok: false,
+      error: "A valid out-of-stock intent ID is required",
+    });
+  }
+
+  try {
+    const rawOrder = req.body?.order || {};
+    const customerOrder = normalizeOrderPayload(rawOrder);
+    const phoneIdentity = await verifyCheckoutPhoneIdentity(
+      rawOrder.phoneVerificationToken,
+      customerOrder.phone,
+    );
+    const quote = await buildAuthoritativeQuote({
+      items: rawOrder.products,
+      pincode: customerOrder.pincode,
+      couponCode: rawOrder.coupon,
+      phone: customerOrder.phone,
+    });
+    const requestedItems = normaliseCartItems(rawOrder.products);
+    const catalogue = await collections()
+      .products.find({
+        sku: { $in: requestedItems.map((item) => item.sku) },
+        active: true,
+      })
+      .toArray();
+    const stock = buildStockStatus(requestedItems, catalogue);
+    if (stock.available) {
+      return res.status(409).json({
+        ok: false,
+        code: "STOCK_AVAILABLE",
+        error: "Stock is available; no out-of-stock alert was sent",
+      });
+    }
+
+    const intentOrder = {
+      ...customerOrder,
+      ...quoteToOrderFields(quote),
+      ...phoneIdentity,
+      paymentMethod: String(rawOrder.payment?.method || "").slice(0, 50),
+      paymentMethodLabel: String(
+        rawOrder.payment?.label || rawOrder.payment?.method || "Not selected",
+      ).slice(0, 100),
+      paymentStatus: "not_collected_preorder",
+      shippingStatus: "Pre-order - awaiting stock",
+      purchaseIntent: "pre_order",
+      orderType: "pre_order",
+      isPreOrder: true,
+      preOrderStatus: "awaiting_stock",
+      preOrderRequestedAt: new Date(),
+      stockStatusAtOrder: "out_of_stock",
+      outOfStockIntent: true,
+      unavailableItems: stock.unavailableItems,
+      expectedDeliveryAt: null,
+      expectedDeliveryDate: null,
+      estimatedDelivery: "Awaiting stock",
+      deliveryPromise: "Awaiting stock",
+      deliveryTimeValue: null,
+      deliveryTimeUnit: null,
+      deliverySource: "awaiting_stock",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const dedupeId = crypto
+      .createHash("sha256")
+      .update(
+        JSON.stringify({
+          challengeId: phoneIdentity.phoneVerificationChallengeId,
+          phone: normalizeWhatsappRecipient(intentOrder.phone),
+          products: requestedItems
+            .map((item) => ({ sku: item.sku, quantity: item.quantity }))
+            .sort((left, right) => left.sku.localeCompare(right.sku)),
+          paymentMethod: intentOrder.paymentMethod,
+        }),
+      )
+      .digest("hex")
+      .slice(0, 24);
+    intentOrder.orderNumber = `VALOUR-STOCK-${dedupeId.slice(-8).toUpperCase()}`;
+    const validationError = validateOrderPayload(intentOrder);
+    if (validationError) {
+      return res.status(400).json({ ok: false, error: validationError });
+    }
+
+    const { orders } = collections();
+    const checkoutIdempotencyKey = `preorder_${dedupeId}`;
+    let savedPreOrder = await orders.findOne({ checkoutIdempotencyKey });
+    let preOrderCreated = false;
+    if (!savedPreOrder) {
+      const preOrderRecord = {
+        ...intentOrder,
+        channel: "website",
+        checkoutIdempotencyKey,
+        razorpayOrderId: `preorder_${dedupeId}`,
+      };
+      try {
+        const inserted = await orders.insertOne(preOrderRecord);
+        savedPreOrder = { ...preOrderRecord, _id: inserted.insertedId };
+        preOrderCreated = true;
+      } catch (error) {
+        if (error?.code !== 11000) throw error;
+        savedPreOrder = await orders.findOne({ checkoutIdempotencyKey });
+        if (!savedPreOrder) throw error;
+      }
+    }
+
+    const customer = await getOrCreateUser(
+      normalizeWhatsappRecipient(savedPreOrder.phone),
+    );
+    const eventId = `out-of-stock:${dedupeId}`;
+    try {
+      await collections().customerEvents.insertOne({
+        eventId,
+        event: "out_of_stock_order_intent",
+        phone: normalizeWhatsappRecipient(intentOrder.phone),
+        customerId: customer._id,
+        orderId: savedPreOrder._id,
+        orderReference: savedPreOrder.orderNumber,
+        cartId: intentId,
+        products: intentOrder.products,
+        totalAmount: intentOrder.totalAmount,
+        paymentMethod: intentOrder.paymentMethod,
+        unavailableItems: stock.unavailableItems,
+        occurredAt: intentOrder.createdAt,
+        source: "website",
+        attribution: intentOrder.attribution || null,
+      });
+      await collections().users.updateOne(
+        { _id: customer._id },
+        {
+          $set: {
+            last_seen_at: intentOrder.createdAt,
+            lastAction: {
+              type: "out_of_stock_order_intent",
+              orderReference: savedPreOrder.orderNumber,
+              occurredAt: intentOrder.createdAt,
+            },
+          },
+        },
+      );
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+    }
+
+    const alerts = await notifyWhatsappAdminsOfOutOfStockIntent(
+      savedPreOrder,
+      dedupeId,
+      intentId,
+    );
+    const submittedCount = alerts.filter((alert) => alert.sent).length;
+    const duplicateCount = alerts.filter((alert) => alert.duplicate).length;
+    return res.status(preOrderCreated ? 201 : 200).json({
+      ok: true,
+      intentId,
+      orderId: String(savedPreOrder._id),
+      orderReference: savedPreOrder.orderNumber,
+      preOrder: {
+        created: preOrderCreated,
+        status: savedPreOrder.preOrderStatus,
+        stockStatusAtOrder: savedPreOrder.stockStatusAtOrder,
+        paymentStatus: savedPreOrder.paymentStatus,
+        shippingStatus: savedPreOrder.shippingStatus,
+      },
+      stock,
+      adminAlerts: {
+        configured: DEFAULT_CUSTOMER_CARE_PHONES.length,
+        submitted: submittedCount,
+        duplicates: duplicateCount,
+        failed: alerts.filter(
+          (alert) => !alert.sent && !alert.duplicate,
+        ).length,
+      },
+    });
+  } catch (error) {
+    const clientError =
+      Boolean(error.statusCode) ||
+      /required|valid|unavailable|quantity|coupon/i.test(error.message);
+    console.error("Out-of-stock admin alert failed", {
+      intentId,
+      error: error.message,
+      stack: error.stack,
+    });
+    return res.status(error.statusCode || (clientError ? 400 : 500)).json({
+      ok: false,
+      error: clientError
+        ? error.message
+        : "Unable to notify admins about the out-of-stock checkout",
+      ...(error.code ? { code: error.code } : {}),
     });
   }
 });
@@ -12584,6 +13024,8 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
     }
 
     updates.updatedAt = new Date();
+    const wasAlreadyDelivered =
+      String(order.shippingStatus || "").toLowerCase() === "delivered";
     const isDeliveredUpdate =
       String(updates.shippingStatus || "").toLowerCase() === "delivered";
     if (isDeliveredUpdate) {
@@ -12648,8 +13090,44 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
       };
     }
 
-    if (notifyWhatsapp && isDeliveredUpdate) {
+    if (notifyWhatsapp && isDeliveredUpdate && !wasAlreadyDelivered) {
       const phone = updatedOrder.whatsappPhone || updatedOrder.phone;
+      const recipient = normalizeWhatsappRecipient(phone);
+      await Promise.all([
+        cancelWhatsappJobs(
+          {
+            orderId: updatedOrder._id,
+            trigger: {
+              $in: [
+                "order_confirmation",
+                "cod_confirmation",
+                "cod_prepaid_confirmation",
+                "order_status_update",
+                "delivered_ready_to_cook",
+                "reorder_reminder",
+              ],
+            },
+          },
+          "order_delivered",
+        ),
+        cancelWhatsappJobs(
+          {
+            phone: recipient,
+            trigger: {
+              $in: [
+                "new_lead",
+                "product_demo",
+                "high_intent_followup",
+                "price_delivery_followup",
+                "checkout_reminder",
+                "cooking_reminder",
+                "post_cook_feedback",
+              ],
+            },
+          },
+          "order_delivered",
+        ),
+      ]);
       const deliveredTemplateName =
         process.env.WHATSAPP_DELIVERED_TEMPLATE_NAME || "valour_delivered";
       const deliveredScheduledAt = nextIstSendTime(
@@ -12663,6 +13141,15 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
           updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id),
         ],
         scheduledAt: deliveredScheduledAt,
+        // One arrival/cooking invitation per customer per India calendar day,
+        // even if a duplicated order record is updated too.
+        dedupeSubject: recipient,
+        occurrence: new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(updates.deliveredAt),
       });
       whatsappUpdate = {
         sent: false,
@@ -12689,6 +13176,29 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         jobKey: whatsappUpdate.jobKey,
         reason: whatsappUpdate.reason,
       });
+      if (deliveredJob.scheduled) {
+        const experienceJob = await scheduleWhatsappJob({
+          event: "post_cook_feedback",
+          phone,
+          order: updatedOrder,
+          occurrence: "delivery-fallback",
+          parameters: [],
+          scheduledAt: new Date(
+            updates.deliveredAt.getTime() +
+              WHATSAPP_EXPERIENCE_FALLBACK_DELAY_MS,
+          ),
+          metadata: {
+            reason: "delivered_without_tutorial",
+            deliveredAt: updates.deliveredAt,
+          },
+        });
+        console.log("[WHATSAPP][EXPERIENCE_FALLBACK_SCHEDULED]", {
+          orderId: String(updatedOrder._id),
+          recipient: maskWhatsappPhone(phone),
+          delayHours: 48,
+          ...experienceJob,
+        });
+      }
       await scheduleWhatsappJob({
         event: "reorder_reminder",
         phone,
@@ -12697,6 +13207,22 @@ app.post("/api/orders/:orderReference/shipping-status", async (req, res) => {
         scheduledAt: nextIstSendTime(
           new Date(Date.now() + WHATSAPP_REORDER_DELAY_MS),
         ),
+      });
+    } else if (notifyWhatsapp && isDeliveredUpdate && wasAlreadyDelivered) {
+      whatsappUpdate = {
+        sent: false,
+        scheduled: false,
+        reason: "already_delivered",
+        event: "delivered_ready_to_cook",
+      };
+      console.log("[WHATSAPP][DELIVERED_TEMPLATE_SKIPPED]", {
+        orderId: String(updatedOrder._id),
+        orderNumber:
+          updatedOrder.orderNumber || formatOrderNumber(updatedOrder._id),
+        recipient: maskWhatsappPhone(
+          updatedOrder.whatsappPhone || updatedOrder.phone,
+        ),
+        reason: "already_delivered",
       });
     }
 
@@ -13403,5 +13929,6 @@ module.exports = {
     sanitizeReassuranceText,
     shouldTryBrandNLU,
     signCheckoutPhoneToken,
+    hashCheckoutOtp,
   },
 };
