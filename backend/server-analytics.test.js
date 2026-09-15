@@ -23,9 +23,42 @@ test("attribution browser code is served while unknown root files remain private
   await withServer(async base => {
     const attribution = await fetch(base + "/attribution.js");
     assert.equal(attribution.status, 200);
+    assert.match(attribution.headers.get("cache-control"), /no-cache/);
     assert.match(await attribution.text(), /latestNonDirect/);
+    const versionedAttribution = await fetch(base + "/attribution.js?v=performance-test");
+    assert.match(versionedAttribution.headers.get("cache-control"), /max-age=31536000/);
+    assert.match(versionedAttribution.headers.get("cache-control"), /immutable/);
+    const document = await fetch(base + "/index.html");
+    assert.match(document.headers.get("cache-control"), /no-cache/);
     assert.equal((await fetch(base + "/backend/.env")).status, 404);
   });
+});
+
+test("homepage performance delivery preserves analytics order and responsive media", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const attributionTag = '<script src="/attribution.js?v=20260915-performance-1" defer></script>';
+  const metaTag = '<script src="/meta-pixel.js?v=20260915-performance-1" defer></script>';
+  assert.ok(html.indexOf(attributionTag) >= 0);
+  assert.ok(html.indexOf(metaTag) > html.indexOf(attributionTag));
+  assert.equal((html.match(/fetch\("\/api\/homepage-testimonials"/g) || []).length, 1);
+  const fallbackMedia = html.match(/<div class="valour-testimonial__media"[^>]*data-testimonial-media-key="[^"]+">[\s\S]*?<\/div>/g) || [];
+  assert.equal(fallbackMedia.length, 4);
+  assert.ok(fallbackMedia.every(markup => !/<img\b/i.test(markup)));
+  assert.match(html, /test4_x\.png/);
+  assert.match(html, /responsiveBase}-320\.webp 320w/);
+  assert.match(html, /cormorant-garamond-600-latin\.woff2/);
+  assert.match(html, /cook_btr_chick_vlr_final\.mov"[\s\S]*preload="none"/);
+  for (const asset of [
+    "assets/fonts/cormorant-garamond-600-latin.woff2",
+    "assets/fonts/inter-400-500-latin.woff2",
+    "assets/js/gsap-3.12.5.min.js",
+    "assets/js/scroll-trigger-3.12.5.min.js",
+    "vendor/cdn/cdn/shop/files/test4_x-320.webp",
+    "vendor/cdn/cdn/shop/files/test4_x-640.webp",
+    "vendor/cdn/cdn/shop/files/test4_x-960.webp",
+  ]) assert.ok(fs.existsSync(path.join(__dirname, "..", asset)), asset);
 });
 
 test("admin dashboard exposes responsive customer management and workflow actions", () => {

@@ -24,31 +24,54 @@
   s.parentNode.insertBefore(t,s)}(window,document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
 </script>
-    <script src="/attribution.js"></script>
-    <script src="/meta-pixel.js?v=20260913-order-click-events-1"></script>
+    <script src="/attribution.js?v=20260915-performance-1" defer></script>
+    <script src="/meta-pixel.js?v=20260915-performance-1" defer></script>
 <noscript><img height="1" width="1" style="display:none"
   src="https://www.facebook.com/tr?id=2927690960901306&amp;ev=PageView&amp;noscript=1"
   alt="" /></noscript>
 <!-- End Meta Pixel Code -->
 
-
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" rel="stylesheet"></noscript>
-
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://media.liquidspice.in" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//media.liquidspice.in">
-  <link rel="preload"
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
-    as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500&display=swap"
-    rel="stylesheet"></noscript>
+  <link rel="preload" href="assets/fonts/cormorant-garamond-600-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face {
+      font-family: "Cormorant Garamond";
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url("assets/fonts/cormorant-garamond-600-latin.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Inter";
+      font-style: normal;
+      font-weight: 400 500;
+      font-display: swap;
+      src: url("assets/fonts/inter-400-500-latin.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Material Symbols Outlined";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/material-symbols-valour.woff2") format("woff2");
+    }
+    .material-symbols-outlined {
+      font-family: "Material Symbols Outlined";
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+    }
+  </style>
   <link rel="preload" href="vendor/cdn/cdn/shop/files/step_one-poster.webp" as="image" type="image/webp" fetchpriority="high">
-  <link href="vendor/cdn/cdn/shop/t/8/assets/critical.css" rel="stylesheet" type="text/css" media="all" />
+  <link href="assets/css/home-20260915.min.css" rel="stylesheet" type="text/css" media="all" />
 
 
   <meta charset="utf-8">
@@ -87,9 +110,6 @@
       ]
     }
   </script>
-  <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/assets/navbar.css">
-
-  <link rel="stylesheet" media="screen" href="vendor/cdn/cdn/shop/t/8/compiled_assets/styles.css">
 </head>
 <style>
   html {
@@ -816,290 +836,6 @@
       font-size: 14px;
     }
   }
-
-
-  /*testimonials*/
-
-
-
-  .testimonial-sectionxyz {
-    max-width: 2000px;
-    margin: auto;
-    padding: clamp(130px, 14vw, 260px) 20px;
-    background:
-      linear-gradient(180deg, #fff8ef 0%, #f5ead9 100%);
-  }
-
-  /* HEADER */
-  .testimonial-sectionxyz .header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-  }
-
-  /* WRAPPER */
-  .testimonial-sectionxyz .carousel-wrapper {
-    overflow: hidden;
-    width: min(980px, 100%);
-    margin: clamp(36px, 5vw, 64px) auto 0;
-    padding: 28px;
-  }
-
-  .cont_nav_crousel {
-    display: flex;
-    margin-top: 60px;
-    justify-content: center;
-  }
-
-  /* TRACK */
-  .testimonial-sectionxyz .carousel-track {
-    display: flex;
-    gap: 28px;
-    align-items: stretch;
-    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-
-  /* ITEM */
-  .testimonial-sectionxyz .carousel-item {
-    flex: 0 0 100%;
-    min-width: 100%;
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    overflow: hidden;
-    background: rgba(255, 248, 239, 0.96);
-    border: 1px solid rgba(131, 26, 26, 0.12);
-    border-radius: 8px;
-    box-shadow:
-      0 0 0 1px rgba(131, 26, 26, 0.08),
-      0 0 34px rgba(131, 26, 26, 0.1),
-      0 20px 46px rgba(52, 25, 11, 0.14);
-  }
-
-  /* IMAGE GRID */
-  .testimonial-sectionxyz .image-grid {
-    position: relative;
-    width: 38%;
-    height: auto;
-    min-height: 330px;
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
-    background: #831a1a;
-    overflow: hidden;
-    box-sizing: border-box;
-  }
-
-  .testimonial-sectionxyz .review-image {
-    min-width: 0;
-    min-height: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    border-radius: 6px;
-    box-shadow: 0 0 0 1px rgba(250, 234, 222, 0.14);
-  }
-
-  .testimonial-sectionxyz .review-image--large {
-    grid-row: 1 / span 2;
-  }
-
-  .testimonial-sectionxyz .main-img {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 20px;
-  }
-
-
-
-  .testimonial-sectionxyz .small-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  .testimonial-sectionxyz .small-grid img {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    /* makes them perfect squares */
-    object-fit: cover;
-    border-radius: 12px;
-  }
-
-
-
-  .testimonial-sectionxyz .header h2 {
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    margin: 0;
-    font-size: clamp(48px, 7vw, 92px);
-    line-height: 0.92;
-    color: #831a1a;
-  }
-
-  .testimonial-sectionxyz .header h2 span {
-    color: #9a6b1f
-  }
-
-  /* CARD */
-  .testimonial-sectionxyz .review-card {
-    width: 62%;
-    padding: clamp(28px, 5vw, 58px);
-    border-radius: 0;
-    background: #fff8ef;
-  }
-
-  .testimonial-sectionxyz .review-card h4,
-  .testimonial-sectionxyz .review-card span,
-  .testimonial-sectionxyz .review-card p {
-    font-family: Inter;
-  }
-
-  .testimonial-sectionxyz .review-card h4 {
-    margin: 0;
-    color: #831a1a;
-    font-size: clamp(18px, 2vw, 24px);
-    letter-spacing: 0.02em;
-  }
-
-  .testimonial-sectionxyz .review-card span {
-    font-size: 13px;
-    margin-top: 7px;
-    display: block;
-    padding-bottom: 18px;
-    color: #9a6b1f;
-    border-bottom: 1px solid rgba(131, 26, 26, 0.16);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .stars_review {
-    color: #d58a00;
-    font-size: clamp(22px, 3vw, 30px);
-    margin: 18px 0 0;
-    display: flex;
-    gap: 3px;
-    align-items: center;
-  }
-
-  .stars_review svg {
-    display: inline-block;
-    margin-top: 0;
-    padding-bottom: 0;
-    border-bottom: 0;
-    color: inherit;
-    width: 1em;
-    height: 1em;
-    letter-spacing: 0;
-    text-transform: none;
-    line-height: 1;
-  }
-
-  .review_rev {
-    margin: clamp(24px, 4vw, 42px) 0 0;
-    color: #44231f;
-    font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
-    font-size: clamp(28px, 4vw, 46px);
-    line-height: 1.04;
-  }
-
-  /* NAV */
-  .testimonial-sectionxyz .nav button {
-    border: 1px solid rgba(131, 26, 26, 0.2);
-    background: #831a1a;
-    color: #f7d46c;
-    border-radius: 50%;
-    width: 52px;
-    height: 52px;
-    cursor: pointer;
-    transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
-  }
-
-  .testimonial-sectionxyz .nav button:hover {
-    background: #f7d46c;
-    color: #831a1a;
-    transform: translateY(-2px);
-  }
-
-
-  .testimonial-sectionxyz .carousel-wrapper {
-    overflow: hidden;
-  }
-
-  .testimonial-sectionxyz .carousel-track {
-    display: flex;
-    gap: 28px;
-    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .testimonial-sectionxyz .carousel-item {
-    flex: 0 0 100%;
-    min-width: 100%;
-    display: flex;
-    gap: 0;
-  }
-
-  /* layout fix */
-  .testimonial-sectionxyz .image-grid {
-    flex: 0 0 38%;
-    width: 38%;
-  }
-
-  .testimonial-sectionxyz .review-card {
-    flex: 1 1 auto;
-    width: 62%;
-  }
-
-  @media (max-width: 900px) {
-    .testimonial-sectionxyz {
-      padding: 96px 18px 126px;
-    }
-
-    .testimonial-sectionxyz .carousel-wrapper {
-      padding: 18px;
-    }
-
-    .testimonial-sectionxyz .carousel-item {
-      min-width: 100%;
-      flex-direction: column;
-    }
-
-    .testimonial-sectionxyz .image-grid,
-    .testimonial-sectionxyz .review-card {
-      width: 100%;
-    }
-
-    .testimonial-sectionxyz .image-grid {
-      min-height: 170px;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: minmax(0, 150px) minmax(0, 120px);
-    }
-
-    .testimonial-sectionxyz .review-image--large {
-      grid-column: 1 / span 2;
-      grid-row: auto;
-    }
-
-    .testimonial-sectionxyz .header h2 {
-      font-size: clamp(42px, 13vw, 64px);
-    }
-  }
-
-
-
-
-
-
-
-
-
-
 
 
   /* LAYOUT */
@@ -5177,54 +4913,6 @@
     .valour-testimonials__track, .valour-testimonials__arrow, .valour-testimonials__dot { transition: none; }
   }
 
-  /* Fresh database-driven customer stories */
-  .kitchen-stories { overflow: hidden; padding: clamp(84px, 10vw, 144px) 20px; color: #fff8ef; background: transparent; }
-  .kitchen-stories, .kitchen-stories * { box-sizing: border-box; }
-  .kitchen-stories__inner { width: min(1160px, 100%); margin: 0 auto; }
-  .kitchen-stories__header { max-width: 820px; margin: 0 auto; text-align: center; }
-  .kitchen-stories__header h2 { margin: 0; color: #fff8ef; font: 600 clamp(50px, 7vw, 92px)/0.9 "Cormorant Garamond", Georgia, serif; letter-spacing: -0.035em; text-wrap: balance; }
-  .kitchen-stories__header p { max-width: 650px; margin: 24px auto 0; color: rgba(255, 248, 239, 0.76); font: 500 clamp(16px, 1.8vw, 21px)/1.55 Inter, sans-serif; text-wrap: balance; }
-  .kitchen-stories__viewport { width: 100%; margin-top: clamp(40px, 5vw, 64px); overflow: hidden; touch-action: pan-y; }
-  .kitchen-stories__track { display: flex; gap: 24px; transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
-  .kitchen-story { flex: 0 0 calc((100% - 24px) / 2); min-width: 0; overflow: hidden; border: 1px solid rgba(255, 248, 239, 0.18); border-radius: 10px; background: #fff8ef; color: #44231f; box-shadow: 0 22px 48px rgba(42, 5, 5, 0.24); }
-  .kitchen-story__media { height: 270px; display: grid; gap: 4px; padding: 4px; background: rgba(131, 26, 26, 0.15); }
-  .kitchen-story__media--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kitchen-story__media--3 { grid-template-columns: 1.15fr 0.85fr; grid-template-rows: repeat(2, minmax(0, 1fr)); }
-  .kitchen-story__media--3 img:first-child { grid-row: 1 / span 2; }
-  .kitchen-story__media img { width: 100%; height: 100%; min-width: 0; min-height: 0; display: block; border-radius: 4px; object-fit: cover; }
-  .kitchen-story__body { display: flex; min-height: 260px; flex-direction: column; padding: 28px 26px 24px; }
-  .kitchen-story__stars { margin: 0 0 16px; color: #b57918; font: 700 12px/1 Inter, sans-serif; letter-spacing: 0.14em; }
-  .kitchen-story blockquote { margin: 0; color: #44231f; font: 600 clamp(27px, 2.4vw, 35px)/1.08 "Cormorant Garamond", Georgia, serif; letter-spacing: -0.015em; }
-  .kitchen-story__person { margin: auto 0 0; padding-top: 22px; border-top: 1px solid rgba(131, 26, 26, 0.14); }
-  .kitchen-story__person strong, .kitchen-story__person span { display: block; font-family: Inter, sans-serif; text-transform: uppercase; }
-  .kitchen-story__person strong { color: #831a1a; font-size: 12px; letter-spacing: 0.08em; }
-  .kitchen-story__person span { margin-top: 5px; color: #9a6b1f; font-size: 10px; font-weight: 600; letter-spacing: 0.09em; }
-  .kitchen-stories__controls { display: grid; grid-template-columns: 46px auto 46px; align-items: center; justify-content: center; gap: 14px; margin-top: 28px; }
-  .kitchen-stories__controls button { width: 46px; height: 46px; padding: 0; border: 1px solid rgba(255, 248, 239, 0.34); border-radius: 50%; background: transparent; color: #fff8ef; font-size: 20px; cursor: pointer; }
-  .kitchen-stories__controls button:hover { border-color: #f7d46c; color: #f7d46c; }
-  .kitchen-stories__controls button:focus-visible { outline: 2px solid #f7d46c; outline-offset: 3px; }
-  .kitchen-stories__controls p { min-width: 48px; margin: 0; color: rgba(255, 248, 239, 0.52); font: 600 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-align: center; }
-  .kitchen-stories__inner > h3 { max-width: 720px; margin: clamp(64px, 8vw, 104px) auto 0; color: #f7d46c; font: 600 clamp(42px, 6vw, 72px)/0.96 "Cormorant Garamond", Georgia, serif; letter-spacing: -0.03em; text-align: center; text-wrap: balance; }
-
-  @media (max-width: 720px) {
-    .kitchen-stories { padding: 72px 0 88px; }
-    .kitchen-stories__header { padding-inline: 20px; }
-    .kitchen-stories__header h2 { max-width: 10ch; margin-inline: auto; font-size: clamp(42px, 12vw, 58px); line-height: 0.92; }
-    .kitchen-stories__header p { margin-top: 18px; font-size: 16px; }
-    .kitchen-stories__viewport { margin-top: 36px; }
-    .kitchen-stories__track { gap: 0; }
-    .kitchen-story { flex: 0 0 calc(100% - 32px); width: calc(100% - 32px); margin-inline: 16px; border-radius: 8px; }
-    .kitchen-story__media { height: clamp(184px, 54vw, 220px); }
-    .kitchen-story__body { min-height: 0; padding: 20px 19px 18px; }
-    .kitchen-story blockquote { font-size: clamp(23px, 6.4vw, 28px); line-height: 1.1; }
-    .kitchen-story__person { margin-top: 24px; padding-top: 15px; }
-    .kitchen-stories__controls { margin-top: 22px; }
-    .kitchen-stories__inner > h3 { max-width: 11ch; margin-top: 58px; padding-inline: 16px; font-size: clamp(42px, 12vw, 56px); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .kitchen-stories__track { transition: none; }
-  }
 </style>
 
 <body>
@@ -5255,8 +4943,8 @@
 
         <!-- LOGO -->
         <a class="nav-logo" href="/" aria-label="VALOUR home">
-          <img class="nav-logo__default" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour" width="755" height="330" decoding="async">
-          <img class="nav-logo__sticky" src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="" aria-hidden="true" width="755" height="330" decoding="async">
+          <img class="nav-logo__default" src="vendor/cdn/cdn/shop/files/valourblacklogom-320.webp" srcset="vendor/cdn/cdn/shop/files/valourblacklogom-320.webp 320w, vendor/cdn/cdn/shop/files/valourblacklogom-640.webp 640w" sizes="(max-width: 640px) 140px, 190px" alt="Valour" width="755" height="330" decoding="async">
+          <img class="nav-logo__sticky" src="vendor/cdn/cdn/shop/files/valourblacklogom-320.webp" srcset="vendor/cdn/cdn/shop/files/valourblacklogom-320.webp 320w, vendor/cdn/cdn/shop/files/valourblacklogom-640.webp 640w" sizes="(max-width: 640px) 140px, 190px" alt="" aria-hidden="true" width="755" height="330" decoding="async">
         </a>
         <!-- RIGHT -->
         <div class="nav-right">
@@ -5297,7 +4985,7 @@
           <button class="buy-sheet-close" type="button" data-buy-sheet-close aria-label="Close buy panel">&times;</button>
         </div>
         <div class="buy-sheet-product">
-          <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" data-buy-sheet-image loading="lazy" decoding="async">
+          <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM-320.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" width="1254" height="1254" data-buy-sheet-image loading="lazy" decoding="async">
           <div>
             <strong data-buy-sheet-name>Velvety Butter Chicken Liquid Spice</strong>
             <div class="buy-sheet-product-copy" data-buy-sheet-meta>
@@ -5344,11 +5032,11 @@
       <div class="valour-stack-story__track">
         <article class="valour-stack-story__item is-current" id="valour-stack-step-1" data-story-index="0">
           <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 01 · FRY</p><h3>Get things sizzling.</h3><p>Fry/grill until cooked, then remove excess oil (if any).</p></div></div>
-          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="metadata" poster="vendor/cdn/cdn/shop/files/step_one-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.webm" type="video/webm"></video></figure></div>
+          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="none" poster="vendor/cdn/cdn/shop/files/step_one-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_one-optimized.webm" type="video/webm"></video></figure></div>
         </article>
         <article class="valour-stack-story__item is-future" id="valour-stack-step-2" data-story-index="1">
           <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 02 · Pour</p><h3>Let the jar show off.</h3><p>Add VALOUR. The slow spice work and balanced flavour are already inside.</p></div></div>
-          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="auto" poster="vendor/cdn/cdn/shop/files/step_two-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.webm" type="video/webm"></video></figure></div>
+          <div class="valour-stack-story__deck" aria-hidden="true"><figure class="valour-stack-card"><video muted loop playsinline preload="none" poster="vendor/cdn/cdn/shop/files/step_two-poster.webp"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.mp4" type="video/mp4"><source src="vendor/cdn/cdn/shop/files/step_two-optimized.webm" type="video/webm"></video></figure></div>
         </article>
         <article class="valour-stack-story__item is-future" id="valour-stack-step-3" data-story-index="2">
           <div class="valour-stack-story__copy"><div class="valour-stack-story__step"><p class="valour-stack-story__step-label">Step 03 · Simmer</p><h3>Ten minutes. Big finish.</h3><p>Let it bubble, plate it up, and accept compliments with dignity.</p></div></div>
@@ -5367,9 +5055,7 @@
         <div class="valour-testimonials__viewport" data-testimonial-viewport tabindex="0" aria-roledescription="carousel" aria-label="Customer testimonials">
           <div class="valour-testimonials__track" data-testimonial-track>
             <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="1 of 4">
-              <div class="valour-testimonial__media" data-image-count="1" data-testimonial-media-key="first-kitchen-1">
-                <img src="vendor/cdn/cdn/shop/files/butter_chcikencurry.webp" width="900" height="900" alt="A rich bowl of butter chicken served at the dinner table" data-focus="food" loading="lazy" decoding="async">
-              </div>
+              <div class="valour-testimonial__media" data-image-count="1" data-testimonial-media-key="first-kitchen-1"></div>
               <div class="valour-testimonial__copy">
                 <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
                 <blockquote class="valour-testimonial__quote">“It tasted like the butter chicken we save for special dinners—only I made it on a Tuesday, in fifteen minutes.”</blockquote>
@@ -5378,10 +5064,7 @@
             </article>
 
             <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="2 of 4" aria-hidden="true">
-              <div class="valour-testimonial__media" data-image-count="2" data-testimonial-media-key="first-kitchen-2">
-                <img src="vendor/cdn/cdn/shop/files/slide 3.webp" width="720" height="900" alt="Butter chicken simmering in a home kitchen" data-focus="food" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/slide 4.webp" width="720" height="900" alt="A finished serving of creamy butter chicken" data-focus="food" loading="lazy" decoding="async">
-              </div>
+              <div class="valour-testimonial__media" data-image-count="2" data-testimonial-media-key="first-kitchen-2"></div>
               <div class="valour-testimonial__copy">
                 <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
                 <blockquote class="valour-testimonial__quote">“The sauce was silky, balanced and properly restaurant-style. My parents asked which place I had ordered it from.”</blockquote>
@@ -5390,11 +5073,7 @@
             </article>
 
             <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="3 of 4" aria-hidden="true">
-              <div class="valour-testimonial__media" data-image-count="3" data-testimonial-media-key="first-kitchen-3">
-                <img src="vendor/cdn/cdn/shop/files/imagetab2.webp" width="760" height="950" alt="Butter chicken plated with a glossy finish" data-focus="food" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/image_2_prod.webp" width="600" height="600" alt="VALOUR cooking base beside the prepared meal" data-focus="product" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" width="600" height="600" alt="Jar of VALOUR Velvety Butter Chicken cooking base" data-focus="product" loading="lazy" decoding="async">
-              </div>
+              <div class="valour-testimonial__media" data-image-count="3" data-testimonial-media-key="first-kitchen-3"></div>
               <div class="valour-testimonial__copy">
                 <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
                 <blockquote class="valour-testimonial__quote">“No long spice list, no guesswork. The first spoonful had everyone quiet—and then reaching for more naan.”</blockquote>
@@ -5403,12 +5082,7 @@
             </article>
 
             <article class="valour-testimonial" data-testimonial-slide role="group" aria-roledescription="slide" aria-label="4 of 4" aria-hidden="true">
-              <div class="valour-testimonial__media" data-image-count="4" data-testimonial-media-key="first-kitchen-4">
-                <img src="vendor/cdn/cdn/shop/files/slide 5.webp" width="600" height="600" alt="Chicken cooking before the VALOUR base is added" data-focus="food" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/slide 6.webp" width="600" height="600" alt="Creamy butter chicken coming together in the pan" data-focus="food" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/Packaging Design v3.png" width="600" height="600" alt="VALOUR Butter Chicken package on the kitchen counter" data-focus="product" loading="lazy" decoding="async">
-                <img src="vendor/cdn/cdn/shop/files/hero_banner2nd.webp" width="600" height="600" alt="Butter chicken dinner ready to share" data-focus="food" loading="lazy" decoding="async">
-              </div>
+              <div class="valour-testimonial__media" data-image-count="4" data-testimonial-media-key="first-kitchen-4"></div>
               <div class="valour-testimonial__copy">
                 <p class="valour-testimonial__stars" aria-label="5 out of 5 stars">★★★★★</p>
                 <blockquote class="valour-testimonial__quote">“I served eight people without spending the evening in the kitchen. It felt generous, effortless and genuinely delicious.”</blockquote>
@@ -5454,7 +5128,7 @@
                 controls
                 muted
                 playsinline
-                preload="metadata">
+                preload="none">
                 Your browser does not support streaming video.
               </video>
             </div>
@@ -5475,17 +5149,17 @@
 
 
                   <div class="main-image">
-                    <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken Liquid Spice cooking base jar" width="1024" height="1024" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM-640.webp" srcset="vendor/cdn/cdn/shop/files/velevty_butter_mockupM-320.webp 320w, vendor/cdn/cdn/shop/files/velevty_butter_mockupM-640.webp 640w, vendor/cdn/cdn/shop/files/velevty_butter_mockupM-960.webp 960w" sizes="(max-width: 900px) calc(100vw - 40px), 42vw" alt="VALOUR Velvety Butter Chicken Liquid Spice cooking base jar" width="1024" height="1024" loading="lazy" decoding="async">
                   </div>
                   <div class="thumbnails">
 
-                    <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="VALOUR Velvety Butter Chicken cooking base jar" width="1024" height="1024" loading="lazy" decoding="async">
-                    <img src="vendor/cdn/cdn/shop/files/slide 4.webp" alt="Velvety Butter Chicken product slide 2" loading="lazy" decoding="async">
-                                        <img src="vendor/cdn/cdn/shop/files/image_2_prod.webp" alt="VALOUR Liquid Spice product detail" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM-320.webp" srcset="vendor/cdn/cdn/shop/files/velevty_butter_mockupM-320.webp 320w, vendor/cdn/cdn/shop/files/velevty_butter_mockupM-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" alt="VALOUR Velvety Butter Chicken cooking base jar" width="1024" height="1024" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 4-320.webp" srcset="vendor/cdn/cdn/shop/files/slide 4-320.webp 320w, vendor/cdn/cdn/shop/files/slide 4-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" width="2048" height="2048" alt="Velvety Butter Chicken product slide 2" loading="lazy" decoding="async">
+                                        <img src="vendor/cdn/cdn/shop/files/image_2_prod-320.webp" srcset="vendor/cdn/cdn/shop/files/image_2_prod-320.webp 320w, vendor/cdn/cdn/shop/files/image_2_prod-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" width="1145" height="1374" alt="VALOUR Liquid Spice product detail" loading="lazy" decoding="async">
 
-                    <img src="vendor/cdn/cdn/shop/files/slide 3.webp" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
-                    <img src="vendor/cdn/cdn/shop/files/slide 5.webp" alt="Velvety Butter Chicken product slide 4" loading="lazy" decoding="async">
-                    <img src="vendor/cdn/cdn/shop/files/slide 6.webp" alt="Velvety Butter Chicken product slide 5" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 3-320.webp" srcset="vendor/cdn/cdn/shop/files/slide 3-320.webp 320w, vendor/cdn/cdn/shop/files/slide 3-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" width="1254" height="1254" alt="Velvety Butter Chicken product view" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 5-320.webp" srcset="vendor/cdn/cdn/shop/files/slide 5-320.webp 320w, vendor/cdn/cdn/shop/files/slide 5-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" width="1254" height="1254" alt="Velvety Butter Chicken product slide 4" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/slide 6-320.webp" srcset="vendor/cdn/cdn/shop/files/slide 6-320.webp 320w, vendor/cdn/cdn/shop/files/slide 6-640.webp 640w" sizes="(max-width: 900px) 26vw, 8vw" width="1254" height="1254" alt="Velvety Butter Chicken product slide 5" loading="lazy" decoding="async">
 
 
                   </div>
@@ -5671,98 +5345,6 @@
         
         <div id="shopify-section-template--19781511708886__testimonial_section_adgtbc"
           class="shopify-section testimonial-sectionxyz-parent">
-          <template id="retired-testimonial-template">
-
-            <div class="header">
-              <h2>Customers <span>love us.</span></h2>
-
-
-            </div>
-
-            <div class="carousel-wrapper">
-              <div class="carousel-track" id="track">
-
-                <!-- ITEM -->
-                <div class="carousel-item">
-                  <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img1.png" alt="Valour liquid spice package" loading="lazy" decoding="async">
-                    <img class="review-image" src="assets/images/cooking_img_vlr.png" alt="Cooking with liquid spice" loading="lazy" decoding="async">
-                    <img class="review-image" src="vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp" alt="Valour liquid spice jar" loading="lazy" decoding="async">
-                  </div>
-
-                  <div class="review-card">
-                    <h4>USER 1</h4>
-                    <span>Verfied customer</span>
-                    <p class="stars_review" aria-label="5 out of 5 stars">
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                    </p>
-                    <p class="review_rev">Amazing experience with the product...</p>
-                  </div>
-                </div>
-
-                <!-- ITEM -->
-                <div class="carousel-item">
-                  <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img2.png" alt="Customers enjoying a meal" loading="lazy" decoding="async">
-                    <img class="review-image" src="vendor/cdn/cdn/shop/files/image_2_prod.webp" alt="Valour product detail" loading="lazy" decoding="async">
-                    <img class="review-image" src="assets/images/Chicken_Tikka_Masala_Cheffin.png" alt="Prepared chicken tikka masala" loading="lazy" decoding="async">
-                  </div>
-
-                  <div class="review-card">
-                    <h4>USER 2</h4>
-                    <span>Verfied customer</span>
-                    <p class="stars_review" aria-label="5 out of 5 stars">
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                    </p>
-                    <p class="review_rev">Amazing experience with the product...</p>
-                  </div>
-                </div>
-
-                <!-- ITEM -->
-                <div class="carousel-item">
-                  <div class="image-grid">
-                    <img class="review-image review-image--large" src="assets/images/why_liquid_img3.png" alt="Finished masala dish" loading="lazy" decoding="async">
-                    <img class="review-image" src="assets/images/image_3_prod.png" alt="Valour serving detail" loading="lazy" decoding="async">
-                    <img class="review-image" src="assets/images/Kadhai_Veg_Cheffin.png" alt="Prepared kadhai veg" loading="lazy" decoding="async">
-                  </div>
-
-                  <div class="review-card">
-                    <h4>Another User</h4>
-                    <span>Verfied customer</span>
-                    <p class="stars_review" aria-label="5 out of 5 stars">
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#d58a00" aria-hidden="true" focusable="false"><path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z"/></svg>
-                    </p>
-                    <p class="review_rev">Amazing experience with the product...</p>
-                  </div>
-                </div>
-
-              </div>
-              <div class="cont_nav_crousel">
-                <div class="nav">
-                  <button id="prev"><span class="material-symbols-outlined">
-                      arrow_back
-                    </span></button>
-                  <button id="next"><span class="material-symbols-outlined">
-                      arrow_forward
-                    </span></button>
-                </div>
-              </div>
-
-            </div>
-
-          </template>
 
 
 
@@ -5789,7 +5371,7 @@
                 <!-- LEFT -->
                 <div class="footer-left">
                   <div class="nav-logo">
-                    <img src="vendor/cdn/cdn/shop/files/valourblacklogom.png" alt="Valour" loading="lazy" decoding="async">
+                    <img src="vendor/cdn/cdn/shop/files/valourblacklogom-320.webp" width="755" height="330" alt="Valour" loading="lazy" decoding="async">
                   </div>
 
                   <h2 class="footer-title">Cook more.
@@ -5867,8 +5449,6 @@ Prepare less.</h2>
 
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script>
 
     const cfPopupOverlay = document.getElementById('cfPopupOverlay');
@@ -6227,7 +5807,18 @@ Prepare less.</h2>
         panel.className = 'main-image-panel';
 
         const image = index === activeIndex ? originalImage : originalImage.cloneNode(true);
-        image.src = thumb.src;
+        const thumbnailSource = thumb.getAttribute("src") || thumb.src;
+        const responsiveMatch = thumbnailSource.match(/^(.*)-(?:320|640|960)\.webp$/);
+        if (responsiveMatch) {
+          const responsiveBase = responsiveMatch[1];
+          image.src = `${responsiveBase}-640.webp`;
+          image.srcset = `${responsiveBase}-320.webp 320w, ${responsiveBase}-640.webp 640w, ${responsiveBase}-960.webp 960w`;
+          image.sizes = "(max-width: 900px) calc(100vw - 40px), 42vw";
+        } else {
+          image.removeAttribute("srcset");
+          image.removeAttribute("sizes");
+          image.src = thumbnailSource;
+        }
         image.alt = thumb.alt || originalImage.alt || 'product';
 
         panel.appendChild(image);
@@ -6340,14 +5931,40 @@ Prepare less.</h2>
     }
 
 
+    const homepageTestimonialsRequest = fetch("/api/homepage-testimonials", {
+      headers: { Accept: "application/json" },
+    }).then(async (response) => ({
+      ok: response.ok,
+      payload: await response.json(),
+    }));
+
+    const responsiveHomepageMedia = new Map([
+      ["/vendor/cdn/cdn/shop/files/test4_x.png", "/vendor/cdn/cdn/shop/files/test4_x"],
+      ["/vendor/cdn/cdn/shop/files/testi_2.jpg", "/vendor/cdn/cdn/shop/files/testi_2"],
+      ["/vendor/cdn/cdn/shop/files/testi_4.jpeg", "/vendor/cdn/cdn/shop/files/testi_4"],
+      ["/vendor/cdn/cdn/shop/files/testi_5.jpeg", "/vendor/cdn/cdn/shop/files/testi_5"],
+    ]);
+
+    function setHomepageMediaSource(image, source, sizes) {
+      let pathname = "";
+      try { pathname = new URL(source, location.origin).pathname; } catch { /* Keep the supplied source. */ }
+      const responsiveBase = responsiveHomepageMedia.get(pathname);
+      if (!responsiveBase) {
+        image.src = source;
+        return;
+      }
+      image.src = `${responsiveBase}-640.webp`;
+      image.srcset = `${responsiveBase}-320.webp 320w, ${responsiveBase}-640.webp 640w, ${responsiveBase}-960.webp 960w`;
+      image.sizes = sizes;
+    }
+
     (async () => {
       const section = document.querySelector("[data-valour-testimonials]");
       if (!section) return;
 
       try {
-        const response = await fetch("/api/homepage-testimonials", { headers: { Accept: "application/json" } });
-        const payload = await response.json();
-        if (response.ok && payload.ok && Array.isArray(payload.items) && payload.items.length) {
+        const { ok, payload } = await homepageTestimonialsRequest;
+        if (ok && payload.ok && Array.isArray(payload.items) && payload.items.length) {
           const databaseTrack = section.querySelector("[data-testimonial-track]");
           const validUrl = (value) => typeof value === "string" && /^(\/|https:\/\/)/.test(value);
           const testimonialCards = payload.items.map((item, itemIndex) => {
@@ -6366,7 +5983,11 @@ Prepare less.</h2>
             media.dataset.imageCount = String(images.length);
             images.forEach((imageData) => {
               const image = document.createElement("img");
-              image.src = imageData.url;
+              setHomepageMediaSource(
+                image,
+                imageData.url,
+                "(max-width: 720px) calc(100vw - 64px), 38vw",
+              );
               image.alt = typeof imageData.alt === "string" && imageData.alt.trim() ? imageData.alt.trim() : "A VALOUR meal prepared at home";
               image.loading = "lazy";
               image.decoding = "async";
@@ -6525,112 +6146,6 @@ Prepare less.</h2>
       startAutoRotate();
     })();
 
-    (async () => {
-      const section = document.querySelector("[data-kitchen-stories]");
-      if (!section) return;
-      const track = section.querySelector("[data-kitchen-track]");
-      const viewport = section.querySelector("[data-kitchen-viewport]");
-      const status = section.querySelector("[data-kitchen-status]");
-      const previousButton = section.querySelector("[data-kitchen-prev]");
-      const nextButton = section.querySelector("[data-kitchen-next]");
-      const validUrl = (value) => typeof value === "string" && /^(\/|https:\/\/)/.test(value);
-
-      try {
-        const response = await fetch("/api/homepage-testimonials", { headers: { Accept: "application/json" } });
-        const payload = await response.json();
-        if (response.ok && payload.ok && Array.isArray(payload.items)) {
-          const cards = payload.items.map((item) => {
-            const images = Array.isArray(item.images) ? item.images.filter((image) => validUrl(image?.url)).slice(0, 3) : [];
-            if (!images.length || typeof item.quote !== "string" || typeof item.personName !== "string") return null;
-            const card = document.createElement("article");
-            card.className = "kitchen-story";
-            card.dataset.kitchenSlide = "";
-            const media = document.createElement("div");
-            media.className = `kitchen-story__media kitchen-story__media--${images.length}`;
-            images.forEach((imageData) => {
-              const image = document.createElement("img");
-              image.src = imageData.url;
-              image.alt = typeof imageData.alt === "string" && imageData.alt.trim() ? imageData.alt.trim() : "A VALOUR meal prepared at home";
-              image.loading = "lazy";
-              image.decoding = "async";
-              if (typeof imageData.objectPosition === "string" && /^\d{1,3}%\s+\d{1,3}%$/.test(imageData.objectPosition)) image.style.objectPosition = imageData.objectPosition;
-              media.appendChild(image);
-            });
-            const body = document.createElement("div");
-            body.className = "kitchen-story__body";
-            const stars = document.createElement("p");
-            stars.className = "kitchen-story__stars";
-            stars.setAttribute("aria-label", "5 out of 5 stars");
-            stars.textContent = "★★★★★";
-            const quote = document.createElement("blockquote");
-            quote.textContent = `“${item.quote.trim()}”`;
-            const person = document.createElement("p");
-            person.className = "kitchen-story__person";
-            const name = document.createElement("strong");
-            name.textContent = item.personName.trim();
-            const detail = document.createElement("span");
-            detail.textContent = typeof item.personDetail === "string" ? item.personDetail.trim() : "Verified customer";
-            person.append(name, detail);
-            body.append(stars, quote, person);
-            card.append(media, body);
-            return card;
-          }).filter(Boolean);
-          if (cards.length) track.replaceChildren(...cards);
-        }
-      } catch (error) {
-        console.warn("Using fallback kitchen stories", error);
-      }
-
-      const slides = Array.from(track.querySelectorAll("[data-kitchen-slide]"));
-      let activeIndex = 0;
-      let touchStartX = 0;
-      let touchStartY = 0;
-      let resizeFrame = null;
-      const visibleCount = () => window.matchMedia("(max-width: 720px)").matches ? 1 : 2;
-      const maxIndex = () => Math.max(0, slides.length - visibleCount());
-      const update = (nextIndex) => {
-        activeIndex = nextIndex > maxIndex() ? 0 : nextIndex < 0 ? maxIndex() : nextIndex;
-        const origin = slides[0]?.offsetLeft || 0;
-        const destination = slides[activeIndex]?.offsetLeft || origin;
-        track.style.transform = `translate3d(-${destination - origin}px, 0, 0)`;
-        slides.forEach((slide, index) => {
-          const visible = index >= activeIndex && index < activeIndex + visibleCount();
-          slide.classList.toggle("is-active", index === activeIndex);
-          slide.setAttribute("aria-hidden", visible ? "false" : "true");
-        });
-        const last = Math.min(activeIndex + visibleCount(), slides.length);
-        status.textContent = visibleCount() === 1 ? `${activeIndex + 1} of ${slides.length}` : `${activeIndex + 1}–${last} of ${slides.length}`;
-      };
-      previousButton.addEventListener("click", () => update(activeIndex - 1));
-      nextButton.addEventListener("click", () => update(activeIndex + 1));
-      viewport.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-        event.preventDefault();
-        update(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
-      });
-      viewport.addEventListener("touchstart", (event) => {
-        const touch = event.touches[0];
-        if (!touch) return;
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-      }, { passive: true });
-      viewport.addEventListener("touchend", (event) => {
-        const touch = event.changedTouches[0];
-        if (!touch) return;
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        if (Math.abs(deltaX) > 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) update(activeIndex + (deltaX < 0 ? 1 : -1));
-      }, { passive: true });
-      window.addEventListener("resize", () => {
-        cancelAnimationFrame(resizeFrame);
-        resizeFrame = requestAnimationFrame(() => update(Math.min(activeIndex, maxIndex())));
-      }, { passive: true });
-      track.querySelectorAll("img").forEach((image) => {
-        if (!image.complete) image.addEventListener("load", () => update(activeIndex), { once: true });
-      });
-      update(0);
-    })();
-
     function toggleAccordion(element) {
       const accordion = element.closest(".accordion");
       const content = accordion?.querySelector(".accordion-content");
@@ -6742,8 +6257,6 @@ Prepare less.</h2>
     function changeSlide(index) {
       if (!slides.length || index < 0 || index >= slides.length) return;
 
-      gsap.killTweensOf(slides[currentSlide]);
-      gsap.set(slides[currentSlide], { clearProps: "opacity,visibility,transform" });
       slides[currentSlide].classList.remove("active");
       dots[currentSlide]?.classList.remove("active");
       productTabs[currentSlide]?.classList.remove("active");
@@ -6751,8 +6264,6 @@ Prepare less.</h2>
 
       currentSlide = index;
 
-      gsap.killTweensOf(slides[currentSlide]);
-      gsap.set(slides[currentSlide], { clearProps: "opacity,visibility,transform" });
       slides[currentSlide].classList.add("active");
       dots[currentSlide]?.classList.add("active");
       productTabs[currentSlide]?.classList.add("active");
@@ -7162,7 +6673,26 @@ if (looksTastesSection && looksTastesVideo) {
   looksTastesVideoObserver.observe(looksTastesSection);
 }
 
-gsap.registerPlugin(ScrollTrigger);
+let animationLibrariesPromise = null;
+
+function loadAnimationLibraries() {
+  if (window.gsap && window.ScrollTrigger) return Promise.resolve();
+  if (animationLibrariesPromise) return animationLibrariesPromise;
+
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Unable to load ${src}`));
+    document.head.appendChild(script);
+  });
+
+  animationLibrariesPromise = loadScript("assets/js/gsap-3.12.5.min.js?v=20260915")
+    .then(() => loadScript("assets/js/scroll-trigger-3.12.5.min.js?v=20260915"))
+    .then(() => gsap.registerPlugin(ScrollTrigger));
+  return animationLibrariesPromise;
+}
 
 function initProductStoryAnimations() {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -7333,11 +6863,16 @@ function initProductStoryAnimations() {
 
 const productStoryAnimationTarget = document.querySelector(".looks-tastes-section");
 if (productStoryAnimationTarget) {
-  const productStoryObserver = new IntersectionObserver((entries, observer) => {
+  const productStoryObserver = new IntersectionObserver(async (entries, observer) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     observer.disconnect();
-    initProductStoryAnimations();
-    ScrollTrigger.refresh();
+    try {
+      await loadAnimationLibraries();
+      initProductStoryAnimations();
+      ScrollTrigger.refresh();
+    } catch (error) {
+      console.error("Unable to initialize product animations", error);
+    }
   }, { rootMargin: "150% 0px", threshold: 0 });
   productStoryObserver.observe(productStoryAnimationTarget);
 }
@@ -7447,11 +6982,16 @@ function destroy() {
 // Initialize this below-fold story only shortly before it is needed.
 const spotlightSection = document.querySelector("#spotlight");
 if (spotlightSection) {
-  const spotlightObserver = new IntersectionObserver((entries, observer) => {
+  const spotlightObserver = new IntersectionObserver(async (entries, observer) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     observer.disconnect();
-    destroy();
-    init();
+    try {
+      await loadAnimationLibraries();
+      destroy();
+      init();
+    } catch (error) {
+      console.error("Unable to initialize spotlight animations", error);
+    }
   }, { rootMargin: "700px 0px", threshold: 0 });
   spotlightObserver.observe(spotlightSection);
 }
@@ -7988,14 +7528,6 @@ function initValourStackStory() {
         window.requestAnimationFrame(() => playVideo(index));
       }
     });
-  }
-
-  // Step 2 is only ~148 KB after optimization. Warm it immediately so a
-  // normal mobile swipe never reaches the second card before it can play.
-  // Step 3 remains deferred to protect the initial page payload.
-  if (videos[1] && videos[1].readyState < 2) {
-    videos[1].dataset.loadRequested = "true";
-    videos[1].load();
   }
 
   function measureSteps() {

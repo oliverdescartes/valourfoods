@@ -13839,6 +13839,13 @@ app.post("/api/orders/:orderReference/request-review", async (req, res) => {
   }
 });
 
+const setPublicHomepageCache = (res) => {
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+  );
+};
+
 app.get("/api/accordion-content", async (_req, res) => {
   if (!mongoReady) {
     return res
@@ -13847,6 +13854,7 @@ app.get("/api/accordion-content", async (_req, res) => {
   }
 
   try {
+    setPublicHomepageCache(res);
     const items = await collections()
       .accordionContent.find(
         { active: true },
@@ -13881,6 +13889,7 @@ app.get("/api/carousel-videos", async (_req, res) => {
   }
 
   try {
+    setPublicHomepageCache(res);
     const items = await collections()
       .carouselVideos.find(
         { active: true, provider: "youtube", videoId: { $type: "string" } },
@@ -13917,6 +13926,7 @@ app.get("/api/testimonial-media", async (_req, res) => {
   }
 
   try {
+    setPublicHomepageCache(res);
     const items = await collections()
       .testimonialMedia.find(
         { active: true },
@@ -13952,6 +13962,7 @@ app.get("/api/homepage-testimonials", async (_req, res) => {
   }
 
   try {
+    setPublicHomepageCache(res);
     const items = await collections()
       .homepageTestimonials.find(
         { active: true },
@@ -14039,9 +14050,17 @@ const publicRootFiles = new Set([
 
 app.get("/:publicFile", (req, res, next) => {
   if (!publicRootFiles.has(req.params.publicFile)) return next();
-  // HTML and root application files must revalidate so deployments are seen
-  // immediately; their referenced assets carry the long-lived cache policy.
-  res.setHeader("Cache-Control", "no-cache");
+  // Versioned root CSS/JS is immutable. HTML and unversioned entry points
+  // revalidate so deployments never strand visitors on stale application code.
+  const isVersionedAsset = /\.(?:css|js)$/.test(req.params.publicFile)
+    && typeof req.query.v === "string"
+    && req.query.v.length > 0;
+  res.setHeader(
+    "Cache-Control",
+    isVersionedAsset
+      ? "public, max-age=31536000, immutable"
+      : "no-cache",
+  );
   return res.sendFile(path.join(rootPath, req.params.publicFile));
 });
 
