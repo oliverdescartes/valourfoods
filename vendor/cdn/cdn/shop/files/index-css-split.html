@@ -597,113 +597,9 @@ html {
   .valour-hero__title { max-width: 9ch; }
   .nav-logo img { width: 140px; }
 }
-
-.valour-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 9999999;
-
-  display: grid;
-  place-items: center;
-
-  background: #fff8ef;
-
-  opacity: 1;
-  visibility: visible;
-
-  transition:
-    opacity 220ms ease,
-    visibility 220ms ease;
-}
-
-.valour-loader__content {
-  width: min(220px, 52vw);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.valour-loader__logo {
-  display: block;
-  width: min(190px, 46vw);
-  height: auto;
-}
-
-.valour-loader__track {
-  width: min(150px, 38vw);
-  height: 2px;
-  margin-top: 24px;
-
-  overflow: hidden;
-
-  background: rgba(131, 26, 26, 0.14);
-}
-
-.valour-loader__bar {
-  width: 45%;
-  height: 100%;
-
-  background: #831a1a;
-
-  transform: translateX(-120%);
-  animation: valour-loader-progress 850ms
-    cubic-bezier(0.65, 0, 0.35, 1) infinite;
-}
-
-.valour-loader.is-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-@keyframes valour-loader-progress {
-  0% {
-    transform: translateX(-120%);
-  }
-
-  100% {
-    transform: translateX(260%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .valour-loader__bar {
-    animation: none;
-    width: 100%;
-  }
-}
-
-html:not(.valour-styles-ready) .container_slider,
-html:not(.valour-styles-ready) .valour-testimonials,
-html:not(.valour-styles-ready) .sachet-video-parent,
-html:not(.valour-styles-ready) .looks-tastes-section,
-html:not(.valour-styles-ready) .raw-ready-section,
-html:not(.valour-styles-ready) .base-message-section,
-html:not(.valour-styles-ready) .process-steps-section,
-html:not(.valour-styles-ready) .spotlight,
-html:not(.valour-styles-ready) .footer,
-html:not(.valour-styles-ready) .buy-sheet-backdrop,
-html:not(.valour-styles-ready) .cart-add-toast {
-  visibility: hidden;
-}
 </style>
-<link
-  rel="preload"
-  href="assets/css/home-below-fold-20260916.css"
-  as="style"
-  onload="
-    this.onload=null;
-    this.rel='stylesheet';
-    document.documentElement.classList.add('valour-styles-ready');
-  "
->
-
-<noscript>
-  <link
-    rel="stylesheet"
-    href="assets/css/home-below-fold-20260916.css"
-  >
-</noscript>
+<link id="valour-deferred-css" rel="stylesheet" data-href="assets/css/home-below-fold-20260916.css" media="all">
+<noscript><link rel="stylesheet" href="assets/css/home-below-fold-20260916.css"></noscript>
 <script>
 (function () {
   const deferredLink = document.getElementById('valour-deferred-css');
@@ -741,19 +637,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 <body>
 
 
-<div id="valour-loader" class="valour-loader" aria-hidden="true">
-  <div class="valour-loader__content">
-    <img
-      src="vendor/cdn/cdn/shop/files/valourblacklogom.png"
-      alt=""
-      class="valour-loader__logo"
-    >
 
-    <div class="valour-loader__track">
-      <div class="valour-loader__bar"></div>
-    </div>
-  </div>
-</div>
 
 
   <!-- Main Content -->
@@ -2502,7 +2386,7 @@ if (looksTastesSection && looksTastesVideo) {
     controlLooksTastesVideo("playVideo");
   };
 
-  const r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8 = () => {
+  const restartLooksTastesVideoWithSound = () => {
     looksTastesVideo.currentTime = 0;
     playLooksTastesVideoWithSound();
   };
@@ -3486,78 +3370,6 @@ if (document.readyState === "loading") {
 } else {
   initValourStackStory();
 }
-(function () {
-  const loader = document.getElementById("valour-loader");
-  if (!loader) return;
-
-  let loaderHidden = false;
-
-  function hideLoader() {
-    if (loaderHidden) return;
-    loaderHidden = true;
-
-    loader.classList.add("is-hidden");
-
-    setTimeout(() => {
-      loader.remove();
-    }, 250);
-  }
-
-  function imageReady(img) {
-    return !img || (img.complete && img.naturalWidth > 0);
-  }
-
-  async function waitForFirstHalfReady() {
-    const hero = document.querySelector(".valour-hero");
-    const firstMainSection = document.querySelector(".container_slider");
-
-    if (!hero) {
-      hideLoader();
-      return;
-    }
-
-    /* Wait until deferred CSS has been activated */
-    while (!document.documentElement.classList.contains("valour-styles-ready")) {
-      await new Promise(resolve => setTimeout(resolve, 40));
-    }
-
-    /* Wait for browser to paint the fully styled layout */
-    await new Promise(resolve =>
-      requestAnimationFrame(() =>
-        requestAnimationFrame(resolve)
-      )
-    );
-
-    /* Wait for the first important image below the hero */
-    const firstImage =
-      firstMainSection?.querySelector("img") ||
-      document.querySelector(".valour-stack-story img");
-
-    if (firstImage && !imageReady(firstImage)) {
-      await Promise.race([
-        new Promise(resolve => {
-          firstImage.addEventListener("load", resolve, { once: true });
-          firstImage.addEventListener("error", resolve, { once: true });
-        }),
-        new Promise(resolve => setTimeout(resolve, 1200))
-      ]);
-    }
-
-    /* One final paint cycle */
-    await new Promise(resolve =>
-      requestAnimationFrame(() =>
-        requestAnimationFrame(resolve)
-      )
-    );
-
-    hideLoader();
-  }
-
-  waitForFirstHalfReady();
-
-  /* Hard safety fallback */
-  setTimeout(hideLoader, 2500);
-})();
 
   </script>
 
