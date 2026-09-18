@@ -9298,7 +9298,7 @@ function isAuthorizedAdminRequest(req) {
 }
 
 const CHECKOUT_OTP_TTL_MS = 5 * 60 * 1000;
-const CHECKOUT_OTP_TOKEN_TTL_MS = 50 * 60 * 1000;
+const CHECKOUT_OTP_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CHECKOUT_OTP_RESEND_MS = 60 * 1000;
 const CHECKOUT_OTP_MAX_SENDS_10_MIN = 3;
 const CHECKOUT_OTP_MAX_ATTEMPTS = 5;
@@ -9782,6 +9782,9 @@ app.post("/api/auth/otp/verify", async (req, res) => {
       verificationToken,
       phone: `+91${phone}`,
       verifiedAt: verifiedAt.toISOString(),
+      verificationExpiresAt: new Date(
+        verifiedAt.getTime() + CHECKOUT_OTP_TOKEN_TTL_MS,
+      ).toISOString(),
     });
   } catch (error) {
     console.error("[FAST2SMS_AUTH][OTP_VERIFY_ERROR]", {
@@ -14319,6 +14322,7 @@ module.exports = {
     sanitizeReassuranceText,
     shouldTryBrandNLU,
     signCheckoutPhoneToken,
+    verifyCheckoutPhoneIdentity,
     hashCheckoutOtp,
   },
 };

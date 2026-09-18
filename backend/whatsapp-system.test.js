@@ -36,6 +36,22 @@ const receive=text=>api.dispatchWhatsappWebhook(textPayload(text));
 const tap=text=>api.dispatchWhatsappWebhook(tapPayload(text));
 function order(overrides={}) {const value={_id:new ObjectId(),orderNumber:"VALOUR-ABC123",phone,shippingStatus:"Confirmed",paymentStatus:"paid",pincode:"799003",totalAmount:350,products:[{name:"Velvety Butter Chicken Liquid Spice",quantity:1}],createdAt:new Date(Date.now()-86400000),...overrides};rows('orders').push(value);return value;}
 
+test("checkout phone verification remains valid for seven days", async () => {
+  const day = 24 * 60 * 60 * 1000;
+  const verifiedPhone = phone.slice(-10);
+  const fresh = api.signCheckoutPhoneToken(verifiedPhone, "seven-day-test");
+  const payload = JSON.parse(Buffer.from(fresh.split(".")[0], "base64url"));
+  assert.equal(payload.expiresAt - payload.issuedAt, 7 * day);
+  await assert.doesNotReject(() => api.verifyCheckoutPhoneIdentity(
+    api.signCheckoutPhoneToken(verifiedPhone, "six-days-old", Date.now() - 6 * day),
+    verifiedPhone,
+  ));
+  await assert.rejects(() => api.verifyCheckoutPhoneIdentity(
+    api.signCheckoutPhoneToken(verifiedPhone, "eight-days-old", Date.now() - 8 * day),
+    verifiedPhone,
+  ), /expired or is invalid/);
+});
+
 test("parses all provider shapes, nested IDs, titles, punctuation and exact issue text",()=>{
   for(const shape of [
     {text:{body:"  VIDEO 🎬! "}}, {button:{payload:"VIDEO",text:"ignore"}},

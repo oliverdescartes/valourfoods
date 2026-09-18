@@ -4,6 +4,8 @@ const DRAFT_KEY = "valour_checkout_address";
 const CUSTOMER_DETAILS_KEY = "valour_customer_shipping_details";
 const VERIFIED_PROFILE_KEY = "valour_checkout_verified_profile_v1";
 const USER_KEY = "user";
+const CHECKOUT_VERIFICATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const LEGACY_VERIFICATION_TTL_MS = 50 * 60 * 1000;
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
 const OUT_OF_STOCK_INTENT_KEY = "valour_out_of_stock_order_intent";
@@ -248,12 +250,17 @@ function saveVerifiedProfile(values, verifiedAt) {
 function hasVerifiedUser(phone = getFormValues().phone) {
   const user = getStoredUser();
   const verifiedAt = Date.parse(user?.verifiedAt || "");
+  const explicitExpiry = Date.parse(user?.verificationExpiresAt || "");
+  const expiresAt = Number.isFinite(explicitExpiry)
+    ? Math.min(explicitExpiry, verifiedAt + CHECKOUT_VERIFICATION_TTL_MS)
+    : verifiedAt + LEGACY_VERIFICATION_TTL_MS;
   return Boolean(
     user &&
     user.phone === String(phone || "").trim() &&
     user.phoneVerificationToken &&
     Number.isFinite(verifiedAt) &&
-    Date.now() - verifiedAt < 50 * 60 * 1000,
+    verifiedAt <= Date.now() &&
+    Date.now() < expiresAt,
   );
 }
 
@@ -1687,6 +1694,7 @@ function saveVerifiedUser(verification) {
     verifiedPhoneNumber: verification.phone,
     phoneVerificationToken: verification.verificationToken,
     verifiedAt: verification.verifiedAt,
+    verificationExpiresAt: verification.verificationExpiresAt || "",
   };
   localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
   saveVerifiedProfile(verifiedUser, verification.verifiedAt);
