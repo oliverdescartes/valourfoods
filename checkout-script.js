@@ -1525,6 +1525,7 @@ function showCartStep() {
   setCheckoutStep(CHECKOUT_STEPS.CART);
   dom.cartPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   trackEvent("valour_checkout_step_cart");
+  reportVerifiedCheckoutAttribution();
 }
 
 function continueToCart(event) {
@@ -1553,6 +1554,21 @@ function showReviewStep() {
     .querySelector(".mobile-summary-panel")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
   reportCheckoutDetailsSubmitted();
+  reportVerifiedCheckoutAttribution();
+}
+
+function reportVerifiedCheckoutAttribution() {
+  const values = getFormValues();
+  const token = getStoredUser()?.phoneVerificationToken;
+  const attribution = window.valourAttribution?.get?.();
+  if (!values.phone || !token || !attribution) return;
+  void postJSON(`${API_BASE}/api/checkout/attribution`, {
+    phone: values.phone,
+    phoneVerificationToken: token,
+    attribution,
+  }).catch((error) =>
+    console.warn("Unable to save checkout acquisition", error.message),
+  );
 }
 
 function continueToReview(event) {
@@ -1592,6 +1608,7 @@ async function sendOtp(phone, checkoutDetails = otpState.pendingUser) {
   const result = await postJSON(`${API_BASE}/api/auth/otp/send`, {
     phone,
     checkoutDetails,
+    attribution: window.valourAttribution?.get?.() || null,
   });
   if (result.existingUser) return result;
   otpState.challengeId = result.challengeId;

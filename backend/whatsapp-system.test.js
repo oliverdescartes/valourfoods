@@ -496,6 +496,33 @@ test("successful checkout OTP verification immediately persists all customer det
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
 
+test("verified checkout saves acquisition before an order or review step",async()=>{
+  fresh();
+  const challengeId=require('crypto').randomUUID();const otp='482615';
+  const attribution={visitorId:'vis_123456789012',sessionId:'ses_123456789012',firstTouch:{source:'facebook',medium:'paid_social',campaign:'launch',channel:'paid_social',landingPage:'/?utm_source=facebook',capturedAt:new Date().toISOString()},latestNonDirect:{source:'facebook',medium:'paid_social',campaign:'launch',content:'creative-1',channel:'paid_social',landingPage:'/?utm_source=facebook',capturedAt:new Date().toISOString()},currentSession:{source:'direct',channel:'direct',landingPage:'/checkout.html',capturedAt:new Date().toISOString()}};
+  rows('otp_challenges').push({_id:new ObjectId(),challengeId,phone:phone.slice(-10),otpHash:api.hashCheckoutOtp(challengeId,phone.slice(-10),otp),attemptCount:0,status:'sent',expiresAt:new Date(Date.now()+300000),attribution,checkoutDetails:{name:'Ananya Sen'}});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const base=`http://127.0.0.1:${server.address().port}`;
+    const verified=await fetch(`${base}/api/auth/otp/verify`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone:phone.slice(-10),challengeId,otp})});assert.equal(verified.status,200);
+    const token=(await verified.json()).verificationToken;const user=rows('users')[0];assert.equal(user.acquisitionChannel,'paid_social');assert.equal(user.acquisitionSource,'facebook');assert.equal(user.acquisitionCampaign,'launch');assert.equal(user.acquisitionContent,'creative-1');assert.equal(rows('orders').length,0);
+    const direct={...attribution,latestNonDirect:null,currentSession:{source:'direct',channel:'direct',landingPage:'/checkout.html',capturedAt:new Date().toISOString()}};
+    const refused=await fetch(`${base}/api/checkout/attribution`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone:phone.slice(-10),attribution:direct})});assert.equal(refused.status,401);
+    const accepted=await fetch(`${base}/api/checkout/attribution`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone:phone.slice(-10),phoneVerificationToken:token,attribution:direct})});assert.equal(accepted.status,200);assert.equal(user.acquisitionSource,'facebook');assert.equal(user.acquisitionChannel,'paid_social');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
+test("admin customer detail recovers acquisition from legacy user or matching order fields",async()=>{
+  fresh();const user=rows('users')[0];user.source='fb';user.utmMedium='paid';user.utmCampaign='legacy-campaign';
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  try{
+    const base=`http://127.0.0.1:${server.address().port}/api/admin/users/${user._id}`;const headers={'x-admin-token':'test-admin'};
+    let response=await fetch(base,{headers});assert.equal(response.status,200);let detail=await response.json();assert.equal(detail.user.acquisition.channel,'paid_social');assert.equal(detail.user.acquisition.source,'fb');assert.equal(detail.user.acquisition.medium,'paid');assert.equal(detail.user.acquisition.campaign,'legacy-campaign');assert.equal(detail.user.acquisition.recordSource,'user_legacy');
+    delete user.source;delete user.utmMedium;delete user.utmCampaign;order({utmSource:'instagram',utmMedium:'paid',utmCampaign:'order-campaign',utmContent:'ad-1'});
+    response=await fetch(base,{headers});assert.equal(response.status,200);detail=await response.json();assert.equal(detail.user.acquisition.source,'instagram');assert.equal(detail.user.acquisition.channel,'paid_social');assert.equal(detail.user.acquisition.campaign,'order-campaign');assert.equal(detail.user.acquisition.content,'ad-1');assert.equal(detail.user.acquisition.recordSource,'order');
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
+
 test("admin can list newest customers and open a customer detail record",async()=>{
   fresh();const user=rows('users')[0];user.profileName='Asha';user.email='asha@example.com';user.address='12 Palace Road';user.landmark='Near City Centre';user.city='Agartala';user.state='Tripura';user.pincode='799001';user.acquisitionChannel='paid_social';user.acquisitionSource='instagram';user.purchaseIntent='high';user.leadScore=42;user.feedbackType='loved_it';user.last_seen_at=new Date();order();rows('customer_events').push({customerId:user._id,phone,event:'checkout_started',productId:'velvety_butter',occurredAt:new Date()});rows('cooking_outcomes').push({user_id:user._id,feedbackType:'loved_it',product_id:'velvety_butter',updated_at:new Date()});rows('reviews').push({phone:phone.slice(-10),rating:5,feedback:['Loved the taste'],review:'Very easy to cook',updatedAt:new Date(Date.now()+1000)});rows('whatsapp_consent_events').push({phone,status:'granted',acceptedCategories:['offers'],source:'website_checkout',occurredAt:new Date(),wording:'Consent text'});
   const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));

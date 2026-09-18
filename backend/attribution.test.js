@@ -97,3 +97,10 @@ test("checkout payload selection carries complete first/latest/session attributi
   assert.match(result.visitorId, /^vis_/);
   assert.match(result.sessionId, /^ses_/);
 });
+
+test("Facebook paid UTM visits are classified as paid social", () => {
+  const visit = page({ url: "https://liquidspice.in/?utm_source=fb&utm_medium=paid&utm_campaign=campaign_1" }).state;
+  assert.equal(visit.currentSession.channel, "paid_social");
+  assert.equal(visit.currentSession.source, "fb");
+  assert.equal(visit.currentSession.medium, "paid");
+});

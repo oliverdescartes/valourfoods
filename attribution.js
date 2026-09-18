@@ -52,6 +52,7 @@
   function classify(touch) {
     const source = touch.source;
     const medium = touch.medium;
+    if (/^(paid|paid_social|social_paid|cpm|paidsocial|paid_video|cpc)$/.test(medium) && /^(fb|facebook|ig|instagram|youtube|linkedin|twitter|x|pinterest)$/.test(source)) return "paid_social";
     if (/^(paid_social|social_paid|cpm|paidsocial|paid_video)$/.test(medium)) return "paid_social";
     if (/^(cpc|ppc|paid_search|search_paid)$/.test(medium) && /google|bing|yahoo/.test(source)) return "paid_search";
     if (/^(organic_social|organic_video|social|social_media)$/.test(medium) || /instagram|facebook|youtube|linkedin|twitter|pinterest/.test(source) && medium === "organic") return "organic_social";

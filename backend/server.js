@@ -9592,6 +9592,7 @@ app.post("/api/auth/otp/send", async (req, res) => {
         100,
       ),
       checkoutDetails,
+      attribution: acquisition.attribution(req.body?.attribution),
       alertDueAt: new Date(now.getTime() + CHECKOUT_OTP_ADMIN_ALERT_DELAY_MS),
       adminAlertStatus: "pending",
       createdAt: now,
@@ -9723,6 +9724,7 @@ app.post("/api/auth/otp/verify", async (req, res) => {
 
     const verifiedAt = new Date();
     const user = await getOrCreateUser(normalizeWhatsappRecipient(phone));
+    await persistUserAttribution(user, challenge.attribution);
     await persistCheckoutUserProfile(
       user._id,
       challenge.checkoutDetails || {},
@@ -9939,11 +9941,59 @@ function serializeAdminConversationMessage(message = {}) {
 
 function serializeAdminUser(user = {}, orderSummary = {}) {
   const attribution = user.attribution || {};
-  const touch =
-    attribution.latestNonDirect ||
-    attribution.currentSession ||
-    attribution.firstTouch ||
+  const latestOrder = orderSummary.latestOrder || {};
+  const orderAttribution = latestOrder.attribution || {};
+  const candidates = [
+    { ...attribution.latestNonDirect, recordSource: "user_attribution" },
+    {
+      source: user.acquisitionSource,
+      medium: user.acquisitionMedium,
+      campaign: user.acquisitionCampaign,
+      content: user.acquisitionContent,
+      landingPage: user.acquisitionLandingPage,
+      channel: user.acquisitionChannel,
+      recordSource: "user_attribution",
+    },
+    {
+      source: user.utmSource || user.source,
+      medium: user.utmMedium,
+      campaign: user.utmCampaign || user.campaign,
+      content: user.utmContent,
+      landingPage: user.landingPage,
+      recordSource: "user_legacy",
+    },
+    { ...orderAttribution.latestNonDirect, recordSource: "order" },
+    {
+      source: latestOrder.utmSource || latestOrder.source,
+      medium: latestOrder.utmMedium,
+      campaign: latestOrder.utmCampaign || latestOrder.campaign,
+      content: latestOrder.utmContent,
+      landingPage: latestOrder.landingPage,
+      recordSource: "order",
+    },
+    { ...attribution.currentSession, recordSource: "user_attribution" },
+    { ...attribution.firstTouch, recordSource: "user_attribution" },
+    { ...orderAttribution.currentSession, recordSource: "order" },
+    { ...orderAttribution.firstTouch, recordSource: "order" },
+  ];
+  const selected =
+    candidates.find(
+      (item) => item.source && !["direct", "unknown"].includes(item.source),
+    ) ||
+    candidates.find((item) => item.source && item.source !== "unknown") ||
     {};
+  const source = selected.source || "";
+  const medium = selected.medium || "";
+  const explicitChannel =
+    selected.channel && selected.channel !== "unknown" ? selected.channel : "";
+  const inferredChannel =
+    /^(fb|facebook|instagram|ig)$/i.test(source) &&
+    /^(paid|paid_social|cpm|cpc)$/i.test(medium)
+      ? "paid_social"
+      : source === "direct"
+        ? "direct"
+        : "unknown";
+  const acquisitionRecord = selected.recordSource || "not_recorded";
   return {
     id: String(user._id || ""),
     phone: normalizeWhatsappRecipient(user.phone),
@@ -9978,15 +10028,21 @@ function serializeAdminUser(user = {}, orderSummary = {}) {
       source: user.whatsappConsentSource || "",
     },
     acquisition: {
-      channel: user.acquisitionChannel || touch.channel || "unknown",
-      source: user.acquisitionSource || touch.source || "",
-      medium: user.acquisitionMedium || touch.medium || "",
-      campaign: user.acquisitionCampaign || touch.campaign || "",
-      content: user.acquisitionContent || touch.content || "",
-      landingPage: user.acquisitionLandingPage || touch.landingPage || "",
-      firstTouch: attribution.firstTouch || null,
-      latestNonDirect: attribution.latestNonDirect || null,
-      currentSession: attribution.currentSession || null,
+      channel:
+        inferredChannel === "paid_social" && explicitChannel === "direct"
+          ? inferredChannel
+          : explicitChannel || inferredChannel,
+      source,
+      medium,
+      campaign: selected.campaign || "",
+      content: selected.content || "",
+      landingPage: selected.landingPage || "",
+      firstTouch: attribution.firstTouch || orderAttribution.firstTouch || null,
+      latestNonDirect:
+        attribution.latestNonDirect || orderAttribution.latestNonDirect || null,
+      currentSession:
+        attribution.currentSession || orderAttribution.currentSession || null,
+      recordSource: acquisitionRecord,
     },
     orderCount: Number(orderSummary.orderCount) || 0,
     lifetimeValue: Number(orderSummary.lifetimeValue) || 0,
@@ -10027,6 +10083,26 @@ app.get("/api/admin/whatsapp/templates", async (req, res) => {
       ok: false,
       error: "Unable to load WhatsApp templates",
     });
+  }
+});
+
+app.post("/api/checkout/attribution", async (req, res) => {
+  const phone = normalizeFast2SmsNumber(req.body?.phone);
+  const attribution = acquisition.attribution(req.body?.attribution);
+  if (!phone || !attribution) {
+    return res.status(400).json({ ok: false, error: "Invalid checkout attribution" });
+  }
+  try {
+    await verifyCheckoutPhoneIdentity(req.body?.phoneVerificationToken, phone);
+    const user = await getOrCreateUser(normalizeWhatsappRecipient(phone));
+    await persistUserAttribution(user, attribution);
+    return res.json({ ok: true });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ ok: false, error: error.message });
+    }
+    console.error("Verified checkout attribution save failed", error.message);
+    return res.status(500).json({ ok: false, error: "Unable to save acquisition" });
   }
 });
 

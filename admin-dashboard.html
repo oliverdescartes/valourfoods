@@ -1543,6 +1543,7 @@
           ["Source / medium", [acquisition.source, acquisition.medium].filter(Boolean).join(" / ") || "Unknown"],
           ["Campaign", acquisition.campaign || "Not recorded"],
           ["Creative", acquisition.content || "Not recorded"],
+          ["Acquisition evidence", ({ user_attribution: "User attribution", user_legacy: "User campaign fields", order: "Matching order", not_recorded: "Not recorded for this customer" })[acquisition.recordSource] || "Not recorded for this customer"],
           ["WhatsApp consent", consent.status || "not_recorded"],
           ["Orders", `${summary.orderCount || 0} · ${money(summary.orderValue)}`],
         ];
