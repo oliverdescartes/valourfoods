@@ -2,6 +2,7 @@ const STORAGE_KEY = "valour_checkout_cart";
 const COUPON_KEY = "valour_checkout_coupon";
 const DRAFT_KEY = "valour_checkout_address";
 const CUSTOMER_DETAILS_KEY = "valour_customer_shipping_details";
+const VERIFIED_PROFILE_KEY = "valour_checkout_verified_profile_v1";
 const USER_KEY = "user";
 const ORDER_RESULT_KEY = "valour_latest_order";
 const ATTRIBUTION_KEY = "valour_checkout_attribution";
@@ -120,6 +121,7 @@ const dom = {
   couponPanel: document.querySelector(".coupon-panel"),
   stepActions: document.querySelectorAll("[data-step-actions]"),
   form: document.querySelector("[data-checkout-form]"),
+  savedProfileNotice: document.querySelector("[data-saved-profile-notice]"),
   deliveryPanel: document.querySelector(".delivery-panel"),
   trustStrip: document.querySelector(".trust-strip"),
   mobileSummaryPanel: document.querySelector(".mobile-summary-panel"),
@@ -200,6 +202,47 @@ function getWhatsappConsent() {
 
 function getStoredUser() {
   return readJSON(USER_KEY, null);
+}
+
+const SHIPPING_FIELDS = [
+  "name",
+  "phone",
+  "email",
+  "address",
+  "landmark",
+  "city",
+  "state",
+  "pincode",
+];
+
+function getVerifiedProfile() {
+  const saved = readJSON(VERIFIED_PROFILE_KEY, null);
+  if (saved?.phone && saved?.verifiedAt) return saved;
+
+  // Keep profiles created before the dedicated browser record was added.
+  const previousUser = getStoredUser();
+  if (!previousUser?.phone || !previousUser?.verifiedAt) return null;
+  return Object.fromEntries([
+    ...SHIPPING_FIELDS.map((field) => [field, previousUser[field] || ""]),
+    ["verifiedAt", previousUser.verifiedAt],
+    ["savedAt", previousUser.verifiedAt],
+  ]);
+}
+
+function saveVerifiedProfile(values, verifiedAt) {
+  const profile = Object.fromEntries(
+    SHIPPING_FIELDS.map((field) => [field, String(values[field] || "").trim()]),
+  );
+  if (!/^[6-9]\d{9}$/.test(profile.phone) || !verifiedAt) return;
+  localStorage.setItem(
+    VERIFIED_PROFILE_KEY,
+    JSON.stringify({
+      ...profile,
+      verifiedAt,
+      savedAt: new Date().toISOString(),
+    }),
+  );
+  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = false;
 }
 
 function hasVerifiedUser(phone = getFormValues().phone) {
@@ -1340,18 +1383,8 @@ function validateForm(showErrors = true) {
 
 function saveDraft() {
   const values = getFormValues();
-  const shippingFields = [
-    "name",
-    "phone",
-    "email",
-    "address",
-    "landmark",
-    "city",
-    "state",
-    "pincode",
-  ];
   const shippingDetails = Object.fromEntries(
-    shippingFields.map((field) => [field, values[field] || ""]),
+    SHIPPING_FIELDS.map((field) => [field, values[field] || ""]),
   );
   localStorage.setItem(DRAFT_KEY, JSON.stringify(shippingDetails));
   const phoneKey = String(shippingDetails.phone).replace(/\D/g, "").slice(-10);
@@ -1366,17 +1399,38 @@ function saveDraft() {
 }
 
 function hydrateDraft() {
-  const user = getStoredUser();
-  const phoneKey = String(user?.phone || "")
+  const profile = getVerifiedProfile();
+  const phoneKey = String(profile?.phone || "")
     .replace(/\D/g, "")
     .slice(-10);
   const customers = readJSON(CUSTOMER_DETAILS_KEY, {});
-  const draft = customers[phoneKey] || readJSON(DRAFT_KEY, {});
-  Object.entries(draft).forEach(([key, value]) => {
-    if (dom.form.elements[key]) {
+  const matchingDraft = customers[phoneKey];
+  const matchingDraftIsNewer =
+    profile &&
+    matchingDraft &&
+    Date.parse(matchingDraft.savedAt || "") >=
+      Date.parse(profile.savedAt || "");
+  const draft = profile
+    ? matchingDraftIsNewer ? matchingDraft : profile
+    : readJSON(DRAFT_KEY, {});
+  Object.entries(draft || {}).forEach(([key, value]) => {
+    if (SHIPPING_FIELDS.includes(key) && dom.form.elements[key]) {
       dom.form.elements[key].value = value;
     }
   });
+  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = !profile;
+}
+
+function forgetSavedProfile() {
+  [VERIFIED_PROFILE_KEY, USER_KEY, DRAFT_KEY, CUSTOMER_DETAILS_KEY].forEach(
+    (key) => localStorage.removeItem(key),
+  );
+  dom.form.reset();
+  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = true;
+  setCheckoutStep(CHECKOUT_STEPS.DETAILS);
+  setOrderButtonLabels();
+  void loadUserCoupons();
+  showToast("Saved checkout details removed from this browser.");
 }
 
 function setLoading(button, loading) {
@@ -1521,6 +1575,9 @@ function renderSuccessOrderItems() {
 
 function showCartStep() {
   saveDraft();
+  if (hasVerifiedUser()) {
+    saveVerifiedProfile(getFormValues(), getStoredUser().verifiedAt);
+  }
   scheduleServerPricing();
   setCheckoutStep(CHECKOUT_STEPS.CART);
   dom.cartPanel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1548,6 +1605,9 @@ function continueToCart(event) {
 
 function showReviewStep() {
   saveDraft();
+  if (hasVerifiedUser()) {
+    saveVerifiedProfile(getFormValues(), getStoredUser().verifiedAt);
+  }
   scheduleServerPricing();
   setCheckoutStep(CHECKOUT_STEPS.REVIEW);
   document
@@ -1629,6 +1689,7 @@ function saveVerifiedUser(verification) {
     verifiedAt: verification.verifiedAt,
   };
   localStorage.setItem(USER_KEY, JSON.stringify(verifiedUser));
+  saveVerifiedProfile(verifiedUser, verification.verifiedAt);
   saveDraft();
   otpState.pendingUser = null;
   setOrderButtonLabels();
@@ -2108,6 +2169,9 @@ function bindEvents() {
     });
 
   dom.form.addEventListener("submit", continueToCart);
+  document
+    .querySelector("[data-action='forget-saved-profile']")
+    ?.addEventListener("click", forgetSavedProfile);
   dom.form.addEventListener("input", () => {
     saveDraft();
     updateProgress();

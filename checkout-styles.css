@@ -1352,6 +1352,38 @@ img {
   font-weight: 800;
 }
 
+.saved-profile-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.saved-profile-notice[hidden] { display: none; }
+.saved-profile-notice p { margin: 0; }
+.saved-profile-notice button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--deep);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .saved-profile-notice { align-items: flex-start; flex-direction: column; }
+}
+
 .service-area-card {
   position: relative;
   width: min(480px, 100%);
