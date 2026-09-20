@@ -31,7 +31,6 @@ a {
 .valour-hero__title {
   max-width: 11ch;
   margin: 0 auto;
-  margin-left: 50px;
   color: inherit;
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(3.65rem, 16vw, 7.75rem);
@@ -5288,60 +5287,99 @@ h1 {
   }
 }
 
-@media (max-width: 701px) {
+@media (min-width: 641px) and (max-width: 700px) {
   .valour-hero__inner {
-    padding-bottom: 173px;
-    padding-top: 120px;
+    padding: 0 clamp(1.5rem, 6vw, 3rem);
   }
   .valour-hero__actions {
-    width: 60%;
-    margin-left: 145px;
-    padding: 20px;
+    width: auto;
+    margin-inline: auto;
+    padding: 0;
   }
 }
 
 @media (max-width: 640px) {
+  .valour-hero__title {
+    width: min(10ch, 100%);
+    max-width: calc(100vw - clamp(2.5rem, 12vw, 5rem));
+    margin-left: 0;
+  }
+  .valour-hero__subtitle {
+    max-width: min(32rem, 100%);
+    margin-inline: 0;
+  }
   .valour-hero__actions {
-    margin-left: 19px;
-    margin-top: 0;
+    width: min(74vw, 29rem, calc(100vw - 2.5rem));
+    max-width: 100%;
+    margin-top: clamp(1.25rem, 3.2svh, 1.8rem);
+    margin-inline: 0;
   }
   .valour-hero__inner {
-    padding-bottom: 50px;
-    padding-top: 0;
-    padding: 0px;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    align-items: stretch;
   }
 }
 /* =========================
    DESKTOP + TABLET HERO
 ========================= */
 
-@media (min-width: 701px) {
+@media (min-width: 641px) {
+  .valour-hero__inner {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+  }
+
   .valour-hero__stage {
     position: relative;
-    min-height: 760px;
-    height: 100vh;
-    max-height: 980px;
+    box-sizing: border-box;
+    width: 100%;
+    height: clamp(42rem, 100svh, 61.25rem);
 
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
 
-    background: #831a1a;
+    background-color: #831a1a;
+    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_desk_v4.png");
+    background-position: center top;
+    background-size: cover;
+    background-repeat: no-repeat;
     overflow: hidden;
+  }
+
+  .valour-hero__stage::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 55%;
+    left: 78%;
+    width: clamp(24rem, 38vw, 33rem);
+    aspect-ratio: 1;
+    transform: translate(-50%, -45%);
+    background: url("../../vendor/cdn/cdn/shop/files/velevty_butter_mockupM.webp")
+      center / contain no-repeat;
+    filter: drop-shadow(0 8px 6px rgba(48, 22, 14, 0.14))
+      drop-shadow(0 24px 28px rgba(48, 22, 14, 0.2));
+    pointer-events: none;
   }
 
   .valour-hero__header {
     position: relative;
     inset: auto;
 
-    width: min(90%, 980px);
-    margin: 0 auto;
+    z-index: 3;
+    width: min(48%, 38rem);
+    margin: clamp(5rem, 10svh, 7rem) 0 0 clamp(2rem, 7vw, 7rem);
 
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
 
-    text-align: center;
+    text-align: left;
+    padding-top: 0;
   }
 
   .valour-hero__mobile-kicker {
@@ -5354,7 +5392,7 @@ h1 {
 
   .valour-hero__title-main {
     max-width: 9ch;
-    margin: 0 auto;
+    margin: 0;
 
     color: #fff8ef;
 
@@ -5371,7 +5409,7 @@ h1 {
   .valour-hero__subtitle {
     display: block;
 
-    margin: 2rem auto 0;
+    margin: 2rem 0 0;
 
     max-width: 760px;
 
@@ -5393,6 +5431,7 @@ h1 {
     gap: 1rem;
 
     margin-top: 2.2rem;
+    margin-inline: 0;
   }
 
   .valour-hero__cta {
@@ -5427,6 +5466,111 @@ h1 {
 
   .valour-hero__cta:hover {
     transform: translateY(-2px);
+  }
+
+  .valour-hero__mobile-details {
+    position: absolute;
+    z-index: 3;
+    left: 52%;
+    bottom: clamp(2.5rem, 6%, 4.5rem);
+    display: block;
+    box-sizing: border-box;
+    width: clamp(15rem, 22vw, 20rem);
+    color: #831a1a;
+  }
+
+  .valour-hero__mobile-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    font-family: Inter, Arial, sans-serif;
+    font-size: clamp(0.78rem, 1vw, 0.92rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+  }
+
+  .valour-hero__mobile-rule {
+    width: 100%;
+    height: 1px;
+    margin: 1rem 0 0.8rem;
+    background: #d99b24;
+  }
+
+  .valour-hero__mobile-steps {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .valour-hero__mobile-steps > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+
+  .valour-hero__mobile-steps strong,
+  .valour-hero__mobile-steps div span {
+    font-family: Inter, Arial, sans-serif;
+  }
+
+  .valour-hero__mobile-steps strong {
+    font-size: clamp(0.72rem, 1vw, 0.88rem);
+    font-weight: 700;
+  }
+
+  .valour-hero__mobile-steps div span {
+    font-size: clamp(0.68rem, 0.9vw, 0.8rem);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .valour-hero__mobile-diamond {
+    color: #d99b24;
+    font-size: 0.48rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) and (orientation: portrait) {
+  .valour-hero__stage {
+    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_tablet_v4.png");
+    background-position: center top;
+
+    height: clamp(42rem, 100svh, 81.25rem);
+  }
+
+  .valour-hero__stage::after {
+    top: 68%;
+    left: 68%;
+    width: min(70vw, 34rem);
+    transform: translate(-50%, -40%);
+  }
+
+  .valour-hero__header {
+    width: min(62%, 32rem);
+    margin: clamp(4rem, 8svh, 6rem) 0 0 clamp(2rem, 6vw, 4rem);
+  }
+
+  .valour-hero__title-main {
+    font-size: clamp(4.5rem, 10vw, 6rem);
+  }
+
+  .valour-hero__actions {
+    width: min(100%, 20rem);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .valour-hero__cta {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .valour-hero__mobile-details {
+    left: 15vw;
+    bottom: clamp(2.5rem, 5%, 4rem);
+    width: min(34vw, 18rem);
   }
 }
 

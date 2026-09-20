@@ -11,6 +11,7 @@
     "test": "node --test attribution.test.js meta.test.js server-analytics.test.js delivery-timing.test.js stock-management.test.js whatsapp-system.test.js",
     "test:whatsapp": "node --test whatsapp-system.test.js",
     "audit:whatsapp": "node whatsapp-audit-readonly.js",
+    "brevo:sample": "node brevo-sample.js",
     "seed:pricing": "node seed-pricing.js",
     "whatsapp:test-bot": "node meta-whatsapp-test-bot.js",
     "webhook:check": "node meta-webhook-check.js",

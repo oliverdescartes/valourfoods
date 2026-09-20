@@ -532,7 +532,7 @@ html {
   width: 100%;
   padding: clamp(4rem, 9vw, 7rem) 1.25rem;
   background: transparent;
-  color: #fff8ef;    padding: 70px;
+  color: #fff8ef;    padding: 70px;padding-top: 200px;
 }
 
 .valour-user-proof__inner {
@@ -836,7 +836,7 @@ html {
 
   .valour-hero__header {
     position: relative;
-
+        padding-left: 41px;
 
 
     text-align: left;
@@ -1159,7 +1159,7 @@ html {
         content: "";
         position: absolute;
         z-index: 2;
-        top: max(550px, 52svh);
+        top: max(620px, 52svh);
         left: 50%;
         width: min(110vw, 480px);
         aspect-ratio: 1;
@@ -1170,12 +1170,17 @@ html {
     }
 }
 
-@media (min-width: 520px) and (max-width: 640px) and (max-height: 1000px) {
+@media (min-width: 600px) and (max-width: 640px) and (max-height: 1000px) {
+  .valour-hero__stage::after {
+    top: max(630px, 60svh);
+  }
+}
+
+@media (min-width: 0) and (max-width: 550px) and (max-height: 1000px) {
   .valour-hero__stage::after {
     top: max(600px, 60svh);
   }
 }
-
 
 
 
@@ -1338,7 +1343,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 </style>
 <link
   rel="preload"
-  href="assets/css/home-below-fold-20260916.css?v=ca5be6fe5174"
+  href="assets/css/home-below-fold-20260916.css?v=hero-art-direction-20260920-2"
   as="style"
   onload="
     this.onload=null;
@@ -1350,7 +1355,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 <noscript>
   <link
     rel="stylesheet"
-    href="assets/css/home-below-fold-20260916.css?v=ca5be6fe5174"
+    href="assets/css/home-below-fold-20260916.css?v=hero-art-direction-20260920-2"
   >
 </noscript>
 <script>
@@ -4423,7 +4428,6 @@ if (document.readyState === "loading") {
 
 function setMobileHeroHeight() {
   const heroStage = document.querySelector(".valour-hero__stage");
-
   const hero_btns = document.querySelector(".valour-hero__actions");
 
   if (!heroStage) return;
@@ -4444,17 +4448,19 @@ hero_btns.style.width="74vw";
     heroStage.style.backgroundImage =
       'url("./vendor/cdn/cdn/shop/files/hero_banner_mob_v4.png?v=024d3677dda3")';
           heroStage.style.minHeight = "100svh";
-    if(width<=550){
+    if(width<=600){
+    heroStage.style.height = "1350px";
+    }else if(width<=550){
     heroStage.style.height = "1300px";
-    }else if(width<=450){
-    heroStage.style.height = "1300px";
-      } else if(width>=600){
+
+      } else if(width>600){
     heroStage.style.height = "1500px";
   
       } else {
     heroStage.style.height = "1300px";
   }
-  }else if(isMobile && viewportHeight > 1000){
+  }
+  else if(isMobile && viewportHeight > 1000){
     heroStage.style.height ="1500px";
   }else{
     heroStage.style.backgroundImage=''
