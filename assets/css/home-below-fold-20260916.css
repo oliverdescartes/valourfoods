@@ -5343,7 +5343,7 @@ h1 {
     justify-content: flex-start;
 
     background-color: #831a1a;
-    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_desk_v4.png");
+    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_desk_v4.webp");
     background-position: center top;
     background-size: cover;
     background-repeat: no-repeat;
@@ -5534,7 +5534,7 @@ h1 {
 
 @media (min-width: 641px) and (max-width: 1024px) and (orientation: portrait) {
   .valour-hero__stage {
-    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_tablet_v4.png");
+    background-image: url("../../vendor/cdn/cdn/shop/files/hero_banner_tablet_v4.webp");
     background-position: center top;
 
     height: clamp(42rem, 100svh, 81.25rem);
