@@ -1355,7 +1355,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 </style>
 <link
   rel="preload"
-  href="assets/css/home-below-fold-20260916.css?v=hero-art-direction-20260920-2"
+  href="assets/css/home-below-fold-20260916.css?v=proof-editorial-all-devices-20260921"
   as="style"
   onload="
     this.onload=null;
@@ -1367,7 +1367,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 <noscript>
   <link
     rel="stylesheet"
-    href="assets/css/home-below-fold-20260916.css?v=hero-art-direction-20260920-2"
+    href="assets/css/home-below-fold-20260916.css?v=proof-editorial-all-devices-20260921"
   >
 </noscript>
 <script>
@@ -1521,6 +1521,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
 
     <header class="valour-hero__header">
 
+      <p class="valour-hero__mobile-kicker">VALOUR LIQUID SPICE</p>
 
       <h1
         class="valour-hero__title"
@@ -1538,10 +1539,9 @@ html:not(.valour-styles-ready) .cart-add-toast {
 
   <!-- MOBILE -->
         <span class="valour-hero__title-main valour-hero__title-main--mobile">
-     Cook<br>
-        what you<br>
-        usually<br>
-        order.        </span>
+          Cook what you
+          usually order.
+        </span>
 
          <span class="valour-hero__subtitle">
           Add chicken and make restaurant style butter chicken at home in 15 minutes
@@ -1565,7 +1565,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
           class="valour-hero__cta valour-hero__cta--secondary"
           href="#valour-stack-story"
         >
-          How it works
+          How it works <span class="valour-hero__cta-arrow" aria-hidden="true">&rarr;</span>
         </a>
       </div>
 
@@ -1574,9 +1574,9 @@ html:not(.valour-styles-ready) .cart-add-toast {
     <div class="valour-hero__mobile-details">
 
     <div class="valour-hero__mobile-summary">
-      <span>ONE JAR.</span>
-      <span>UPTO 1 KG CHICKEN.</span>
-      <span>THREE STEPS.</span>
+      <span>ONE JAR</span>
+      <span>UP TO 1 KG CHICKEN</span>
+      <span>15 MINUTES</span>
     </div>
 
     <div class="valour-hero__mobile-rule"></div>
@@ -1623,6 +1623,14 @@ html:not(.valour-styles-ready) .cart-add-toast {
 <section class="valour-user-proof" aria-labelledby="valour-user-proof-title">
   <div class="valour-user-proof__inner">
 
+    <header class="valour-user-proof__intro">
+      <p class="valour-user-proof__eyebrow">COOKED AT HOME</p>
+      <h2 class="valour-user-proof__title" id="valour-user-proof-title">
+        Tried at home.<br>
+        Loved at the table.
+      </h2>
+    </header>
+
     <div class="valour-user-proof__media">
       <img
         src="vendor/cdn/cdn/shop/files/testimonial_img.webp"
@@ -1637,16 +1645,11 @@ html:not(.valour-styles-ready) .cart-add-toast {
     <div class="valour-user-proof__content">
 
 
-      <h2 class="valour-user-proof__title" id="valour-user-proof-title">
-        Tried at home.<br>
-        Loved at the table.
-      </h2>
-
       <div class="valour-user-proof__divider"></div>
 
       <blockquote class="valour-user-proof__quote">
-        “The cooking was simple, and the final Butter Chicken tasted genuinely
-        restaurant-style. Everyone at home enjoyed it.”
+        The cooking was simple, and the final Butter Chicken tasted genuinely
+        restaurant-style. Everyone at home enjoyed it.
       </blockquote>
 
       <div class="valour-user-proof__meta">
@@ -1656,7 +1659,7 @@ html:not(.valour-styles-ready) .cart-add-toast {
         </div>
 
         <div class="valour-user-proof__stars" aria-label="5 out of 5 stars">
-          ★★★★★
+          &#9733;&#9733;&#9733;&#9733;&#9733;
         </div>
       </div>
 
@@ -4437,58 +4440,6 @@ if (document.readyState === "loading") {
 } else {
   initValourStackStory();
 }
-
-function setMobileHeroHeight() {
-  const heroStage = document.querySelector(".valour-hero__stage");
-  const hero_btns = document.querySelector(".valour-hero__actions");
-
-  if (!heroStage) return;
-  const width = window.innerWidth;
-
-  const isMobile = width<= 640;
-  const viewportHeight = window.innerHeight;
-  if (isMobile<=520) {
-        heroStage.style.backgroundImage =
-      'url("./vendor/cdn/cdn/shop/files/hero_banner_mob_v3.webp")';
-  }
-if (isMobile){
-hero_btns.style.width="74vw";
-
-}
-
-  if (isMobile && viewportHeight <= 1000) {
-    heroStage.style.backgroundImage =
-      'url("./vendor/cdn/cdn/shop/files/hero_banner_mob_v4.webp")';
-          heroStage.style.minHeight = "100svh";
-    if(width<=600 & width>550){
-    heroStage.style.height = "1350px";
-    }else if(width<=550& width>400 ){
-    heroStage.style.height = "1320px";
-
-      } else if(width<=400 ){
-    heroStage.style.height = "1250px";
-
-      }
-      
-      else if(width>600){
-    heroStage.style.height = "1500px";
-  
-      } else {
-    heroStage.style.height = "1300px";
-  }
-  }
-  else if(isMobile && viewportHeight > 1000){
-    heroStage.style.height ="1500px";
-  }else{
-    heroStage.style.backgroundImage=''
-  }
-}
-
-setMobileHeroHeight();
-
-window.addEventListener("resize", setMobileHeroHeight);
-
-
 
   const fadeElements = document.querySelectorAll(
     ".valour-user-proof__media, .valour-user-proof__content"
