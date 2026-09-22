@@ -123,7 +123,6 @@ const dom = {
   couponPanel: document.querySelector(".coupon-panel"),
   stepActions: document.querySelectorAll("[data-step-actions]"),
   form: document.querySelector("[data-checkout-form]"),
-  savedProfileNotice: document.querySelector("[data-saved-profile-notice]"),
   deliveryPanel: document.querySelector(".delivery-panel"),
   trustStrip: document.querySelector(".trust-strip"),
   mobileSummaryPanel: document.querySelector(".mobile-summary-panel"),
@@ -244,7 +243,6 @@ function saveVerifiedProfile(values, verifiedAt) {
       savedAt: new Date().toISOString(),
     }),
   );
-  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = false;
 }
 
 function hasVerifiedUser(phone = getFormValues().phone) {
@@ -1425,19 +1423,6 @@ function hydrateDraft() {
       dom.form.elements[key].value = value;
     }
   });
-  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = !profile;
-}
-
-function forgetSavedProfile() {
-  [VERIFIED_PROFILE_KEY, USER_KEY, DRAFT_KEY, CUSTOMER_DETAILS_KEY].forEach(
-    (key) => localStorage.removeItem(key),
-  );
-  dom.form.reset();
-  if (dom.savedProfileNotice) dom.savedProfileNotice.hidden = true;
-  setCheckoutStep(CHECKOUT_STEPS.DETAILS);
-  setOrderButtonLabels();
-  void loadUserCoupons();
-  showToast("Saved checkout details removed from this browser.");
 }
 
 function setLoading(button, loading) {
@@ -2177,9 +2162,6 @@ function bindEvents() {
     });
 
   dom.form.addEventListener("submit", continueToCart);
-  document
-    .querySelector("[data-action='forget-saved-profile']")
-    ?.addEventListener("click", forgetSavedProfile);
   dom.form.addEventListener("input", () => {
     saveDraft();
     updateProgress();
