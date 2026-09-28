@@ -167,6 +167,7 @@ test("admin dashboard sends only configured templates with validation, idempoten
     const catalog=await catalogResponse.json();
     assert.ok(catalog.templates.some(item=>item.key==='cooking_reminder'&&item.available&&item.parameterCount===1));
     assert.match(catalog.templates.find(item=>item.key==='cod_prepaid_confirmation').bodyText,/No payment will be collected at delivery/);
+    const deliveredTemplate=catalog.templates.find(item=>item.key==='delivered_ready_to_cook');assert.equal(deliveredTemplate.templateId,'e8e061a5-25cb-4b23-905e-5b6d4069824a');assert.equal(deliveredTemplate.kind,'transactional');assert.match(deliveredTemplate.bodyText,/has been delivered/);assert.deepEqual(deliveredTemplate.buttons,['Preparation demo','Package opening demo','Need help']);
     assert.equal((await fetch(`${base}/tracking-link`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({phone})})).status,401);
     const trackingResponse=await fetch(`${base}/tracking-link`,{method:'POST',headers,body:JSON.stringify({phone:'+91 98765 43210',orderNumber:trackedOrder.orderNumber})});assert.equal(trackingResponse.status,200);
     const tracking=await trackingResponse.json();assert.equal(tracking.order.orderNumber,'VALOUR-TRACK1');assert.match(tracking.trackingUrl,/\/track-order\.html\?t=/);assert.ok(tracking.buttonToken);
@@ -212,6 +213,26 @@ test("admin conversation list supports messages without a matching user profile"
   } finally { await new Promise(resolve=>server.close(resolve)); }
 });
 
+test("admin free-form replies require an open 24-hour window and are idempotent",async()=>{
+  fresh();
+  rows('messages').push({_id:new ObjectId(),phone,role:'user',direction:'inbound',type:'text',content:'I need help with my order',message_id:'customer-window-open',created_at:new Date(Date.now()-60000)});
+  rows('messages').push({_id:new ObjectId(),phone:'919111111111',role:'user',direction:'inbound',type:'text',content:'Old message',message_id:'customer-window-expired',created_at:new Date(Date.now()-25*3600000)});
+  const server=api.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
+  const headers={'content-type':'application/json','x-admin-token':'test-admin'};
+  const base=`http://127.0.0.1:${server.address().port}/api/admin/whatsapp/conversations`;
+  try {
+    const listResponse=await fetch(base,{headers});assert.equal(listResponse.status,200);const list=await listResponse.json();const open=list.conversations.find(item=>item.phone===phone);assert.equal(open.canSendFreeForm,true);assert.ok(open.serviceWindowExpiresAt);assert.ok(open.latestInboundAt);
+    const payload={requestId:'admin-reply-12345',text:'Thanks for messaging VALOUR. How can we help?'};
+    const first=await fetch(`${base}/${phone}/messages`,{method:'POST',headers,body:JSON.stringify(payload)});assert.equal(first.status,201);const firstBody=await first.json();assert.equal(firstBody.message.content,payload.text);assert.equal(sent.length,1);assert.equal(sent[0].message.type,'text');assert.equal(sent[0].message.text,payload.text);assert.equal(rows('admin_freeform_sends')[0].status,'submitted');assert.equal(rows('messages').at(-1).source,'admin_dashboard_freeform');
+    const duplicate=await fetch(`${base}/${phone}/messages`,{method:'POST',headers,body:JSON.stringify(payload)});assert.equal(duplicate.status,200);assert.equal((await duplicate.json()).duplicate,true);assert.equal(sent.length,1);
+    await api.recordWhatsappJobStatus({id:firstBody.message.providerMessageId,status:'delivered',timestamp:Date.now()});assert.equal(rows('admin_freeform_sends')[0].status,'delivered');assert.equal(rows('messages').at(-1).delivery_status,'delivered');
+    const detail=await fetch(`${base}/${phone}/messages`,{headers});assert.equal(detail.status,200);assert.equal((await detail.json()).serviceWindow.open,true);
+    const expired=await fetch(`${base}/919111111111/messages`,{method:'POST',headers,body:JSON.stringify({requestId:'admin-reply-expired',text:'Too late'})});assert.equal(expired.status,409);assert.equal((await expired.json()).code,'WHATSAPP_SERVICE_WINDOW_EXPIRED');
+    const unopened=await fetch(`${base}/919222222222/messages`,{method:'POST',headers,body:JSON.stringify({requestId:'admin-reply-unopened',text:'No inbound'})});assert.equal(unopened.status,409);assert.equal((await unopened.json()).code,'WHATSAPP_SERVICE_WINDOW_NOT_OPEN');
+    assert.equal(sent.length,1);
+  } finally { await new Promise(resolve=>server.close(resolve)); }
+});
+
 test("atomic job claim, definite rejection retry, uncertainty quarantine and expired claim recovery",async()=>{
   fresh();await api.scheduleWhatsappJob({event:'cooking_reminder',phone,parameters:['Butter Chicken'],scheduledAt:new Date(Date.now()+60000)});
   const job=rows('message_jobs')[0];job.scheduledAt=new Date(0);
@@ -244,6 +265,33 @@ test("delivery callbacks also match the WhatsApp ID learned from enqueued status
   await api.recordWhatsappJobStatus({id:'wa-1',status:'delivered',timestamp:Date.now()});
   assert.equal(rows('message_jobs')[0].status,'delivered');
   assert.equal(rows('messages')[0].delivery_status,'delivered');
+});
+
+test("131049 records Meta recipient limit and prevents immediate marketing resend",async()=>{
+  fresh();
+  await api.scheduleWhatsappJob({event:'new_lead',phone,parameters:['Customer']});
+  const job=rows('message_jobs')[0];
+  job.status='submitted';job.providerMessageId='ecosystem-1';job.submittedAt=new Date();
+  const outbound={_id:new ObjectId(),phone,role:'assistant',direction:'outbound',type:'template',content:'Template submitted',provider_message_id:'ecosystem-1',delivery_status:'submitted',created_at:new Date()};
+  rows('messages').push(outbound);
+  await api.recordWhatsappJobStatus({id:'ecosystem-1',status:'failed',timestamp:Date.now(),errors:[{code:131049,message:'This message was not delivered to maintain healthy ecosystem engagement.',error_data:{details:'In order to maintain a healthy ecosystem engagement, the message failed to be delivered.'}}]});
+  assert.equal(job.failureCode,'131049');
+  assert.equal(job.failureReason,'meta_recipient_marketing_limit');
+  assert.ok(job.retryAfter>Date.now());
+  assert.match(job.lastError,/WhatsApp 131049/);
+  const timelineMessage=api.serializeAdminConversationMessage(outbound);
+  assert.equal(timelineMessage.deliveryStatus,'failed');
+  assert.equal(timelineMessage.failureCode,'131049');
+  assert.match(timelineMessage.error,/Meta did not deliver/);
+  const gate=await api.runWhatsappQualityGate({...job,status:'scheduled'});
+  assert.equal(gate.action,'reschedule');
+  assert.equal(gate.reason,'meta_recipient_marketing_limit');
+  rows('messages').push({_id:new ObjectId(),phone,role:'user',content:'Hello',created_at:new Date(Date.now()+1000)});
+  const afterReply=await api.runWhatsappQualityGate({...job,status:'scheduled'});
+  assert.notEqual(afterReply.reason,'meta_recipient_marketing_limit');
+  const duplicate=await api.scheduleWhatsappJob({event:'new_lead',phone,parameters:['Customer']});
+  assert.equal(duplicate.scheduled,false);
+  assert.equal(job.status,'failed');
 });
 
 test("checkout/payment, reorder and support quality gates cancel obsolete jobs",async()=>{
@@ -290,9 +338,9 @@ test("dashboard Delivered sends only the dedicated template once and cancels sta
     const url=`http://127.0.0.1:${server.address().port}/api/orders/${own.orderNumber}/shipping-status`;
     const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});
     assert.equal(response.status,200);const result=await response.json();assert.equal(result.whatsappUpdate.event,'delivered_ready_to_cook');
-    assert.equal(result.whatsappUpdate.templateId,'ed4e4f64-b494-4c44-94ae-effb751cf40c');
+    assert.equal(result.whatsappUpdate.templateId,'e8e061a5-25cb-4b23-905e-5b6d4069824a');
     assert.ok(rows('message_jobs').filter(j=>['new_lead','product_demo','order_status_update'].includes(j.trigger)).every(j=>j.status==='cancelled'));
-    const invitation=rows('message_jobs').find(j=>j.trigger==='delivered_ready_to_cook');assert.ok(+invitation.scheduledAt>=Date.now()+14*60000);
+    const invitation=rows('message_jobs').find(j=>j.trigger==='delivered_ready_to_cook');assert.equal(invitation.kind,'transactional');assert.ok(+invitation.scheduledAt>=Date.now()+14*60000);
     const experienceFallback=rows('message_jobs').find(j=>j.trigger==='post_cook_feedback'&&j.status==='scheduled');assert.equal(experienceFallback.metadata.reason,'delivered_without_tutorial');assert.ok(+experienceFallback.scheduledAt>=Date.now()+47*3600000);
     const reorder=rows('message_jobs').find(j=>j.trigger==='reorder_reminder');assert.ok(+reorder.scheduledAt>=Date.now()+7*86400000-1000);
     const repeated=await fetch(url,{method:'POST',headers:{'content-type':'application/json','x-admin-token':'test-admin'},body:JSON.stringify({shippingStatus:'Delivered',notifyWhatsapp:true})});assert.equal(repeated.status,200);assert.equal((await repeated.json()).whatsappUpdate.reason,'already_delivered');

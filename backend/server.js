@@ -132,6 +132,7 @@ function collections() {
     reviews: db.collection("reviews"),
     messageJobs: db.collection("message_jobs"),
     adminTemplateSends: db.collection("admin_template_sends"),
+    adminFreeformSends: db.collection("admin_freeform_sends"),
     whatsappStatuses: db.collection("whatsapp_status_events"),
     whatsappConsentEvents: db.collection("whatsapp_consent_events"),
     customerEvents: db.collection("customer_events"),
@@ -359,6 +360,7 @@ async function connectDB() {
     reviews,
     messageJobs,
     adminTemplateSends,
+    adminFreeformSends,
     customerEvents,
     whatsappConsentEvents,
     analyticsEvents,
@@ -459,6 +461,9 @@ async function connectDB() {
     adminTemplateSends.createIndex({ requestId: 1 }, { unique: true }),
     adminTemplateSends.createIndex({ providerMessageId: 1 }, { sparse: true }),
     adminTemplateSends.createIndex({ createdAt: -1 }),
+    adminFreeformSends.createIndex({ requestId: 1 }, { unique: true }),
+    adminFreeformSends.createIndex({ providerMessageId: 1 }, { sparse: true }),
+    adminFreeformSends.createIndex({ createdAt: -1 }),
     customerEvents.createIndex({ eventId: 1 }, { unique: true }),
     customerEvents.createIndex({ phone: 1, occurredAt: -1 }),
     whatsappConsentEvents.createIndex({ eventId: 1 }, { unique: true }),
@@ -1227,7 +1232,7 @@ const DEFAULT_CUSTOMER_CARE_TEMPLATE_ID =
   "e0d25b52-b236-4551-b5d9-06fd3fd76f40";
 const DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID =
   "680c3021-6889-4c60-86b4-6ebb0c7d7b1b";
-const DEFAULT_DELIVERED_TEMPLATE_ID = "ed4e4f64-b494-4c44-94ae-effb751cf40c";
+const DEFAULT_DELIVERED_TEMPLATE_ID = "e8e061a5-25cb-4b23-905e-5b6d4069824a";
 const DEFAULT_COD_PREPAID_TEMPLATE_ID = "515b2202-ab03-4fb3-a2de-32f896d04953";
 
 function buildGupshupForm(recipient, fields = {}) {
@@ -1327,7 +1332,7 @@ function isUncertainWhatsappSend(error) {
   );
 }
 
-async function sendMessage(phone, body) {
+async function sendMessage(phone, body, audit = {}) {
   const recipient = normalizeWhatsappRecipient(phone);
   console.log("Gupshup WhatsApp text send attempt", {
     recipient: maskWhatsappPhone(recipient),
@@ -1361,6 +1366,8 @@ async function sendMessage(phone, body) {
       type: "text",
       content: body,
       providerMessageId: getProviderMessageId(response.data),
+      source: audit.source,
+      adminRequestId: audit.adminRequestId,
     });
 
     return response.data;
@@ -1620,12 +1627,107 @@ const WHATSAPP_MARKETING_DAILY_CAP =
   Number(process.env.WHATSAPP_MARKETING_DAILY_CAP) || 1;
 const WHATSAPP_MARKETING_WEEKLY_CAP =
   Number(process.env.WHATSAPP_MARKETING_WEEKLY_CAP) || 3;
+const WHATSAPP_ECOSYSTEM_RETRY_MS = Math.max(
+  24 * 60 * 60_000,
+  Number(process.env.WHATSAPP_ECOSYSTEM_RETRY_MS) || 24 * 60 * 60_000,
+);
+const WHATSAPP_CUSTOMER_SERVICE_WINDOW_MS = 24 * 60 * 60_000;
 let whatsappJobTimer = null;
 
 const WHATSAPP_DELIVERED_DELAY_MS = 15 * 60_000;
 const WHATSAPP_EXPERIENCE_FALLBACK_DELAY_MS = 48 * 60 * 60_000;
 const WHATSAPP_EXPERIENCE_AFTER_DONE_DELAY_MS = 30 * 60_000;
 const WHATSAPP_REORDER_DELAY_MS = 7 * 24 * 60 * 60_000;
+
+function getWhatsappProviderErrors(value) {
+  if (!value) return [];
+  if (typeof value === "string") {
+    try {
+      return getWhatsappProviderErrors(JSON.parse(value));
+    } catch {
+      return [{ message: value }];
+    }
+  }
+  if (Array.isArray(value)) return value.flatMap(getWhatsappProviderErrors);
+  if (typeof value !== "object") return [{ message: String(value) }];
+  if (value.errors) return getWhatsappProviderErrors(value.errors);
+  return [value];
+}
+
+function getWhatsappProviderErrorCode(value) {
+  const error = getWhatsappProviderErrors(value).find((item) => item?.code);
+  return error?.code == null ? "" : String(error.code);
+}
+
+function formatWhatsappProviderErrors(value) {
+  const errors = getWhatsappProviderErrors(value);
+  if (!errors.length) return "";
+  return errors
+    .map((error) => {
+      const code = error.code ? `WhatsApp ${error.code}: ` : "";
+      const message =
+        error.message || error.title || error.error_data?.details || "Delivery failed";
+      const details = error.error_data?.details;
+      return `${code}${message}${details && details !== message ? ` (${details})` : ""}`;
+    })
+    .join("; ")
+    .slice(0, 1000);
+}
+
+function getWhatsappFailureMetadata(status = {}, failedAt = new Date()) {
+  const code = getWhatsappProviderErrorCode(status.errors || status);
+  if (code === "131049") {
+    return {
+      failureCode: code,
+      failureReason: "meta_recipient_marketing_limit",
+      retryAfter: new Date(failedAt.getTime() + WHATSAPP_ECOSYSTEM_RETRY_MS),
+    };
+  }
+  return code ? { failureCode: code } : {};
+}
+
+async function getActiveWhatsappEcosystemPause(phone) {
+  const recipient = normalizeWhatsappRecipient(phone);
+  if (!recipient || !mongoReady) return null;
+  const [jobFailure, manualFailure] = await Promise.all([
+    collections().messageJobs.findOne(
+      {
+        phone: recipient,
+        failureCode: "131049",
+        retryAfter: { $gt: new Date() },
+      },
+      { sort: { statusUpdatedAt: -1 } },
+    ),
+    collections().adminTemplateSends.findOne(
+      {
+        phone: recipient,
+        failureCode: "131049",
+        retryAfter: { $gt: new Date() },
+      },
+      { sort: { statusUpdatedAt: -1 } },
+    ),
+  ]);
+  const failure = [jobFailure, manualFailure]
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        new Date(b.statusUpdatedAt || b.failedAt || 0) -
+        new Date(a.statusUpdatedAt || a.failedAt || 0),
+    )[0];
+  if (!failure) return null;
+  const failedAt = new Date(failure.statusUpdatedAt || failure.failedAt || 0);
+  const customerReply = await collections().messages.findOne({
+    phone: { $regex: `${String(recipient).slice(-10)}$` },
+    role: "user",
+    created_at: { $gt: failedAt },
+  });
+  if (customerReply) return null;
+  return {
+    retryAfter: failure.retryAfter,
+    failedAt,
+    reason: "meta_recipient_marketing_limit",
+  };
+}
 
 async function sendQuickReplyMessage(phone, message) {
   const recipient = normalizeWhatsappRecipient(phone);
@@ -1951,7 +2053,11 @@ async function scheduleWhatsappJob({
       : scheduledAt;
   try {
     const rearmed = await collections().messageJobs.updateOne(
-      { jobKey, status: "failed" },
+      {
+        jobKey,
+        status: "failed",
+        failureCode: { $ne: "131049" },
+      },
       {
         $set: {
           status: "scheduled",
@@ -2078,6 +2184,14 @@ async function runWhatsappQualityGate(job) {
     }
     if (!(await hasActiveWhatsappMarketingConsent(job.phone))) {
       return { action: "cancel", reason: "marketing_consent_not_granted" };
+    }
+    const ecosystemPause = await getActiveWhatsappEcosystemPause(job.phone);
+    if (ecosystemPause) {
+      return {
+        action: "reschedule",
+        reason: ecosystemPause.reason,
+        scheduledAt: nextIstSendTime(new Date(ecosystemPause.retryAfter)),
+      };
     }
   }
   if (
@@ -2498,6 +2612,10 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
   if (status.whatsappMessageId)
     updates.whatsappMessageId = status.whatsappMessageId;
   if (status.errors) updates.providerErrors = status.errors;
+  if (normalized === "failed") {
+    Object.assign(updates, getWhatsappFailureMetadata(status, timestamp));
+    updates.lastError = formatWhatsappProviderErrors(status.errors);
+  }
   const allowedPreviousStatuses = {
     submitted: ["processing", "submitted"],
     enqueued: ["processing", "submitted", "enqueued"],
@@ -2528,17 +2646,33 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
     },
     { $set: updates },
   );
+  const freeformSendResult = await collections().adminFreeformSends.updateOne(
+    {
+      $or: [
+        { providerMessageId: { $in: outboundIds } },
+        { whatsappMessageId: { $in: outboundIds } },
+      ],
+      status: { $in: allowedPreviousStatuses },
+    },
+    { $set: updates },
+  );
   const outboundResult = outboundIds.length
     ? await collections().messages.updateOne(
         {
-          $or: [
-            { provider_message_id: { $in: outboundIds } },
-            { whatsapp_message_id: { $in: outboundIds } },
-          ],
           direction: "outbound",
-          $or: [
-            { delivery_status: { $exists: false } },
-            { delivery_status: { $in: allowedPreviousStatuses } },
+          $and: [
+            {
+              $or: [
+                { provider_message_id: { $in: outboundIds } },
+                { whatsapp_message_id: { $in: outboundIds } },
+              ],
+            },
+            {
+              $or: [
+                { delivery_status: { $exists: false } },
+                { delivery_status: { $in: allowedPreviousStatuses } },
+              ],
+            },
           ],
         },
         {
@@ -2552,7 +2686,13 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
             ...(normalized === "delivered" ? { delivered_at: timestamp } : {}),
             ...(normalized === "read" ? { read_at: timestamp } : {}),
             ...(normalized === "failed"
-              ? { failed_at: timestamp, provider_errors: status.errors || null }
+              ? {
+                  failed_at: timestamp,
+                  provider_errors: status.errors || null,
+                  failure_code: updates.failureCode || "",
+                  failure_reason: updates.failureReason || "",
+                  retry_after: updates.retryAfter || null,
+                }
               : {}),
           },
         },
@@ -2585,6 +2725,7 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
     status: normalized,
     matchedJob: result.matchedCount === 1,
     matchedAdminSend: manualSendResult.matchedCount === 1,
+    matchedAdminFreeformSend: freeformSendResult.matchedCount === 1,
     matchedOutbound: outboundResult.matchedCount === 1,
     recipient: maskWhatsappPhone(status.destination || status.recipient_id),
     errorCode: status.errors?.code || status.errors?.[0]?.code || null,
@@ -2593,6 +2734,7 @@ async function recordWhatsappJobStatus(status = {}, persist = true) {
   if (
     !result.matchedCount &&
     !manualSendResult.matchedCount &&
+    !freeformSendResult.matchedCount &&
     !outboundResult.matchedCount
   ) {
     console.warn("[WHATSAPP][CALLBACK_NO_MATCH]", {
@@ -3173,11 +3315,11 @@ const ADMIN_WHATSAPP_TEMPLATE_METADATA = {
     buttons: ["Track order"],
   },
   delivered_ready_to_cook: {
-    label: "Delivered and ready to cook",
+    label: "Delivered ready to cook",
     parameterLabels: ["Order number"],
     bodyText:
-      "Your VALOUR order {{1}} has been delivered 🎉\n\nYour Velvety Butter Chicken Liquid Spice is ready when you are. Use the button below to start cooking.",
-    buttons: ["Start cooking"],
+      "Your VALOUR order {{1}} has been delivered.\n\nPreparation instructions for your delivered product are available below. If you need assistance with this order, our support team is here to help.",
+    buttons: ["Preparation demo", "Package opening demo", "Need help"],
   },
   cooking_reminder: {
     label: "Cooking reminder",
@@ -3304,8 +3446,14 @@ function serializeAdminTemplateSend(record = {}) {
     deliveredAt: record.deliveredAt || null,
     readAt: record.readAt || null,
     failedAt: record.failedAt || null,
+    failureCode: record.failureCode || "",
+    failureReason: record.failureReason || "",
+    retryAfter: record.retryAfter || null,
     statusUpdatedAt: record.statusUpdatedAt || null,
-    error: record.error || record.providerErrors || "",
+    error:
+      record.failureCode === "131049"
+        ? "Meta did not deliver this marketing template because this recipient has reached WhatsApp's marketing-message limit. Do not resend immediately; wait until the shown retry time or until the customer messages VALOUR."
+        : record.error || formatWhatsappProviderErrors(record.providerErrors),
   };
 }
 
@@ -3844,6 +3992,8 @@ async function saveOutboundWhatsappMessage({
   content = "",
   mediaUrl = "",
   providerMessageId = "",
+  source = "automation",
+  adminRequestId = "",
 }) {
   if (!mongoReady) return;
   try {
@@ -3856,6 +4006,8 @@ async function saveOutboundWhatsappMessage({
       content: String(content || "").slice(0, 10000),
       media_url: String(mediaUrl || "").slice(0, 2000),
       provider_message_id: providerMessageId || null,
+      source: String(source || "automation").slice(0, 100),
+      admin_request_id: String(adminRequestId || "").slice(0, 100),
       delivery_status: "submitted",
       created_at: new Date(),
     });
@@ -9885,9 +10037,18 @@ function serializeAdminWhatsappJob(job = {}) {
     deliveredAt: job.deliveredAt || null,
     readAt: job.readAt || null,
     failedAt: job.failedAt || null,
+    failureCode: job.failureCode || "",
+    failureReason: job.failureReason || "",
+    retryAfter: job.retryAfter || null,
     cancelledAt: job.cancelledAt || null,
     statusUpdatedAt: job.statusUpdatedAt || null,
-    error: job.lastError || job.providerErrors || job.cancellationReason || "",
+    error:
+      job.failureCode === "131049"
+        ? "Meta did not deliver this marketing template because this recipient has reached WhatsApp's marketing-message limit. The system will not immediately resend it."
+        : job.lastError ||
+          formatWhatsappProviderErrors(job.providerErrors) ||
+          job.cancellationReason ||
+          "",
   };
 }
 
@@ -9931,6 +10092,9 @@ async function persistCheckoutUserProfile(userId, details, source) {
 }
 
 function serializeAdminConversationMessage(message = {}) {
+  const deliveryStatus =
+    message.delivery_status || message.status ||
+    (message.role === "user" ? "received" : "submitted");
   return {
     id: String(message._id || message.message_id || ""),
     direction: message.role === "user" ? "inbound" : "outbound",
@@ -9938,8 +10102,48 @@ function serializeAdminConversationMessage(message = {}) {
     content: message.content || "",
     mediaUrl: message.media_url || "",
     providerMessageId: message.provider_message_id || message.message_id || "",
+    deliveryStatus,
+    failureCode: message.failure_code || message.failureCode || "",
+    retryAfter: message.retry_after || message.retryAfter || null,
+    error:
+      message.failure_code === "131049" || message.failureCode === "131049"
+        ? "Meta did not deliver this marketing message because the recipient reached WhatsApp's marketing-message limit."
+        : formatWhatsappProviderErrors(
+            message.provider_errors || message.providerErrors,
+          ),
     createdAt: message.created_at || null,
   };
+}
+
+function getWhatsappCustomerServiceWindow(latestInboundAt, now = new Date()) {
+  const openedAt = latestInboundAt ? new Date(latestInboundAt) : null;
+  const validOpenedAt = openedAt && !Number.isNaN(openedAt.getTime())
+    ? openedAt
+    : null;
+  const expiresAt = validOpenedAt
+    ? new Date(validOpenedAt.getTime() + WHATSAPP_CUSTOMER_SERVICE_WINDOW_MS)
+    : null;
+  return {
+    open: Boolean(expiresAt && expiresAt.getTime() > now.getTime()),
+    openedAt: validOpenedAt,
+    expiresAt,
+    remainingMs: expiresAt
+      ? Math.max(0, expiresAt.getTime() - now.getTime())
+      : 0,
+  };
+}
+
+async function findLatestInboundWhatsappMessage(phone) {
+  const normalized = normalizeWhatsappRecipient(phone);
+  if (!normalized) return null;
+  const localPhone = normalized.slice(-10);
+  return collections().messages.findOne(
+    {
+      role: "user",
+      phone: { $in: [normalized, localPhone, `+91${localPhone}`] },
+    },
+    { sort: { created_at: -1 } },
+  );
 }
 
 function serializeAdminUser(user = {}, orderSummary = {}) {
@@ -10397,6 +10601,16 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
         error: "This phone number has no active WhatsApp marketing consent",
       });
     }
+    const ecosystemPause = await getActiveWhatsappEcosystemPause(phone);
+    if (ecosystemPause) {
+      return res.status(429).json({
+        ok: false,
+        error:
+          "Meta recently blocked a marketing template to this recipient under error 131049. Do not resend yet; ask the customer to message VALOUR or try after the displayed time.",
+        code: "WHATSAPP_131049_RECIPIENT_PAUSED",
+        retryAfter: ecosystemPause.retryAfter,
+      });
+    }
   }
   try {
     validateWhatsappTemplatePayload(template.templateName, parameters);
@@ -10422,6 +10636,7 @@ app.post("/api/admin/whatsapp/templates/send", async (req, res) => {
     templateName: template.templateName,
     templateId: template.templateId,
     languageCode: template.languageCode,
+    kind: template.kind,
     phone,
     parameterCount: parameters.length,
     status: "processing",
@@ -10566,6 +10781,7 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
           phone,
           user,
           latestMessage: message,
+          latestInboundMessage: null,
           messageCount: 0,
           unreadCount: 0,
           reachedOutbound: false,
@@ -10573,6 +10789,8 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
       }
       const conversation = grouped.get(phone);
       conversation.messageCount += 1;
+      if (message.role === "user" && !conversation.latestInboundMessage)
+        conversation.latestInboundMessage = message;
       if (!conversation.reachedOutbound && message.role === "user")
         conversation.unreadCount += 1;
       if (message.role !== "user") conversation.reachedOutbound = true;
@@ -10608,6 +10826,9 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
         const session = conversation.user
           ? sessionByUserId.get(String(conversation.user._id))
           : null;
+        const serviceWindow = getWhatsappCustomerServiceWindow(
+          conversation.latestInboundMessage?.created_at,
+        );
         return {
           phone: conversation.phone,
           customerName: getAdminConversationName(conversation.user, order),
@@ -10617,7 +10838,14 @@ app.get("/api/admin/whatsapp/conversations", async (req, res) => {
           latestMessage: conversation.latestMessage.content || "",
           latestDirection:
             conversation.latestMessage.role === "user" ? "inbound" : "outbound",
+          latestDeliveryStatus:
+            conversation.latestMessage.delivery_status ||
+            (conversation.latestMessage.role === "user" ? "received" : "submitted"),
           latestAt: conversation.latestMessage.created_at || null,
+          latestInboundAt:
+            conversation.latestInboundMessage?.created_at || null,
+          canSendFreeForm: serviceWindow.open,
+          serviceWindowExpiresAt: serviceWindow.expiresAt,
           messageCount: conversation.messageCount,
           unreadCount: conversation.unreadCount,
         };
@@ -10703,6 +10931,10 @@ app.get(
           type: "template",
           content: `Template: ${job.templateName || job.trigger}${job.parameters?.length ? ` — ${job.parameters.join(" · ")}` : ""}`,
           provider_message_id: job.providerMessageId || "",
+          delivery_status: job.status || "scheduled",
+          provider_errors: job.providerErrors || null,
+          failure_code: job.failureCode || "",
+          retry_after: job.retryAfter || null,
           created_at: job.submittedAt || job.sentAt || job.createdAt,
         }));
       const timeline = [...messageRows, ...historicalJobs]
@@ -10713,6 +10945,9 @@ app.get(
         .slice(-300)
         .map(serializeAdminConversationMessage);
       const user = userRows[0] || {};
+      const latestInbound = messageRows.find(
+        (message) => message.role === "user",
+      );
       return res.json({
         ok: true,
         customer: {
@@ -10721,6 +10956,9 @@ app.get(
           customerId: String(user._id || ""),
           orderNumber: order?.orderNumber || "",
         },
+        serviceWindow: getWhatsappCustomerServiceWindow(
+          latestInbound?.created_at,
+        ),
         messages: timeline,
       });
     } catch (error) {
@@ -10731,6 +10969,161 @@ app.get(
       return res
         .status(500)
         .json({ ok: false, error: "Unable to load WhatsApp message history" });
+    }
+  },
+);
+
+app.post(
+  "/api/admin/whatsapp/conversations/:phone/messages",
+  async (req, res) => {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    const phone = normalizeWhatsappRecipient(req.params.phone);
+    const text = String(req.body?.text || "").trim();
+    const requestId = String(req.body?.requestId || "").trim();
+    if (!phone)
+      return res
+        .status(400)
+        .json({ ok: false, error: "Invalid WhatsApp phone number" });
+    if (!text || text.length > 4096)
+      return res.status(400).json({
+        ok: false,
+        error: "Reply text must contain between 1 and 4096 characters",
+      });
+    if (!/^[a-zA-Z0-9_-]{8,100}$/.test(requestId))
+      return res.status(400).json({
+        ok: false,
+        error: "A valid message request ID is required",
+      });
+
+    const { adminFreeformSends, messages } = collections();
+    const existing = await adminFreeformSends.findOne({ requestId });
+    if (existing) {
+      return res.status(existing.status === "processing" ? 202 : 200).json({
+        ok: existing.status !== "failed",
+        duplicate: true,
+        send: existing,
+      });
+    }
+
+    const latestInbound = await findLatestInboundWhatsappMessage(phone);
+    const serviceWindow = getWhatsappCustomerServiceWindow(
+      latestInbound?.created_at,
+    );
+    if (!serviceWindow.open) {
+      return res.status(409).json({
+        ok: false,
+        code: latestInbound
+          ? "WHATSAPP_SERVICE_WINDOW_EXPIRED"
+          : "WHATSAPP_SERVICE_WINDOW_NOT_OPEN",
+        error: latestInbound
+          ? "The 24-hour customer-service window has expired. Send an approved template and wait for the customer to reply before sending free-form messages."
+          : "This customer has not sent VALOUR a WhatsApp message, so a free-form reply is not available. Use an approved template first.",
+        serviceWindow,
+      });
+    }
+
+    const now = new Date();
+    const record = {
+      requestId,
+      source: "admin_dashboard",
+      phone,
+      text,
+      status: "processing",
+      serviceWindowOpenedAt: serviceWindow.openedAt,
+      serviceWindowExpiresAt: serviceWindow.expiresAt,
+      createdAt: now,
+      submissionStartedAt: now,
+    };
+    try {
+      await adminFreeformSends.insertOne(record);
+    } catch (error) {
+      if (error?.code === 11000) {
+        const duplicate = await adminFreeformSends.findOne({ requestId });
+        return res.status(202).json({
+          ok: true,
+          duplicate: true,
+          send: duplicate || record,
+        });
+      }
+      console.error("Admin WhatsApp reply audit creation failed", error.message);
+      return res.status(500).json({
+        ok: false,
+        error: "Unable to create the WhatsApp reply record",
+      });
+    }
+
+    try {
+      const providerResponse = await sendMessage(phone, text, {
+        source: "admin_dashboard_freeform",
+        adminRequestId: requestId,
+      });
+      const providerMessageId = getProviderMessageId(providerResponse);
+      const submittedAt = new Date();
+      await adminFreeformSends.updateOne(
+        { requestId, status: "processing" },
+        {
+          $set: {
+            status: "submitted",
+            submittedAt,
+            statusUpdatedAt: submittedAt,
+            providerMessageId,
+          },
+          $unset: { submissionStartedAt: "" },
+        },
+      );
+      const message = await messages.findOne({
+        provider_message_id: providerMessageId,
+      });
+      return res.status(201).json({
+        ok: true,
+        duplicate: false,
+        serviceWindow,
+        message: message
+          ? serializeAdminConversationMessage(message)
+          : {
+              direction: "outbound",
+              type: "text",
+              content: text,
+              providerMessageId,
+              deliveryStatus: "submitted",
+              createdAt: submittedAt,
+            },
+      });
+    } catch (error) {
+      const uncertain = isUncertainWhatsappSend(error);
+      const status = uncertain ? "delivery_unknown" : "failed";
+      const failedAt = new Date();
+      const errorMessage = String(
+        error.response?.data?.message ||
+          error.message ||
+          "Provider submission failed",
+      ).slice(0, 300);
+      await adminFreeformSends.updateOne(
+        { requestId, status: "processing" },
+        {
+          $set: {
+            status,
+            failedAt,
+            statusUpdatedAt: failedAt,
+            error: errorMessage,
+          },
+          $unset: { submissionStartedAt: "" },
+        },
+      );
+      if (uncertain) {
+        return res.status(202).json({
+          ok: true,
+          deliveryUnknown: true,
+          error:
+            "Gupshup submission could not be confirmed. Check the conversation before retrying.",
+        });
+      }
+      return res.status(502).json({
+        ok: false,
+        error: "Gupshup rejected the free-form WhatsApp message",
+      });
     }
   },
 );
@@ -11664,6 +12057,15 @@ app.get("/api/admin/dashboard", async (req, res) => {
         endsAt: coupon.endsAt || null,
       })),
       whatsapp: {
+        deliveredTemplate: {
+          trigger: "delivered_ready_to_cook",
+          templateName:
+            process.env.WHATSAPP_DELIVERED_TEMPLATE_NAME || "valour_delivered",
+          templateId: getGupshupTemplateId(
+            process.env.WHATSAPP_DELIVERED_TEMPLATE_NAME || "valour_delivered",
+            automationLanguage("delivered_ready_to_cook"),
+          ),
+        },
         jobs: whatsappRows.map(serializeAdminWhatsappJob),
         todayByStatus: Object.fromEntries(
           whatsappStatusRows.map((row) => [row._id || "unknown", row.count]),
@@ -14248,6 +14650,11 @@ module.exports = {
     processDueWhatsappJobs,
     recoverStuckWhatsappJobs,
     recordWhatsappJobStatus,
+    getWhatsappProviderErrorCode,
+    formatWhatsappProviderErrors,
+    getWhatsappFailureMetadata,
+    getActiveWhatsappEcosystemPause,
+    serializeAdminConversationMessage,
     runWhatsappQualityGate,
     sendTemplateMessage,
     notifyWhatsappAdminsOfNewOrder,

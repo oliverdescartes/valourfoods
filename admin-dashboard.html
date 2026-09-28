@@ -498,6 +498,31 @@
         font-size: 11px;
         font-weight: 900;
       }
+      .tab-badge {
+        display: inline-grid;
+        place-items: center;
+        min-width: 19px;
+        height: 19px;
+        margin-left: 6px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--red);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 900;
+      }
+      .conversation-alert {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border: 1px solid #e7c47a;
+        border-radius: 12px;
+        background: #fff4d8;
+      }
+      .conversation-alert[hidden] { display: none; }
       .conversation-view {
         display: flex;
         flex-direction: column;
@@ -521,6 +546,29 @@
         overflow: auto;
         max-height: 610px;
       }
+      .conversation-reply {
+        padding: 14px 18px 16px;
+        border-top: 1px solid var(--line);
+        background: #fff;
+      }
+      .conversation-reply textarea {
+        width: 100%;
+        min-height: 92px;
+        resize: vertical;
+      }
+      .conversation-reply-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 9px;
+      }
+      .service-window-status {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .service-window-status.open { color: #176b3a; font-weight: 800; }
+      .service-window-status.closed { color: var(--red); font-weight: 800; }
       .message-bubble {
         width: fit-content;
         max-width: min(78%, 620px);
@@ -553,6 +601,28 @@
         color: var(--muted);
         font-size: 10px;
         text-align: right;
+      }
+      .message-delivery {
+        display: inline-block;
+        margin-top: 7px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #eee7df;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .message-delivery.failed {
+        background: #fce3e3;
+        color: #9c2020;
+      }
+      .message-error {
+        display: block;
+        margin-top: 6px;
+        color: #9c2020;
+        font-size: 11px;
+        line-height: 1.4;
       }
       .message-media {
         display: block;
@@ -998,7 +1068,7 @@
         <button class="btn tab is-active" data-tab="orders">Orders</button
         ><button class="btn ghost tab" data-tab="customers">Customers</button
         ><button class="btn ghost tab" data-tab="conversations">
-          WhatsApp conversations</button
+          WhatsApp conversations<span class="tab-badge" id="conversation-tab-badge" hidden>0</span></button
         ><button class="btn ghost tab" data-tab="acquisition">
           Acquisition &amp; funnel</button
         ><button class="btn ghost tab" data-tab="whatsapp">
@@ -1015,6 +1085,10 @@
           Delivery settings
         </button>
       </nav>
+      <div class="conversation-alert" id="conversation-alert" hidden>
+        <span id="conversation-alert-text"></span>
+        <button class="btn ghost" id="conversation-alert-open" type="button">Open</button>
+      </div>
       <section class="panel" id="orders-panel">
         <form class="toolbar" id="filters">
           <input
@@ -1167,9 +1241,12 @@
       <section class="panel" id="conversations-panel" hidden>
         <h2>WhatsApp conversations</h2>
         <p class="muted">
-          Read-only customer and bot history. Customer-care replies continue
-          from the separate professional number.
+          Reply in your own words for 24 hours after a customer messages
+          VALOUR. The server checks the window again before every send.
         </p>
+        <button class="btn ghost" id="enable-conversation-alerts" type="button">
+          Enable browser message alerts
+        </button>
         <form class="inbox-toolbar" id="conversation-search-form">
           <input
             id="conversation-search"
@@ -1190,6 +1267,16 @@
                 Choose a customer to view their WhatsApp history.
               </p>
             </div>
+            <form class="conversation-reply" id="conversation-reply-form" hidden>
+              <label for="conversation-reply-text"><strong>Reply to customer</strong></label>
+              <p class="service-window-status" id="conversation-window-status"></p>
+              <textarea id="conversation-reply-text" maxlength="4096" placeholder="Write a WhatsApp reply…" required></textarea>
+              <div class="conversation-reply-actions">
+                <span class="muted" id="conversation-reply-count">0 / 4096</span>
+                <button class="btn" id="conversation-reply-button" type="submit">Send reply</button>
+              </div>
+              <p class="notice" id="conversation-reply-message"></p>
+            </form>
           </div>
         </div>
       </section>
@@ -1415,6 +1502,17 @@
       let activeTab = "orders";
       let conversations = [];
       let selectedConversationPhone = "";
+      let pendingFreeformRequestId = "";
+      const CONVERSATION_SEEN_KEY = "valour_admin_whatsapp_seen_v1";
+      let conversationSeen = (() => {
+        try {
+          return JSON.parse(localStorage.getItem(CONVERSATION_SEEN_KEY) || "{}");
+        } catch (_error) {
+          return {};
+        }
+      })();
+      const conversationAlerted = new Map(Object.entries(conversationSeen));
+      let alertedConversationPhone = "";
       let whatsappTemplates = [];
       let recentTemplateSends = [];
       let pendingTemplateRequestId = "";
@@ -1694,13 +1792,17 @@
         const manualDeliveryValue = dateTimeInputValue(
           order.manualExpectedDeliveryAt,
         );
+        const deliveredTemplate = dashboard?.whatsapp?.deliveredTemplate || {};
+        const deliveredTemplateHint = deliveredTemplate.templateId
+          ? `<small class="muted">Selecting Delivered schedules <strong>${escapeHtml(deliveredTemplate.trigger || "delivered_ready_to_cook")}</strong> using template ID <code>${escapeHtml(deliveredTemplate.templateId)}</code>.</small>`
+          : "";
         items = attribution + items;
         const preOrderNotice = order.isPreOrder
           ? `<div class="preorder-notice"><strong>Pre-order recorded while stock was zero.</strong><br>Payment has not been collected. Restore stock before confirming fulfilment with the customer.</div>`
           : "";
         const fulfilment = order.isPreOrder
           ? ""
-          : `<details><summary>Update fulfilment</summary><form class="status-form" data-order-form="${escapeHtml(order.id)}"><div><span class="label">Shipping status</span><select name="shippingStatus">${options}</select></div>${paymentUpdateControl}<div><span class="label">Courier / delivery person</span><input name="courierName" value="${escapeHtml(order.courierName)}"></div><div><span class="label">Tracking number</span><input name="trackingNumber" value="${escapeHtml(order.trackingNumber)}"></div><div class="wide"><span class="label">Tracking URL</span><input name="trackingUrl" value="${escapeHtml(order.trackingUrl)}"></div><div class="wide"><span class="label">Expected delivery date and time</span><input type="datetime-local" name="expectedDeliveryAtLocal" value="${escapeHtml(manualDeliveryValue)}"><small class="muted">India time (IST). Leave blank to keep the order's current delivery promise.</small></div><label class="check"><input type="checkbox" name="notifyWhatsapp" checked> Send WhatsApp update</label><div><button class="btn" type="submit">Save status</button></div><p class="notice wide" data-status-message></p></form></details>`;
+          : `<details><summary>Update fulfilment</summary><form class="status-form" data-order-form="${escapeHtml(order.id)}"><div><span class="label">Shipping status</span><select name="shippingStatus">${options}</select></div>${paymentUpdateControl}<div><span class="label">Courier / delivery person</span><input name="courierName" value="${escapeHtml(order.courierName)}"></div><div><span class="label">Tracking number</span><input name="trackingNumber" value="${escapeHtml(order.trackingNumber)}"></div><div class="wide"><span class="label">Tracking URL</span><input name="trackingUrl" value="${escapeHtml(order.trackingUrl)}"></div><div class="wide"><span class="label">Expected delivery date and time</span><input type="datetime-local" name="expectedDeliveryAtLocal" value="${escapeHtml(manualDeliveryValue)}"><small class="muted">India time (IST). Leave blank to keep the order's current delivery promise.</small></div><label class="check"><input type="checkbox" name="notifyWhatsapp" checked> Send WhatsApp update</label><div class="wide">${deliveredTemplateHint}</div><div><button class="btn" type="submit">Save status</button></div><p class="notice wide" data-status-message></p></form></details>`;
         return `<article class="order-card"><div class="order-head"><div><div class="order-number">${escapeHtml(order.orderNumber)}</div><div class="muted">${dateTime(order.createdAt)}</div></div><div class="badges">${order.isPreOrder ? '<span class="badge preorder">PRE-ORDER · ZERO STOCK</span>' : ""}<span class="badge ${order.paymentStatus === "paid" ? "paid" : "cod"}">${escapeHtml(order.paymentStatus || "Unknown payment")}</span><span class="badge">${escapeHtml(order.shippingStatus)}</span></div></div>${preOrderNotice}<div class="order-grid"><div><span class="label">Customer</span><span class="value">${escapeHtml(order.customerName)}</span></div><div><span class="label">Phone</span><span class="value">${escapeHtml(order.phone)}</span></div><div><span class="label">Payment</span><span class="value">${escapeHtml(order.paymentMethod)} · ${money(order.totalAmount)}</span></div><div><span class="label">Delivery address</span><span class="value">${escapeHtml([order.address, order.landmark, order.city, order.state, order.pincode].filter(Boolean).join(", "))}</span></div><div><span class="label">Expected delivery</span><span class="value">${escapeHtml(order.isPreOrder ? "Awaiting stock" : order.expectedDeliveryText || "Not available")}</span></div></div><div class="items">${items}</div>${fulfilment}</article>`;
       }
       function renderOrders() {
@@ -1914,7 +2016,7 @@
           return;
         }
         $("#template-details").innerHTML = template.available
-          ? `<strong>${escapeHtml(template.templateName)}</strong><br>Template ID: ${escapeHtml(template.templateId)}<br>Language: ${escapeHtml(template.languageCode)} · ${template.mediaType ? `${escapeHtml(template.mediaType)} header` : "text only"} · ${template.parameterCount} ${template.parameterCount === 1 ? "value" : "values"}`
+          ? `<strong>${escapeHtml(template.templateName)}</strong><br>Automation: ${escapeHtml(template.key)}<br>Template ID: ${escapeHtml(template.templateId)}<br>Language: ${escapeHtml(template.languageCode)} · ${template.mediaType ? `${escapeHtml(template.mediaType)} header` : "text only"} · ${template.parameterCount} ${template.parameterCount === 1 ? "value" : "values"}`
           : `<strong>${escapeHtml(template.label)}</strong><br><span class="error">Unavailable: ${escapeHtml(template.configurationError)}</span>`;
         const existingInputs = [
           ...document.querySelectorAll("[data-template-parameter]"),
@@ -1964,9 +2066,12 @@
         $("#template-history-list").innerHTML = recentTemplateSends.length
           ? recentTemplateSends
               .map((item) => {
-                const error = item.status === "delivery_unknown"
+                let error = item.status === "delivery_unknown"
                   ? "Delivery is unconfirmed. Check callbacks before sending this message again."
                   : whatsappError(item.error);
+                if (item.failureCode === "131049" && item.retryAfter) {
+                  error += ` Earliest retry: ${dateTime(item.retryAfter)}. A customer reply can clear this recipient pause.`;
+                }
                 return `<article class="template-send-row"><div class="wa-meta"><div><div class="wa-title">${escapeHtml(item.templateLabel || item.templateName)}</div><div class="wa-sub">+${escapeHtml(item.phone)} · ${item.parameterCount} ${item.parameterCount === 1 ? "value" : "values"} · ${dateTime(item.createdAt)}</div><div class="wa-sub">Provider ID: ${escapeHtml(item.providerMessageId || "No confirmed provider ID")}</div></div><span class="wa-status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></div>${error ? `<p class="wa-error">${escapeHtml(error)}</p>` : ""}</article>`;
               })
               .join("")
@@ -2064,13 +2169,82 @@
           button.disabled = false;
         }
       }
+      function conversationHasUnseenInbound(item) {
+        const latest = Date.parse(item.latestInboundAt || "");
+        const seen = Date.parse(conversationSeen[item.phone] || "");
+        return Number.isFinite(latest) && (!Number.isFinite(seen) || latest > seen);
+      }
+      function markConversationSeen(item) {
+        if (!item?.latestInboundAt) return;
+        conversationSeen[item.phone] = item.latestInboundAt;
+        conversationAlerted.set(item.phone, item.latestInboundAt);
+        localStorage.setItem(CONVERSATION_SEEN_KEY, JSON.stringify(conversationSeen));
+        updateConversationIndicators(conversations, false);
+      }
+      function updateConversationIndicators(items, announce = true) {
+        const unseen = items.filter(conversationHasUnseenInbound);
+        const count = unseen.reduce(
+          (total, item) => total + Math.max(1, Number(item.unreadCount) || 0),
+          0,
+        );
+        const badge = $("#conversation-tab-badge");
+        badge.hidden = count === 0;
+        badge.textContent = count > 99 ? "99+" : String(count);
+        if (!announce || !unseen.length) return;
+        const newest = unseen
+          .filter(
+            (item) => {
+              const latest = Date.parse(item.latestInboundAt || "");
+              const alerted = Date.parse(
+                conversationAlerted.get(item.phone) || "",
+              );
+              return Number.isFinite(latest) &&
+                (!Number.isFinite(alerted) || latest > alerted);
+            },
+          )
+          .sort(
+            (left, right) =>
+              Date.parse(right.latestInboundAt) - Date.parse(left.latestInboundAt),
+          )[0];
+        if (!newest) return;
+        for (const item of unseen)
+          conversationAlerted.set(item.phone, item.latestInboundAt);
+        alertedConversationPhone = newest.phone;
+        $("#conversation-alert-text").textContent = `${newest.customerName || `+${newest.phone}`} sent a WhatsApp message: ${newest.latestMessage || "Media message"}`;
+        $("#conversation-alert").hidden = false;
+        if ("Notification" in window && Notification.permission === "granted") {
+          const notification = new Notification("New VALOUR WhatsApp message", {
+            body: `${newest.customerName || `+${newest.phone}`}: ${newest.latestMessage || "Media message"}`,
+          });
+          notification.onclick = () => {
+            window.focus();
+            document.querySelector('[data-tab="conversations"]')?.click();
+            openConversation(newest.phone).catch(showLoadError);
+            notification.close();
+          };
+        }
+      }
+      async function pollConversationNotifications() {
+        const data = await api("/api/admin/whatsapp/conversations?limit=100");
+        const items = data.conversations || [];
+        updateConversationIndicators(items, true);
+        if (activeTab !== "conversations") return;
+        if ($("#conversation-search").value.trim()) {
+          await loadConversations();
+        } else {
+          conversations = items;
+          renderConversationList();
+        }
+        if (selectedConversationPhone)
+          await openConversation(selectedConversationPhone);
+      }
       function renderConversationList() {
         const list = $("#conversation-list");
         list.innerHTML = conversations.length
           ? conversations
               .map(
                 (item) =>
-                  `<button class="conversation-row ${item.phone === selectedConversationPhone ? "is-active" : ""}" type="button" data-conversation-phone="${escapeHtml(item.phone)}"><span class="conversation-head"><span><span class="conversation-name">${escapeHtml(item.customerName)}</span><span class="conversation-phone">+${escapeHtml(item.phone)}${item.orderNumber ? ` · ${escapeHtml(item.orderNumber)}` : ""}</span></span><span>${item.unreadCount ? `<span class="unread">${item.unreadCount}</span>` : ""}<span class="conversation-time">${dateTime(item.latestAt)}</span></span></span><span class="conversation-preview">${item.latestDirection === "outbound" ? "VALOUR: " : ""}${escapeHtml(item.latestMessage || "Media message")}</span></button>`,
+                  `<button class="conversation-row ${item.phone === selectedConversationPhone ? "is-active" : ""}" type="button" data-conversation-phone="${escapeHtml(item.phone)}"><span class="conversation-head"><span><span class="conversation-name">${escapeHtml(item.customerName)}</span><span class="conversation-phone">+${escapeHtml(item.phone)}${item.orderNumber ? ` · ${escapeHtml(item.orderNumber)}` : ""}</span></span><span>${conversationHasUnseenInbound(item) ? `<span class="unread">${Math.max(1, Number(item.unreadCount) || 0)}</span>` : ""}<span class="conversation-time">${dateTime(item.latestAt)}</span></span></span><span class="conversation-preview">${item.latestDirection === "outbound" ? "VALOUR: " : ""}${escapeHtml(item.latestMessage || "Media message")}${item.latestDirection === "outbound" ? ` · ${escapeHtml(item.latestDeliveryStatus === "failed" ? "NOT DELIVERED" : item.latestDeliveryStatus || "submitted")}` : ""}</span></button>`,
               )
               .join("")
           : "<p class='empty'>No matching WhatsApp conversations.</p>";
@@ -2095,9 +2269,16 @@
           )
         )
           selectedConversationPhone = "";
+        updateConversationIndicators(conversations, true);
         renderConversationList();
       }
       async function openConversation(phone) {
+        if (selectedConversationPhone !== phone) {
+          pendingFreeformRequestId = "";
+          $("#conversation-reply-text").value = "";
+          $("#conversation-reply-count").textContent = "0 / 4096";
+          $("#conversation-reply-message").textContent = "";
+        }
         selectedConversationPhone = phone;
         renderConversationList();
         $("#message-timeline").innerHTML =
@@ -2106,17 +2287,36 @@
           `/api/admin/whatsapp/conversations/${encodeURIComponent(phone)}/messages`,
         );
         const customer = data.customer || {};
+        const serviceWindow = data.serviceWindow || {};
         $("#conversation-customer").innerHTML =
-          `<strong>${escapeHtml(customer.name || "WhatsApp customer")}</strong><span>+${escapeHtml(customer.phone || phone)}${customer.orderNumber ? ` · ${escapeHtml(customer.orderNumber)}` : ""}</span>`;
+          `<strong>${escapeHtml(customer.name || "WhatsApp customer")}</strong><span>+${escapeHtml(customer.phone || phone)}${customer.orderNumber ? ` · ${escapeHtml(customer.orderNumber)}` : ""}</span><span>${serviceWindow.open ? `Free-form replies available until ${dateTime(serviceWindow.expiresAt)}` : "Free-form reply window closed"}</span>`;
         $("#message-timeline").innerHTML = data.messages.length
           ? data.messages
               .map(
                 (message) =>
-                  `<article class="message-bubble ${escapeHtml(message.direction)}"><span class="message-kind">${message.direction === "inbound" ? "Customer" : `VALOUR · ${escapeHtml(message.type)}`}</span>${escapeHtml(message.content || "Media message")}${message.mediaUrl ? `<a class="message-media" href="${escapeHtml(message.mediaUrl)}" target="_blank" rel="noopener">Open media</a>` : ""}<time class="message-time">${dateTime(message.createdAt)}</time></article>`,
+                  `<article class="message-bubble ${escapeHtml(message.direction)}"><span class="message-kind">${message.direction === "inbound" ? "Customer" : `VALOUR · ${escapeHtml(message.type)}`}</span>${escapeHtml(message.content || "Media message")}${message.mediaUrl ? `<a class="message-media" href="${escapeHtml(message.mediaUrl)}" target="_blank" rel="noopener">Open media</a>` : ""}${message.direction === "outbound" ? `<span class="message-delivery ${escapeHtml(message.deliveryStatus)}">${escapeHtml(message.deliveryStatus === "failed" ? "Not delivered" : message.deliveryStatus || "submitted")}</span>${message.error ? `<span class="message-error">${escapeHtml(message.error)}</span>` : ""}` : ""}<time class="message-time">${dateTime(message.createdAt)}</time></article>`,
               )
               .join("")
           : "<p class='empty'>No stored messages for this customer.</p>";
         $("#message-timeline").scrollTop = $("#message-timeline").scrollHeight;
+        const replyForm = $("#conversation-reply-form");
+        const replyText = $("#conversation-reply-text");
+        const replyButton = $("#conversation-reply-button");
+        const windowStatus = $("#conversation-window-status");
+        replyForm.hidden = false;
+        replyText.disabled = !serviceWindow.open;
+        replyButton.disabled = !serviceWindow.open;
+        windowStatus.className = `service-window-status ${serviceWindow.open ? "open" : "closed"}`;
+        windowStatus.textContent = serviceWindow.open
+          ? `Customer-service window open until ${dateTime(serviceWindow.expiresAt)}.`
+          : serviceWindow.openedAt
+            ? `The 24-hour window expired ${dateTime(serviceWindow.expiresAt)}. Send an approved template to restart contact; free-form replies become available after the customer responds.`
+            : "No customer message is recorded. Free-form replies become available after the customer messages VALOUR.";
+        const selected = conversations.find((item) => item.phone === phone);
+        if (selected) {
+          markConversationSeen(selected);
+          renderConversationList();
+        }
       }
       async function loadDashboard() {
         const params = new URLSearchParams({ page: currentPage, limit: 50 });
@@ -2217,6 +2417,7 @@
           await loadDashboard();
           sessionStorage.setItem(TOKEN_KEY, token);
           $("#login-message").textContent = "";
+          await pollConversationNotifications();
         } catch (error) {
           token = "";
           $("#login-message").textContent = error.message;
@@ -2423,6 +2624,71 @@
         selectedConversationPhone = "";
         loadConversations().catch(showLoadError);
       });
+      $("#conversation-alert-open").addEventListener("click", () => {
+        if (!alertedConversationPhone) return;
+        document.querySelector('[data-tab="conversations"]')?.click();
+        openConversation(alertedConversationPhone).catch(showLoadError);
+        $("#conversation-alert").hidden = true;
+      });
+      $("#enable-conversation-alerts").addEventListener("click", async () => {
+        const button = $("#enable-conversation-alerts");
+        if (!("Notification" in window)) {
+          button.textContent = "Browser alerts are not supported";
+          button.disabled = true;
+          return;
+        }
+        const permission = await Notification.requestPermission();
+        button.textContent = permission === "granted"
+          ? "Browser message alerts enabled"
+          : "Browser alerts were not enabled";
+        button.disabled = permission === "granted";
+      });
+      $("#conversation-reply-text").addEventListener("input", (event) => {
+        $("#conversation-reply-count").textContent = `${event.currentTarget.value.length} / 4096`;
+      });
+      $("#conversation-reply-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!selectedConversationPhone) return;
+        const text = $("#conversation-reply-text").value.trim();
+        if (!text) return;
+        const button = $("#conversation-reply-button");
+        const message = $("#conversation-reply-message");
+        pendingFreeformRequestId ||= globalThis.crypto?.randomUUID?.() ||
+          `reply_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        button.disabled = true;
+        message.className = "notice";
+        message.textContent = "Submitting reply to Gupshup…";
+        try {
+          const data = await api(
+            `/api/admin/whatsapp/conversations/${encodeURIComponent(selectedConversationPhone)}/messages`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                requestId: pendingFreeformRequestId,
+                text,
+              }),
+            },
+          );
+          pendingFreeformRequestId = "";
+          $("#conversation-reply-text").value = "";
+          $("#conversation-reply-count").textContent = "0 / 4096";
+          message.className = data.deliveryUnknown ? "notice error" : "notice success";
+          message.textContent = data.deliveryUnknown
+            ? data.error
+            : data.duplicate
+              ? "This reply was already submitted; it was not sent twice."
+              : "Reply submitted. Delivery status will update from Gupshup callbacks.";
+          await loadConversations();
+          await openConversation(selectedConversationPhone);
+        } catch (error) {
+          if (error.status === 409) pendingFreeformRequestId = "";
+          message.className = "notice error";
+          message.textContent = error.message;
+          await openConversation(selectedConversationPhone).catch(() => {});
+        } finally {
+          if (!$("#conversation-reply-text").disabled) button.disabled = false;
+        }
+      });
       $("#delivery-timing-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const message = $("#delivery-timing-message");
@@ -2540,21 +2806,18 @@
       }
       if (token) {
         loadDashboard().catch(showLoadError);
+        pollConversationNotifications().catch(showLoadError);
+      }
+      if ("Notification" in window && Notification.permission === "granted") {
+        $("#enable-conversation-alerts").textContent = "Browser message alerts enabled";
+        $("#enable-conversation-alerts").disabled = true;
       }
       setInterval(() => {
         if (!token) return;
         if (activeTab === "whatsapp") loadDashboard().catch(showLoadError);
         if (activeTab === "templates") loadTemplateManager().catch(showLoadError);
         if (activeTab === "customers") loadCustomers().catch(showLoadError);
-        if (activeTab === "conversations") {
-          loadConversations()
-            .then(
-              () =>
-                selectedConversationPhone &&
-                openConversation(selectedConversationPhone),
-            )
-            .catch(showLoadError);
-        }
+        pollConversationNotifications().catch(showLoadError);
       }, 15000);
     </script>
   </body>
