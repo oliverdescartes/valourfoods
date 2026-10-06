@@ -14454,6 +14454,7 @@ app.get("/api/homepage-testimonials", async (_req, res) => {
             quote: 1,
             personName: 1,
             personDetail: 1,
+            rating: 1,
             images: 1,
             order: 1,
           },

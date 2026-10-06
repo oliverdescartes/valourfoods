@@ -1,0 +1,315 @@
+.ingredient-story {
+  --story-cream: #faeade;
+  --story-gold: #f7d46c;
+  --story-copper: #b86b42;
+  padding: 70px 0 64px;
+  background: #9c010b;
+  color: var(--story-cream);
+}
+
+.ingredient-story *,
+.ingredient-story *::before,
+.ingredient-story *::after {
+  box-sizing: border-box;
+}
+
+.ingredient-story__layout {
+  display: grid;
+  gap: 28px;
+  width: min(calc(100% - 2.5rem), 72rem);
+  margin-inline: auto;
+}
+
+.ingredient-story__copy {
+  width: min(100%, 32rem);
+  margin-inline: auto;
+  padding-inline: 8px;
+  text-align: center;
+}
+
+.ingredient-story__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 13px;
+  color: var(--story-copper);
+  font:
+    800 11px/1.5 "Inter",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ingredient-story__eyebrow span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ingredient-story__eyebrow span::after {
+  content: "\00b7";
+  letter-spacing: 0;
+}
+
+.ingredient-story__copy h2 {
+  margin: 0 0 18px;
+  color: var(--story-cream);
+  font:
+    600 clamp(36px, 11vw, 48px)/0.92 "Cormorant Garamond",
+    Georgia,
+    serif;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.ingredient-story__copy h2 span {
+  display: block;
+}
+
+.ingredient-story__copy h2 span:first-child {
+  margin-bottom: 5px;
+}
+
+.ingredient-story__description {
+  max-width: 36ch;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.68);
+  font:
+    400 14px/1.55 "Inter",
+    Arial,
+    sans-serif;
+  text-wrap: pretty;
+}
+
+.ingredient-story__photo {
+  position: relative;
+  width: min(80vw, 28rem);
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: clamp(1.25rem, 2.4vw, 2.2rem);
+  background: #831a1a;
+  aspect-ratio: 4 / 3;
+  box-shadow: 0 1.8rem 4.5rem rgba(50, 8, 8, 0.2);
+}
+
+.ingredient-story__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 54% center;
+}
+
+.ingredient-story__chapter--confidence .ingredient-story__photo img {
+  object-position: 48% center;
+}
+
+.ingredient-story__bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 0;
+  color: var(--story-copper);
+}
+
+.ingredient-story__thread {
+  position: relative;
+  width: 1px;
+  height: 24px;
+  overflow: hidden;
+  background: rgba(247, 212, 108, 0.18);
+}
+
+.ingredient-story__thread::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: var(--story-gold);
+  transform-origin: top;
+}
+
+.ingredient-story__turn {
+  font:
+    600 11px/1.5 "Inter",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ingredient-story__chapter--confidence .ingredient-story__copy {
+  padding-top: 0;
+}
+
+.ingredient-story__closing {
+  max-width: 36ch;
+  margin: 18px auto 0;
+  font:
+    400 14px/1.55 "Inter",
+    Arial,
+    sans-serif;
+  text-wrap: pretty;
+}
+
+.ingredient-story__closing span {
+  display: block;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.ingredient-story__closing span + span {
+  margin-top: 2px;
+}
+
+.ingredient-story__closing span:last-child {
+  margin-top: 8px;
+  color: var(--story-cream);
+}
+
+/* Enhancement is opt-in: copy and photographs are visible without JavaScript. */
+.ingredient-story.has-motion [data-story-reveal] {
+  transition:
+    opacity 400ms ease,
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ingredient-story.has-motion [data-story-reveal]:not(.is-revealed) {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+}
+
+.ingredient-story.has-motion .ingredient-story__photo img {
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ingredient-story.has-motion .ingredient-story__photo:not(.is-revealed) img {
+  transform: scale(1.025);
+}
+
+.ingredient-story.has-motion .ingredient-story__intro[data-story-reveal],
+.ingredient-story.has-motion .ingredient-story__closing[data-story-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+.ingredient-story.has-motion
+  :is(.ingredient-story__intro h2 span, .ingredient-story__closing span) {
+  transition:
+    opacity 400ms ease,
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ingredient-story.has-motion
+  .ingredient-story__intro:not(.is-revealed)
+  :is(h2 span),
+.ingredient-story.has-motion .ingredient-story__closing:not(.is-revealed) span {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+.ingredient-story.has-motion .ingredient-story__intro h2 span:first-child {
+  transition-delay: 80ms;
+}
+
+.ingredient-story.has-motion .ingredient-story__intro h2 span:last-child,
+.ingredient-story.has-motion .ingredient-story__closing span:nth-child(2) {
+  transition-delay: 160ms;
+}
+
+.ingredient-story.has-motion .ingredient-story__closing span:last-child {
+  transition-delay: 320ms;
+}
+
+.ingredient-story.has-motion .ingredient-story__thread::after {
+  transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ingredient-story.has-motion
+  .ingredient-story__bridge:not(.is-revealed)
+  .ingredient-story__thread::after {
+  transform: scaleY(0);
+}
+
+.ingredient-story.has-motion .ingredient-story__thread:last-child::after {
+  transition-delay: 180ms;
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .ingredient-story__layout {
+    width: min(calc(100% - 80px), 620px);
+  }
+
+  .ingredient-story__copy {
+    padding-inline: 24px;
+  }
+
+  .ingredient-story__description,
+  .ingredient-story__closing {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 900px) {
+  .ingredient-story {
+    padding: 88px 32px 80px;
+  }
+
+  .ingredient-story__layout {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(32px, 8vw, 128px);
+    width: 100%;
+  }
+
+  .ingredient-story__copy {
+    padding: 0;
+    text-align: left;
+  }
+
+  .ingredient-story__copy h2 {
+    font-size: clamp(48px, 5vw, 68px);
+    margin-bottom: 22px;
+  }
+
+  .ingredient-story__description,
+  .ingredient-story__closing {
+    margin-inline: 0;
+    font-size: 16px;
+  }
+
+  .ingredient-story__photo {
+    width: min(100%, 32rem);
+  }
+
+  .ingredient-story__bridge {
+    padding: 36px 0;
+  }
+
+  .ingredient-story__chapter--confidence .ingredient-story__layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+
+  .ingredient-story__chapter--confidence .ingredient-story__copy {
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ingredient-story.has-motion [data-story-reveal],
+  .ingredient-story.has-motion
+    :is(
+      .ingredient-story__intro h2 span,
+      .ingredient-story__closing span,
+      .ingredient-story__photo img
+    ),
+  .ingredient-story.has-motion .ingredient-story__thread::after {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

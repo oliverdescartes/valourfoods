@@ -1886,7 +1886,7 @@ body {
 }
 
 .prod_section_ind {
-  background: #831a1a;
+  background: #9c010b;
   padding-top: 23px;
 }
 
@@ -2012,13 +2012,14 @@ body {
   margin-top: 0;
   padding-top: 120px;
   padding-bottom: 0;
-  background: #831a1a;
+  background: #9c010b;
   width: min(1180px, 100%);
   margin-left: auto;
   margin-right: auto;
   padding-left: clamp(20px, 4vw, 48px);
   padding-right: clamp(20px, 4vw, 48px);
   box-sizing: border-box;
+  padding-bottom: 40px;
 }
 
 .raw-ready-section {
@@ -2402,7 +2403,7 @@ body {
   padding: 0 20px 180px;
   scroll-margin-top: 25vh;
   overflow: hidden;
-  background: #831a1a;
+  background: #9c010b;
 }
 
 .looks-tastes-inner {
