@@ -43,6 +43,7 @@ app.use(
 );
 
 const axios = require("axios");
+const { getDeliveryWindow } = require("./delivery-window");
 const { normalizeFast2SmsNumber, sendFast2SmsQuickSms } = require("./fast2sms");
 
 const OpenAI = require("openai");
@@ -3594,52 +3595,51 @@ function parseIstDateTimeLocal(value) {
 }
 
 function getDefaultExpectedDeliveryFields(now = new Date(), rules = {}) {
-  const timing = getDeliveryTimingFromRules(rules);
-  if (timing) {
-    const durationMs =
-      timing.value * (timing.unit === "hours" ? 60 * 60_000 : 24 * 60 * 60_000);
+  // Only an explicit one-hour admin setting can enable same-day express delivery.
+  const timing = getDeliveryTimingFromRules(rules || {}) || { value: 1, unit: "days" };
+  const deliveryWindow = getDeliveryWindow(now, timing);
+  if (!deliveryWindow.oneHourAvailable) {
+    const expectedDeliveryDate = deliveryWindow.noticeKey;
+    const dateLabel = new Intl.DateTimeFormat("en-IN", {
+      day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
+    }).format(new Date(`${expectedDeliveryDate}T12:00:00+05:30`));
     return {
-      expectedDeliveryAt: new Date(now.getTime() + durationMs).toISOString(),
+      expectedDeliveryAt: null,
+      expectedDeliveryDate,
       deliveryTimeValue: timing.value,
       deliveryTimeUnit: timing.unit,
-      deliveryPromise: formatDeliveryTiming(timing.value, timing.unit),
-      estimatedDelivery: formatDeliveryTiming(timing.value, timing.unit),
+      deliveryPromise: `Delivery on ${dateLabel}`,
+      estimatedDelivery: `Next-day delivery · ${dateLabel}`,
+      deliveryWindow,
     };
   }
-
-  const minDays = Number(rules.deliveryMinDays);
-  const maxDays = Number(rules.deliveryMaxDays);
-  if (
-    !Number.isInteger(minDays) ||
-    !Number.isInteger(maxDays) ||
-    minDays < 0 ||
-    maxDays < minDays ||
-    maxDays > 30
-  ) {
-    throw new Error(
-      "Checkout delivery timing has not been configured in MongoDB",
-    );
-  }
-  const ist = new Date(now.getTime() + 330 * 60_000);
-  const base = new Date(
-    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()),
-  );
-  const toDateOnly = (daysAhead) => {
-    const date = new Date(base);
-    date.setUTCDate(date.getUTCDate() + daysAhead);
-    return date.toISOString().slice(0, 10);
-  };
-  const fields = {
-    expectedDeliveryStartDate: toDateOnly(minDays),
-    expectedDeliveryEndDate: toDateOnly(maxDays),
-  };
   return {
-    ...fields,
-    estimatedDelivery: getExpectedDeliveryText(fields, now),
+    expectedDeliveryAt: new Date(now.getTime() + 60 * 60_000).toISOString(),
+    deliveryTimeValue: timing.value,
+    deliveryTimeUnit: timing.unit,
+    deliveryPromise: formatDeliveryTiming(timing.value, timing.unit),
+    estimatedDelivery: formatDeliveryTiming(timing.value, timing.unit),
+    deliveryWindow,
   };
 }
 
 function getOrderDeliverySnapshot(order = {}, createdAt = new Date()) {
+  // A payment may finish after the cutoff. Preserve the delivery decision and
+  // calendar date the customer accepted when checkout started.
+  if (order.deliveryWindow) {
+    return {
+      expectedDeliveryAt: order.deliveryWindow.oneHourAvailable
+        ? new Date(createdAt.getTime() + 60 * 60_000)
+        : null,
+      expectedDeliveryDate: order.expectedDeliveryDate,
+      deliveryTimeValue: order.deliveryTimeValue,
+      deliveryTimeUnit: order.deliveryTimeUnit,
+      deliveryPromise: order.deliveryPromise,
+      estimatedDelivery: order.estimatedDelivery,
+      deliveryWindow: order.deliveryWindow,
+      deliverySource: "delivery_window_snapshot",
+    };
+  }
   const timing = getDeliveryTimingFromRules(order);
   if (!timing) {
     return {
@@ -3659,7 +3659,8 @@ function getOrderDeliverySnapshot(order = {}, createdAt = new Date()) {
   });
   return {
     ...fields,
-    expectedDeliveryAt: new Date(fields.expectedDeliveryAt),
+    expectedDeliveryAt: fields.expectedDeliveryAt
+      ? new Date(fields.expectedDeliveryAt) : null,
     deliverySource: "pricing_rules_snapshot",
   };
 }
@@ -4900,6 +4901,15 @@ function buildAdminNewOrderTemplateParams(order) {
   ]
     .filter(Boolean)
     .join(", ");
+  const deliveryIntentDetail = !order.outOfStockIntent && order.deliveryWindow?.oneHourAvailable === false
+    ? `${order.deliveryWindowIntent ? "Checkout request (not placed)" : "Next-day order"} | ${new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata", day: "numeric", month: "short",
+        hour: "numeric", minute: "2-digit", hour12: true,
+      }).format(new Date(order.deliveryWindow.checkedAt))} IST | ${
+        order.deliveryWindow.reason === "outside_delivery_hours"
+          ? "Outside 11am-9pm" : "Admin setting is not 1 hour"
+      } | ${order.deliveryPromise} | `
+    : "";
   return [
     clean(orderNumber, 100),
     clean(
@@ -4912,35 +4922,35 @@ function buildAdminNewOrderTemplateParams(order) {
     clean(customerPhone ? `+${customerPhone}` : "Not recorded", 30),
     clean(formatProductsForWhatsapp(order.products || []), 500),
     clean(
-      `${order.outOfStockIntent ? "Triggered order. no stock | " : ""}Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} | ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`,
+      `${deliveryIntentDetail}${order.outOfStockIntent ? "Triggered order. no stock | " : ""}Rs. ${Math.round(Number(order.totalAmount) || 0).toLocaleString("en-IN")} | ${order.paymentMethodLabel || order.paymentMethod || "Not recorded"}`,
       200,
     ),
     clean(address || "Not recorded", 500),
   ];
 }
 
-async function notifyWhatsappAdminsOfOutOfStockIntent(
+async function notifyWhatsappAdminsOfCheckoutIntent(
   order,
   dedupeId,
   clientIntentId,
 ) {
-  const templateIdentifier = DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
+  const templateIdentifier = process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_ID ||
+    DEFAULT_ADMIN_NEW_ORDER_TEMPLATE_ID;
   const language =
     process.env.WHATSAPP_ADMIN_NEW_ORDER_TEMPLATE_LANGUAGE || "en_US";
-  const parameters = buildAdminNewOrderTemplateParams({
-    ...order,
-    outOfStockIntent: true,
-  });
+  const deliveryIntent = order.deliveryWindowIntent === true;
+  const alertType = deliveryIntent ? "DELIVERY_WINDOW" : "OUT_OF_STOCK";
+  const parameters = buildAdminNewOrderTemplateParams(order);
   const results = [];
 
   for (const recipient of DEFAULT_CUSTOMER_CARE_PHONES) {
-    const requestId = `stock_${dedupeId}_${recipient}`;
+    const requestId = `${deliveryIntent ? "delivery" : "stock"}_${dedupeId}_${recipient}`;
     const now = new Date();
     const record = {
       requestId,
-      source: "out_of_stock_checkout",
+      source: deliveryIntent ? "delivery_window_checkout" : "out_of_stock_checkout",
       templateKey: "admin_new_order",
-      templateLabel: "Admin out-of-stock order intent",
+      templateLabel: deliveryIntent ? "Admin next-day checkout request" : "Admin out-of-stock order intent",
       templateName: templateIdentifier,
       templateId: getGupshupTemplateId(templateIdentifier, language),
       languageCode: language,
@@ -4952,6 +4962,7 @@ async function notifyWhatsappAdminsOfOutOfStockIntent(
       orderReference: order.orderNumber,
       customerPhone: normalizeWhatsappRecipient(order.phone),
       unavailableItems: order.unavailableItems || [],
+      ...(deliveryIntent ? { deliveryWindow: order.deliveryWindow, expectedDeliveryDate: order.expectedDeliveryDate } : {}),
       status: "processing",
       createdAt: now,
       submissionStartedAt: now,
@@ -4964,16 +4975,26 @@ async function notifyWhatsappAdminsOfOutOfStockIntent(
         const existing = await collections().adminTemplateSends.findOne({
           requestId,
         });
-        results.push({
-          recipient,
-          sent: false,
-          duplicate: true,
-          status: existing?.status || "already_recorded",
-          providerMessageId: existing?.providerMessageId || null,
-        });
-        continue;
-      }
-      throw error;
+        // Retry a definite provider rejection on a later checkout click. An
+        // accepted or uncertain submission must never be sent twice.
+        const retry = deliveryIntent && existing?.status === "failed"
+          ? await collections().adminTemplateSends.updateOne(
+              { requestId, status: "failed" },
+              { $set: { status: "processing", submissionStartedAt: now },
+                $unset: { failedAt: "", error: "" } },
+            )
+          : null;
+        if (!retry?.modifiedCount) {
+          results.push({
+            recipient,
+            sent: false,
+            duplicate: true,
+            status: existing?.status || "already_recorded",
+            providerMessageId: existing?.providerMessageId || null,
+          });
+          continue;
+        }
+      } else throw error;
     }
 
     let acceptedProviderId = null;
@@ -5001,7 +5022,7 @@ async function notifyWhatsappAdminsOfOutOfStockIntent(
       );
       await reconcileWhatsappStatus(providerMessageId);
       results.push({ recipient, sent: true, providerMessageId });
-      console.log("[WHATSAPP][ADMIN_OUT_OF_STOCK_ALERT_SENT]", {
+      console.log(`[WHATSAPP][ADMIN_${alertType}_ALERT_SENT]`, {
         intentId: clientIntentId,
         dedupeId,
         orderReference: order.orderNumber,
@@ -5035,7 +5056,7 @@ async function notifyWhatsappAdminsOfOutOfStockIntent(
         status: uncertain ? "delivery_unknown" : "failed",
         error: error.message,
       });
-      console.error("[WHATSAPP][ADMIN_OUT_OF_STOCK_ALERT_FAILED]", {
+      console.error(`[WHATSAPP][ADMIN_${alertType}_ALERT_FAILED]`, {
         intentId: clientIntentId,
         dedupeId,
         orderReference: order.orderNumber,
@@ -5046,6 +5067,35 @@ async function notifyWhatsappAdminsOfOutOfStockIntent(
   }
 
   return results;
+}
+
+async function notifyDeliveryWindowCheckoutIntent(rawOrder, quote) {
+  const customerOrder = normalizeOrderPayload(rawOrder);
+  const intentOrder = {
+    ...customerOrder,
+    ...quoteToOrderFields(quote),
+    deliveryWindowIntent: true,
+    paymentMethodLabel: String(rawOrder.payment?.label || rawOrder.payment?.method || "Not selected").slice(0, 50),
+  };
+  const dedupeId = crypto.createHash("sha256").update(JSON.stringify({
+    phone: normalizeWhatsappRecipient(intentOrder.phone),
+    deliveryDate: quote.expectedDeliveryDate,
+    products: quote.items.map(({ sku, quantity }) => ({ sku, quantity }))
+      .sort((left, right) => left.sku.localeCompare(right.sku)),
+  })).digest("hex").slice(0, 24);
+  intentOrder.orderNumber = `VALOUR-TIME-${dedupeId.slice(-8).toUpperCase()}`;
+  return notifyWhatsappAdminsOfCheckoutIntent(intentOrder, dedupeId, `delivery_${dedupeId}`);
+}
+
+async function assertCheckoutDeliveryAcknowledged(rawOrder, quote) {
+  if (quote.deliveryWindow?.oneHourAvailable !== false ||
+      rawOrder.deliveryWindowAcknowledgedFor === quote.deliveryWindow.noticeKey) return;
+  await notifyDeliveryWindowCheckoutIntent(rawOrder, quote);
+  throw Object.assign(new Error("Please confirm next-day delivery before ordering."), {
+    statusCode: 409,
+    code: "DELIVERY_NOTICE_REQUIRED",
+    delivery: quoteToOrderFields(quote),
+  });
 }
 
 async function notifyWhatsappAdminsOfNewOrder(order) {
@@ -8960,6 +9010,8 @@ function quoteToOrderFields(quote) {
     deliveryTimeValue: quote.deliveryTimeValue,
     deliveryTimeUnit: quote.deliveryTimeUnit,
     deliveryPromise: quote.deliveryPromise,
+    expectedDeliveryDate: quote.expectedDeliveryDate,
+    deliveryWindow: quote.deliveryWindow,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
@@ -12889,7 +12941,7 @@ app.post("/api/orders/out-of-stock-intent", async (req, res) => {
       if (error?.code !== 11000) throw error;
     }
 
-    const alerts = await notifyWhatsappAdminsOfOutOfStockIntent(
+    const alerts = await notifyWhatsappAdminsOfCheckoutIntent(
       savedPreOrder,
       dedupeId,
       intentId,
@@ -12933,6 +12985,42 @@ app.post("/api/orders/out-of-stock-intent", async (req, res) => {
         ? error.message
         : "Unable to notify admins about the out-of-stock checkout",
       ...(error.code ? { code: error.code } : {}),
+    });
+  }
+});
+
+app.post("/api/checkout/delivery-window", async (req, res) => {
+  try {
+    const rawOrder = req.body?.order || {};
+    const customerOrder = normalizeOrderPayload(rawOrder);
+    await verifyCheckoutPhoneIdentity(rawOrder.phoneVerificationToken, customerOrder.phone);
+    const quote = await buildAuthoritativeQuote({
+      items: rawOrder.products,
+      pincode: customerOrder.pincode,
+      couponCode: rawOrder.coupon,
+      phone: customerOrder.phone,
+      enforceStock: true,
+    });
+    const validationError = validateOrderPayload({ ...customerOrder, ...quoteToOrderFields(quote) });
+    if (validationError) return res.status(400).json({ ok: false, error: validationError });
+    // Await both admin submission attempts before the browser opens its notice.
+    const alerts = quote.deliveryWindow.oneHourAvailable
+      ? [] : await notifyDeliveryWindowCheckoutIntent(rawOrder, quote);
+    return res.json({
+      ok: true,
+      delivery: quoteToOrderFields(quote),
+      adminAlerts: {
+        submitted: alerts.filter((alert) => alert.sent).length,
+        duplicates: alerts.filter((alert) => alert.duplicate).length,
+        failed: alerts.filter((alert) => !alert.sent && !alert.duplicate).length,
+      },
+    });
+  } catch (error) {
+    console.error("Checkout delivery-window check failed", { error: error.message });
+    return res.status(error.statusCode || 400).json({
+      ok: false, error: "We couldn't check delivery just now. Please try again.",
+      ...(error.code ? { code: error.code } : {}),
+      ...(error.unavailableItems ? { unavailableItems: error.unavailableItems } : {}),
     });
   }
 });
@@ -13023,6 +13111,8 @@ app.post("/api/orders/cod", async (req, res) => {
       const validationError = validateOrderPayload(websiteOrder);
       if (validationError)
         return res.status(400).json({ ok: false, error: validationError });
+
+      await assertCheckoutDeliveryAcknowledged(rawOrder, quote);
 
       const now = new Date();
       const deliverySnapshot = getOrderDeliverySnapshot(websiteOrder, now);
@@ -13140,6 +13230,7 @@ app.post("/api/orders/cod", async (req, res) => {
       ok: false,
       error: clientError ? error.message : "Unable to place the COD order",
       ...(error.code ? { code: error.code } : {}),
+      ...(error.delivery ? { delivery: error.delivery } : {}),
       ...(error.unavailableItems
         ? { unavailableItems: error.unavailableItems }
         : {}),
@@ -13172,6 +13263,8 @@ app.post("/api/payment/create-order", async (req, res) => {
     if (validationError) {
       return res.status(400).json({ ok: false, error: validationError });
     }
+
+    await assertCheckoutDeliveryAcknowledged(rawOrder, quote);
 
     // Only the amount calculated from MongoDB products/rules is sent to Razorpay.
     const razorpayOrder = await razorpay.orders.create({
@@ -13239,6 +13332,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       ok: false,
       error: err.statusCode ? err.message : "Unable to create payment order",
       ...(err.code ? { code: err.code } : {}),
+      ...(err.delivery ? { delivery: err.delivery } : {}),
       ...(err.unavailableItems
         ? { unavailableItems: err.unavailableItems }
         : {}),

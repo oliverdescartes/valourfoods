@@ -97,7 +97,10 @@ test("zero stock preserves product pricing while checkout reports it unavailable
 
     const delivery = await fetch(`${base}/api/checkout/delivery-estimate`);
     assert.equal(delivery.status, 200);
-    assert.equal((await delivery.json()).delivery.estimatedDelivery, "Within 3 hours");
+    const deliveryResult = (await delivery.json()).delivery;
+    assert.equal(deliveryResult.deliveryWindow.oneHourAvailable, false);
+    assert.equal(deliveryResult.deliveryWindow.reason, "admin_delivery_setting");
+    assert.match(deliveryResult.estimatedDelivery, /^Next-day delivery/);
 
     const quote = await fetch(`${base}/api/checkout/quote`, {
       method: "POST",

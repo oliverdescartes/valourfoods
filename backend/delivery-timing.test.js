@@ -1,5 +1,7 @@
 "use strict";
 
+process.env.NODE_ENV = "test";
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
@@ -19,31 +21,69 @@ const {
 
 const createdAt = new Date("2026-09-12T08:00:00.000Z");
 
-for (const [value, unit, expectedIso, label] of [
-  [1, "hours", "2026-09-12T09:00:00.000Z", "Within 1 hour"],
-  [3, "hours", "2026-09-12T11:00:00.000Z", "Within 3 hours"],
-  [1, "days", "2026-09-13T08:00:00.000Z", "Within 1 day"],
-  [2, "days", "2026-09-14T08:00:00.000Z", "Within 2 days"],
-]) {
-  test(`creates a consistent ${value} ${unit} delivery snapshot`, () => {
+for (const [value, unit] of [[1, "hours"], [3, "hours"], [1, "days"], [2, "days"]]) {
+  test(`creates a consistent window-aware ${value} ${unit} delivery snapshot`, () => {
     const quote = getDefaultExpectedDeliveryFields(createdAt, {
       deliveryTimeValue: value,
       deliveryTimeUnit: unit,
     });
-    assert.equal(quote.expectedDeliveryAt, expectedIso);
-    assert.equal(quote.estimatedDelivery, label);
-    assert.equal(quote.deliveryPromise, label);
-
     const saved = getOrderDeliverySnapshot(quote, createdAt);
-    assert.ok(saved.expectedDeliveryAt instanceof Date);
-    assert.equal(saved.expectedDeliveryAt.toISOString(), expectedIso);
-    assert.equal(saved.deliverySource, "pricing_rules_snapshot");
-
     const displayed = getExpectedDeliveryText(saved);
-    assert.match(displayed, new RegExp(`^${label} · expected by `));
+    if (value === 1 && unit === "hours") {
+      assert.equal(quote.expectedDeliveryAt, "2026-09-12T09:00:00.000Z");
+      assert.equal(quote.estimatedDelivery, "Within 1 hour");
+      assert.ok(saved.expectedDeliveryAt instanceof Date);
+      assert.equal(saved.expectedDeliveryAt.toISOString(), quote.expectedDeliveryAt);
+      assert.match(displayed, /^Within 1 hour · expected by /);
+    } else {
+      assert.equal(quote.expectedDeliveryAt, null);
+      assert.equal(quote.expectedDeliveryDate, "2026-09-13");
+      assert.equal(quote.estimatedDelivery, "Next-day delivery · 13 Sept 2026");
+      assert.equal(saved.expectedDeliveryDate, quote.expectedDeliveryDate);
+      assert.equal(saved.expectedDeliveryAt, null);
+      assert.equal(displayed, "13 Sept 2026");
+    }
+    assert.equal(saved.deliverySource, "delivery_window_snapshot");
     assert.doesNotMatch(displayed, /Invalid Date/i);
   });
 }
+
+for (const [indiaTime, available] of [
+  ["10:59:59", false], ["11:00:00", true], ["20:59:59", true],
+  ["21:00:00", false], ["23:59:59", false], ["00:00:00", false],
+]) {
+  test(`one-hour delivery at ${indiaTime} IST is ${available}`, () => {
+    const quote = getDefaultExpectedDeliveryFields(new Date(`2026-10-07T${indiaTime}+05:30`), {
+      deliveryTimeValue: 1, deliveryTimeUnit: "hours",
+    });
+    assert.equal(quote.deliveryWindow.oneHourAvailable, available);
+    if (!available) {
+      assert.equal(quote.expectedDeliveryDate, "2026-10-08");
+      assert.equal(quote.deliveryWindow.reason, "outside_delivery_hours");
+      assert.doesNotMatch(quote.estimatedDelivery, /Within 1 hour/);
+    }
+  });
+}
+
+test("tomorrow follows India's date at midnight and year rollover", () => {
+  const rules = { deliveryTimeValue: 1, deliveryTimeUnit: "hours" };
+  const afterMidnight = getDefaultExpectedDeliveryFields(new Date("2026-10-07T18:30:00Z"), rules);
+  assert.equal(afterMidnight.expectedDeliveryDate, "2026-10-09");
+  const newYear = getDefaultExpectedDeliveryFields(new Date("2026-12-31T23:30:00+05:30"), rules);
+  assert.equal(newYear.expectedDeliveryDate, "2027-01-01");
+});
+
+test("payment finishing after the cutoff preserves its agreed delivery snapshot", () => {
+  const rules = { deliveryTimeValue: 1, deliveryTimeUnit: "hours" };
+  const early = getDefaultExpectedDeliveryFields(new Date("2026-10-07T20:59:00+05:30"), rules);
+  const paid = getOrderDeliverySnapshot(early, new Date("2026-10-07T21:05:00+05:30"));
+  assert.equal(paid.deliveryWindow.oneHourAvailable, true);
+  assert.equal(paid.expectedDeliveryAt.toISOString(), "2026-10-07T16:35:00.000Z");
+  const late = getDefaultExpectedDeliveryFields(new Date("2026-10-07T23:59:00+05:30"), rules);
+  const nextDay = getOrderDeliverySnapshot(late, new Date("2026-10-08T00:05:00+05:30"));
+  assert.equal(nextDay.expectedDeliveryDate, "2026-10-08");
+  assert.equal(nextDay.expectedDeliveryAt, null);
+});
 
 test("normalizes database unit capitalization and whitespace", () => {
   assert.deepEqual(
@@ -55,7 +95,7 @@ test("normalizes database unit capitalization and whitespace", () => {
   );
 });
 
-test("rejects missing or invalid delivery configuration", () => {
+test("missing or invalid delivery configuration defaults to next day and cannot enable one-hour delivery", () => {
   assert.equal(getDeliveryTimingFromRules({}), null);
   assert.equal(
     getDeliveryTimingFromRules({
@@ -64,10 +104,12 @@ test("rejects missing or invalid delivery configuration", () => {
     }),
     null,
   );
-  assert.throws(
-    () => getDefaultExpectedDeliveryFields(createdAt, {}),
-    /has not been configured/i,
-  );
+  for (const rules of [{}, null, { deliveryTimeValue: 0, deliveryTimeUnit: "hours" }]) {
+    const quote = getDefaultExpectedDeliveryFields(createdAt, rules);
+    assert.equal(quote.deliveryWindow.oneHourAvailable, false);
+    assert.equal(quote.deliveryWindow.reason, "admin_delivery_setting");
+    assert.equal(quote.expectedDeliveryDate, "2026-09-13");
+  }
 });
 
 test("legacy orders have safe delivery text and never show Invalid Date", () => {

@@ -333,73 +333,48 @@
   display: none;
 }
 
-/* Compact service strip directly before the customer photos. */
-.service-badges {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  padding: 80px max(8px, calc((100% - 1000px) / 2));
-  list-style: none;
-  background: #9c010b;
-  color: #fff8ef;
-  border-top: 1px solid #ffffff26;
-  border-bottom: 1px solid #ffffff26;
-  font-family: Arial, Helvetica, sans-serif;
-}
-.service-badges li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-width: 0;
-  margin: 0;
-  padding: 0 10px;
-}
-.service-badges li + li {
-  border-left: 1px solid #ffffff30;
-}
-.service-badges svg {
-  flex: none;
-  width: 52px;
-  height: 52px;
-  color: #fff8ef;
-}
-.service-badges__ring {
-  fill: #ffffff08;
-  stroke: #fff8ef45;
-  stroke-width: 1;
-}
-.service-badges strong {
-  display: block;
-  font-size: 13px;
-  line-height: 1.2;
-  font-weight: 600;
-}
 @media (max-width: 640px) {
-  .service-badges {
-    padding: 20px 4px;
-  }
-  .service-badges li {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 0 6px;
-    text-align: center;
-  }
-  .service-badges svg {
-    width: 44px;
-    height: 44px;
-  }
-  .service-badges strong {
-    min-height: 0;
-  }
   .testimonial-showcase__heading {
     padding-top: 82px;
     margin-bottom: 4px;
   }
   .testimonial-showcase__heading h2 {
     font-size: 30px;
+  }
+  #testimonial-showcase .testimonial-showcase__track {
+    width: min(76vw, 280px);
+  }
+  #testimonial-showcase .valour-testimonial__media,
+  #testimonial-showcase .valour-testimonial__media[data-image-count] {
+    aspect-ratio: 1 / 1;
+    padding: 6px;
+  }
+  #testimonial-showcase .valour-testimonial__copy {
+    height: 230px;
+    padding: 24px 18px 16px;
+    gap: 10px 10px;
+  }
+  #testimonial-showcase .valour-testimonial__media:has(img)
+    + .valour-testimonial__copy {
+    margin-top: -48px;
+  }
+  #testimonial-showcase .valour-testimonial__copy::before {
+    top: -6px;
+    right: 14px;
+    font-size: 72px;
+  }
+  #testimonial-showcase .valour-testimonial__quote {
+    padding-bottom: 12px;
+    font-size: clamp(19px, 5vw, 21px);
+    line-height: 1.24;
+  }
+  #testimonial-showcase .valour-testimonial__name {
+    font-size: 13px;
+  }
+  #testimonial-showcase .valour-testimonial__detail {
+    font-size: 11px;
+  }
+  #testimonial-showcase .valour-testimonial__stars {
+    font-size: 12px;
   }
 }

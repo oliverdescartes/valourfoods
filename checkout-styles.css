@@ -1267,6 +1267,91 @@ img {
   backdrop-filter: blur(10px);
 }
 
+.delivery-window-modal {
+  position: fixed;
+  width: min(380px, calc(100% - 32px));
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 30px 24px 16px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.delivery-window-modal::backdrop {
+  background: rgba(68, 35, 31, 0.48);
+}
+.delivery-window-modal .modal-close {
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+}
+.delivery-window-modal[open] {
+  animation: deliveryNoticeIn 280ms ease-out both;
+}
+.delivery-window-illustration {
+  width: 96px;
+  height: 88px;
+  margin: 0 auto 12px;
+  color: var(--deep);
+}
+.delivery-window-illustration svg { width: 100%; height: 100%; }
+.delivery-window-kicker {
+  margin: 0 0 10px;
+  color: var(--red);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.delivery-window-modal h2 {
+  margin: 0;
+  color: var(--deep);
+  font: 500 clamp(28px, 7vw, 34px)/1.1 Georgia, "Times New Roman", serif;
+}
+#delivery-window-description {
+  margin: 16px 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.delivery-window-date {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 22px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.delivery-window-date strong { color: var(--deep); font-weight: 600; }
+.delivery-window-modal .primary-btn { width: 100%; min-height: 48px; }
+.delivery-window-back {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 5px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+@keyframes deliveryNoticeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .delivery-window-modal[open] { animation: none; }
+}
+
 .out-of-stock-card {
   position: relative;
   width: min(500px, 100%);

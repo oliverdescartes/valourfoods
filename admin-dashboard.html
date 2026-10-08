@@ -1199,11 +1199,12 @@
       <section class="panel" id="delivery-settings-panel" hidden>
         <h2>Checkout delivery timing</h2>
         <p class="muted">
-          This promise appears at checkout and in customer order tracking.
+          Set 1 Hour to offer one-hour delivery from 11am to 9pm IST. Outside
+          those hours, or with any other setting, checkout offers next-day delivery.
         </p>
         <form id="delivery-timing-form" class="form-grid">
           <div class="field">
-            <label for="delivery-time-value">Delivery within</label>
+            <label for="delivery-time-value">Configured duration</label>
             <input
               id="delivery-time-value"
               type="number"
@@ -1750,12 +1751,14 @@
         const timing = dashboard.deliveryTiming;
         if (!timing) {
           $("#delivery-time-value").value = "";
-          $("#delivery-timing-current").textContent = "Not configured";
+          $("#delivery-timing-current").textContent = "Next-day delivery · Set 1 Hour to enable the delivery window";
           return;
         }
         $("#delivery-time-value").value = timing.value;
         $("#delivery-time-unit").value = timing.unit;
-        $("#delivery-timing-current").textContent = timing.label;
+        $("#delivery-timing-current").textContent = timing.value === 1 && timing.unit === "hours"
+          ? "1 hour, 11am–9pm IST · Next day outside these hours"
+          : "Next-day delivery";
       }
       const statusOptions = [
         "Pre-order - awaiting stock",

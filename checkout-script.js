@@ -55,6 +55,8 @@ const state = {
   pricingRequestId: 0,
   pricingTimer: null,
   delivery: null,
+  deliveryWindowAcknowledgedFor: null,
+  isPlacingOrder: false,
   step: CHECKOUT_STEPS.DETAILS,
   paymentMethod: "upi",
 };
@@ -149,11 +151,14 @@ const dom = {
   serviceAreaModal: document.querySelector("[data-service-area-modal]"),
   outOfStockModal: document.querySelector("[data-out-of-stock-modal]"),
   outOfStockItems: document.querySelector("[data-out-of-stock-items]"),
+  deliveryWindowModal: document.querySelector("[data-delivery-window-modal]"),
+  nextDayDeliveryDate: document.querySelector("[data-next-day-delivery-date]"),
   mobileBar: document.querySelector("[data-mobile-bar]"),
 };
 
 let serviceAreaLastFocused = null;
 let stockModalLastFocused = null;
+let deliveryWindowDecision = null;
 
 const otpState = {
   phone: "",
@@ -567,6 +572,49 @@ function showServiceAreaNoticeIfNeeded() {
   if (hasUnsupportedServiceArea()) openServiceAreaModal();
 }
 
+function confirmNextDayDelivery(delivery) {
+  if (deliveryWindowDecision) return deliveryWindowDecision;
+  const dialog = dom.deliveryWindowModal;
+  const date = new Date(`${delivery.expectedDeliveryDate}T12:00:00+05:30`);
+  dom.nextDayDeliveryDate.textContent = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "short",
+  }).format(date);
+  dialog.returnValue = "";
+  deliveryWindowDecision = new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      const accepted = dialog.returnValue === "continue";
+      deliveryWindowDecision = null;
+      if (dom.otpModal?.hidden && dom.serviceAreaModal?.hidden && dom.outOfStockModal?.hidden) {
+        document.body.classList.remove("is-modal-open");
+      }
+      resolve(accepted);
+    }, { once: true });
+    dialog.showModal();
+    document.body.classList.add("is-modal-open");
+  });
+  return deliveryWindowDecision;
+}
+
+async function confirmDeliveryWindow(orderPayload) {
+  // The response arrives only after both admin WhatsApp attempts. Never use the
+  // customer's device clock or a delivery estimate loaded earlier in the visit.
+  const result = await postJSON(`${API_BASE}/api/checkout/delivery-window`, { order: orderPayload });
+  const delivery = result.delivery;
+  applyQuoteDelivery(delivery);
+  if (delivery.deliveryWindow.oneHourAvailable) {
+    state.deliveryWindowAcknowledgedFor = null;
+    orderPayload.deliveryWindowAcknowledgedFor = null;
+    return true;
+  }
+  const noticeKey = delivery.deliveryWindow.noticeKey;
+  if (state.deliveryWindowAcknowledgedFor !== noticeKey) {
+    if (!(await confirmNextDayDelivery(delivery))) return false;
+    state.deliveryWindowAcknowledgedFor = noticeKey;
+  }
+  orderPayload.deliveryWindowAcknowledgedFor = noticeKey;
+  return true;
+}
+
 async function postJSON(url, payload, extraHeaders = {}) {
   const response = await fetch(url, {
     method: "POST",
@@ -879,6 +927,7 @@ function buildOrderPayload() {
     totals: { ...state.totals },
     coupon: state.coupon,
     phoneVerificationToken: getStoredUser()?.phoneVerificationToken || "",
+    deliveryWindowAcknowledgedFor: state.deliveryWindowAcknowledgedFor,
     metaPurchaseEventId: state.metaPurchaseEventId || "",
     whatsappConsent: getWhatsappConsent(),
     tracking,
@@ -1143,6 +1192,8 @@ function applyQuoteDelivery(quote = {}) {
     deliveryTimeValue: quote.deliveryTimeValue,
     deliveryTimeUnit: quote.deliveryTimeUnit,
     deliveryPromise: quote.deliveryPromise,
+    expectedDeliveryDate: quote.expectedDeliveryDate,
+    deliveryWindow: quote.deliveryWindow,
     expectedDeliveryStartDate: quote.expectedDeliveryStartDate,
     expectedDeliveryEndDate: quote.expectedDeliveryEndDate,
     estimatedDelivery: quote.estimatedDelivery,
@@ -1914,6 +1965,16 @@ async function startRazorpayPayment({ razorpayOrder, orderPayload }) {
 
 async function placeOrder(event) {
   if (event) event.preventDefault();
+  if (state.isPlacingOrder) return;
+  state.isPlacingOrder = true;
+  try {
+    await submitCheckoutOrder();
+  } finally {
+    state.isPlacingOrder = false;
+  }
+}
+
+async function submitCheckoutOrder() {
 
   if (!state.cart.length) {
     showToast("Your cart is empty.", "error");
@@ -1947,15 +2008,18 @@ async function placeOrder(event) {
   }
 
   setOrderLoading(true);
-  showToast(
-    state.paymentMethod === "COD"
-      ? "Placing your COD order..."
-      : `Opening ${getPaymentMethodLabel()} payment...`,
-  );
   let razorpayOrder = null;
+  let deliveryConfirmed = false;
   try {
     renderSummary();
     const orderPayload = buildOrderPayload();
+    if (!(await confirmDeliveryWindow(orderPayload))) return;
+    deliveryConfirmed = true;
+    showToast(
+      state.paymentMethod === "COD"
+        ? "Placing your COD order..."
+        : `Opening ${getPaymentMethodLabel()} payment...`,
+    );
 
     if (state.paymentMethod === "COD") {
       const idempotencyStorageKey = "valour_cod_idempotency_key";
@@ -2045,12 +2109,28 @@ async function placeOrder(event) {
 
     window.location.href = "order-success.html";
   } catch (error) {
+    if (error.code === "DELIVERY_NOTICE_REQUIRED" && error.data?.delivery) {
+      // The cutoff or India calendar date changed between the check and submit.
+      // The server already attempted the admin alerts before returning this.
+      const delivery = error.data.delivery;
+      applyQuoteDelivery(delivery);
+      state.deliveryWindowAcknowledgedFor = null;
+      if (await confirmNextDayDelivery(delivery)) {
+        state.deliveryWindowAcknowledgedFor = delivery.deliveryWindow.noticeKey;
+        return await submitCheckoutOrder();
+      }
+      return;
+    }
     console.error(
       state.paymentMethod === "COD" ? "COD order failed" : "Payment failed",
       error,
     );
     if (error.code === "OUT_OF_STOCK") {
       openOutOfStockModal(error.data?.unavailableItems || []);
+      return;
+    }
+    if (!deliveryConfirmed) {
+      showToast(error.message || "We couldn't check delivery just now. Please try again.", "error");
       return;
     }
     if (state.paymentMethod === "COD") {
@@ -2202,6 +2282,15 @@ function bindEvents() {
   });
   dom.outOfStockModal?.addEventListener("click", (event) => {
     if (event.target === dom.outOfStockModal) closeOutOfStockModal();
+  });
+  dom.deliveryWindowModal?.addEventListener("click", (event) => {
+    const dialog = dom.deliveryWindowModal;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.target === dialog &&
+        (event.clientX < bounds.left || event.clientX > bounds.right ||
+         event.clientY < bounds.top || event.clientY > bounds.bottom)) {
+      dialog.close("cancel");
+    }
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !dom.serviceAreaModal?.hidden) {

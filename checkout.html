@@ -61,7 +61,7 @@
       type="image/png"
       href="vendor/cdn/cdn/shop/files/valourlogobrowser.png"
     />
-    <link rel="stylesheet" href="checkout-styles.css?v=20260913-stock-1" />
+    <link rel="stylesheet" href="checkout-styles.css?v=20261007-delivery-window-1" />
   </head>
   <body>
     <div class="navbar">
@@ -691,6 +691,29 @@
       </div>
     </div>
 
+    <dialog class="delivery-window-modal" data-delivery-window-modal
+      aria-labelledby="delivery-window-title" aria-describedby="delivery-window-description">
+      <form method="dialog">
+        <button class="modal-close" type="submit" value="cancel" aria-label="Close delivery notice">&times;</button>
+        <div class="delivery-window-illustration" aria-hidden="true">
+          <svg viewBox="0 0 96 88" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="48" cy="44" r="35" fill="#f5ead9" stroke="none"/>
+            <path d="M24 58h48M32 29h32v29H32zM38 29v-5h20v5"/>
+            <path d="M32 37h32M41 47c2 5 12 5 14 0"/>
+            <path d="M41 42h.1M55 42h.1" stroke-width="3"/>
+            <path d="M75 14v8M71 18h8M19 27v6M16 30h6" stroke="#9a6b1f"/>
+            <path d="M30 67c9 4 26 4 36 0" stroke="#9a6b1f"/>
+          </svg>
+        </div>
+        <p class="delivery-window-kicker">A little delivery update</p>
+        <h2 id="delivery-window-title">Tomorrow, with care.</h2>
+        <p id="delivery-window-description">1-hour delivery isn’t available right now. You can still order now—our delivery team will bring your order tomorrow.</p>
+        <p class="delivery-window-date"><span>Arriving tomorrow</span><strong data-next-day-delivery-date></strong></p>
+        <button class="primary-btn" type="submit" value="continue" autofocus>Order for tomorrow</button>
+        <button class="delivery-window-back" type="submit" value="cancel">Back to checkout</button>
+      </form>
+    </dialog>
+
     <div class="out-of-stock-modal" data-out-of-stock-modal hidden>
       <div
         class="out-of-stock-card"
@@ -798,6 +821,6 @@
     <p class="checkout-operator-disclosure">
       VALOUR is a brand owned and operated by Cosmos Foods, Agartala, Tripura.
     </p>
-    <script src="checkout-script.js?v=20261007-1" defer></script>
+    <script src="checkout-script.js?v=20261007-delivery-window-1" defer></script>
   </body>
 </html>
